@@ -1,0 +1,88 @@
+import { cookies, headers } from "next/headers";
+import { cache } from "react";
+import {
+  DEFAULT_LOCALE,
+  DEFAULT_REGION_CODE,
+  LOCALE_COOKIE,
+  type Locale,
+  REGION_COOKIE,
+  RTL_LOCALES,
+  type RegionConfig,
+  SUPPORTED_LOCALES,
+  getRegionConfig,
+} from "./config";
+import { type Messages, en } from "./messages/en";
+
+/**
+ * Locale → messages map. Add new imports here when you add a new language file.
+ */
+const catalog: Record<Locale, Messages> = {
+  en,
+  // Placeholder fallbacks — swap out as real translations land.
+  es: en,
+  de: en,
+  fr: en,
+  pt: en,
+  it: en,
+  nl: en,
+  ar: en,
+};
+
+function isSupportedLocale(value: string | undefined | null): value is Locale {
+  return !!value && (SUPPORTED_LOCALES as readonly string[]).includes(value);
+}
+
+/**
+ * Resolve the active locale for the current request.
+ *
+ * Priority:
+ *   1. `oneace-locale` cookie (user-selected)
+ *   2. `Accept-Language` header (browser preference)
+ *   3. DEFAULT_LOCALE
+ */
+export const getLocale = cache(async (): Promise<Locale> => {
+  const cookieStore = await cookies();
+  const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value;
+  if (isSupportedLocale(fromCookie)) return fromCookie;
+
+  const headerList = await headers();
+  const acceptLanguage = headerList.get("accept-language");
+  if (acceptLanguage) {
+    const preferred = acceptLanguage
+      .split(",")
+      .map((part) => part.split(";")[0]?.trim().toLowerCase().split("-")[0])
+      .find((code): code is string => !!code && isSupportedLocale(code));
+    if (preferred && isSupportedLocale(preferred)) return preferred;
+  }
+
+  return DEFAULT_LOCALE;
+});
+
+export const getRegion = cache(async (): Promise<RegionConfig> => {
+  const cookieStore = await cookies();
+  const fromCookie = cookieStore.get(REGION_COOKIE)?.value;
+  return getRegionConfig(fromCookie ?? DEFAULT_REGION_CODE);
+});
+
+export const getMessages = cache(async (): Promise<Messages> => {
+  const locale = await getLocale();
+  return catalog[locale];
+});
+
+export async function getDirection(): Promise<"ltr" | "rtl"> {
+  const locale = await getLocale();
+  return RTL_LOCALES.includes(locale) ? "rtl" : "ltr";
+}
+
+/**
+ * Lightweight placeholder interpolation: replaces `{key}` tokens.
+ * Keeps us free of a full ICU runtime for now — swap in FormatJS if plurals/genders appear.
+ */
+export function format(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) =>
+    key in values ? String(values[key]) : `{${key}}`,
+  );
+}
+
+export { en } from "./messages/en";
+export type { Messages } from "./messages/en";
