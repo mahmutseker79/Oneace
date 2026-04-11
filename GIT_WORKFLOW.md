@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 14.
+and iterating on it through Sprint 0 → Sprint 15.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 14.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 13 plus **Sprint 14** are already committed in a
+Sprint 0 through Sprint 14 plus **Sprint 15** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.14.0-sprint14.bundle
+oneace-next/oneace-next-port-v0.15.0-sprint15.bundle
 ```
 
 This bundle contains:
 
-- **36 commits** — 8 Sprint 0 + 1 docs + Sprints 1..14 (each = 1 feature
+- **38 commits** — 8 Sprint 0 + 1 docs + Sprints 1..15 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -40,9 +40,10 @@ This bundle contains:
   - `v0.12.0-sprint12` — Sprint 12 complete (supplier performance report + CSV)
   - `v0.13.0-sprint13` — Sprint 13 complete (create-another-organization flow)
   - `v0.14.0-sprint14` — Sprint 14 complete (movements date-range + type filter)
+  - `v0.15.0-sprint15` — Sprint 15 complete (purchase-order status + supplier + PO-number filter)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.13.0-sprint13.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.14.0-sprint14.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -56,11 +57,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.14.0-sprint14.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.15.0-sprint15.bundle \
           next-port:next-port
 
-# Also pull all fourteen sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.14.0-sprint14.bundle \
+# Also pull all fifteen sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.15.0-sprint15.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -74,19 +75,52 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.14.0-sprint14.bun
           refs/tags/v0.11.0-sprint11:refs/tags/v0.11.0-sprint11 \
           refs/tags/v0.12.0-sprint12:refs/tags/v0.12.0-sprint12 \
           refs/tags/v0.13.0-sprint13:refs/tags/v0.13.0-sprint13 \
-          refs/tags/v0.14.0-sprint14:refs/tags/v0.14.0-sprint14
+          refs/tags/v0.14.0-sprint14:refs/tags/v0.14.0-sprint14 \
+          refs/tags/v0.15.0-sprint15:refs/tags/v0.15.0-sprint15
 
 # Verify
-git log --oneline next-port                # should show 36 commits
-git tag -l                                 # should include all fourteen sprint tags
+git log --oneline next-port                # should show 38 commits
+git tag -l                                 # should include all fifteen sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
-               v0.13.0-sprint13 v0.14.0-sprint14
+               v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15
 ```
+
+### What Sprint 15 added (v0.15.0-sprint15)
+
+- **`src/app/(app)/purchase-orders/filter.ts`** — URL-driven filter
+  parser mirroring the Sprint 14 movements pattern. Three axes:
+  `status` validated against `Object.values(PurchaseOrderStatus)`
+  (typo in URL degrades to "no filter" instead of 500),
+  `supplier` passed through as an opaque id capped at 64 chars
+  (the outer query is already org-scoped so a cross-org guess
+  returns zero rows), and `q` as a trimmed, 64-char-capped
+  substring against `poNumber` (`contains`, case-insensitive —
+  stays index-friendly via the existing `(organizationId,
+  poNumber)` unique index). Exports `parsePurchaseOrderFilter`,
+  `buildPurchaseOrderWhere`, `hasAnyFilter`.
+- **`/purchase-orders` page rewrite** — wires the parser, loads
+  the full active-supplier list independently of the PO filter
+  so the dropdown stays usable as you narrow (otherwise the
+  dropdown would shrink and you'd lose the ability to broaden).
+  Conditional row cap (200 unfiltered / 500 filtered), count line
+  + truncation notice, split empty states for "filter matched
+  nothing" vs "no POs at all". The "add a supplier first" empty
+  state is preserved as an early return.
+- **`PurchaseOrdersFilterBar` client component** — PO-number
+  `<input type="search">` with a leading `Search` icon, status
+  `<Select>` with `__all__` sentinel, supplier `<Select>` with
+  its own `__all__` sentinel. Submits via `router.push` (pure
+  read state). Clear button only appears when a filter is active.
+- **i18n** — 14 new keys on `t.purchaseOrders.filter`
+  (`heading`, `poNumberLabel`, `poNumberPlaceholder`,
+  `statusLabel`, `statusAll`, `supplierLabel`, `supplierAll`,
+  `apply`, `clear`, `resultCount`, `resultCountUnfiltered`,
+  `truncatedNotice`, `emptyFilteredTitle`, `emptyFilteredBody`).
 
 ### What Sprint 14 added (v0.14.0-sprint14)
 

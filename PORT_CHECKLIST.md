@@ -567,6 +567,45 @@ server page reads it back out of `searchParams`.
 
 ---
 
+## Sprint 15 — purchase-order filter bar (shipped 2026-04-11)
+
+Tagged `v0.15.0-sprint15`. Clears the post-Sprint-6 deferred item
+"PO search" — users can now find a specific PO by number, status,
+or supplier instead of scrolling the all-time list. Same URL-
+driven filter pattern as Sprint 14.
+
+- [x] `src/app/(app)/purchase-orders/filter.ts` — three-axis parser
+      (`status` validated against `Object.values(PurchaseOrderStatus)`,
+      `supplier` as opaque id capped at 64 chars, `q` as trimmed
+      64-char substring match on `poNumber` via `contains`
+      insensitive). Shares the parseFn/buildWhere/hasAnyFilter
+      shape with `movements/filter.ts`
+- [x] `purchase-orders/page.tsx` rewrite — conditional row cap
+      (200 unfiltered / 500 filtered), count line + truncation
+      notice, split empty states (filter-active vs pristine),
+      full active-supplier list loaded independently of the PO
+      filter (so the supplier dropdown stays usable as you narrow)
+- [x] `PurchaseOrdersFilterBar` client component — `<input
+      type="search">` with leading Search icon for PO number,
+      status Select + supplier Select each with their own
+      `__all__` sentinel, `router.push` submit, Clear button only
+      rendered when `hasFilter`
+- [x] 14 new i18n keys on `t.purchaseOrders.filter.*`
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-15)
+
+- [ ] PO CSV export (filter-aware like the movements export)
+- [ ] Per-org default locale / region override
+- [ ] Danger zone / organization delete
+- [ ] Audit log
+- [ ] Offline PWA shell + service worker
+- [ ] Invitation tokens + email flow
+- [ ] Warehouse + item scope on the movements filter
+- [ ] All items from post-Sprint-14 deferred list (unchanged)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
