@@ -13,19 +13,17 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 7 plus **Sprint 8** are already committed in a
+Sprint 0 through Sprint 8 plus **Sprint 9** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.8.0-sprint8.bundle
+oneace-next/oneace-next-port-v0.9.0-sprint9.bundle
 ```
 
 This bundle contains:
 
-- **24 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 1 docs +
-  1 Sprint 2 + 1 runbook + 1 Sprint 3 + 1 runbook + 1 Sprint 4 + 1 runbook +
-  1 Sprint 5 + 1 runbook + 1 Sprint 6 + 1 runbook + 1 Sprint 7 + 1 runbook +
-  1 Sprint 8 + 1 runbook
+- **26 commits** — 8 Sprint 0 + 1 docs + Sprints 1..9 (each = 1 feature
+  commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
   - `v0.1.0-sprint1` — Sprint 1 complete (items, warehouses, categories)
@@ -36,9 +34,10 @@ This bundle contains:
   - `v0.6.0-sprint6` — Sprint 6 complete (live dashboard + low-stock report + PO-from-reorder)
   - `v0.7.0-sprint7` — Sprint 7 complete (settings + team management + Sprint 5 cleanup)
   - `v0.8.0-sprint8` — Sprint 8 complete (barcode scanner + item lookup)
+  - `v0.9.0-sprint9` — Sprint 9 complete (CSV exports + stock-value report)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.7.0-sprint7.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.8.0-sprint8.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -52,11 +51,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.8.0-sprint8.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.9.0-sprint9.bundle \
           next-port:next-port
 
-# Also pull all eight sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.8.0-sprint8.bundle \
+# Also pull all nine sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.9.0-sprint9.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -64,17 +63,56 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.8.0-sprint8.bundl
           refs/tags/v0.5.0-sprint5:refs/tags/v0.5.0-sprint5 \
           refs/tags/v0.6.0-sprint6:refs/tags/v0.6.0-sprint6 \
           refs/tags/v0.7.0-sprint7:refs/tags/v0.7.0-sprint7 \
-          refs/tags/v0.8.0-sprint8:refs/tags/v0.8.0-sprint8
+          refs/tags/v0.8.0-sprint8:refs/tags/v0.8.0-sprint8 \
+          refs/tags/v0.9.0-sprint9:refs/tags/v0.9.0-sprint9
 
 # Verify
-git log --oneline next-port                # should show 24 commits
-git tag -l                                 # should include all eight sprint tags
+git log --oneline next-port                # should show 26 commits
+git tag -l                                 # should include all nine sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
-               v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8
+               v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
+               v0.9.0-sprint9
 ```
+
+### What Sprint 9 added (v0.9.0-sprint9)
+
+- **`src/lib/csv.ts`** — minimal RFC 4180 CSV serializer with a UTF-8
+  BOM (Excel on Windows plays nicely), an explicit column spec so
+  header text and order are independent of row field names, and a
+  `csvResponse` helper that returns a ready-to-use `Response` with the
+  right `Content-Type` + `Content-Disposition` headers. Intentionally
+  non-streaming: our reports are small, bounded, and handing back a
+  single body is simpler than wiring up a `ReadableStream`.
+- **`/items/export`** — flat item snapshot with category, preferred
+  supplier, on-hand / reserved aggregates across all warehouses, cost
+  + sale + currency, reorder point / qty, and status. Mirrors the
+  `/items` list view one-to-one.
+- **`/movements/export`** — last 5,000 stock movements with signed
+  direction column, item + warehouse lookups, optional destination
+  warehouse for transfers, reference / note / created-by columns.
+- **`/reports/low-stock/export`** — CSV of every ACTIVE item whose
+  on-hand is at or below its reorder point, sorted by shortfall
+  descending. Logic mirrored exactly from the on-screen report so
+  numbers match.
+- **New `/reports/stock-value` report** — at-cost rollup of on-hand
+  inventory, grouped by warehouse. Shows three KPI cards (total value,
+  total units, distinct items), a warning line for items missing a
+  cost price (they're excluded from the total so the user knows
+  they're looking at a lower bound), and a per-warehouse detail table
+  sorted by value descending. Aggregate totals use the organization's
+  region currency; individual rows use the item's own currency so
+  mixed-currency orgs don't silently get coerced.
+- **`/reports/stock-value/export`** — one row per (item × warehouse)
+  where on-hand > 0, fixed-point cost and value columns.
+- **Export CSV buttons** wired onto `/items`, `/movements`,
+  `/reports/low-stock`, and the new `/reports/stock-value`; the
+  reports hub page (`/reports`) now lists both reports.
+- **i18n:** `common.exportCsv` + a full `reports.stockValue` namespace
+  in `en.ts` covering metadata, headings, KPI labels, missing-cost
+  warning, column headers, and the empty-state copy.
 
 ### What Sprint 8 added (v0.8.0-sprint8)
 

@@ -292,6 +292,52 @@ shelf with a phone" use case that's the whole reason for the PWA bet.
 
 ---
 
+## Sprint 9 — CSV exports + stock-value report (shipped 2026-04-11)
+
+Tagged `v0.9.0-sprint9`. Lights up the "take your data with you" story
+from the competitor teardown: Sortly locks exports behind Ultra, inFlow
+buries them under a submenu. OneAce puts Export CSV buttons next to
+every major list and report by default.
+
+- [x] `src/lib/csv.ts` — RFC 4180 serializer with UTF-8 BOM, explicit
+      column spec, `csvResponse()` route-handler helper, `todayIsoDate()`
+      filename suffix; intentionally non-streaming for MVP
+- [x] `/items/export` — flat item snapshot (category, supplier, on-hand
+      and reserved aggregates, pricing, status)
+- [x] `/movements/export` — last 5,000 stock movements with signed
+      direction, item + warehouse lookups, created-by attribution
+- [x] `/reports/low-stock/export` — mirrors on-screen report, shortfall-
+      sorted, flat (no grouping)
+- [x] `/reports/stock-value` — new report grouped by warehouse, three
+      KPI cards (total value / units / distinct items), missing-cost
+      warning when items lack a cost price, per-warehouse detail table
+- [x] `/reports/stock-value/export` — one row per (item × warehouse)
+      where on-hand > 0, fixed-point cost + value columns
+- [x] Export CSV buttons on `/items`, `/movements`, `/reports/low-stock`,
+      `/reports/stock-value`
+- [x] `/reports` hub lists both reports (low-stock + stock-value)
+- [x] i18n: `common.exportCsv` + `reports.stockValue.*` namespace in
+      `en.ts`
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-9)
+
+- [ ] Xlsx export variants (build on the same column spec — most users
+      will want both .csv and .xlsx; Excel with UTF-8 BOM mostly works
+      but formulas and column types don't survive the round-trip)
+- [ ] PDF "one-pager" variants of the reports for emailed snapshots
+      (needs a PDF generator — see `pdf` skill)
+- [ ] Stock-value report filters (by category, status, warehouse
+      subset) — currently shows every ACTIVE item with a positive level
+- [ ] Historical stock-value over time (blocks on a cost-snapshot
+      table — today's cost prices aren't versioned)
+- [ ] Movement export date-range filter via searchParams (today it's
+      "last 5,000", good enough for MVP but not for a 3-year-old org)
+- [ ] Export audit log (who downloaded what and when) — part of the
+      broader audit-log scope still on the board
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
