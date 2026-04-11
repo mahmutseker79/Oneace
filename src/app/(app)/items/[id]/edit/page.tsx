@@ -32,11 +32,18 @@ export default async function EditItemPage({ params }: EditItemPageProps) {
     notFound();
   }
 
-  const categories = await db.category.findMany({
-    where: { organizationId: membership.organizationId },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
+  const [categories, suppliers] = await Promise.all([
+    db.category.findMany({
+      where: { organizationId: membership.organizationId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.supplier.findMany({
+      where: { organizationId: membership.organizationId, isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   // Decimal is not serializable to client components — convert to strings.
   const initial = {
@@ -77,7 +84,13 @@ export default async function EditItemPage({ params }: EditItemPageProps) {
         </p>
       </div>
 
-      <ItemForm labels={labels} categories={categories} mode="edit" initial={initial} />
+      <ItemForm
+        labels={labels}
+        categories={categories}
+        suppliers={suppliers}
+        mode="edit"
+        initial={initial}
+      />
     </div>
   );
 }

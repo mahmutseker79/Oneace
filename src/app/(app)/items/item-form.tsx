@@ -27,6 +27,8 @@ export type ItemFormLabels = {
     description: string;
     barcode: string;
     category: string;
+    preferredSupplier: string;
+    preferredSupplierHelp: string;
     unit: string;
     unitPlaceholder: string;
     costPrice: string;
@@ -58,12 +60,15 @@ export type ItemFormLabels = {
 };
 
 type CategoryOption = { id: string; name: string };
+type SupplierOption = { id: string; name: string };
 
 const NO_CATEGORY = "__none__";
+const NO_SUPPLIER = "__none__";
 
 type ItemFormProps = {
   labels: ItemFormLabels;
   categories: CategoryOption[];
+  suppliers: SupplierOption[];
   mode: "create" | "edit";
   initial?: Pick<
     Item,
@@ -73,6 +78,7 @@ type ItemFormProps = {
     | "name"
     | "description"
     | "categoryId"
+    | "preferredSupplierId"
     | "unit"
     | "currency"
     | "reorderPoint"
@@ -85,13 +91,16 @@ type ItemFormProps = {
   };
 };
 
-export function ItemForm({ labels, categories, mode, initial }: ItemFormProps) {
+export function ItemForm({ labels, categories, suppliers, mode, initial }: ItemFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const [categoryId, setCategoryId] = useState<string>(initial?.categoryId ?? NO_CATEGORY);
+  const [preferredSupplierId, setPreferredSupplierId] = useState<string>(
+    initial?.preferredSupplierId ?? NO_SUPPLIER,
+  );
   const [status, setStatus] = useState<"ACTIVE" | "ARCHIVED" | "DRAFT">(
     initial?.status ?? "ACTIVE",
   );
@@ -103,6 +112,10 @@ export function ItemForm({ labels, categories, mode, initial }: ItemFormProps) {
 
     const formData = new FormData(event.currentTarget);
     formData.set("categoryId", categoryId === NO_CATEGORY ? "" : categoryId);
+    formData.set(
+      "preferredSupplierId",
+      preferredSupplierId === NO_SUPPLIER ? "" : preferredSupplierId,
+    );
     formData.set("status", status);
 
     startTransition(async () => {
@@ -204,6 +217,27 @@ export function ItemForm({ labels, categories, mode, initial }: ItemFormProps) {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="preferredSupplier">
+          {labels.fields.preferredSupplier}{" "}
+          <span className="text-muted-foreground">({labels.common.optional})</span>
+        </Label>
+        <Select value={preferredSupplierId} onValueChange={setPreferredSupplierId}>
+          <SelectTrigger id="preferredSupplier">
+            <SelectValue placeholder={labels.common.none} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NO_SUPPLIER}>{labels.common.none}</SelectItem>
+            {suppliers.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">{labels.fields.preferredSupplierHelp}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

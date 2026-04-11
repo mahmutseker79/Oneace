@@ -19,6 +19,7 @@ import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
+import { CancelPoButton } from "./cancel-po-button";
 import { MarkSentButton } from "./mark-sent-button";
 
 type DetailPageProps = {
@@ -76,6 +77,8 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
   const canReceive =
     po.status === "DRAFT" || po.status === "SENT" || po.status === "PARTIALLY_RECEIVED";
   const canMarkSent = po.status === "DRAFT";
+  const canCancel =
+    po.status === "DRAFT" || po.status === "SENT" || po.status === "PARTIALLY_RECEIVED";
 
   return (
     <div className="space-y-6">
@@ -109,6 +112,18 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
                   {t.purchaseOrders.detail.receiveAction}
                 </Link>
               </Button>
+            ) : null}
+            {canCancel ? (
+              <CancelPoButton
+                id={po.id}
+                labels={{
+                  trigger: t.purchaseOrders.detail.cancelAction,
+                  title: t.purchaseOrders.detail.cancelConfirmTitle,
+                  description: t.purchaseOrders.detail.cancelConfirmBody,
+                  confirm: t.purchaseOrders.detail.cancelConfirmCta,
+                  cancel: t.common.cancel,
+                }}
+              />
             ) : null}
           </div>
         </div>

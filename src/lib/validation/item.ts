@@ -74,6 +74,11 @@ export const itemInputSchema = z.object({
     .trim()
     .optional()
     .transform((value) => (value === "" || value === undefined ? null : value)),
+  preferredSupplierId: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value === "" || value === undefined ? null : value)),
   unit: z
     .string()
     .trim()

@@ -18,11 +18,18 @@ export default async function NewItemPage() {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  const categories = await db.category.findMany({
-    where: { organizationId: membership.organizationId },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
+  const [categories, suppliers] = await Promise.all([
+    db.category.findMany({
+      where: { organizationId: membership.organizationId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    db.supplier.findMany({
+      where: { organizationId: membership.organizationId, isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   const labels: ItemFormLabels = {
     fields: t.items.fields,
@@ -54,7 +61,7 @@ export default async function NewItemPage() {
         <p className="text-muted-foreground">{t.items.newItemSubtitle}</p>
       </div>
 
-      <ItemForm labels={labels} categories={categories} mode="create" />
+      <ItemForm labels={labels} categories={categories} suppliers={suppliers} mode="create" />
     </div>
   );
 }
