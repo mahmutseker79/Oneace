@@ -50,6 +50,8 @@ model Organization {
   suppliers        Supplier[]
   purchaseOrders   PurchaseOrder[]
   purchaseOrderLines PurchaseOrderLine[]
+  // Sprint 20: outstanding / historical invitations for this org.
+  invitations      Invitation[]
 
   @@index([slug])
 }
@@ -65,6 +67,52 @@ model Membership {
 
   @@unique([userId, organizationId])
   @@index([organizationId])
+}
+
+// =========================
+// Sprint 20: Invitation
+// =========================
+//
+// An Invitation represents a pending (or historical) invite to join
+// an organization. The flow is:
+//   1. An OWNER/ADMIN creates an Invitation row with a random token.
+//   2. They copy/share the invite URL `/invite/{token}` manually.
+//      (Email sending is deferred to post-MVP — we intentionally don't
+//      ship an SMTP dependency inside the MVP window.)
+//   3. The invitee signs in with a matching email and hits the
+//      `/invite/{token}` page, which calls `acceptInvitationAction`
+//      to create the Membership and stamp `acceptedAt` / `acceptedById`.
+//
+// We keep revoked and accepted rows around rather than deleting them
+// so that the pending-invitations list stays auditable ("Ana's invite
+// from last week was revoked by Ben") and so that a stale URL fails
+// with a clear "already accepted / revoked" message instead of a
+// generic 404.
+//
+// `email` is stored lowercased. `(organizationId, email)` is **not**
+// unique — an admin might reasonably need to re-issue an invite after
+// one is revoked, and keeping the old row alongside the new one is
+// fine. The server-action layer enforces "no two *pending* invites
+// for the same email in the same org" manually.
+model Invitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  email          String
+  role           Role
+  token          String       @unique
+  invitedById    String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  acceptedById   String?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("InvitationsSent", fields: [invitedById], references: [id], onDelete: Cascade)
+  acceptedBy   User?        @relation("InvitationsAccepted", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([email])
 }
 
 enum Plan {
@@ -101,6 +149,9 @@ model User {
   stockCounts    StockCount[]
   countEntries   CountEntry[]
   purchaseOrders PurchaseOrder[]
+  // Sprint 20: invitations this user has sent / accepted.
+  invitationsSent     Invitation[] @relation("InvitationsSent")
+  invitationsAccepted Invitation[] @relation("InvitationsAccepted")
 
   @@index([email])
 }

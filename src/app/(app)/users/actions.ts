@@ -1,16 +1,40 @@
 "use server";
 
-import { Prisma, Role } from "@/generated/prisma";
+import { Role } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
-import { requireActiveMembership } from "@/lib/session";
+import {
+  buildInvitationUrl,
+  classifyInvitation,
+  defaultInvitationExpiry,
+  generateInvitationToken,
+} from "@/lib/invitations";
+import { requireActiveMembership, requireSession } from "@/lib/session";
 import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation/membership";
 
 export type UsersActionResult =
   | { ok: true; id?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+
+/**
+ * Sprint 20: successful `inviteMemberAction` now returns the invitation
+ * URL so the admin can copy it. Email delivery is deferred to post-MVP,
+ * so the admin literally copies/pastes the link into whatever
+ * communication channel they already use.
+ */
+export type InviteMemberResult =
+  | { ok: true; invitationId: string; inviteUrl: string; expiresAt: Date }
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+
+export type AcceptInvitationResult =
+  | { ok: true; organizationId: string }
+  | {
+      ok: false;
+      error: string;
+      reason: "expired" | "revoked" | "already" | "wrong_email" | "other";
+    };
 
 const ADMIN_ROLES: readonly Role[] = [Role.OWNER, Role.ADMIN];
 
@@ -31,8 +55,23 @@ async function isLastOwner(organizationId: string, membershipId: string): Promis
   return ownerCount <= 1;
 }
 
-export async function inviteMemberAction(formData: FormData): Promise<UsersActionResult> {
-  const { membership } = await requireActiveMembership();
+/**
+ * Sprint 20 rewrite. Instead of requiring the invitee's `User` row to
+ * already exist, we now create an `Invitation` row with a random
+ * capability token. The admin receives a URL they can copy/paste into
+ * whatever channel they already use (email, Slack, WhatsApp). When
+ * the invitee signs in with a matching email and visits
+ * `/invite/{token}`, `acceptInvitationAction` creates the membership.
+ *
+ * Validation gates:
+ *   - caller must be OWNER/ADMIN in the active org (unchanged)
+ *   - only an OWNER can invite another OWNER (unchanged)
+ *   - the invitee cannot already be a member of this org (by User.email)
+ *   - there cannot already be a pending (non-accepted, non-revoked,
+ *     non-expired) invitation for the same org+email
+ */
+export async function inviteMemberAction(formData: FormData): Promise<InviteMemberResult> {
+  const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!canManageTeam(membership.role)) {
@@ -52,38 +91,205 @@ export async function inviteMemberAction(formData: FormData): Promise<UsersActio
   }
   const { email, role } = parsed.data;
 
-  const user = await db.user.findUnique({
-    where: { email },
+  // Only OWNER can mint another OWNER.
+  if (role === Role.OWNER && membership.role !== Role.OWNER) {
+    return { ok: false, error: t.users.invite.errors.forbidden };
+  }
+
+  // If the invitee is already in this org, short-circuit with a
+  // helpful message instead of silently creating a dead invite.
+  const existingMembership = await db.membership.findFirst({
+    where: {
+      organizationId: membership.organizationId,
+      user: { email },
+    },
     select: { id: true },
   });
-  if (!user) {
+  if (existingMembership) {
     return {
       ok: false,
-      error: t.users.invite.errors.userNotFound,
-      fieldErrors: { email: [t.users.invite.errors.userNotFound] },
+      error: t.users.invite.errors.alreadyMember,
+      fieldErrors: { email: [t.users.invite.errors.alreadyMember] },
     };
   }
 
+  // If there's already a live (pending) invite for this org+email,
+  // refuse rather than spawning a duplicate. The admin can revoke
+  // the old one first if they want to reissue with a different role.
+  const existingLive = await db.invitation.findFirst({
+    where: {
+      organizationId: membership.organizationId,
+      email,
+      acceptedAt: null,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    select: { id: true },
+  });
+  if (existingLive) {
+    return {
+      ok: false,
+      error: t.users.invite.errors.alreadyInvited,
+      fieldErrors: { email: [t.users.invite.errors.alreadyInvited] },
+    };
+  }
+
+  const token = generateInvitationToken();
+  const expiresAt = defaultInvitationExpiry();
+
   try {
-    const created = await db.membership.create({
+    const created = await db.invitation.create({
       data: {
-        userId: user.id,
         organizationId: membership.organizationId,
+        email,
         role,
+        token,
+        invitedById: session.user.id,
+        expiresAt,
       },
       select: { id: true },
     });
     revalidatePath("/users");
-    return { ok: true, id: created.id };
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return {
-        ok: false,
-        error: t.users.invite.errors.alreadyMember,
-        fieldErrors: { email: [t.users.invite.errors.alreadyMember] },
-      };
-    }
+    return {
+      ok: true,
+      invitationId: created.id,
+      inviteUrl: buildInvitationUrl(token),
+      expiresAt,
+    };
+  } catch {
     return { ok: false, error: t.users.invite.errors.createFailed };
+  }
+}
+
+/**
+ * Sprint 20: revoke a pending invitation. Leaves the row around
+ * (stamped `revokedAt`) so the pending-invitations table can still
+ * show "revoked by X at Y" as an audit trail.
+ */
+export async function revokeInvitationAction(invitationId: string): Promise<UsersActionResult> {
+  const { membership } = await requireActiveMembership();
+  const t = await getMessages();
+
+  if (!canManageTeam(membership.role)) {
+    return { ok: false, error: t.users.invite.errors.forbidden };
+  }
+
+  const invite = await db.invitation.findUnique({
+    where: { id: invitationId },
+    select: {
+      id: true,
+      organizationId: true,
+      acceptedAt: true,
+      revokedAt: true,
+    },
+  });
+  if (!invite || invite.organizationId !== membership.organizationId) {
+    return { ok: false, error: t.users.errors.notFound };
+  }
+  if (invite.acceptedAt) {
+    return { ok: false, error: t.users.invitations.errors.alreadyAccepted };
+  }
+  if (invite.revokedAt) {
+    // Idempotent: pretend it worked.
+    return { ok: true };
+  }
+
+  try {
+    await db.invitation.update({
+      where: { id: invitationId },
+      data: { revokedAt: new Date() },
+    });
+    revalidatePath("/users");
+    return { ok: true };
+  } catch {
+    return { ok: false, error: t.users.errors.updateFailed };
+  }
+}
+
+/**
+ * Sprint 20: accept an invitation from the `/invite/[token]` page.
+ * The authenticated user's email must match the invitee email on the
+ * row — this is the load-bearing guard that prevents a leaked URL
+ * being accepted by a random third party.
+ */
+export async function acceptInvitationAction(token: string): Promise<AcceptInvitationResult> {
+  const session = await requireSession();
+  const t = await getMessages();
+
+  const invite = await db.invitation.findUnique({
+    where: { token },
+    select: {
+      id: true,
+      organizationId: true,
+      email: true,
+      role: true,
+      acceptedAt: true,
+      revokedAt: true,
+      expiresAt: true,
+    },
+  });
+  if (!invite) {
+    return { ok: false, error: t.invitePage.errors.notFound, reason: "other" };
+  }
+
+  const status = classifyInvitation(invite);
+  if (status === "accepted") {
+    return { ok: false, error: t.invitePage.errors.alreadyAccepted, reason: "already" };
+  }
+  if (status === "revoked") {
+    return { ok: false, error: t.invitePage.errors.revoked, reason: "revoked" };
+  }
+  if (status === "expired") {
+    return { ok: false, error: t.invitePage.errors.expired, reason: "expired" };
+  }
+
+  // Email match. `session.user.email` is already the canonical address
+  // Better Auth stamped on sign-in.
+  const sessionEmail = session.user.email.trim().toLowerCase();
+  if (sessionEmail !== invite.email) {
+    return { ok: false, error: t.invitePage.errors.wrongEmail, reason: "wrong_email" };
+  }
+
+  // If they're already a member of this org, mark the invite accepted
+  // anyway and treat this as a success — no need to surface an error.
+  const existing = await db.membership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId: session.user.id,
+        organizationId: invite.organizationId,
+      },
+    },
+    select: { id: true },
+  });
+
+  try {
+    if (!existing) {
+      await db.$transaction([
+        db.membership.create({
+          data: {
+            userId: session.user.id,
+            organizationId: invite.organizationId,
+            role: invite.role,
+          },
+        }),
+        db.invitation.update({
+          where: { id: invite.id },
+          data: { acceptedAt: new Date(), acceptedById: session.user.id },
+        }),
+      ]);
+    } else {
+      // Already a member — still stamp the invite so it disappears
+      // from the pending list.
+      await db.invitation.update({
+        where: { id: invite.id },
+        data: { acceptedAt: new Date(), acceptedById: session.user.id },
+      });
+    }
+    revalidatePath("/users");
+    revalidatePath("/", "layout");
+    return { ok: true, organizationId: invite.organizationId };
+  } catch {
+    return { ok: false, error: t.invitePage.errors.acceptFailed, reason: "other" };
   }
 }
 

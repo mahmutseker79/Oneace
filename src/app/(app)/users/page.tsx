@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Role } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
+import { buildInvitationUrl } from "@/lib/invitations";
 import { requireActiveMembership } from "@/lib/session";
 
+import { InvitationRow } from "./invitation-row";
 import { InviteForm } from "./invite-form";
 import { MemberRow } from "./member-row";
 
@@ -30,13 +39,30 @@ export default async function UsersPage() {
 
   const canManage = membership.role === Role.OWNER || membership.role === Role.ADMIN;
 
-  const memberships = await db.membership.findMany({
-    where: { organizationId: membership.organizationId },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  const [memberships, pendingInvitations] = await Promise.all([
+    db.membership.findMany({
+      where: { organizationId: membership.organizationId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    // Sprint 20: pending = not accepted, not revoked, not expired. The
+    // three-predicate filter mirrors what `classifyInvitation` would say
+    // so the table stays consistent with the accept-page state machine.
+    db.invitation.findMany({
+      where: {
+        organizationId: membership.organizationId,
+        acceptedAt: null,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        invitedBy: { select: { name: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
   const sorted = [...memberships].sort((a, b) => {
     const roleDiff = ROLE_ORDER[a.role] - ROLE_ORDER[b.role];
@@ -45,6 +71,10 @@ export default async function UsersPage() {
   });
 
   const dateFmt = new Intl.DateTimeFormat(region.numberLocale, { dateStyle: "medium" });
+  const dateTimeFmt = new Intl.DateTimeFormat(region.numberLocale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
   const roleOptions = [
     { value: Role.OWNER, label: t.users.roles.OWNER },
@@ -75,15 +105,73 @@ export default async function UsersPage() {
           <CardContent>
             <InviteForm
               defaultRole={Role.MEMBER}
+              dateFmt={dateTimeFmt}
               labels={{
                 emailLabel: t.users.invite.emailLabel,
                 emailPlaceholder: t.users.invite.emailPlaceholder,
                 roleLabel: t.users.invite.roleLabel,
                 submit: t.users.invite.submit,
                 success: t.users.invite.success,
+                linkHeading: t.users.invite.linkHeading,
+                linkHelp: t.users.invite.linkHelp,
+                copy: t.users.invite.copy,
+                copied: t.users.invite.copied,
                 roleOptions: inviteRoleOptions,
               }}
             />
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {canManage ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.users.invitations.heading}</CardTitle>
+            <CardDescription>{t.users.invitations.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            {pendingInvitations.length === 0 ? (
+              <p className="px-6 py-4 text-sm text-muted-foreground">{t.users.invitations.empty}</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.users.invitations.columnEmail}</TableHead>
+                    <TableHead>{t.users.invitations.columnRole}</TableHead>
+                    <TableHead>{t.users.invitations.columnInvitedBy}</TableHead>
+                    <TableHead>{t.users.invitations.columnExpires}</TableHead>
+                    <TableHead className="text-right">
+                      {t.users.invitations.columnActions}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingInvitations.map((inv) => (
+                    <InvitationRow
+                      key={inv.id}
+                      canManage={canManage}
+                      invitation={{
+                        id: inv.id,
+                        email: inv.email,
+                        roleLabel: t.users.roles[inv.role],
+                        inviterName: inv.invitedBy.name ?? inv.invitedBy.email,
+                        expires: dateTimeFmt.format(inv.expiresAt),
+                        url: buildInvitationUrl(inv.token),
+                      }}
+                      labels={{
+                        revoke: t.users.invitations.revoke,
+                        revokeTitle: t.users.invitations.revokeTitle,
+                        revokeBody: t.users.invitations.revokeBody,
+                        revokeConfirm: t.users.invitations.revokeConfirm,
+                        cancel: t.common.cancel,
+                        copyLink: t.users.invitations.copyLink,
+                        copied: t.users.invitations.copied,
+                      }}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       ) : null}
@@ -104,29 +192,37 @@ export default async function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sorted.map((m) => (
-                <MemberRow
-                  key={m.id}
-                  isSelf={m.user.id === session.user.id}
-                  canManage={canManage}
-                  member={{
-                    id: m.id,
-                    role: m.role,
-                    joined: dateFmt.format(m.createdAt),
-                    name: m.user.name ?? m.user.email,
-                    email: m.user.email,
-                  }}
-                  labels={{
-                    you: t.users.table.you,
-                    remove: t.users.actions.removeMember,
-                    removeTitle: t.users.actions.removeConfirmTitle,
-                    removeBody: t.users.actions.removeConfirmBody,
-                    removeConfirm: t.users.actions.removeConfirmCta,
-                    cancel: t.common.cancel,
-                    roleOptions,
-                  }}
-                />
-              ))}
+              {sorted.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                    {t.users.table.empty}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                sorted.map((m) => (
+                  <MemberRow
+                    key={m.id}
+                    isSelf={m.user.id === session.user.id}
+                    canManage={canManage}
+                    member={{
+                      id: m.id,
+                      role: m.role,
+                      joined: dateFmt.format(m.createdAt),
+                      name: m.user.name ?? m.user.email,
+                      email: m.user.email,
+                    }}
+                    labels={{
+                      you: t.users.table.you,
+                      remove: t.users.actions.removeMember,
+                      removeTitle: t.users.actions.removeConfirmTitle,
+                      removeBody: t.users.actions.removeConfirmBody,
+                      removeConfirm: t.users.actions.removeConfirmCta,
+                      cancel: t.common.cancel,
+                      roleOptions,
+                    }}
+                  />
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
