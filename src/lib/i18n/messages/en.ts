@@ -1043,6 +1043,13 @@ export const en = {
     },
   },
 
+  organizations: {
+    errors: {
+      invalidId: "Invalid organization id.",
+      notAMember: "You are not a member of this organization.",
+    },
+  },
+
   search: {
     metaTitle: "Search",
     heading: "Search",

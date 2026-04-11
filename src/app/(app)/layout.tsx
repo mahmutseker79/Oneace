@@ -4,8 +4,13 @@ import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
 export default async function AppLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const { session, membership } = await requireActiveMembership();
+  const { session, membership, memberships } = await requireActiveMembership();
   const t = await getMessages();
+
+  const orgOptions = memberships.map((m) => ({
+    id: m.organizationId,
+    name: m.organization.name,
+  }));
 
   return (
     <div className="min-h-screen">
@@ -20,7 +25,8 @@ export default async function AppLayout({ children }: Readonly<{ children: React
       <div className="lg:pl-64">
         <Header
           userName={session.user.name}
-          organizationName={membership.organization.name}
+          organizations={orgOptions}
+          activeOrganizationId={membership.organizationId}
           labels={{
             searchPlaceholder: t.header.searchPlaceholder,
             searchLabel: t.header.searchLabel,

@@ -8,6 +8,8 @@ import { Bell, Menu, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
+import { OrgSwitcher, type OrgSwitcherOption } from "@/components/shell/org-switcher";
+
 export type HeaderLabels = {
   searchPlaceholder: string;
   searchLabel: string;
@@ -19,11 +21,12 @@ export type HeaderLabels = {
 
 type HeaderProps = {
   userName?: string | null;
-  organizationName?: string;
+  organizations: OrgSwitcherOption[];
+  activeOrganizationId: string;
   labels: HeaderLabels;
 };
 
-export function Header({ userName, organizationName, labels }: HeaderProps) {
+export function Header({ userName, organizations, activeOrganizationId, labels }: HeaderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("q") ?? "";
@@ -76,12 +79,11 @@ export function Header({ userName, organizationName, labels }: HeaderProps) {
       </form>
 
       <div className="ml-auto flex items-center gap-2">
-        {organizationName ? (
-          <div className="hidden md:flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm">
-            <span className="text-muted-foreground">{labels.organization}:</span>
-            <span className="font-medium">{organizationName}</span>
-          </div>
-        ) : null}
+        <OrgSwitcher
+          options={organizations}
+          activeId={activeOrganizationId}
+          label={labels.organization}
+        />
 
         <Button variant="ghost" size="icon" aria-label={labels.notifications}>
           <Bell className="h-4 w-4" />
