@@ -2171,6 +2171,201 @@ without entangling the reconcile flow.
 
 ---
 
+## Sprint 30 — PWA Sprint 7: failed-ops review UI at /offline/queue (shipped 2026-04-11)
+
+Tagged `v0.30.0-sprint30`. Closes the "what happened to the
+ops that couldn't sync?" gap that Sprint 25's banner hinted at
+and Sprints 26/27 made concrete by shipping actual dispatchers
+with `kind: "fatal"` code paths. Before this sprint a failed
+op was a red number in the header with nowhere to click; after,
+there's a full review screen with retry / discard / bulk-clear
+actions, precached by the SW so users can manage the queue
+even while still offline.
+
+**Design decision — third force-static route, not a gated
+`(app)` page.** The review screen follows the same pattern as
+`/offline/items` (Sprint 24) and `/offline/stock-counts`
+(Sprint 29): `dynamic = "force-static"`, zero auth, zero DB
+calls, the server page resolves all labels once and hands them
+to a client shell. This is the only way the SW can precache
+the HTML, and it matches the "the offline routes are the ones
+that work when nothing else does" mental model the user now
+has from the other two.
+
+**Design decision — implicit scope discovery, no query
+string.** Unlike `/offline/stock-counts` which accepts
+`?id=…`, this route takes no parameters. The queue is scoped
+to the most-recently-synced `(orgId, userId)` tuple in the
+`meta` table — the same scope the runner itself uses when it
+drains on connectivity return. Pinning the scope server-side
+would defeat the force-static cache, and taking it as a query
+string would require the user to know their org id on a cold
+start. The trade-off is that a multi-user browser will always
+show the *last* user's queue, which is the correct default
+because that's also whose ops the runner is about to replay.
+
+**Design decision — three sections (pending / in_flight /
+failed), `succeeded` omitted.** The runner's janitor sweeps
+succeeded ops after 5 minutes already (Sprint 25
+`clearSucceededOps`), so rendering them would be either
+noisy or empty-by-the-time-the-user-looks. The three shown
+sections map 1:1 to the live states the user might want to
+act on: "I'm waiting for this", "this is going now", "this
+broke".
+
+**Design decision — actions only on the failed section.**
+The retry / discard buttons only render for failed rows.
+Retrying a pending row is meaningless (the runner is about
+to pick it up on the next foreground drain), and discarding
+an `in_flight` row would race with the dispatcher that's
+currently awaiting a server response. `OfflineQueueSection`
+takes `onRetry` / `onDiscard` as nullable props and the row
+component hides the whole actions column when both are
+null — one code path for both the "no actions" and "has
+actions" case.
+
+**Design decision — three new queue helpers, not a generic
+status-transition API.** `queue.ts` gains `requeueFailedOp`,
+`deleteOp`, and `clearFailedOps`. `requeueFailedOp` only
+transitions `failed` → `pending` inside a Dexie `rw`
+transaction (so two tabs clicking Retry at once can't both
+win — same pattern as `markOpInFlight`). `attemptCount` is
+deliberately **not** reset so a retried op still carries its
+history; this lets a future backoff-aware runner know the op
+has already been tried N times. `deleteOp` is permissive
+about status (a user who clicks discard on an op that
+already auto-succeeded should still see it disappear).
+`clearFailedOps` is bounded by the `(orgId, userId)` index
+so a multi-tenant browser only touches the active user's
+failures. Exposing the generic "change status to X"
+primitive was tempting but would push the safety rules
+(cross-tab race avoidance, `attemptCount` preservation,
+scope bounding) into every call site.
+
+**Design decision — banner's failed count becomes a link,
+optional prop for back-compat.** The `OfflineQueueBannerLabels`
+interface gains a new optional `reviewCta` field. When
+present (which the `(app)` layout now supplies), the failed
+count renders a small underlined "Review" link next to it
+pointing at `/offline/queue`. Keeping the field optional
+means an external consumer that hasn't upgraded its label
+bundle will still compile — the banner just won't render
+the link, and the explicit failed count still communicates
+something was wrong. One-line `if (labels.reviewCta)` guard
+instead of a required breaking change.
+
+**Design decision — inline payload preview, capped at 120
+chars.** The row renders `JSON.stringify(payload)` truncated
+to 120 chars as a font-mono second line. This is enough for
+the user to distinguish a "5 units of SKU-001 to Warehouse A"
+from a "5 units of SKU-002 to Warehouse B" without
+shipping a schema-aware renderer for every opType. A
+try/catch wraps the stringify because a payload containing
+a circular reference (shouldn't happen, but Dexie doesn't
+validate) would otherwise crash the row and take the whole
+section down.
+
+**Design decision — 3-second poll, same as banner.** No
+native Dexie event fires when a row's status changes, and
+the runner would race with the view otherwise. Action
+handlers force an immediate re-read by calling `refresh()`
+directly in the `finally` block so the "row disappears from
+Failed" feedback is instant instead of up-to-3-seconds
+delayed. Dexie live-query lands in Sprint 31 and will
+replace both the banner's poll and this one.
+
+- [x] `src/lib/offline/queue.ts` — three new helpers.
+      `requeueFailedOp(id)` runs a Dexie `rw` transaction
+      that reads the row, bails if it's missing or not
+      `failed`, and writes back `{ status: "pending",
+      updatedAt: now, lastError: null }`. **Does not**
+      reset `attemptCount` so the history is preserved.
+      `deleteOp(id)` reads-then-deletes so the caller can
+      distinguish "row was gone" from "IndexedDB failed"
+      (both return false — the caller must not
+      differentiate). `clearFailedOps(scope)` uses the
+      `[orgId+userId+status]` compound index to pull the
+      primary keys of every failed row in the scope, then
+      `bulkDelete`s them; returns the count so the UI can
+      render "N failed operation(s) discarded". All three
+      swallow every failure and return a sensible sentinel,
+      mirroring every other helper in the file.
+- [x] `src/components/offline/offline-queue-view.tsx` —
+      **NEW** (~700 lines). Exports `OfflineQueueShell` +
+      `OfflineQueueViewLabels`. The shell runs scope
+      discovery (most-recently-synced `meta` row), wraps the
+      chrome in an `OfflineQueueFrame` that's shared across
+      loading / error / empty / ready states, and mounts
+      `OfflineQueueView` once a scope is resolved.
+      `OfflineQueueView` holds three row arrays
+      (pendingRows / inFlightRows / failedRows), polls
+      Dexie every 3s via `listOps(scope, [status])`, and
+      renders three sections using the shared
+      `OfflineQueueTable`. Actions (`handleRetry`,
+      `handleDiscard`, `handleClearAllFailed`) use a
+      `busyId` ref pattern to disable every button on a
+      row while its action is in flight so double-clicks
+      can't re-fire. The discard and clear-all buttons
+      each throw a `window.confirm` prompt — intentional
+      zero-dep guard; a nicer modal is fine follow-up but
+      not blocking. A transient toast rendered as
+      `<output aria-live="polite">` surfaces "Operation
+      requeued", "Operation discarded", or "3 failed
+      operation(s) discarded" for 4 seconds. The row
+      component memoizes the payload preview so toggling
+      `busy` doesn't re-serialize on every render.
+- [x] `src/app/offline/queue/page.tsx` — **NEW.**
+      Force-static server component. Resolves 38 labels
+      server-side via `getMessages()` and hands them to
+      `<OfflineQueueShell>`. Zero auth, zero DB calls,
+      safe to precache. `generateMetadata()` sets
+      `robots: noindex, nofollow`.
+- [x] `src/components/offline/offline-queue-banner.tsx` —
+      adds optional `reviewCta` field to
+      `OfflineQueueBannerLabels`. When present, renders a
+      small `<a href="/offline/queue">` next to the failed
+      count. No behavioural change when the field is
+      absent; no breaking change to existing callers.
+- [x] `src/app/(app)/layout.tsx` — plumbs the new
+      `t.offline.queue.reviewCta` label into the banner
+      props so the in-app header surfaces the review link
+      whenever failed ops exist.
+- [x] `src/app/offline/page.tsx` — third CTA "Review
+      offline queue" → `/offline/queue`, slotted in below
+      the existing "View offline stock counts" CTA. The
+      offline fallback landing now has three distinct
+      "things you can do while offline" buttons:
+      catalog, stock counts, queue.
+- [x] `public/sw.js` — `CACHE_VERSION` bumped
+      `oneace-sw-v4` → `oneace-sw-v5` so `activate()`
+      evicts the v4 caches atomically on rollout.
+      `PRECACHE_URLS` gains `/offline/queue`. Top-of-file
+      doc block updated with the Sprint 30 addition.
+- [x] `src/lib/i18n/messages/en.ts` — new
+      `offline.queueReview` sub-block with 36 keys
+      covering the shell chrome, section titles + empty
+      bodies, table columns, four status labels, three
+      opType display labels (movement.create,
+      countEntry.add, unknown), retry/discard/clear CTAs
+      and their confirm prompts, three toast messages,
+      and a payload fallback string. Plus one new top-
+      level `offline.viewQueueCta` for the offline
+      fallback's third button, and one new
+      `offline.queue.reviewCta` for the banner link.
+- [x] Verified clean: `prisma validate` (dummy env vars) +
+      `tsc --noEmit` exit 0 + `biome check src` clean
+      after one auto-format pass (167 files — one new
+      vs Sprint 29's 166).
+- [x] **No new runtime dependencies.** No schema changes
+      (no Dexie version bump). No new Prisma migrations.
+      The sprint is additive: every existing Sprint 25/26
+      queue row keeps working exactly as before, and the
+      runner continues to treat `failed` rows the same
+      way — the difference is the user can now see them
+      and act on them.
+
+---
+
 ### Still to port (deferred post-Sprint-22)
 
 - [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
@@ -2196,6 +2391,11 @@ without entangling the reconcile flow.
       `/offline/stock-counts` list + detail view served from
       Dexie while offline). **Shipped as Sprint 29** — see
       below.
+- [x] PWA Sprint 7 — failed-ops review UI at `/offline/queue`
+      (retry, discard, bulk-clear for queue rows that the
+      runner couldn't dispatch; banner failed count becomes
+      a clickable review link). **Shipped as Sprint 30** —
+      see below.
 - [ ] Audit log
 - [ ] Email delivery for invitations (MVP: admin copies link)
 - [ ] `?next=/invite/[token]` redirect after sign-in so users

@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 29.
+and iterating on it through Sprint 0 → Sprint 30.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 29.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 28 plus **Sprint 29** are already committed in a
+Sprint 0 through Sprint 29 plus **Sprint 30** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.29.0-sprint29.bundle
+oneace-next/oneace-next-port-v0.30.0-sprint30.bundle
 ```
 
 This bundle contains:
 
-- **66 commits** — 8 Sprint 0 + 1 docs + Sprints 1..29 (each = 1 feature
+- **68 commits** — 8 Sprint 0 + 1 docs + Sprints 1..30 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -55,9 +55,10 @@ This bundle contains:
   - `v0.27.0-sprint27` — Sprint 27 complete (PWA Sprint 4 follow-on — second offline op: count entry add / stock-count offline session)
   - `v0.28.0-sprint28` — Sprint 28 complete (PWA Sprint 5 — Background Sync API + new-version prompt + first-party Install button)
   - `v0.29.0-sprint29` — Sprint 29 complete (PWA Sprint 6 — offline stock-counts viewer: cache-on-detail-visit + /offline/stock-counts list + detail)
+  - `v0.30.0-sprint30` — Sprint 30 complete (PWA Sprint 7 — failed-ops review UI at /offline/queue: retry / discard / clear-all for queued ops)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.28.0-sprint28.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.29.0-sprint29.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -71,11 +72,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.29.0-sprint29.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.30.0-sprint30.bundle \
           next-port:next-port
 
-# Also pull all twenty-eight sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.29.0-sprint29.bundle \
+# Also pull all thirty sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.30.0-sprint30.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -104,11 +105,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.29.0-sprint29.bun
           refs/tags/v0.26.0-sprint26:refs/tags/v0.26.0-sprint26 \
           refs/tags/v0.27.0-sprint27:refs/tags/v0.27.0-sprint27 \
           refs/tags/v0.28.0-sprint28:refs/tags/v0.28.0-sprint28 \
-          refs/tags/v0.29.0-sprint29:refs/tags/v0.29.0-sprint29
+          refs/tags/v0.29.0-sprint29:refs/tags/v0.29.0-sprint29 \
+          refs/tags/v0.30.0-sprint30:refs/tags/v0.30.0-sprint30
 
 # Verify
-git log --oneline next-port                # should show 66 commits
-git tag -l                                 # should include all twenty-nine sprint tags
+git log --oneline next-port                # should show 68 commits
+git tag -l                                 # should include all thirty sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -120,8 +122,109 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
-               v0.28.0-sprint28 v0.29.0-sprint29
+               v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30
 ```
+
+### What Sprint 30 added (v0.30.0-sprint30)
+
+PWA Sprint 7: lands the failed-ops review UI that was deferred by
+Sprint 28. Until this sprint, a queued op that permanently failed
+(dispatcher throw, offline beyond the retry budget, etc.) was
+visible only as a count in the layout banner — the user had no way
+to see what was stuck, retry it, or throw it away. `/offline/queue`
+is now a force-static review surface that lists every non-succeeded
+row in `pendingOps` grouped by status, with retry / discard /
+clear-all actions on the Failed section. Zero schema changes; three
+small helpers added to the queue library, one new component, one
+new route, and a tiny banner enhancement.
+
+- **`src/lib/offline/queue.ts`** — adds three helpers:
+  - `requeueFailedOp(id)` — wraps a Dexie `rw` transaction that
+    only transitions rows whose current status is `failed`,
+    mirroring the `markOpInFlight` safety pattern so two tabs
+    clicking Retry at the same moment don't double-dispatch.
+    Deliberately does **not** reset `attemptCount` — the retry
+    history is signal the runner uses to drive backoff and the
+    user to judge whether a row is pathologically stuck.
+  - `deleteOp(id)` — idempotent single-row delete; returns
+    `true` only if a row existed and was removed.
+  - `clearFailedOps(scope)` — bulk delete scoped by the
+    `[orgId+userId+status]` compound index so it never touches
+    rows belonging to a different tenant or user, even if the
+    runner is mid-drain for the same orgId.
+- **`src/components/offline/offline-queue-view.tsx`** — NEW.
+  Exports `OfflineQueueShell` and `OfflineQueueViewLabels`
+  (40-key label bundle). Internal structure:
+  `OfflineQueueShell` is the client-only entry point; it runs
+  the same scope-discovery routine the stock-counts viewer uses
+  (newest-synced `meta` row wins), renders a shared
+  `OfflineQueueFrame` (back-link + title + subtitle), and then
+  either `OfflineQueueEmpty` or the `OfflineQueueView` body.
+  The body polls every 3 seconds and additionally forces an
+  immediate `refresh()` in each action's `finally` block so
+  the Failed row leaves its section the instant the user
+  clicks Retry / Discard rather than waiting for the next
+  tick. Sections are rendered in fixed order: `pending`,
+  `in_flight`, `failed`. Succeeded rows are deliberately
+  omitted — the runner's janitor pass removes them and
+  exposing them here would just invite the user to "clear"
+  rows that are already gone. Actions live **only** on the
+  failed section; both `onRetry` and `onDiscard` are optional
+  props and the table hides its Actions column when neither
+  is provided, so the pending and in-flight tables render
+  read-only. A `busyId` state disables buttons while an
+  action is in flight; a `"__bulk__"` sentinel drives the
+  clear-all busy state. A transient `<output aria-live="polite">`
+  toast auto-dismisses after 4s for confirmation feedback.
+  `window.confirm` is used as a zero-dependency guard on the
+  destructive Discard / Clear-all paths — cheap, accessible,
+  and consistent with how the rest of the offline UI already
+  handles destructive confirmations. Payload preview: one
+  monospace line of `JSON.stringify(payload).slice(0, 120)`
+  wrapped in a try/catch with a translated fallback string,
+  so a malformed payload can't crash the view.
+- **`src/app/offline/queue/page.tsx`** — NEW force-static page
+  (same `export const dynamic = "force-static"` profile as
+  `/offline/items` and `/offline/stock-counts`). Zero auth,
+  zero DB calls, zero cookie reads — just resolves the
+  40-key label bundle from the compiled `en` catalog and
+  renders `<OfflineQueueShell labels={labels} />`. Next's
+  `searchParams` is deliberately untouched so there's exactly
+  one prerender for the route regardless of query string,
+  keeping it safe to precache.
+- **`src/components/offline/offline-queue-banner.tsx`** —
+  gains an **optional** `reviewCta?: string` field on its
+  label interface. When a caller passes it, the banner
+  renders a small underlined anchor to `/offline/queue` next
+  to the failed-count line; when omitted, the banner behaves
+  exactly as before. The optionality is deliberate — older
+  label bundles (and any future external embed) keep
+  compiling and the link simply doesn't render.
+- **`src/app/(app)/layout.tsx`** — passes
+  `reviewCta: t.offline.queue.reviewCta` into the banner
+  label bundle so signed-in users get the link.
+- **`src/app/offline/page.tsx`** — adds a third CTA below
+  the existing "view cached items" and "view cached
+  stock-counts" links so a cold-start-while-offline landing
+  also has a path to the queue review screen.
+- **`src/lib/i18n/messages/en.ts`** — adds `offline.viewQueueCta`
+  (landing-page link text), `offline.queue.reviewCta` (inline
+  banner link text inside the existing `offline.queue` block),
+  and a new `offline.queueReview` sub-block with 36 keys
+  (meta title, page title/subtitle, loading / error / empty
+  states, three section titles + empty hints, six column
+  headers, three op-type labels, four status labels, retry /
+  discard / clear-failed CTAs, two confirm dialog copy
+  strings, three toast strings, a retry-disabled hint, an
+  `attemptCountTemplate` with an `{count}` placeholder, and
+  a `payloadFallback` string for the try/catch).
+- **`public/sw.js`** — bumps `CACHE_VERSION` from
+  `oneace-sw-v4` to `oneace-sw-v5` so the activate() handler
+  evicts the prior precache atomically, and adds
+  `/offline/queue` to `PRECACHE_URLS` alongside `/offline`,
+  `/offline/items`, and `/offline/stock-counts`. The file
+  header comment block records the new sprint line so the
+  rationale survives future reads.
 
 ### What Sprint 29 added (v0.29.0-sprint29)
 
