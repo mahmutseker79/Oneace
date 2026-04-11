@@ -2366,6 +2366,183 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 37 — Production hardening (shipped 2026-04-11)
+
+### What shipped
+
+The first sprint that doesn't add a user-visible feature. Sprint 37
+plugs the gaps that would bite us on the first production deploy
+after MVP cut (2026-07-03) and establishes the observability
+surface the Sprint 36 audit log assumed but couldn't yet produce.
+
+Four pieces:
+
+1. **Zod-validated environment schema** at `src/lib/env.ts`. Reads
+   `process.env` once at module load and throws a formatted error
+   listing every missing / malformed variable. Required vars:
+   `DATABASE_URL`, `DIRECT_URL`, `BETTER_AUTH_SECRET` (min 32
+   chars), `BETTER_AUTH_URL`. Optional: `NEXT_PUBLIC_APP_URL`,
+   `RESEND_API_KEY` / `MAIL_FROM` (must be set together or unset
+   together — enforced via `superRefine`), `LOG_LEVEL`, `NODE_ENV`.
+   Exports `env` (frozen, typed) and `isProduction`.
+
+2. **Structured server logger** at `src/lib/logger.ts`. Four level
+   methods (`debug` / `info` / `warn` / `error`) with an Error-aware
+   context serialiser (so Prisma error codes and stacks survive
+   `JSON.stringify`). Emits single-line JSON on stdout in
+   production (stderr for warn/error) and pretty-printed lines via
+   `console.*` in development. Level threshold gated by
+   `env.LOG_LEVEL` with sane defaults (debug in dev/test, info in
+   prod). Zero dependencies beyond the env module — no pino bloat
+   in the server bundle.
+
+3. **Error boundaries** — two layers:
+   - `src/app/global-error.tsx` (Client Component, renders its own
+     `<html>`/`<body>`, hardcoded English fallback because i18n
+     itself may be the culprit). Displays the Next.js `error.digest`
+     so ops can correlate user reports with the server log.
+   - `src/app/(app)/error.tsx` (route-segment boundary for the
+     authenticated app group, keeps the sidebar/header intact).
+     Uses the standard Card primitive set so it inherits the
+     theme.
+
+4. **`/api/health` route handler** at `src/app/api/health/route.ts`.
+   Public, node-runtime, `force-dynamic`, no caching. Runs a cheap
+   `SELECT 1` via `db.$queryRaw`, returns 200 with
+   `{status, uptime, timestamp, environment, version, commit,
+   checks: {database}}` when ready and 503 with the same shape
+   when the DB probe fails. `version` / `commit` pulled from
+   Vercel's `VERCEL_GIT_COMMIT_REF` / `VERCEL_GIT_COMMIT_SHA`
+   with "unknown" fallback for local dev.
+
+### Migrated call sites
+
+Four files moved off raw `process.env`:
+  - `src/lib/auth.ts` — `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`,
+    `NEXT_PUBLIC_APP_URL` (trustedOrigins)
+  - `src/lib/db.ts` — `NODE_ENV` replaced with `isProduction`
+  - `src/lib/invitations.ts` — `NEXT_PUBLIC_APP_URL`
+  - `src/lib/mail/index.ts` — `RESEND_API_KEY`, `MAIL_FROM`
+    (the mail-pair superRefine in env.ts supersedes the old
+    "silent failure at send time" posture)
+  - `src/lib/audit.ts` — `console.error` replaced with
+    `logger.error` so audit write failures join the structured
+    stream.
+
+`src/lib/auth-client.ts` (Client Component) deliberately still
+reads `process.env.NEXT_PUBLIC_APP_URL` because Next.js inlines
+`NEXT_PUBLIC_*` at build time and importing the server env module
+into a client bundle would drag server-only validation into the
+browser.
+
+### Design decisions
+
+- **Throw at boot, not at use**: the env module calls `parseEnv()`
+  at module top-level and exports the frozen result. The first
+  import transitively triggers validation; if it fails, the
+  process dies with a multi-line message listing every issue. We
+  considered lazy `getEnv()` helpers but rejected them — the whole
+  point is to fail before the first request lands.
+
+- **Mail pair all-or-nothing**: Sprint 33 deliberately deferred
+  this check to send time. Sprint 37 pulls it forward because the
+  boot-time error is clearer than a 422 from Resend with a generic
+  message. Dev loops that never want to send mail still work —
+  leave both unset, ConsoleMailer fires.
+
+- **Logger is dependency-free**: pino is ~200KB and adds a child
+  logger concept we don't need. Winston is worse. A 150-line
+  handwritten module with four methods is right-sized for MVP,
+  and the interface is narrow enough to swap behind later without
+  touching call sites.
+
+- **JSON lines in prod, console.* in dev**: the two modes emit
+  very different output because the consumers are different.
+  Vercel/Cloudwatch ingest JSON; `next dev` terminal output wants
+  something a human can skim.
+
+- **Error serialisation**: Error instances are walked once via
+  `serialiseError` so `name`, `message`, `stack`, and any custom
+  fields (Prisma's `code`, `meta`) survive JSON.stringify. Without
+  this, `JSON.stringify(new Error("x"))` emits `{}` and you lose
+  everything. The serialiser is applied recursively over the
+  context object, not the message, so call sites can mix Error
+  and non-Error values freely.
+
+- **Two error boundaries, not one**: Next.js 15 fires the nearest
+  `error.tsx` in the route tree first and only escalates to
+  `global-error.tsx` when that boundary itself crashes or when
+  the root layout is the thing that failed. A route-segment
+  boundary inside `(app)` keeps the shell up for data-fetch
+  errors (the common case) and the global boundary catches
+  layout-level blowups (the rare case).
+
+- **No i18n in global-error**: if i18n itself crashed, loading it
+  again from the boundary is a loop. Global-error ships English
+  strings directly. The segment boundary is fine to use the
+  standard Card primitives because they don't touch i18n.
+
+- **Health route is public**: load balancers and uptime probes
+  can't authenticate. We expose zero tenant data — just
+  environment, uptime, commit, and a database ok/fail boolean.
+  Full error details go to the server log, not the response body.
+
+- **503 on degraded, not 200**: some uptime providers want a
+  single "success" status code and use the body for detail. We
+  prefer explicit HTTP status signalling — 200 = ready, 503 =
+  not ready, any other code = hard down. That's the PagerDuty /
+  Better Stack convention.
+
+- **`export const runtime = "nodejs"`**: Prisma's query engine is
+  a Node native binding and crashes on the edge runtime. Pinning
+  the route saves a future-us head-scratch when Next.js 16
+  changes defaults.
+
+### Files touched
+
+- `src/lib/env.ts` — NEW (~150 lines)
+- `src/lib/logger.ts` — NEW (~140 lines)
+- `src/app/global-error.tsx` — NEW (client, ~110 lines)
+- `src/app/(app)/error.tsx` — NEW (client, ~80 lines)
+- `src/app/api/health/route.ts` — NEW (~110 lines)
+- `src/lib/auth.ts` — migrated to `env`
+- `src/lib/db.ts` — migrated to `isProduction`
+- `src/lib/invitations.ts` — migrated to `env.NEXT_PUBLIC_APP_URL`
+- `src/lib/mail/index.ts` — migrated to `env.RESEND_API_KEY` /
+  `env.MAIL_FROM`
+- `src/lib/audit.ts` — `console.error` → `logger.error`
+
+### Verified clean
+
+```
+mv tsconfig.tsbuildinfo tsconfig.tsbuildinfo.old36
+npx tsc --noEmit          exit 0, 0 lines
+npx biome check src       185 files, 0 errors
+                          (5 new vs Sprint 36's 180: env, logger,
+                          global-error, (app)/error, api/health/route)
+npx prisma validate       schema valid (unchanged)
+```
+
+### Known gaps / deferred
+
+- No remote log shipping. Logger writes stdout/stderr only;
+  plug Axiom / BetterStack / Datadog behind the same interface
+  post-MVP.
+- Health route checks database only. Redis, queue worker,
+  mailer round-trip not yet probed — add as they're introduced.
+- `ensureEnv()` style startup check with a warning for missing
+  `NEXT_PUBLIC_APP_URL` in production is noted in env.ts but
+  not implemented. Worth revisiting when we add a deploy-gate
+  CLI.
+- Client Component boundary for the `(auth)` group not added
+  yet. Sign-in / sign-up pages still fall through to
+  `global-error.tsx` on crash. Low priority since they're the
+  simplest pages in the app.
+- Tests that mutate `process.env` after importing the env
+  module are now no-ops (validation runs once). No tests
+  currently do this, but the pattern is noted in `mail/index.ts`
+  comments in case we add Vitest later.
+
 ## Sprint 36 — Audit log (shipped 2026-04-11)
 
 Tagged `v0.36.0-sprint36`. Introduces the first pass of a tenant-scoped,

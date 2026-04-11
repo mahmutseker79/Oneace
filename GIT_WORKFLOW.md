@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 36.
+and iterating on it through Sprint 0 → Sprint 37.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 36.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 35 plus **Sprint 36** are already committed in a
+Sprint 0 through Sprint 36 plus **Sprint 37** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.36.0-sprint36.bundle
+oneace-next/oneace-next-port-v0.37.0-sprint37.bundle
 ```
 
 This bundle contains:
 
-- **80 commits** — 8 Sprint 0 + 1 docs + Sprints 1..36 (each = 1 feature
+- **82 commits** — 8 Sprint 0 + 1 docs + Sprints 1..37 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -62,9 +62,10 @@ This bundle contains:
   - `v0.34.0-sprint34` — Sprint 34 complete (supplier drill-down detail page at `/suppliers/[id]` — identity header + 3-up contact/address/notes cards + 4 KPIs matching Sprint 12 math + recent POs table with timeliness badges + top items card; fixes the Sprint 12 leaderboard broken link)
   - `v0.35.0-sprint35` — Sprint 35 complete (ZXing-wasm scanner fallback — pluggable detector abstraction at `src/lib/scanner/detector.ts`, lazy-loaded `@zxing/browser` backend for Safari + Firefox, engine badge in the camera card, scanning now works on iPhones; closes the biggest `/scan` usability cliff since Sprint 8)
   - `v0.36.0-sprint36` — Sprint 36 complete (tenant-scoped append-only audit log — new `AuditEvent` Prisma model with composite `(organizationId, createdAt)` index + secondary `(entityType, entityId)` index, `src/lib/audit.ts` write helper with typed `AuditAction` vocabulary, wired into 12 high-severity actions across settings / users / purchase-orders, new admin-gated `/audit` page with cursor-paginated "Load more", History-icon sidebar entry, full `t.audit` i18n namespace with 13 action labels)
+  - `v0.37.0-sprint37` — Sprint 37 complete (production hardening — zod-validated env schema at `src/lib/env.ts` fails boot on missing/malformed required vars, dependency-free structured logger at `src/lib/logger.ts` with JSON-lines-in-prod / pretty-in-dev output, `/app/global-error.tsx` + `(app)/error.tsx` two-layer error boundaries showing Next.js `error.digest`, `/api/health` liveness+readiness probe with `SELECT 1` DB check returning 200/503, five call sites migrated off raw `process.env`, audit helper rewired to `logger.error`)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.36.0-sprint36.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.37.0-sprint37.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -78,11 +79,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.36.0-sprint36.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.37.0-sprint37.bundle \
           next-port:next-port
 
-# Also pull all thirty-six sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.36.0-sprint36.bundle \
+# Also pull all thirty-seven sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.37.0-sprint37.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -118,11 +119,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.36.0-sprint36.bun
           refs/tags/v0.33.0-sprint33:refs/tags/v0.33.0-sprint33 \
           refs/tags/v0.34.0-sprint34:refs/tags/v0.34.0-sprint34 \
           refs/tags/v0.35.0-sprint35:refs/tags/v0.35.0-sprint35 \
-          refs/tags/v0.36.0-sprint36:refs/tags/v0.36.0-sprint36
+          refs/tags/v0.36.0-sprint36:refs/tags/v0.36.0-sprint36 \
+          refs/tags/v0.37.0-sprint37:refs/tags/v0.37.0-sprint37
 
 # Verify
-git log --oneline next-port                # should show 80 commits
-git tag -l                                 # should include all thirty-six sprint tags
+git log --oneline next-port                # should show 82 commits
+git tag -l                                 # should include all thirty-seven sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -136,7 +138,114 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
                v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
-               v0.34.0-sprint34 v0.35.0-sprint35 v0.36.0-sprint36
+               v0.34.0-sprint34 v0.35.0-sprint35 v0.36.0-sprint36 \
+               v0.37.0-sprint37
+```
+
+### What Sprint 37 added (v0.37.0-sprint37)
+
+The first "no new user feature" sprint of the port. Sprint 37
+is a production-hardening pass that closes the gaps that would
+bite us on the first real deploy and builds the observability
+surface the Sprint 36 audit log comment-block explicitly
+deferred ("Sprint 37's structured logger handles that
+instead"). Four pieces, all infrastructure:
+
+**1. Zod-validated environment schema (`src/lib/env.ts`).**
+Reads `process.env` exactly once at module load and throws a
+formatted multi-line error listing every missing or malformed
+variable. Required: `DATABASE_URL`, `DIRECT_URL`,
+`BETTER_AUTH_SECRET` (min 32 chars so devs can't paste in a
+placeholder), `BETTER_AUTH_URL`. Optional with pairing rules:
+`NEXT_PUBLIC_APP_URL`, `RESEND_API_KEY` + `MAIL_FROM` (must be
+set together or unset together, enforced via `superRefine` —
+the old Sprint 33 posture of "fail at send time" was clearer in
+dev but left prod stuck with a cryptic Resend 422; now the
+server refuses to start with a helpful message). Exports `env`
+(frozen, fully typed — `env.NODE_ENV` narrows to a literal
+union) and a convenience `isProduction` boolean. Parse happens
+at the module top-level, not lazily, so the first import
+anywhere in the graph triggers validation — `db.ts`, `auth.ts`,
+`logger.ts`, and `api/health/route.ts` all depend on it so the
+check fires at the very beginning of the request chain.
+
+**2. Dependency-free structured logger (`src/lib/logger.ts`).**
+Four level methods (`debug` / `info` / `warn` / `error`). Each
+takes a `(message, context?)` pair where context is an
+arbitrary `Record<string, unknown>`. An internal
+`serialiseError` walk turns Error instances into
+JSON-friendly shapes (preserving `name` / `message` / `stack`
+and any Prisma-style custom fields like `code` / `meta`) so
+`JSON.stringify(new Error("x"))` no longer collapses to `{}`.
+Production mode emits single-line JSON to stdout (stderr for
+warn/error so Vercel's stream routing picks up the right
+severity); development mode uses `console.info/warn/error`
+with a `[LEVEL]` prefix so `next dev` output stays skimmable.
+Level threshold gated by `env.LOG_LEVEL` with defaults of
+`debug` in dev/test and `info` in prod. No pino, no winston —
+150 lines of hand-written code that swap cleanly behind the
+same interface when we add Axiom/Datadog post-MVP.
+
+**3. Two-layer error boundaries.**
+- `src/app/global-error.tsx` is a Client Component that
+  renders its own `<html>`/`<body>` (required by Next.js 15
+  when the root layout itself crashed) with hard-coded
+  English strings — deliberately no i18n, because loading
+  the i18n module from the boundary that exists to catch
+  i18n load failures is a loop. Shows the Next.js-generated
+  `error.digest` so ops can correlate user reports with
+  server log entries. Retry button calls `reset()`.
+- `src/app/(app)/error.tsx` is the route-segment boundary
+  for the authenticated app group. Renders *inside* the
+  `(app)/layout.tsx` shell so the sidebar/header stay up
+  while the failing page shows a Card with "This page hit
+  an unexpected error. The rest of the app is still usable."
+  This covers the common case — Prisma errors in page-level
+  data fetching — without escalating the whole window to
+  the global boundary.
+
+**4. `/api/health` route handler.**
+Pure liveness+readiness probe at `src/app/api/health/route.ts`.
+Public (no auth — load balancers and uptime probes can't
+authenticate), `export const runtime = "nodejs"` (Prisma's
+engine doesn't run on the edge runtime), `export const dynamic
+= "force-dynamic"` + `Cache-Control: no-store` (the whole
+point is that each hit exercises the DB so caching would
+invalidate the probe). Executes `db.$queryRaw\`SELECT 1\``
+and returns a compact JSON body:
+`{status, uptime, timestamp, environment, version, commit,
+checks: {database}, errors?}`. HTTP 200 when everything is ok,
+503 when the database probe fails. `version` and `commit`
+are pulled from Vercel's `VERCEL_GIT_COMMIT_REF` and
+`VERCEL_GIT_COMMIT_SHA` with an "unknown" fallback for local
+dev. No PII or tenant data in the response body — just the
+shape uptime dashboards need.
+
+**Call-site migration.** Five server-side files moved off
+raw `process.env`: `src/lib/auth.ts` (baseURL + secret +
+trustedOrigins), `src/lib/db.ts` (NODE_ENV replaced with
+`isProduction`), `src/lib/invitations.ts`
+(`NEXT_PUBLIC_APP_URL` for invite URL minting),
+`src/lib/mail/index.ts` (`RESEND_API_KEY` + `MAIL_FROM`
+through the env module so the mail-pair superRefine governs
+them), and `src/lib/audit.ts` (the Sprint 36 audit helper's
+catch-branch `console.error` is now `logger.error`, joining
+the same structured stream as everything else).
+`src/lib/auth-client.ts` deliberately stays on
+`process.env.NEXT_PUBLIC_APP_URL` because it's a Client
+Component and `NEXT_PUBLIC_*` vars are inlined at build time
+— importing the server env module into the client bundle
+would drag server-only validation into the browser.
+
+**Triple verification clean:**
+
+```
+mv tsconfig.tsbuildinfo tsconfig.tsbuildinfo.old36
+npx tsc --noEmit          exit 0
+npx biome check src       185 files, 0 errors (5 new vs
+                          Sprint 36's 180: env, logger,
+                          global-error, (app)/error, api/health/route)
+npx prisma validate       schema valid (unchanged)
 ```
 
 ### What Sprint 36 added (v0.36.0-sprint36)
