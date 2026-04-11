@@ -11,6 +11,7 @@ import {
   ScanLine,
   Settings,
   ShoppingCart,
+  Truck,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -29,6 +30,7 @@ export type SidebarLabels = {
     counts: string;
     scan: string;
     movements: string;
+    suppliers: string;
     purchaseOrders: string;
     reports: string;
     users: string;
@@ -54,6 +56,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
     { label: labels.nav.scan, href: "/scan", icon: ScanLine },
     { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
+    { label: labels.nav.suppliers, href: "/suppliers", icon: Truck },
     { label: labels.nav.purchaseOrders, href: "/purchase-orders", icon: ShoppingCart },
     { label: labels.nav.reports, href: "/reports", icon: BarChart3 },
     { label: labels.nav.users, href: "/users", icon: Users },
