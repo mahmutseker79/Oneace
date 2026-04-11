@@ -1,3 +1,4 @@
+import { getActiveOrgPreferences } from "@/lib/session";
 import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   RTL_LOCALES,
   type RegionConfig,
   SUPPORTED_LOCALES,
+  SUPPORTED_REGIONS,
   getRegionConfig,
 } from "./config";
 import { type Messages, en } from "./messages/en";
@@ -35,15 +37,26 @@ function isSupportedLocale(value: string | undefined | null): value is Locale {
 /**
  * Resolve the active locale for the current request.
  *
- * Priority:
- *   1. `oneace-locale` cookie (user-selected)
- *   2. `Accept-Language` header (browser preference)
- *   3. DEFAULT_LOCALE
+ * Priority (Sprint 19: org-defaults layer inserted between user cookie
+ * and Accept-Language so a teammate joining an org inherits the org's
+ * preferred language without anyone having to touch cookies, while
+ * still respecting an explicit personal override):
+ *   1. `oneace-locale` cookie (user's explicit choice — always wins)
+ *   2. Active organization's `defaultLocale` (set by an OWNER/ADMIN
+ *      in Settings → Organization defaults)
+ *   3. `Accept-Language` header (browser preference)
+ *   4. DEFAULT_LOCALE
  */
 export const getLocale = cache(async (): Promise<Locale> => {
   const cookieStore = await cookies();
   const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value;
   if (isSupportedLocale(fromCookie)) return fromCookie;
+
+  // Sprint 19: org-level fallback. `getActiveOrgPreferences` fails
+  // silently on unauthenticated routes so this is safe to call from
+  // the marketing shell / login pages too.
+  const orgPrefs = await getActiveOrgPreferences();
+  if (isSupportedLocale(orgPrefs?.defaultLocale)) return orgPrefs.defaultLocale;
 
   const headerList = await headers();
   const acceptLanguage = headerList.get("accept-language");
@@ -58,10 +71,32 @@ export const getLocale = cache(async (): Promise<Locale> => {
   return DEFAULT_LOCALE;
 });
 
+/**
+ * Resolve the active region for the current request.
+ *
+ * Priority (matches `getLocale` layering):
+ *   1. `oneace-region` cookie (user's explicit choice)
+ *   2. Active organization's `defaultRegion`
+ *   3. DEFAULT_REGION_CODE
+ *
+ * Note: unlike locale there's no Accept-Region header, so the org
+ * default is the only automatic layer beneath the user cookie.
+ */
+function isSupportedRegion(code: string | null | undefined): code is string {
+  return !!code && SUPPORTED_REGIONS.some((r) => r.code === code);
+}
+
 export const getRegion = cache(async (): Promise<RegionConfig> => {
   const cookieStore = await cookies();
   const fromCookie = cookieStore.get(REGION_COOKIE)?.value;
-  return getRegionConfig(fromCookie ?? DEFAULT_REGION_CODE);
+  if (isSupportedRegion(fromCookie)) return getRegionConfig(fromCookie);
+
+  const orgPrefs = await getActiveOrgPreferences();
+  if (isSupportedRegion(orgPrefs?.defaultRegion)) {
+    return getRegionConfig(orgPrefs.defaultRegion);
+  }
+
+  return getRegionConfig(DEFAULT_REGION_CODE);
 });
 
 export const getMessages = cache(async (): Promise<Messages> => {

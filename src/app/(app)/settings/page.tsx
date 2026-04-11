@@ -7,6 +7,7 @@ import { SUPPORTED_LOCALES, SUPPORTED_REGIONS } from "@/lib/i18n/config";
 import { requireActiveMembership } from "@/lib/session";
 
 import { LocalePicker } from "./locale-picker";
+import { OrgDefaultsForm } from "./org-defaults-form";
 import { OrgProfileForm } from "./org-profile-form";
 import { RegionPicker } from "./region-picker";
 
@@ -23,7 +24,14 @@ export default async function SettingsPage() {
 
   const organization = await db.organization.findUnique({
     where: { id: membership.organizationId },
-    select: { id: true, name: true, slug: true, plan: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      plan: true,
+      defaultLocale: true,
+      defaultRegion: true,
+    },
   });
 
   if (!organization) {
@@ -108,6 +116,35 @@ export default async function SettingsPage() {
                 currency: t.settings.region.currencyLabel,
                 timeZone: t.settings.region.timeZoneLabel,
                 saved: t.settings.region.saved,
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{t.settings.orgDefaults.heading}</CardTitle>
+            <CardDescription>{t.settings.orgDefaults.description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <OrgDefaultsForm
+              canEdit={canEditOrg}
+              initial={{
+                defaultLocale: organization.defaultLocale,
+                defaultRegion: organization.defaultRegion,
+              }}
+              localeOptions={localeOptions}
+              regionOptions={regionOptions}
+              labels={{
+                heading: t.settings.orgDefaults.heading,
+                description: t.settings.orgDefaults.description,
+                helpText: t.settings.orgDefaults.helpText,
+                localeLabel: t.settings.orgDefaults.localeLabel,
+                regionLabel: t.settings.orgDefaults.regionLabel,
+                platformDefault: t.settings.orgDefaults.platformDefault,
+                save: t.common.saveChanges,
+                saved: t.settings.orgDefaults.saved,
+                forbidden: t.settings.orgDefaults.errors.forbidden,
               }}
             />
           </CardContent>

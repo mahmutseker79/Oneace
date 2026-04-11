@@ -1042,6 +1042,23 @@ export const en = {
       currencyLabel: "Currency",
       timeZoneLabel: "Time zone",
     },
+    orgDefaults: {
+      heading: "Organization defaults",
+      description:
+        "Set the default language and region for everyone in this organization. New teammates will see these settings unless they choose their own.",
+      helpText:
+        "Individual members can still override these defaults from their own language and region settings — their choice always wins.",
+      localeLabel: "Default language",
+      regionLabel: "Default region",
+      platformDefault: "Platform default",
+      saved: "Organization defaults updated.",
+      errors: {
+        forbidden: "You do not have permission to edit organization defaults.",
+        invalidLocale: "That language is not supported.",
+        invalidRegion: "That region is not supported.",
+        updateFailed: "Could not save organization defaults.",
+      },
+    },
   },
 
   users: {
