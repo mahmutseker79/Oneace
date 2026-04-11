@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { CloudOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -15,8 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { COUNT_ENTRY_ADD_OP_TYPE } from "@/lib/offline/dispatchers/count-entry-add";
+import { enqueueOp } from "@/lib/offline/queue";
+import type { AddEntryInput } from "@/lib/validation/stockcount";
 
-import { addCountEntryAction } from "../actions";
+import { submitCountEntryOpAction } from "../actions";
 
 export type ScopeOption = {
   itemId: string;
@@ -35,20 +38,54 @@ export type EntryFormLabels = {
   note: string;
   notePlaceholder: string;
   submit: string;
+  submittingLabel: string;
+  queuedLabel: string;
   error: string;
+};
+
+export type EntryFormScope = {
+  orgId: string;
+  userId: string;
 };
 
 type EntryFormProps = {
   countId: string;
-  scope: ScopeOption[];
+  scope: EntryFormScope;
+  rows: ScopeOption[];
   labels: EntryFormLabels;
 };
 
-// The scope list is a flat (item × warehouse) cartesian produced by the
-// server. We split the cascade into two selects so a counter can pick
-// the item first, and the warehouse dropdown narrows to the warehouses
-// that actually have this item in scope.
-export function EntryForm({ countId, scope, labels }: EntryFormProps) {
+/**
+ * Sprint 27 — PWA Sprint 4 follow-on. The stock-count entry form is
+ * now offline-first. Behavior mirrors the Sprint 26 movement form:
+ *
+ *   1. Generate a v4 UUID (`crypto.randomUUID()`) as the idempotency
+ *      key BEFORE any network attempt. If we fall back to the queue,
+ *      the same key rides along so a replay can't double-count.
+ *
+ *   2. Try `submitCountEntryOpAction` directly. Online fast path:
+ *      the counter sees the row appear in the log, page refreshes,
+ *      nothing touches IndexedDB.
+ *
+ *   3. On transport failure (`navigator.onLine === false`, fetch
+ *      throws, or the action returns `retryable: true`), enqueue
+ *      the op under the `countEntry.add` opType and reset the form
+ *      so the counter can move to the next bin immediately.
+ *
+ *   4. On a non-retryable error (validation, count not found,
+ *      out-of-scope row), surface the message inline and do NOT
+ *      enqueue — a broken payload would loop forever.
+ *
+ * The cascade UX is unchanged from Sprint 3: item select filters the
+ * warehouse select to (item, warehouse) pairs that are in this
+ * count's snapshot. A counter scanning a bin picks the SKU first,
+ * then the warehouse narrows to "here's where this SKU is expected".
+ *
+ * After a successful or queued save, qty + note reset but the
+ * selected item stays so the same SKU can be hammered across
+ * multiple bin locations without clicking the dropdown again.
+ */
+export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
   const router = useRouter();
   const [itemId, setItemId] = useState<string>("");
   const [warehouseId, setWarehouseId] = useState<string>("");
@@ -57,10 +94,47 @@ export function EntryForm({ countId, scope, labels }: EntryFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const itemOptions = Array.from(
-    new Map(scope.map((row) => [row.itemId, row.itemLabel])).entries(),
-  );
-  const warehouseOptions = scope.filter((row) => row.itemId === itemId);
+  const itemOptions = Array.from(new Map(rows.map((row) => [row.itemId, row.itemLabel])).entries());
+  const warehouseOptions = rows.filter((row) => row.itemId === itemId);
+
+  /**
+   * Client-side feature check for `crypto.randomUUID`. All modern
+   * browsers on secure contexts support it; the fallback is only
+   * ever hit in odd test environments. The queue's idempotency
+   * guarantee depends on the key being globally unique.
+   */
+  function generateIdempotencyKey(): string {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function resetAfterSave() {
+    setCountedQuantity("");
+    setNote("");
+    // Keep itemId so the counter can hammer the same SKU across bins.
+  }
+
+  async function enqueueAndReset(idempotencyKey: string, input: AddEntryInput): Promise<void> {
+    const enqueued = await enqueueOp({
+      scope: { orgId: scope.orgId, userId: scope.userId },
+      opType: COUNT_ENTRY_ADD_OP_TYPE,
+      payload: { idempotencyKey, input },
+    });
+    if (!enqueued) {
+      // Dexie unavailable — surface the original error so the user
+      // isn't told "queued" when nothing actually persisted.
+      setError(labels.error);
+      return;
+    }
+    resetAfterSave();
+    router.refresh();
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,27 +145,53 @@ export function EntryForm({ countId, scope, labels }: EntryFormProps) {
       return;
     }
 
-    const payload = {
+    const quantity = Number(countedQuantity);
+    if (!Number.isFinite(quantity) || quantity < 0) {
+      setError(labels.error);
+      return;
+    }
+
+    const input: AddEntryInput = {
       countId,
       itemId,
       warehouseId,
-      countedQuantity: Number(countedQuantity),
-      note,
+      countedQuantity: Math.trunc(quantity),
+      counterTag: null,
+      note: note.trim() === "" ? null : note.trim(),
     };
 
+    const idempotencyKey = generateIdempotencyKey();
+    const payload = { idempotencyKey, input };
+
     startTransition(async () => {
-      const result = await addCountEntryAction(payload);
-      if (!result.ok) {
-        setError(result.error);
-        return;
+      const startsOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+
+      if (!startsOffline) {
+        try {
+          const result = await submitCountEntryOpAction(payload);
+          if (result.ok) {
+            resetAfterSave();
+            router.refresh();
+            return;
+          }
+          if (!result.retryable) {
+            setError(result.error);
+            return;
+          }
+          // Retryable failure (transient DB, constraint race). Fall
+          // through to the enqueue path so the entry isn't lost.
+        } catch {
+          // Transport-layer throw — fetch failed, SW served the
+          // offline fallback, CORS weirdness. Fall through to enqueue
+          // so the counter doesn't lose the scan.
+        }
       }
-      // Reset qty + note but keep item so the counter can hammer the
-      // same SKU rapidly across multiple bin locations.
-      setCountedQuantity("");
-      setNote("");
-      router.refresh();
+
+      await enqueueAndReset(idempotencyKey, input);
     });
   }
+
+  const isOfflineNow = typeof navigator !== "undefined" && navigator.onLine === false;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -175,8 +275,23 @@ export function EntryForm({ countId, scope, labels }: EntryFormProps) {
           type="submit"
           disabled={isPending || itemId === "" || warehouseId === "" || countedQuantity === ""}
         >
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {labels.submit}
+          {isPending ? (
+            <>
+              {isOfflineNow ? (
+                <CloudOff className="h-4 w-4" />
+              ) : (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              <span>{labels.submittingLabel}</span>
+            </>
+          ) : isOfflineNow ? (
+            <>
+              <CloudOff className="h-4 w-4" />
+              <span>{labels.queuedLabel}</span>
+            </>
+          ) : (
+            labels.submit
+          )}
         </Button>
       </div>
     </form>

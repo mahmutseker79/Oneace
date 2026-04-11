@@ -585,6 +585,8 @@ export const en = {
       cancelFailed: "Could not cancel this count.",
       completeFailed: "Could not complete this count.",
     },
+    offlineSubmitting: "Saving…",
+    offlineQueued: "Entry queued — will sync when you're back online.",
     detail: {
       backToList: "Back to stock counts",
       metaState: "State",

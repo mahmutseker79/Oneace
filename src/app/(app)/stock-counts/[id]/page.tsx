@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function StockCountDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
 
@@ -134,7 +134,7 @@ export default async function StockCountDetailPage({ params }: PageProps) {
     })),
   );
 
-  const scope: ScopeOption[] = count.snapshots.map((snapshot) => {
+  const scopeRows: ScopeOption[] = count.snapshots.map((snapshot) => {
     const item = itemById.get(snapshot.itemId);
     const warehouse = warehouseById.get(snapshot.warehouseId);
     return {
@@ -155,6 +155,8 @@ export default async function StockCountDetailPage({ params }: PageProps) {
     note: t.stockCounts.detail.addEntryNote,
     notePlaceholder: t.stockCounts.detail.addEntryNotePlaceholder,
     submit: t.stockCounts.detail.addEntrySubmit,
+    submittingLabel: t.stockCounts.offlineSubmitting,
+    queuedLabel: t.stockCounts.offlineQueued,
     error: t.stockCounts.errors.entryFailed,
   };
 
@@ -278,7 +280,12 @@ export default async function StockCountDetailPage({ params }: PageProps) {
       {canAddEntry(state) && !isReadOnly ? (
         <Card>
           <CardContent className="pt-6">
-            <EntryForm countId={count.id} scope={scope} labels={entryFormLabels} />
+            <EntryForm
+              countId={count.id}
+              scope={{ orgId: membership.organizationId, userId: session.user.id }}
+              rows={scopeRows}
+              labels={entryFormLabels}
+            />
           </CardContent>
         </Card>
       ) : null}

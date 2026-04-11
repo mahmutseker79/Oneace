@@ -70,6 +70,10 @@ import { useCallback, useEffect, useRef } from "react";
 
 import type { CachedPendingOp } from "@/lib/offline/db";
 import {
+  COUNT_ENTRY_ADD_OP_TYPE,
+  dispatchCountEntryAdd,
+} from "@/lib/offline/dispatchers/count-entry-add";
+import {
   MOVEMENT_CREATE_OP_TYPE,
   dispatchMovementCreate,
 } from "@/lib/offline/dispatchers/movement-create";
@@ -109,12 +113,14 @@ export type OpDispatcher = (op: CachedPendingOp) => Promise<DispatcherResult>;
 /**
  * Dispatcher registry. Keys are opType strings, values are
  * handlers. Sprint 25 shipped this empty as the Sprint 26 seam;
- * Sprint 26 registers `movement.create` as the first concrete op.
- * Every future opType is added here alongside its dispatcher
- * module — no other changes to the runner are needed.
+ * Sprint 26 registered `movement.create`, Sprint 27 adds
+ * `countEntry.add` (the second entry — one import, one map row).
+ * Every future opType lands here the same way without touching the
+ * drain loop itself.
  */
 const DISPATCHERS: Record<string, OpDispatcher> = {
   [MOVEMENT_CREATE_OP_TYPE]: dispatchMovementCreate,
+  [COUNT_ENTRY_ADD_OP_TYPE]: dispatchCountEntryAdd,
 };
 
 export interface OfflineQueueRunnerProps {

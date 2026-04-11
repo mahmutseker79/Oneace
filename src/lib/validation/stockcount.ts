@@ -97,6 +97,28 @@ export const addEntryInputSchema = z.object({
 export type AddEntryInput = z.infer<typeof addEntryInputSchema>;
 
 /**
+ * Sprint 27 — PWA Sprint 4 follow-on. Offline-op payload shape for
+ * `countEntry.add`. Mirrors the movement op contract:
+ *
+ *   - `idempotencyKey` is a client-generated UUID v4 persisted on
+ *     `CountEntry` under the compound unique
+ *     `(organizationId, idempotencyKey)`. Replays from the queue can't
+ *     double-count — the second insert either hits the pre-check or
+ *     races into P2002, both branches return the original row's id.
+ *   - `input` reuses `addEntryInputSchema` verbatim. One validator,
+ *     one source of truth for what a valid count entry looks like.
+ *
+ * The stock-count multi-row session is OneAce's Flutter moat — a
+ * warehouse counter scanning bins on a phone with flaky reception
+ * should never lose an entry just because the cell tower blinked.
+ */
+export const countEntryOpPayloadSchema = z.object({
+  idempotencyKey: z.string().uuid({ message: "idempotencyKey must be a UUID" }),
+  input: addEntryInputSchema,
+});
+export type CountEntryOpPayload = z.infer<typeof countEntryOpPayloadSchema>;
+
+/**
  * Cancelling a count is terminal and requires an explicit reason so
  * auditors can see why expected-qty snapshots were abandoned.
  */
