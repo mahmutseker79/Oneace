@@ -876,6 +876,35 @@ export const en = {
       columnCostPrice: "Cost price",
       columnValue: "Value at cost",
     },
+    supplierPerformance: {
+      metaTitle: "Supplier performance",
+      heading: "Supplier performance",
+      subtitle:
+        "Per-supplier roll-up of purchase order activity: volume, reliability, and value received.",
+      backToReports: "Back to reports",
+      emptyTitle: "No purchase orders yet",
+      emptyBody:
+        "Create a purchase order on the Purchase Orders page to start tracking supplier performance here.",
+      kpiTotalReceivedLabel: "Received value",
+      kpiAcrossSuppliers: "Across {count} active supplier(s)",
+      kpiTotalPosLabel: "Total purchase orders",
+      kpiOpenLine: "{count} still open",
+      kpiSuppliersLabel: "Suppliers",
+      kpiSuppliersBody: "Includes suppliers with zero orders.",
+      mixedCurrencyCaveat:
+        "Some purchase orders use a different currency than {currency}. Totals are shown in the region currency for the roll-up — check individual POs for exact values.",
+      detailHeading: "By supplier",
+      detailSubtitle:
+        "Sorted by received value descending. Lead time is the average of days between ordered and received, received POs only.",
+      colSupplier: "Supplier",
+      colTotalPos: "Total POs",
+      colOpenPos: "Open",
+      colReceivedValue: "Received value",
+      colOnTime: "On-time",
+      colAvgLeadTime: "Avg lead time",
+      notAvailable: "—",
+      daysSuffix: "{days}d",
+    },
   },
 
   scan: {
