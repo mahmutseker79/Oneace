@@ -1,4 +1,4 @@
-import { Plus, ShoppingCart } from "lucide-react";
+import { Download, Plus, ShoppingCart } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -42,6 +42,19 @@ export async function generateMetadata(): Promise<Metadata> {
 function formatDateOrDash(value: Date | null | undefined, locale: string): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(value);
+}
+
+function buildExportHref(filter: {
+  rawStatus: string;
+  rawSupplier: string;
+  rawQ: string;
+}): string {
+  const params = new URLSearchParams();
+  if (filter.rawStatus) params.set("status", filter.rawStatus);
+  if (filter.rawSupplier) params.set("supplier", filter.rawSupplier);
+  if (filter.rawQ) params.set("q", filter.rawQ);
+  const qs = params.toString();
+  return qs ? `/purchase-orders/export?${qs}` : "/purchase-orders/export";
 }
 
 type PurchaseOrdersPageProps = {
@@ -135,12 +148,20 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
           <h1 className="text-2xl font-semibold">{t.purchaseOrders.heading}</h1>
           <p className="text-muted-foreground">{t.purchaseOrders.subtitle}</p>
         </div>
-        <Button asChild>
-          <Link href="/purchase-orders/new">
-            <Plus className="h-4 w-4" />
-            {t.purchaseOrders.newPurchaseOrder}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href={buildExportHref(filter)}>
+              <Download className="h-4 w-4" />
+              {t.common.exportCsv}
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/purchase-orders/new">
+              <Plus className="h-4 w-4" />
+              {t.purchaseOrders.newPurchaseOrder}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <PurchaseOrdersFilterBar
