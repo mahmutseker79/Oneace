@@ -2366,6 +2366,230 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 36 — Audit log (shipped 2026-04-11)
+
+Tagged `v0.36.0-sprint36`. Introduces the first pass of a tenant-scoped,
+append-only audit trail so OWNER / ADMIN can answer the
+"who changed what?" question without pulling Postgres console access
+or a structured-logging pipeline (still pending in Sprint 37). The
+log is not a BI tool — it's the MVP governance surface that every
+multi-tenant SaaS needs before it can safely onboard a second team.
+
+### What shipped
+
+- **`AuditEvent` Prisma model** — a new tenant-scoped append-only
+  table with the shape
+  `(id, organizationId, actorId?, action, entityType, entityId?, metadata: Json?, createdAt)`.
+  Composite index `(organizationId, createdAt)` powers the default
+  newest-first page query; a secondary `(entityType, entityId)` index
+  is prepped for future per-entity drill-downs.
+  `organizationId → Organization` is `onDelete: Cascade` so
+  deleting a tenant wipes its log in the same transaction — see the
+  design decision block below for the intentional consequence on
+  `deleteOrganizationAction`.
+  `actorId → User?` is `onDelete: SetNull` so a later "remove user"
+  flow can destroy a `User` row without invalidating old log entries
+  — they gracefully render as "Deleted user" on `/audit`.
+
+- **`src/lib/audit.ts` write helper** — thin, single-function wrapper
+  `recordAudit({ organizationId, actorId, action, entityType, entityId?, metadata? })`.
+  Key posture: the helper **swallows its own errors and logs via
+  `console.error`** rather than bubbling. The invariant is "an
+  action that already succeeded must not be flipped to failed
+  because its audit write hiccuped" — we'd rather lose a row than
+  refuse a legitimate write. The Sprint 37 structured logger will
+  replace the bare `console.error` without any caller changes.
+  `AuditAction` and `AuditEntityType` are exported union types so
+  TypeScript enforces the canonical vocabulary at every call site.
+
+- **Action-layer wiring into 12 actions** across the three
+  highest-severity surfaces:
+  - `settings/actions.ts`:
+    `updateOrganizationProfileAction` records
+    `organization.updated` with a `{ before, after }` diff of the
+    `name` + `slug` fields.
+    `transferOrganizationAction` records
+    `organization.transferred` with the outgoing and incoming user
+    ids + the target's email (so the reader can see ownership
+    hand-offs without a second query).
+    `deleteOrganizationAction` deliberately does NOT record an
+    event — the cascade would wipe it in the same transaction,
+    so org-deletion observability belongs in the Sprint 37 server
+    logger instead. This is documented inline.
+  - `users/actions.ts`:
+    `inviteMemberAction` records `member.invited` (email, role,
+    expiresAt).
+    `revokeInvitationAction` records `invitation.revoked` (email,
+    role).
+    `acceptInvitationAction` records `invitation.accepted` (email,
+    role, `alreadyMember` hint).
+    `updateMemberRoleAction` records `member.role_changed` (target
+    userId, `from`, `to`) with an explicit no-op early-return so a
+    same-role re-submit doesn't spam the log.
+    `removeMemberAction` records `member.removed` (target userId,
+    email, last-known role).
+  - `purchase-orders/actions.ts`:
+    `createPurchaseOrderAction` records `purchase_order.created`
+    (supplierId, warehouseId, status, line count, currency).
+    `markPurchaseOrderSentAction` records `purchase_order.sent`
+    (poNumber + previous status).
+    `cancelPurchaseOrderAction` records `purchase_order.cancelled`
+    (poNumber + previous status).
+    `deletePurchaseOrderAction` records `purchase_order.deleted`
+    with `entityId: null` intentionally — the row is gone; the
+    durable reference is the `poNumber` field in metadata.
+    `receivePurchaseOrderAction` records `purchase_order.received`
+    with `receivedLineCount`, `fullyReceived`, and
+    `totalQty` summed across receipts. The log write happens
+    outside the receive transaction so a ledger hiccup can't
+    rollback real stock movements.
+
+- **`/audit` page** — new route under `src/app/(app)/audit/` gated
+  on `membership.role ∈ {OWNER, ADMIN}`. Non-admins get a friendly
+  "You do not have permission" card before any DB query runs
+  (defence-in-depth: the role check happens in the same
+  component that does the findMany, not just the nav link).
+  The page is a pure server component — no client hydration cost —
+  with cursor-based pagination via `?cursor=<id>` query params.
+  We fetch `PAGE_SIZE + 1` rows (50 + 1) so a "Load more" link
+  can be rendered without a second count query, and the cursor
+  follows Prisma's `cursor + skip: 1` idiom over a stable
+  `(createdAt desc, id desc)` tiebreaker. No client bundle, no
+  loading states, clean back-button URL history.
+
+- **Sidebar nav entry** — new "Audit log" item between Users and
+  Settings, lucide `History` icon. The existing layout already
+  spreads `t.nav` into `SidebarLabels`, so the new `audit` key
+  flows through automatically; we only had to append the literal
+  array entry.
+
+- **i18n additions** — new `t.nav.audit` and a full `t.audit`
+  namespace at the end of `src/lib/i18n/messages/en.ts`. The
+  `t.audit.actions` sub-object is a literal map from every
+  `AuditAction` string to its human-readable label, which keeps
+  the page render robust even if a future sprint adds a new
+  action without touching the UI (the render falls back to the
+  raw action string).
+
+### Design decisions recorded
+
+1. **Cascade on organizationId, not restrict.** Deleting an
+   organization wipes its audit log in the same transaction. This
+   is the correct multi-tenant posture — an audited tenant that
+   deletes itself shouldn't leave dangling log rows pointing at a
+   ghost FK. The trade-off is that `organization.deleted` events
+   are impossible to capture in this table; they belong in the
+   Sprint 37 server-side structured log. We accept that.
+
+2. **SetNull on actorId, not Cascade.** When a user is later
+   removed from the platform, their historical audit rows survive
+   with `actor = null`. The `/audit` page renders this as
+   "Deleted user", which is the right behaviour for a governance
+   log — wiping a former admin's tracks defeats the point.
+
+3. **Free-form `action` string, not a Prisma enum.** New actions
+   can be added without a schema migration; the union type
+   `AuditAction` gives TypeScript-level enforcement at every call
+   site without forcing a DB migration for every new verb. The
+   `/audit` page groups by dot-prefix (`organization`, `member`,
+   `invitation`, `purchase_order`) so the grouping vocabulary is
+   intrinsic to the naming convention, not a second enum.
+
+4. **No `updatedAt` on `AuditEvent`.** Audit rows are never
+   updated; the model enforces this at the schema level by
+   omitting the column. `deleteMany` is likewise never called
+   from application code — the only way a row leaves the table
+   is via `organizationId`-cascade.
+
+5. **`metadata: Json?` is deliberately small.** The helper
+   documents "this is a log, not a data warehouse". Full before/
+   after diffs for complex rows belong in the entity detail
+   page's own history feed (a follow-up sprint); the audit log
+   carries the minimum context a reviewer needs to decide whether
+   to investigate further.
+
+6. **`recordAudit` never throws.** The only safe place to audit
+   is *after* the primary mutation has committed, and at that
+   point the audit write is the log's problem, not the user's.
+   `console.error` keeps failures visible in `vercel logs` /
+   `next start` output; Sprint 37 will upgrade this to structured
+   logging without any caller-side edit.
+
+7. **`updateMemberRoleAction` no-op skip.** If the role doesn't
+   actually change, the action returns `ok: true` without
+   touching the log or the revalidate. Same-role resubmits from
+   a flaky client retry aren't interesting to the governance
+   reader.
+
+8. **Admin-only `/audit` route.** MANAGER/MEMBER/VIEWER see
+   nothing — not even an empty state. The nav entry would leak
+   the URL to a curious MEMBER, but the page's own role check
+   is the load-bearing guard, not the nav visibility. (A future
+   sprint can filter the nav array by role, but for Sprint 36
+   the explicit in-page guard is the simpler correct answer.)
+
+9. **Cursor pagination over offset.** Audit logs grow
+   monotonically; offset pagination would quietly shift older
+   rows across pages as new events arrived. Cursor pagination
+   guarantees a stable "where I was in the list" regardless of
+   concurrent writes. The composite
+   `(organizationId, createdAt)` index supports this cheaply.
+
+### Files touched
+
+- `prisma/schema.prisma` — new `AuditEvent` model; two relations
+  added (Organization.auditEvents, User.auditEventsLogged)
+- `src/generated/prisma/` — regenerated client (Sprint 36 types)
+- `src/lib/audit.ts` — NEW; the write helper + vocabulary types
+- `src/app/(app)/settings/actions.ts` — 2 action audit wires
+  (update + transfer); inline note on why delete is skipped
+- `src/app/(app)/users/actions.ts` — 5 action audit wires
+  (invite, revoke, accept, role-change, remove) + same-role
+  early-return for role-change
+- `src/app/(app)/purchase-orders/actions.ts` — 5 action audit
+  wires (create, sent, cancelled, deleted, received)
+- `src/app/(app)/audit/page.tsx` — NEW; admin-gated viewer with
+  cursor-based "Load more" pagination
+- `src/components/shell/sidebar.tsx` — added `audit` nav entry
+  with lucide `History` icon; extended `SidebarLabels.nav`
+- `src/lib/i18n/messages/en.ts` — new `nav.audit` key and full
+  `audit` namespace (metaTitle, heading, subtitle, forbidden,
+  empty, 5 column labels, 13 action labels)
+
+### Verified clean
+
+```
+npx tsc --noEmit                   # 0 errors
+npx biome check src                # 0 errors (180 files)
+DATABASE_URL=... npx prisma validate  # valid
+```
+
+### Known gaps / follow-up
+
+- `items`, `warehouses`, `categories`, `stock_movements`,
+  `stock_counts`, `suppliers` mutations are **not** audited yet.
+  Adding them is mechanical (the helper + vocabulary are the
+  hard parts); it's deferred only to keep this sprint's diff
+  reviewable. A dedicated "audit wave 2" sprint can chase down
+  the remaining ~20 server actions with no schema work.
+- The `/audit` page has no filters. A later sprint can add
+  per-entity / per-actor / per-action filters without touching
+  the helper. The `(entityType, entityId)` secondary index is
+  already prepped for the first of those.
+- `organization.deleted` and any user-deletion events bypass the
+  table (cascade / no user-delete flow). Sprint 37's structured
+  logger is the right home for those — they don't belong in a
+  tenant-scoped per-org log.
+- `metadata` rendering on the page is a single-line truncated
+  inline list. A detail drawer or per-row "expand JSON" affordance
+  is a Sprint-38+ enhancement.
+- No audit-log retention policy. Rows grow forever until the
+  org is deleted. If storage ever becomes a concern, a partial
+  index + a scheduled `deleteMany` older than N days is the
+  natural first cut — but we're nowhere near that at MVP scale.
+
+---
+
 ## Sprint 35 — ZXing-wasm scanner fallback (shipped 2026-04-11)
 
 Tagged `v0.35.0-sprint35`. Closes the biggest usability cliff in the

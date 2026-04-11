@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 35.
+and iterating on it through Sprint 0 → Sprint 36.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 35.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 34 plus **Sprint 35** are already committed in a
+Sprint 0 through Sprint 35 plus **Sprint 36** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.35.0-sprint35.bundle
+oneace-next/oneace-next-port-v0.36.0-sprint36.bundle
 ```
 
 This bundle contains:
 
-- **78 commits** — 8 Sprint 0 + 1 docs + Sprints 1..35 (each = 1 feature
+- **80 commits** — 8 Sprint 0 + 1 docs + Sprints 1..36 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -61,9 +61,10 @@ This bundle contains:
   - `v0.33.0-sprint33` — Sprint 33 complete (invitation email delivery + post-login `?next=/invite/[token]` redirect bundle — Mailer adapter + ConsoleMailer/ResendMailer, rendered invitation-email template, inviteMemberAction wires delivery with soft-miss, login/register forms honour `?next=`, invitee register variant skips org creation)
   - `v0.34.0-sprint34` — Sprint 34 complete (supplier drill-down detail page at `/suppliers/[id]` — identity header + 3-up contact/address/notes cards + 4 KPIs matching Sprint 12 math + recent POs table with timeliness badges + top items card; fixes the Sprint 12 leaderboard broken link)
   - `v0.35.0-sprint35` — Sprint 35 complete (ZXing-wasm scanner fallback — pluggable detector abstraction at `src/lib/scanner/detector.ts`, lazy-loaded `@zxing/browser` backend for Safari + Firefox, engine badge in the camera card, scanning now works on iPhones; closes the biggest `/scan` usability cliff since Sprint 8)
+  - `v0.36.0-sprint36` — Sprint 36 complete (tenant-scoped append-only audit log — new `AuditEvent` Prisma model with composite `(organizationId, createdAt)` index + secondary `(entityType, entityId)` index, `src/lib/audit.ts` write helper with typed `AuditAction` vocabulary, wired into 12 high-severity actions across settings / users / purchase-orders, new admin-gated `/audit` page with cursor-paginated "Load more", History-icon sidebar entry, full `t.audit` i18n namespace with 13 action labels)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.35.0-sprint35.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.36.0-sprint36.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -77,11 +78,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.35.0-sprint35.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.36.0-sprint36.bundle \
           next-port:next-port
 
-# Also pull all thirty-five sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.35.0-sprint35.bundle \
+# Also pull all thirty-six sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.36.0-sprint36.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -116,11 +117,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.35.0-sprint35.bun
           refs/tags/v0.32.0-sprint32:refs/tags/v0.32.0-sprint32 \
           refs/tags/v0.33.0-sprint33:refs/tags/v0.33.0-sprint33 \
           refs/tags/v0.34.0-sprint34:refs/tags/v0.34.0-sprint34 \
-          refs/tags/v0.35.0-sprint35:refs/tags/v0.35.0-sprint35
+          refs/tags/v0.35.0-sprint35:refs/tags/v0.35.0-sprint35 \
+          refs/tags/v0.36.0-sprint36:refs/tags/v0.36.0-sprint36
 
 # Verify
-git log --oneline next-port                # should show 78 commits
-git tag -l                                 # should include all thirty-five sprint tags
+git log --oneline next-port                # should show 80 commits
+git tag -l                                 # should include all thirty-six sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -134,8 +136,114 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
                v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
-               v0.34.0-sprint34 v0.35.0-sprint35
+               v0.34.0-sprint34 v0.35.0-sprint35 v0.36.0-sprint36
 ```
+
+### What Sprint 36 added (v0.36.0-sprint36)
+
+Tenant-scoped append-only audit log — the first pass of a governance
+surface that answers the "who changed what?" question without
+requiring Postgres console access or a structured-logging pipeline
+(Sprint 37 territory). Up to this sprint, OneAce's multi-tenant
+story covered switcher (Sprint 11), delete (Sprint 21), transfer
+(Sprint 32), and invitation email delivery (Sprint 33) — but an
+admin couldn't see, after the fact, *who* changed what in their
+org. This sprint is the missing load-bearing piece before OneAce
+can safely host a second paying team.
+
+**New schema**: `AuditEvent` model in `prisma/schema.prisma` —
+`(id, organizationId, actorId?, action, entityType, entityId?, metadata: Json?, createdAt)`.
+Composite `(organizationId, createdAt)` index powers the default
+"latest first" read; secondary `(entityType, entityId)` index is
+prepped for future per-entity drill-downs. The `organization`
+relation is `onDelete: Cascade` (audited tenant deletes wipe
+their logs cleanly), the `actor` relation is `onDelete: SetNull`
+(deleting a former user preserves the historical trail as
+"Deleted user"). No `updatedAt` — rows are strictly append-only.
+Two relation arrays added upstream: `Organization.auditEvents`
+and `User.auditEventsLogged`.
+
+**New file**: `src/lib/audit.ts` — the write helper
+`recordAudit({ organizationId, actorId, action, entityType, entityId?, metadata? })`
+plus two typed unions (`AuditAction` and `AuditEntityType`) that
+define the canonical vocabulary. The helper **swallows its own
+errors and logs via `console.error`** rather than bubbling —
+the invariant is that a successfully-committed action must never
+flip to failed because its audit write hiccuped. We'd rather
+lose a row than refuse a legitimate mutation. Sprint 37's
+structured logger will replace the bare console call without
+any caller-side edit.
+
+**Action-layer wiring** — 12 `recordAudit` calls across three
+files:
+
+- `src/app/(app)/settings/actions.ts` — `organization.updated`
+  (with `{ before, after }` diff of `name`/`slug`) and
+  `organization.transferred` (with outgoing/incoming user ids
+  and the target's email). `deleteOrganizationAction` intentionally
+  does NOT write an audit event — the cascade would wipe it in
+  the same transaction, so org-deletion observability belongs in
+  the Sprint 37 server log instead. This is documented inline
+  in the action body.
+- `src/app/(app)/users/actions.ts` — five wires covering
+  `member.invited`, `invitation.revoked`, `invitation.accepted`,
+  `member.role_changed`, `member.removed`. The role-change action
+  gained a no-op early-return so same-role resubmits from a flaky
+  client retry don't spam the log.
+- `src/app/(app)/purchase-orders/actions.ts` — five wires
+  covering `purchase_order.created` / `.sent` / `.cancelled` /
+  `.deleted` / `.received`. The deleted event intentionally
+  carries `entityId: null` because the PO row is gone; the
+  durable reference is the `poNumber` in metadata. The received
+  event is logged *outside* the receive transaction so a ledger
+  hiccup can't rollback real stock movements.
+
+**New page**: `src/app/(app)/audit/page.tsx` — admin-gated viewer
+(`membership.role ∈ {OWNER, ADMIN}`, checked in the same
+component that issues the `findMany` so the role check is
+defence-in-depth, not nav-visibility). Pure server component
+— zero client bundle — with cursor-paginated "Load more" via a
+`?cursor=<id>` search param. We fetch `PAGE_SIZE + 1` (50 + 1)
+rows so the next-page detection doesn't need a second count
+query, and the cursor follows Prisma's
+`cursor + skip: 1` idiom over a stable `(createdAt desc, id desc)`
+tiebreaker. Table columns: When / Actor / Action / Entity /
+Details, with metadata rendered as a terse single-line
+"key: value · key: value" inline summary.
+
+**Sidebar + i18n**: new `Audit log` nav entry between Users and
+Settings (lucide `History` icon). Extended `SidebarLabels.nav`
+with an `audit` key; the existing layout spreads `t.nav` into
+the sidebar so the new key flowed through without an extra
+rewire. New `t.nav.audit` and full `t.audit` namespace at the
+end of `src/lib/i18n/messages/en.ts` — metaTitle, heading,
+subtitle, forbidden / empty / systemActor / deletedUser /
+noEntity / loadMore strings, 5 column labels, and a full
+`t.audit.actions` map with 13 human-readable labels keyed by
+`AuditAction`.
+
+Files touched:
+
+- `prisma/schema.prisma` — new `AuditEvent` model + two relation
+  arrays on Organization / User
+- `src/generated/prisma/` — regenerated client
+- `src/lib/audit.ts` — NEW write helper + vocabulary types
+- `src/app/(app)/settings/actions.ts` — 2 audit wires + delete
+  skip note
+- `src/app/(app)/users/actions.ts` — 5 audit wires + role-change
+  no-op guard
+- `src/app/(app)/purchase-orders/actions.ts` — 5 audit wires
+- `src/app/(app)/audit/page.tsx` — NEW admin-gated viewer with
+  cursor pagination
+- `src/components/shell/sidebar.tsx` — audit nav entry +
+  `SidebarLabels.nav.audit` field
+- `src/lib/i18n/messages/en.ts` — `nav.audit` key + full `audit`
+  namespace
+
+Verified clean: `tsc --noEmit` 0 errors, `biome check src` 0
+errors across 180 files, `prisma validate` valid.
+
+---
 
 ### What Sprint 35 added (v0.35.0-sprint35)
 
