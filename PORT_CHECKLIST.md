@@ -1993,6 +1993,184 @@ one-line change when the type lands upstream.
 
 ---
 
+## Sprint 29 — PWA Sprint 6: offline stock-counts viewer (shipped 2026-04-11)
+
+Tagged `v0.29.0-sprint29`. Finally delivers the "resume a
+stock count while offline" story that Sprint 27 explicitly
+deferred: when a user opens a specific count's detail page
+while online, the server snapshot (header + resolved scope
+rows + per-row counted quantity) is persisted into Dexie;
+when that same user loses connectivity, `/offline/stock-counts`
+shows the cached counts with a list view and a per-count detail
+view that reads directly from IndexedDB.
+
+**Design decision — cache per-count, not per-list.** Visiting
+`/stock-counts` on its own does NOT populate the cache. The
+expensive part of a cached count is the rows (every item ×
+warehouse in scope), and those only matter for a count the user
+is actually about to walk. Opening a specific count writes that
+count's header + rows. A shared-laptop user doesn't leak one
+count's scope into another count's offline view, and the meta
+row's "synced X ago" stamp reflects the most recent per-count
+write across the scope.
+
+**Design decision — labels resolved server-side at write
+time.** The detail page already does bulk lookups on
+items/warehouses for its own render. We piggy-back on those
+maps to write `itemSku`/`itemName`/`warehouseName` into Dexie so
+the offline viewer never has to cross-reference the items cache
+at read time. That keeps the viewer's IndexedDB story to two
+range scans (header by key, rows by `countId`) with zero joins.
+
+**Design decision — replace-on-write, mirroring items-cache.**
+The writer drops every `stockCountRows` row keyed on
+`countId` before bulkPutting the fresh set. Without tombstones
+we can't otherwise reflect a server-side row deletion, so the
+honest move is a full replace inside one Dexie transaction. The
+hit is tiny because per-count row counts are in the low
+hundreds at most.
+
+**Design decision — `force-static` route + client query-string
+read.** `src/app/offline/stock-counts/page.tsx` is
+`force-static` so the SW can precache a single HTML shell.
+Next's `searchParams` prop is disabled on force-static routes
+(one prerender serves every query), so the shell exports an
+`OfflineStockCountsShell` client wrapper that reads
+`?id=` from `window.location.search` on mount and subscribes
+to `popstate` so back-navigation between list and detail
+works without a full reload.
+
+**Design decision — the viewer picks the "most recent sync"
+scope.** Mirrors `offline-items-view`. Pulling every
+`stockCounts`-table meta row and sorting by `syncedAt` picks
+the (org, user) tuple that was last active. This is the
+honest pick for a shared-browser case: whatever the user
+touched most recently is the cache that corresponds to
+whatever shell they were just looking at.
+
+**Design decision — cross-user filter in `readStockCountDetail`
+and in the client detail component.** Both the helper and the
+direct `db.stockCounts.get()` call in the detail view compare
+the cached header's `userId` to the active scope's `userId`
+before rendering. A belt-and-braces check because the composite
+key is `${orgId}:${id}` — scoping on org alone would be a leak
+on a shared laptop where two users share an org.
+
+**Design decision — point-in-time `entryCount`, live progress
+deferred.** The cache captures `entryCount` at write time and
+the viewer renders it unchanged. Anything the user queues
+locally after the sync lives in the Sprint 25 `pendingOps`
+table; reading it into the viewer's progress indicator is a
+future enhancement (tracked alongside Sprint 31's live-query
+story) and was deliberately left out of Sprint 29 so the
+schema-bump + two-table introduction could ship cleanly
+without entangling the reconcile flow.
+
+- [x] `src/lib/offline/db.ts` — `OFFLINE_DB_VERSION` bumped
+      `v2` → `v3`. Adds `CachedStockCount` + `CachedStockCountRow`
+      row types alongside `CacheMeta.table` union expanded to
+      include `"stockCounts"`. New `stockCounts` +
+      `stockCountRows` Dexie tables declared on the Dexie
+      subclass. New `.version(3).stores({...})` block appended
+      (never edited in place; Dexie replays every version on
+      open so touching a prior block corrupts the migration
+      graph). Index choices:
+      `stockCounts.[orgId+userId]` + `stockCounts.syncedAt` +
+      `stockCounts.state`, and `stockCountRows.countId` +
+      `stockCountRows.[orgId+userId]`. New helper
+      `stockCountRowKey(orgId, countId, snapshotId)` prefixes
+      by `countId` so a range scan can load every row in a count
+      in one shot.
+- [x] `src/lib/offline/stockcounts-cache.ts` — **NEW.** Exports
+      `StockCountSnapshotHeader`, `StockCountSnapshotRowInput`,
+      `StockCountSnapshotScope` (server-safe plain types — no
+      Prisma imports), `writeStockCountDetail(scope, header,
+      rows)`, `readStockCountList(scope)`, and
+      `readStockCountDetail(scope, countId)`. The writer runs
+      one `rw` transaction over `stockCounts` + `stockCountRows`
+      + `meta`: deletes existing rows by `countId`, bulkPuts the
+      fresh set, puts the header, then recomputes the running
+      "total cached counts in this scope" via
+      `.where("[orgId+userId]").equals([orgId, userId]).count()`
+      for the meta row. Returns boolean; all IndexedDB failures
+      (quota, abort, missing DB) are swallowed and return
+      `false`.
+- [x] `src/components/offline/stock-count-cache-sync.tsx` —
+      **NEW.** Mirrors `items-cache-sync`. Takes the snapshot
+      as a prop (no re-fetch on mount), holds refs for
+      scope/header/rows, deduplicates writes via a
+      `lastWrittenRef` keyed on
+      `${orgId}:${userId}:${countId}:${state}:${rowCount}:${entryCount}`,
+      and defers the actual Dexie write to `requestIdleCallback`
+      (falls back to `setTimeout(250)` on Safari). Renders
+      `null`. The dedupe ref exists specifically so React's
+      Strict-Mode effect double-invoke in dev doesn't double-
+      write to IndexedDB.
+- [x] `src/app/(app)/stock-counts/[id]/page.tsx` — imports
+      `StockCountCacheSync` and the two type-only shapes from
+      the new cache module. After `scopeRows` is assembled,
+      builds an `offlineHeader` (nine plain fields — no
+      Prisma objects crossing the server/client boundary) and
+      an `offlineRows` array keyed on the existing `itemById`
+      + `warehouseById` bulk maps. Per-row `countedQuantity`
+      is pulled from the same `varianceRows` the render path
+      uses, so there's no extra walk over `count.entries`. The
+      `<StockCountCacheSync>` mount sits at the top of the
+      returned `<div className="space-y-6">` so it renders
+      `null` before the header/content and never affects
+      layout.
+- [x] `src/app/offline/stock-counts/page.tsx` — **NEW.**
+      `force-static` server component. Pulls `getMessages()`
+      (platform default, no request-scoped locale), assembles
+      the `OfflineStockCountsViewLabels` bundle, and hands it
+      to `<OfflineStockCountsShell>`. Zero auth, zero DB calls,
+      safe to precache. `generateMetadata()` sets
+      `robots: noindex, nofollow`.
+- [x] `src/components/offline/offline-stockcounts-view.tsx` —
+      **NEW.** Exports `OfflineStockCountsShell` (reads `?id=`
+      from `window.location.search` on mount, subscribes to
+      `popstate`, flips between list and detail views) which
+      wraps the internal `OfflineStockCountsView`. The list
+      view range-scans `stockCounts.[orgId+userId]` for the
+      newest-`syncedAt` scope and renders name/state/rows/
+      entries/synced-ago. The detail view range-scans
+      `stockCountRows.countId`, sorts by `itemName` using the
+      active locale's `localeCompare`, and renders the blind-
+      mode banner + scope table. Detail view computes variance
+      inline from `countedQuantity - expectedQuantity` without
+      pulling in the Sprint 27 variance helper so the offline
+      bundle stays small.
+- [x] `src/app/offline/page.tsx` — adds a second CTA
+      `View offline stock counts` → `/offline/stock-counts`
+      directly under the existing `View cached catalog`
+      button. Both render on the static offline fallback so
+      a cold-start navigation while offline has two possible
+      landing spots.
+- [x] `public/sw.js` — `CACHE_VERSION` bumped `oneace-sw-v3`
+      → `oneace-sw-v4` so `activate()` evicts the v3 caches
+      atomically on rollout. `PRECACHE_URLS` gains
+      `/offline/stock-counts` so the force-static shell is
+      available on cold-start offline navigations. Top-of-file
+      doc block updated to document the Sprint 29 addition.
+- [x] `src/lib/i18n/messages/en.ts` — new `offline.stockCounts`
+      sub-block with 34 keys covering the list shell, detail
+      view, state/methodology labels, and the progress string
+      (uses the same `{counted}/{total}` placeholder pattern
+      the rest of the i18n bundle follows). Adds one new key
+      `offline.viewCachedStockCountsCta` for the offline
+      fallback's second CTA. All English; future locales
+      extend en.ts.
+- [x] Verified clean: `prisma validate` (dummy env vars) +
+      `tsc --noEmit` exit 0 + `biome check src public/sw.js`
+      clean after one auto-format pass (166 files).
+- [x] **No new runtime dependencies.** The sprint adds zero
+      npm packages. Dexie v2 → v3 is a schema bump, not a
+      Dexie version bump. The two new Dexie tables and their
+      indexes live inside the existing `oneace-offline`
+      database so existing Sprint 23/25 data is untouched.
+
+---
+
 ### Still to port (deferred post-Sprint-22)
 
 - [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
@@ -2013,6 +2191,11 @@ one-line change when the type lands upstream.
       (surface the "new version available" state, wire the
       parked `beforeinstallprompt` to a first-party Install
       button). **Shipped as Sprint 28** — see below.
+- [x] PWA Sprint 6 — offline stock-counts viewer
+      (cache-on-detail-visit for stock counts, with a
+      `/offline/stock-counts` list + detail view served from
+      Dexie while offline). **Shipped as Sprint 29** — see
+      below.
 - [ ] Audit log
 - [ ] Email delivery for invitations (MVP: admin copies link)
 - [ ] `?next=/invite/[token]` redirect after sign-in so users

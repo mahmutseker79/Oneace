@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 28.
+and iterating on it through Sprint 0 → Sprint 29.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 28.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 27 plus **Sprint 28** are already committed in a
+Sprint 0 through Sprint 28 plus **Sprint 29** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.28.0-sprint28.bundle
+oneace-next/oneace-next-port-v0.29.0-sprint29.bundle
 ```
 
 This bundle contains:
 
-- **64 commits** — 8 Sprint 0 + 1 docs + Sprints 1..28 (each = 1 feature
+- **66 commits** — 8 Sprint 0 + 1 docs + Sprints 1..29 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -54,9 +54,10 @@ This bundle contains:
   - `v0.26.0-sprint26` — Sprint 26 complete (PWA Sprint 4 Part B — first offline op: movement create)
   - `v0.27.0-sprint27` — Sprint 27 complete (PWA Sprint 4 follow-on — second offline op: count entry add / stock-count offline session)
   - `v0.28.0-sprint28` — Sprint 28 complete (PWA Sprint 5 — Background Sync API + new-version prompt + first-party Install button)
+  - `v0.29.0-sprint29` — Sprint 29 complete (PWA Sprint 6 — offline stock-counts viewer: cache-on-detail-visit + /offline/stock-counts list + detail)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.27.0-sprint27.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.28.0-sprint28.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -70,11 +71,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.28.0-sprint28.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.29.0-sprint29.bundle \
           next-port:next-port
 
 # Also pull all twenty-eight sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.28.0-sprint28.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.29.0-sprint29.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -102,11 +103,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.28.0-sprint28.bun
           refs/tags/v0.25.0-sprint25:refs/tags/v0.25.0-sprint25 \
           refs/tags/v0.26.0-sprint26:refs/tags/v0.26.0-sprint26 \
           refs/tags/v0.27.0-sprint27:refs/tags/v0.27.0-sprint27 \
-          refs/tags/v0.28.0-sprint28:refs/tags/v0.28.0-sprint28
+          refs/tags/v0.28.0-sprint28:refs/tags/v0.28.0-sprint28 \
+          refs/tags/v0.29.0-sprint29:refs/tags/v0.29.0-sprint29
 
 # Verify
-git log --oneline next-port                # should show 64 commits
-git tag -l                                 # should include all twenty-eight sprint tags
+git log --oneline next-port                # should show 66 commits
+git tag -l                                 # should include all twenty-nine sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -118,8 +120,162 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
-               v0.28.0-sprint28
+               v0.28.0-sprint28 v0.29.0-sprint29
 ```
+
+### What Sprint 29 added (v0.29.0-sprint29)
+
+PWA Sprint 6: finally delivers the "resume a stock count while offline"
+story that Sprint 27 deferred. A stock-count detail page visit while
+online now persists the resolved snapshot (header + per-row counted
+quantity) into Dexie, and a new `/offline/stock-counts` force-static
+route reads those rows back into a list + detail viewer. No schema
+changes to Postgres — this is purely a browser-side cache layered on
+top of the existing Prisma model.
+
+- **`src/lib/offline/db.ts`** — bumps `OFFLINE_DB_VERSION` from
+  `v2` to `v3`. Adds two row types (`CachedStockCount` +
+  `CachedStockCountRow`) with the fields the offline viewer
+  actually renders (state, methodology, warehouse label, scope
+  row count, entry count, per-row expected/counted quantity).
+  `CacheMeta.table` union gains `"stockCounts"` so the meta row
+  pattern Sprint 23 established extends cleanly. A new
+  `.version(3).stores({...})` block appends the two new stores
+  — never editing a prior block, because Dexie replays every
+  version on open and rewriting v1/v2 corrupts migration graphs
+  for anyone upgrading from those points. Index choices:
+  `stockCounts.[orgId+userId]` (scope range scan) +
+  `stockCounts.syncedAt` (newest-first sort) +
+  `stockCounts.state`, and `stockCountRows.countId` (detail
+  range scan) + `stockCountRows.[orgId+userId]` (scope cleanup).
+  New helper `stockCountRowKey(orgId, countId, snapshotId)`
+  prefixes by `countId` so one range scan loads an entire
+  count in one shot.
+- **`src/lib/offline/stockcounts-cache.ts`** — NEW module.
+  Exports server-safe plain types (no Prisma imports) and three
+  helpers: `writeStockCountDetail` runs one `rw` transaction
+  over the two new tables + `meta` (delete existing rows
+  keyed to this count, bulkPut the fresh set, put the header,
+  recompute the running scope count for the meta row);
+  `readStockCountList` returns the newest-synced-first list
+  for a given scope; `readStockCountDetail` returns
+  `{ header, rows }` with a defensive cross-user filter so
+  one tab can't leak another user's cache on a shared laptop.
+  All IndexedDB failures (quota, abort, missing DB) are
+  swallowed — the reader returns `{ header: null, rows: [] }`,
+  the writer returns `false`.
+- **`src/components/offline/stock-count-cache-sync.tsx`** — NEW
+  mount-on-detail-page client component. Mirrors Sprint 24's
+  `items-cache-sync`: takes `{ scope, header, rows }` as a prop
+  (no re-fetch on mount), keys the effect on a snapshot
+  signature, dedupes via `lastWrittenRef` (so Strict Mode's
+  double-invoke in dev doesn't double-write), and defers the
+  Dexie write to `requestIdleCallback` with a `setTimeout(250)`
+  fallback for Safari. Renders `null`.
+- **`src/app/(app)/stock-counts/[id]/page.tsx`** — piggy-backs
+  on the existing bulk lookups (`itemById`, `warehouseById`)
+  that the page already does for its own render. After the
+  variance computation, builds an `offlineHeader` (nine plain
+  fields — no Prisma objects crossing the server/client boundary)
+  and an `offlineRows` array pulling per-row `countedQuantity`
+  directly from `varianceRows` so no extra walk over
+  `count.entries` is needed. `<StockCountCacheSync>` is
+  mounted at the top of the return block so it renders `null`
+  before the header/content and never affects layout.
+- **`src/app/offline/stock-counts/page.tsx`** — NEW
+  `force-static` server component. Pulls `getMessages()` (the
+  platform default locale because the page is prerendered at
+  build time with no request scope), assembles a 34-field
+  label bundle, and hands it to `<OfflineStockCountsShell>`.
+  Zero auth, zero DB, safe to precache.
+- **`src/components/offline/offline-stockcounts-view.tsx`** —
+  NEW client component. Top-level `OfflineStockCountsShell`
+  reads `?id=` from `window.location.search` on mount (Next's
+  `searchParams` prop is disabled on force-static routes — one
+  prerender serves every query string) and subscribes to
+  `popstate` so the browser back button flips between list and
+  detail views without a full reload. The list view
+  range-scans `stockCounts.[orgId+userId]` for the
+  newest-`syncedAt` scope (same "most-recent wins" rule that
+  `offline-items-view` uses); the detail view range-scans
+  `stockCountRows.countId` and sorts rows by `itemName` using
+  `localeCompare` for deterministic order. Detail view renders
+  blind-mode banner + SKU/item/warehouse/expected/counted/
+  variance table, with variance computed inline as
+  `countedQuantity - expectedQuantity` rather than importing
+  the Sprint 27 variance helper so the offline bundle stays
+  small.
+- **`src/app/offline/page.tsx`** — adds a second CTA
+  `View offline stock counts` → `/offline/stock-counts` under
+  the existing `View cached catalog` button. A user who loses
+  connectivity cold-starts this page and now has two possible
+  landing spots, mirroring the two force-static read caches.
+- **`public/sw.js`** — bumps `CACHE_VERSION` from
+  `oneace-sw-v3` to `oneace-sw-v4` so `activate()` evicts v3
+  caches atomically on rollout. `PRECACHE_URLS` gains
+  `/offline/stock-counts` so the force-static shell is
+  available on cold-start offline navigations the same way
+  `/offline/items` has been since Sprint 24.
+- **`src/lib/i18n/messages/en.ts`** — 34-key
+  `offline.stockCounts` sub-block covering the list shell,
+  detail view, state/methodology labels, and the progress
+  string (uses the same `{counted}/{total}` placeholder
+  pattern the rest of the i18n bundle follows). One new
+  top-level `offline.viewCachedStockCountsCta` for the offline
+  fallback's second CTA. All English; future locales extend
+  en.ts.
+
+**Design decision — cache per-count, not per-list.** Visiting
+`/stock-counts` on its own does NOT populate the cache. The
+expensive part of a cached count is the scope rows (every item ×
+warehouse in scope); those only matter for a count the user is
+actually about to walk. Opening a specific count writes that
+count's header + rows, so blast radius is one count per
+session write. A shared-laptop user doesn't leak one count's
+scope into another count's offline view, and the meta row's
+"synced X ago" stamp reflects the most recent per-count write.
+
+**Design decision — labels resolved server-side at write time.**
+The detail page already does bulk lookups on items and
+warehouses for its own render. We piggy-back on those maps to
+write `itemSku`/`itemName`/`itemUnit`/`warehouseName` into
+Dexie so the offline viewer never cross-references the items
+cache at read time. That keeps the viewer's IndexedDB story
+to two range scans (header by key, rows by `countId`) with
+zero joins.
+
+**Design decision — replace-on-write, mirroring items-cache.**
+The writer deletes every `stockCountRows` row keyed on
+`countId` before bulkPutting the fresh set. Without tombstones
+we can't otherwise reflect a server-side row deletion, so a
+full replace inside one Dexie transaction is the honest move.
+The hit is tiny because per-count row counts are in the low
+hundreds at most.
+
+**Design decision — `force-static` route + client query-string
+read.** The parent page is `force-static` so the SW can
+precache a single HTML shell. Next's `searchParams` prop is
+disabled on force-static (one prerender serves every query),
+so the shell exports a `OfflineStockCountsShell` client
+wrapper that reads `window.location.search` on mount and
+subscribes to `popstate`. List → detail → back works without
+a full reload.
+
+**Design decision — point-in-time `entryCount`, live progress
+deferred.** The cache captures `entryCount` at write time and
+the viewer renders it unchanged. Anything the user queues
+locally after the sync lives in the Sprint 25 `pendingOps`
+table; reading it into the viewer's progress indicator is a
+future enhancement (tracked alongside the Sprint 31 live-query
+work) and was deliberately left out of Sprint 29 so the
+schema-bump + two-table introduction could ship cleanly
+without entangling the reconcile flow.
+
+- **No new runtime dependencies.** Everything in Sprint 29
+  uses APIs that ship with the existing Dexie 4.4.2, Next 15,
+  and React 19 versions. No new `package.json` entries.
+
+---
 
 ### What Sprint 28 added (v0.28.0-sprint28)
 
