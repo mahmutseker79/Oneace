@@ -1,4 +1,4 @@
-import { Package, Plus } from "lucide-react";
+import { Eye, Package, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -111,7 +111,9 @@ export default async function ItemsPage() {
                     <TableRow key={item.id}>
                       <TableCell className="font-mono text-xs">{item.sku}</TableCell>
                       <TableCell>
-                        <div className="font-medium">{item.name}</div>
+                        <Link href={`/items/${item.id}`} className="font-medium hover:underline">
+                          {item.name}
+                        </Link>
                         {price ? (
                           <div className="text-xs text-muted-foreground">{price}</div>
                         ) : null}
@@ -125,6 +127,11 @@ export default async function ItemsPage() {
                       <TableCell>{statusBadge(item.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/items/${item.id}`} aria-label={t.common.search}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
                           <Button variant="ghost" size="sm" asChild>
                             <Link href={`/items/${item.id}/edit`}>{t.common.edit}</Link>
                           </Button>
