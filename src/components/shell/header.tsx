@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 import { Bell, Menu, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { type FormEvent, useEffect, useState } from "react";
 
 export type HeaderLabels = {
   searchPlaceholder: string;
@@ -24,6 +25,23 @@ type HeaderProps = {
 
 export function Header({ userName, organizationName, labels }: HeaderProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentQuery = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(currentQuery);
+
+  // Keep the input in sync when the user navigates directly to /search?q=...
+  // or clears the URL. Without this, going back in history would show stale
+  // text in the box.
+  useEffect(() => {
+    setQuery(currentQuery);
+  }, [currentQuery]);
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = query.trim();
+    if (trimmed.length === 0) return;
+    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+  }
 
   async function handleSignOut() {
     await authClient.signOut();
@@ -44,14 +62,18 @@ export function Header({ userName, organizationName, labels }: HeaderProps) {
         <Menu className="h-5 w-5" />
       </Button>
 
-      <div className="relative flex-1 max-w-xl">
+      <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-xl">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          type="search"
+          name="q"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
           placeholder={labels.searchPlaceholder}
           className="pl-9"
           aria-label={labels.searchLabel}
         />
-      </div>
+      </form>
 
       <div className="ml-auto flex items-center gap-2">
         {organizationName ? (

@@ -1043,6 +1043,32 @@ export const en = {
     },
   },
 
+  search: {
+    metaTitle: "Search",
+    heading: "Search",
+    subtitle: "Find items, SKUs, barcodes, suppliers, and warehouses.",
+    queryLabel: "Query",
+    queryPlaceholder: "Search items, barcodes, SKUs…",
+    emptyQueryTitle: "Type to start searching",
+    emptyQueryBody:
+      "Enter at least two characters. We look across item name, SKU, barcode, description, supplier name, and warehouse name + code.",
+    noResultsTitle: "No matches",
+    noResultsBody: 'Nothing matched "{query}". Try a shorter or different term.',
+    resultsCount: '{count} results for "{query}"',
+    sectionItems: "Items",
+    sectionSuppliers: "Suppliers",
+    sectionWarehouses: "Warehouses",
+    sectionEmpty: "No matches in this section.",
+    itemMetaOnHand: "{qty} on hand",
+    itemMetaBarcode: "Barcode: {barcode}",
+    itemMetaCategory: "Category: {category}",
+    warehouseMetaCode: "Code: {code}",
+    warehouseDefaultBadge: "Default",
+    supplierMetaContact: "Contact: {contact}",
+    truncatedNotice:
+      "Showing the first {limit} matches. Refine your query for more precise results.",
+  },
+
   metadata: {
     title: "OneAce — Inventory Management",
     description:
