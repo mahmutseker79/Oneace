@@ -690,6 +690,58 @@ substring-style design pass.
 
 ---
 
+## Sprint 18 — movements item-substring filter (shipped 2026-04-11)
+
+Tagged `v0.18.0-sprint18`. Closes the other half of the
+post-Sprint-14 "warehouse + item scope" deferred item — item
+scope ships as a substring-search `q` axis (sku / name / barcode
+`contains` insensitive), not a flat `<Select>`. Layers on top of
+Sprint 17's warehouse axis without clobbering `where.OR`.
+
+- [x] `src/app/(app)/movements/filter.ts` — added `q` / `rawQ`
+      to `MovementFilter`, `q` to `MovementSearchParams`,
+      `parseQuery` (trim + 64-char cap, mirrors Sprint 15 PO
+      filter shape). `buildMovementWhere` emits a relation
+      filter `where.item = { OR: [sku, name, barcode
+      contains insensitive] }` — because this lives on
+      `where.item` and NOT on the top-level `where.OR`, it
+      composes cleanly with Sprint 17's TRANSFER warehouse OR
+      under Prisma's implicit outer AND. `hasAnyFilter` counts
+      `q` as active when non-empty.
+- [x] `MovementsFilterBar` — full-width `<input type="search">`
+      above the date/type/warehouse grid row, `Search` icon
+      absolutely-positioned on the left (`pl-9`), `maxLength={64}`
+      to match the server cap. Clear button resets it.
+- [x] `/movements` page — passes `initialQ` through to the
+      filter bar and extends `buildExportHref` to carry `q` in
+      the query string so the Export CSV button deep-links the
+      item search along with the existing axes.
+- [x] `/movements/export` route — now reads `warehouse` and `q`
+      out of the request URL. **Fix for a Sprint 17 oversight**:
+      the export route was still only reading from/to/type, so
+      the Sprint 17 warehouse axis silently dropped when
+      exporting. `filterActive` widened so the 5k → 20k row-cap
+      bump kicks in for pure item/warehouse-scope exports too.
+- [x] i18n — 2 new keys on `t.movements.filter` (`itemLabel`,
+      `itemPlaceholder`). `emptyFilteredBody` updated to
+      mention the item search.
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-18)
+
+- [ ] Per-org default locale / region override
+- [ ] Danger zone / organization delete
+- [ ] Audit log
+- [ ] Offline PWA shell + service worker
+- [ ] Invitation tokens + email flow
+- [ ] Reports xlsx/pdf export variants (CSV only today)
+- [ ] Full-text ranking via Postgres `tsvector` (current
+      `contains` scan is fine to ~10k items per org;
+      migrate at 100k)
+- [ ] All items from post-Sprint-17 deferred list (unchanged)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**

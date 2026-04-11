@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 17.
+and iterating on it through Sprint 0 → Sprint 18.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 17.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 16 plus **Sprint 17** are already committed in a
+Sprint 0 through Sprint 17 plus **Sprint 18** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.17.0-sprint17.bundle
+oneace-next/oneace-next-port-v0.18.0-sprint18.bundle
 ```
 
 This bundle contains:
 
-- **42 commits** — 8 Sprint 0 + 1 docs + Sprints 1..17 (each = 1 feature
+- **44 commits** — 8 Sprint 0 + 1 docs + Sprints 1..18 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -43,9 +43,10 @@ This bundle contains:
   - `v0.15.0-sprint15` — Sprint 15 complete (purchase-order status + supplier + PO-number filter)
   - `v0.16.0-sprint16` — Sprint 16 complete (filter-aware PO CSV export)
   - `v0.17.0-sprint17` — Sprint 17 complete (movements warehouse-scope filter)
+  - `v0.18.0-sprint18` — Sprint 18 complete (movements item-substring filter)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.16.0-sprint16.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.17.0-sprint17.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -59,11 +60,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.17.0-sprint17.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.18.0-sprint18.bundle \
           next-port:next-port
 
-# Also pull all seventeen sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.17.0-sprint17.bundle \
+# Also pull all eighteen sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.18.0-sprint18.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -80,11 +81,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.17.0-sprint17.bun
           refs/tags/v0.14.0-sprint14:refs/tags/v0.14.0-sprint14 \
           refs/tags/v0.15.0-sprint15:refs/tags/v0.15.0-sprint15 \
           refs/tags/v0.16.0-sprint16:refs/tags/v0.16.0-sprint16 \
-          refs/tags/v0.17.0-sprint17:refs/tags/v0.17.0-sprint17
+          refs/tags/v0.17.0-sprint17:refs/tags/v0.17.0-sprint17 \
+          refs/tags/v0.18.0-sprint18:refs/tags/v0.18.0-sprint18
 
 # Verify
-git log --oneline next-port                # should show 42 commits
-git tag -l                                 # should include all seventeen sprint tags
+git log --oneline next-port                # should show 44 commits
+git tag -l                                 # should include all eighteen sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -92,8 +94,41 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
-               v0.16.0-sprint16 v0.17.0-sprint17
+               v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18
 ```
+
+### What Sprint 18 added (v0.18.0-sprint18)
+
+- **`src/app/(app)/movements/filter.ts`** — new `q` axis. A
+  `parseQuery` helper trims the input and caps it at 64 chars
+  (mirroring the Sprint 15 PO-number filter shape), and
+  `buildMovementWhere` adds a relation-level filter:
+  `where.item = { OR: [sku, name, barcode contains insensitive] }`.
+  Crucially, that lives on `where.item`, NOT the top-level
+  `where.OR` the Sprint 17 warehouse axis already uses —
+  Prisma composes them under the implicit outer AND so users
+  can narrow by warehouse AND item at the same time.
+- **`MovementsFilterBar`** — full-width item search field
+  above the date/type/warehouse grid row, with a leading
+  `Search` icon and `maxLength={64}`. Using `<input type="search">`
+  gives us the native clear-X on most browsers for free. The
+  Clear button now also resets the item search.
+- **`/movements` page** — passes `initialQ` into the filter bar
+  and extends `buildExportHref` so the Export CSV button deep-links
+  the item search along with the existing axes.
+- **`/movements/export` route** — now reads `warehouse` and `q`
+  out of the request URL (fixes a Sprint 17 oversight where the
+  Export button silently dropped the warehouse axis when exporting).
+  `filterActive` widened to include both new axes so the row-cap
+  bump (5k → 20k) kicks in for pure item-scope exports too.
+- **i18n** — two new keys on `t.movements.filter`
+  (`itemLabel`, `itemPlaceholder`); `emptyFilteredBody` copy
+  updated to mention the item search alongside the other axes.
+
+No schema changes. Uses the existing `(organizationId, sku)`
+index and `(organizationId, barcode)` index; substring scans
+are fine to ~10k items per org. Migrate to Postgres `tsvector`
+ranking if a single org ever crosses 100k items.
 
 ### What Sprint 17 added (v0.17.0-sprint17)
 
