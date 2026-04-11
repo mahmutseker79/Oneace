@@ -1098,15 +1098,123 @@ whether the user has ever been signed in or not.
 - [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
 - [x] **No schema changes, no new npm dependencies.**
 
+---
+
+## Sprint 23 — PWA Sprint 2: items read cache (shipped 2026-04-11)
+
+Tagged `v0.23.0-sprint23`. First data-aware offline feature on top
+of the Sprint 22 foundation. Ships a **read-only IndexedDB cache
+of the items list**, scoped per (org, user), written on every
+successful page render. Still-live-when-online; the cache is a
+crash-survival copy, not yet a read source.
+
+**Design decision — Dexie as the IndexedDB wrapper.** The design
+spec calls out WatermelonDB for the Expo mobile app, and Dexie is
+the web-native analog: same store-and-index model, tiny
+(~30 kB gzipped), zero build config, and a `version()`/
+`upgrade()` migration protocol that matches how we already think
+about Prisma schema drift. We can rip it out for a different
+offline story later without touching any business code because
+the entire API surface lives behind `src/lib/offline/`.
+
+**Design decision — replace-on-write, not merge.** Every
+successful render of the items page overwrites the scoped rows in
+a single rw transaction. A merge protocol would require
+tombstones and a sync log we don't have yet, and until we do,
+replace-on-write is the only correct semantics: a server-side
+delete is instantly reflected, nothing can linger. Fresh snapshot
+= source of truth. The real merge story is PWA Sprint 4+ when we
+add offline writes.
+
+**Design decision — scope on (orgId, userId), not just orgId.**
+Shared laptops with multiple OneAce users are a real pattern
+(warehouse managers, shift handoffs). Keying rows on a composite
+tuple ensures an `orgId`-scoped clear happens any time the user
+changes, preventing row visibility from leaking across login
+sessions.
+
+**Design decision — read cache only, no offline reads yet.** The
+items page still hits Postgres when online. Serving *from* Dexie
+when the navigation fetch fails needs the `(app)` layout to be
+offline-aware (skip `requireActiveMembership` in a fallback
+path), which is a significantly bigger change and deserves its
+own sprint. This sprint is the data-plane substrate; the route-
+plane work comes next.
+
+**Design decision — snapshot is an already-serialized prop, not
+a second fetch.** The server component builds
+`ItemSnapshotRow[]` from its Prisma query (Decimal → string,
+onHand pre-summed across stock levels) and hands it to the client
+bridge. No second network round-trip, no client-side DB query,
+no divergence between what the user sees and what gets cached.
+The bridge uses refs for the hot props and a short signature
+string as the effect key so unrelated parent re-renders don't
+thrash IndexedDB.
+
+**Design decision — banner copy is conservative.** "Offline
+catalog" reads as a feature even when the user is online. The
+amber warning variant only fires in the one genuinely bad state:
+browser is offline AND no snapshot exists. Every other state is
+quiet muted-grey text. This keeps the status row invisible to
+95% of users 95% of the time.
+
+- [x] `src/lib/offline/db.ts` — Dexie v1 schema with four stores
+      (`items`, `warehouses`, `categories`, `meta`). Every
+      domain row carries `orgId` + `userId`. Lazy singleton
+      via `getOfflineDb()`, SSR-safe (returns `null` when
+      `window` or `indexedDB` is missing). Indexes on
+      `orgId` and status/category for future query flexibility.
+      `OFFLINE_DB_VERSION` constant exported so future migration
+      blocks can reference it without string drift.
+- [x] `src/lib/offline/items-cache.ts` —
+      `writeItemsSnapshot` (single rw transaction: delete
+      scoped rows → bulkPut new rows → put meta row),
+      `readItemsSnapshot` (returns empty result, never null,
+      so call sites have a single render path), and
+      `formatSyncedAgo` (thin `Intl.RelativeTimeFormat`
+      wrapper with a `toLocaleString` fallback). Every write
+      is silently resilient: IndexedDB quota / aborted
+      transactions / unavailable browsers all return `false`
+      and the UI keeps working.
+- [x] `src/components/offline/items-cache-sync.tsx` —
+      `"use client"` bridge. Takes the pre-serialized snapshot
+      as a prop, writes on idle (`requestIdleCallback` with a
+      `setTimeout` fallback for Safari), uses refs + a
+      signature-string effect key to avoid re-running on
+      unrelated parent re-renders, cancellable.
+- [x] `src/components/offline/items-cache-banner.tsx` —
+      Four-state status row under the heading: online+fresh,
+      online+never-synced, offline+cached, offline+empty.
+      Reacts to window `online`/`offline` events so it
+      switches live. Counts in the offline-cached state so
+      the user can see how much data they still have access
+      to.
+- [x] `src/app/(app)/items/page.tsx` — builds
+      `ItemSnapshotRow[]` from the Prisma query (Decimal
+      price → string, onHand pre-summed), renders banner
+      under the heading and `<ItemsCacheSync>` at the bottom
+      of the layout div. Scope pinned to
+      `(membership.organizationId, session.user.id)`.
+- [x] `src/lib/i18n/messages/en.ts` — new
+      `offline.cacheStatus.*` block with five keys:
+      `onlineFresh`, `onlineStale`, `offlineCached`,
+      `offlineEmpty`, `neverSynced`.
+- [x] `dexie@4.4.2` added as a runtime dependency
+      (package.json + package-lock.json).
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+- [x] **No schema changes.**
+
 ### Still to port (deferred post-Sprint-22)
 
-- [ ] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
-      cache + Dexie wrapper). Still network-write; no conflict
-      resolution yet.
-- [ ] PWA Sprint 3 — offline stock counts (write queue, replay
+- [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
+      cache + Dexie wrapper). Shipped as Sprint 23 (see below).
+- [ ] PWA Sprint 3 — offline-capable items route that serves
+      cached rows when the network is down, plus cached
+      warehouses + categories picklist.
+- [ ] PWA Sprint 4 — offline stock counts (write queue, replay
       on reconnect, optimistic-UI markers). This is where the
       Flutter moat actually lives.
-- [ ] PWA Sprint 4 — background sync + update-prompt UX
+- [ ] PWA Sprint 5 — background sync + update-prompt UX
       (surface the "new version available" state, wire the
       parked `beforeinstallprompt` to a first-party Install
       button).

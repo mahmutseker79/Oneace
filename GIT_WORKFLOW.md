@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 22.
+and iterating on it through Sprint 0 → Sprint 23.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 22.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 21 plus **Sprint 22** are already committed in a
+Sprint 0 through Sprint 22 plus **Sprint 23** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.22.0-sprint22.bundle
+oneace-next/oneace-next-port-v0.23.0-sprint23.bundle
 ```
 
 This bundle contains:
 
-- **52 commits** — 8 Sprint 0 + 1 docs + Sprints 1..22 (each = 1 feature
+- **54 commits** — 8 Sprint 0 + 1 docs + Sprints 1..23 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -48,9 +48,10 @@ This bundle contains:
   - `v0.20.0-sprint20` — Sprint 20 complete (invitation tokens + accept flow)
   - `v0.21.0-sprint21` — Sprint 21 complete (organization delete / danger zone)
   - `v0.22.0-sprint22` — Sprint 22 complete (PWA foundation — manifest + service worker)
+  - `v0.23.0-sprint23` — Sprint 23 complete (PWA Sprint 2 — items read cache via Dexie)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.21.0-sprint21.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.22.0-sprint22.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -64,11 +65,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.22.0-sprint22.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.23.0-sprint23.bundle \
           next-port:next-port
 
-# Also pull all twenty-two sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.22.0-sprint22.bundle \
+# Also pull all twenty-three sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.23.0-sprint23.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -90,11 +91,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.22.0-sprint22.bun
           refs/tags/v0.19.0-sprint19:refs/tags/v0.19.0-sprint19 \
           refs/tags/v0.20.0-sprint20:refs/tags/v0.20.0-sprint20 \
           refs/tags/v0.21.0-sprint21:refs/tags/v0.21.0-sprint21 \
-          refs/tags/v0.22.0-sprint22:refs/tags/v0.22.0-sprint22
+          refs/tags/v0.22.0-sprint22:refs/tags/v0.22.0-sprint22 \
+          refs/tags/v0.23.0-sprint23:refs/tags/v0.23.0-sprint23
 
 # Verify
-git log --oneline next-port                # should show 52 commits
-git tag -l                                 # should include all twenty-two sprint tags
+git log --oneline next-port                # should show 54 commits
+git tag -l                                 # should include all twenty-three sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -104,8 +106,74 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
-               v0.22.0-sprint22
+               v0.22.0-sprint22 v0.23.0-sprint23
 ```
+
+### What Sprint 23 added (v0.23.0-sprint23)
+
+- **`src/lib/offline/db.ts`** — Dexie v1 schema with four stores:
+  `items`, `warehouses`, `categories`, `meta`. Every domain row
+  carries `orgId` + `userId` so two users sharing a browser never
+  cross-contaminate snapshots. The subclass is a module-level
+  lazy singleton so `getOfflineDb()` is safe to call anywhere
+  client-side and returns `null` on SSR / no-IndexedDB
+  environments. Schema version and DB name are exported
+  constants so a future migration block can reference them
+  without string drift.
+- **`src/lib/offline/items-cache.ts`** — `writeItemsSnapshot`
+  (replace-on-write inside a single rw transaction, silently
+  returns `false` on any failure so the UI never breaks because
+  of a failed cache write), `readItemsSnapshot` (returns an
+  empty-result fallback instead of null so call sites have a
+  single render path), and `formatSyncedAgo` — a thin wrapper
+  around `Intl.RelativeTimeFormat` with a `toLocaleString`
+  fallback for browsers that don't support it.
+- **`src/components/offline/items-cache-sync.tsx`** — `"use
+  client"` bridge that takes a pre-serialized snapshot from the
+  server component as a prop and writes it to Dexie on idle.
+  Uses refs for the hot props and a short signature string as
+  the effect key so unrelated parent re-renders don't thrash
+  IndexedDB. `requestIdleCallback` with a 250ms `setTimeout`
+  fallback for Safari.
+- **`src/components/offline/items-cache-banner.tsx`** — a quiet
+  status row under the items heading. Four states:
+  1. Online with a fresh snapshot: "Offline catalog · 2 min ago"
+     in muted grey.
+  2. Online without a snapshot yet: "Offline catalog not yet
+     cached on this device." (first pageview, fine).
+  3. Offline with a snapshot: "Offline · showing cached catalog
+     · 5 min ago · 42" (count of cached rows).
+  4. Offline without a snapshot: amber warning.
+  Reacts to `online`/`offline` window events so the copy
+  switches live when the network comes back.
+- **`src/app/(app)/items/page.tsx`** — the existing server
+  component now builds an `ItemSnapshotRow[]` from its Prisma
+  query (Decimal price → string to avoid precision loss,
+  onHand pre-summed across stock levels) and renders both the
+  banner and the cache sync component. The scope is pinned to
+  `(membership.organizationId, session.user.id)` so snapshots
+  are never accidentally visible to a second user on the same
+  browser.
+- **`src/lib/i18n/messages/en.ts`** — new
+  `offline.cacheStatus.*` block with five keys for the banner
+  states. Inherits the existing three-tier locale resolver.
+- **`dexie@4.4.2`** added as a runtime dependency. Dexie is
+  the web equivalent of the WatermelonDB reference the
+  design-spec calls out for the Expo mobile app, and its API
+  surface is intentionally thin so we can rip it out if we
+  later standardize on a different offline story.
+- **Non-goals this sprint (deferred to later PWA sprints):** a
+  write queue for offline mutations, conflict resolution, an
+  `/items/offline` route that reads directly from Dexie when
+  the server fetch fails, cached warehouses / categories
+  picklist, and any cross-tab coordination beyond Dexie's
+  built-ins. Scoping the sprint to "read-cache the items
+  page" keeps the blast radius small and the failure modes
+  obvious.
+- **Triple-verify:** tsc --noEmit exit 0, biome check . clean
+  (no errors, no warnings), prisma validate green (no schema
+  changes this sprint).
+- **No schema changes.**
 
 ### What Sprint 22 added (v0.22.0-sprint22)
 
