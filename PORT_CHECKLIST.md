@@ -1345,6 +1345,144 @@ consume them without another data-plane sprint.
       `tsc --noEmit` + `biome check .` (161 files, no errors).
 - [x] **No schema changes.** No new runtime dependencies.
 
+## Sprint 25 — PWA Sprint 4 Part A: offline write queue substrate (shipped 2026-04-11)
+
+Tagged `v0.25.0-sprint25`. Introduces the **Dexie-backed pending-ops
+store, queue API, replay runner, and depth banner** that every
+future offline write operation will ride on. Deliberately ships
+**no concrete op handler** — Sprint 26 will wire the first real
+operation (stock counts) onto this substrate. The reason for the
+two-sprint split is that the substrate design locks in what every
+offline op will look like forever, so getting the shape right
+matters more than shipping the first op.
+
+**Design decision — substrate only, no first op wired.** The
+dispatcher registry in `offline-queue-runner.tsx` is intentionally
+empty. The seam is a `DISPATCHERS: Record<string, OpDispatcher>`
+map keyed by `opType` string; Sprint 26 will register its handler
+at that seam without touching the runner itself. This keeps the
+queue primitives independently verifiable (tsc + biome pass with
+zero ops registered) and means the first vertical slice in Sprint
+26 is a pure add, not a refactor.
+
+**Design decision — idempotency key is the op id.** Every enqueue
+stamps a `crypto.randomUUID()` at creation time and the server
+action for each op **must** honor it. Without this contract, a
+flaky network can double-apply a stock adjustment, which is the
+exact failure mode the queue is supposed to prevent. Documented at
+the top of `queue.ts` so whoever adds the first dispatcher in
+Sprint 26 can't miss it.
+
+**Design decision — Dexie schema v2 additive only.** `db.ts` is
+bumped to `OFFLINE_DB_VERSION = 2` with a new `pendingOps` store
+indexed on `id` (primary), `[orgId+userId+status]` (compound for
+queue scans), plain `status`, and `createdAt`. The v1 block is
+preserved verbatim — Dexie replays every version on open, so
+editing a prior version block would corrupt any browser that
+already upgraded. History comment documents which sprint added
+which version so the next schema change doesn't repeat the lesson.
+
+**Design decision — status lifecycle with explicit `in_flight`.**
+Rows move `pending → in_flight → succeeded | failed`, and
+`markOpInFlight` is a Dexie transaction that only transitions rows
+**still** in `pending`. This is the cross-tab coordination story:
+two tabs can both try to drain the same queue, but whichever
+transaction writes first claims the row, the other one gets `null`
+and moves on. `releaseInFlight` resets stuck `in_flight` rows at
+runner startup because a previous tab may have crashed
+mid-dispatch.
+
+**Design decision — failures are retryable unless the dispatcher
+says otherwise.** `markOpFailed` takes a `retryable: boolean` flag.
+`retryable: true` resets status to `pending` so the next drain
+picks it up (the common case — network glitches, 503s).
+`retryable: false` leaves the row in `failed` for a future review
+UI (Sprint 26+). Errors are truncated to 500 chars so one bad
+stack trace can't bloat the DB. Unknown opTypes are non-retryable
+— a typo or stale op from a removed dispatcher should stay visible
+in the banner, not spin forever.
+
+**Design decision — banner polls on a 3s interval.** Dexie has no
+row-change events and adding a Dexie live-query layer just for
+this banner is overkill at Sprint 25 scale. A 3-second
+`setInterval` using `countOps` (which walks the compound index
+once per status rather than deserializing payloads) keeps the
+banner responsive enough and costs effectively nothing. A real
+live-query subscription is on the PWA Sprint 5+ shopping list.
+
+**Design decision — runner triggers on `online`, `visibilitychange`,
+and mount; single-flight guarded.** The three triggers cover the
+three ways a stale queue becomes drainable: network returns, tab
+becomes foreground, fresh page load. A `drainingRef` boolean acts
+as a single-flight guard so a rapid burst of events doesn't spawn
+parallel drains. The runner is a headless `"use client"` component
+that returns `null` — it has no UI, it only orchestrates.
+
+- [x] `src/lib/offline/db.ts` — schema v2. Adds
+      `CachedPendingOpStatus` (`"pending" | "in_flight" |
+      "succeeded" | "failed"`) and `CachedPendingOp` interface
+      (id, orgId, userId, opType, payload, status, createdAt,
+      updatedAt, attemptCount, lastError). New `pendingOps!:
+      Table<CachedPendingOp, string>` on the class.
+      `this.version(2).stores(...)` block preserves every v1
+      store and adds `pendingOps: "id, [orgId+userId+status],
+      status, createdAt"`. History comment at the top of the
+      file documents v1 (Sprint 23) vs v2 (Sprint 25).
+- [x] `src/lib/offline/queue.ts` — full queue API. Exports
+      `PendingOpScope`, `EnqueueOpInput`, and functions
+      `enqueueOp` (stamps `crypto.randomUUID()` id + timestamps
+      + `status: "pending"`), `listOps` (filter by statuses,
+      sorted FIFO by `createdAt`), `countOps` (walks compound
+      index once per status, avoids payload deserialization),
+      `markOpInFlight` (transaction-gated, only transitions
+      `pending`), `markOpSucceeded`, `markOpFailed` (with
+      `retryable` flag, error truncated to 500 chars),
+      `releaseInFlight` (unstick crashed-tab rows at startup),
+      and `clearSucceededOps` (janitor, default 5 min TTL).
+      Every function returns a sentinel (`null` / `false` /
+      `[]` / `0`) on any IndexedDB failure so the caller never
+      has to wrap in try/catch.
+- [x] `src/components/offline/offline-queue-runner.tsx` —
+      headless `"use client"` component. Exports
+      `DispatcherResult` (`"ok" | "retry" | "fatal"`) and
+      `OpDispatcher` types. `DISPATCHERS` registry intentionally
+      empty — the Sprint 26 seam. Uses `useRef` for
+      `scopeRef`, `dispatchersRef`, and a `drainingRef`
+      single-flight guard. Triggers: `online` event,
+      `visibilitychange` (on foreground), and a one-shot mount
+      drain. Calls `releaseInFlight` at mount. Unknown opType
+      and dispatcher throws are both marked non-retryable.
+      Returns `null` (no DOM).
+- [x] `src/components/offline/offline-queue-banner.tsx` — the
+      visible half. `"use client"` with
+      `useState<QueueCounts>`. 3s `setInterval` polling via
+      `countOps`. Three visible states: muted-grey
+      "{count} waiting to sync" when pending+online, amber
+      "{count} queued offline" when pending+offline, destructive
+      "{count} failed to sync" for any failed rows. Completely
+      invisible when there is nothing pending and nothing
+      failed — 95% of users 95% of the time should never see
+      it. Listens to `online`/`offline` events for the amber
+      flip. Uses lucide icons `CloudUpload`, `CloudOff`,
+      `TriangleAlert`.
+- [x] `src/app/(app)/layout.tsx` — mounts both components.
+      Builds `queueScope = { orgId: membership.organizationId,
+      userId: session.user.id }` once and passes it to
+      `<OfflineQueueRunner>` (headless, near the top of the
+      tree) and `<OfflineQueueBanner>` (above `<main>`, under
+      `<Header>` so it reads as a header-adjacent status row).
+- [x] `src/lib/i18n/messages/en.ts` — new `offline.queue.*`
+      block with the three banner templates
+      (`pendingOnline: "{count} waiting to sync"`,
+      `pendingOffline: "{count} queued offline"`,
+      `failed: "{count} failed to sync"`). All English; future
+      locales extend en.ts.
+- [x] Verified clean: `prisma validate` (with dummy
+      DATABASE_URL/DIRECT_URL env vars) + `tsc --noEmit` +
+      `biome check .` (164 files, no errors).
+- [x] **No Prisma schema changes.** No new runtime dependencies
+      (Dexie was already in the tree from Sprint 23).
+
 ---
 
 ### Still to port (deferred post-Sprint-22)
@@ -1355,8 +1493,11 @@ consume them without another data-plane sprint.
       categories, plus a static `/offline/items` route served
       directly from Dexie. Shipped as Sprint 24 (see above).
 - [ ] PWA Sprint 4 — offline stock counts (write queue, replay
-      on reconnect, optimistic-UI markers). This is where the
-      Flutter moat actually lives.
+      on reconnect, optimistic-UI markers). **Part A shipped as
+      Sprint 25** (queue substrate, runner, banner — no op
+      wired). Part B (first concrete op: stock counts) is
+      Sprint 26's job. This is where the Flutter moat actually
+      lives.
 - [ ] PWA Sprint 5 — background sync + update-prompt UX
       (surface the "new version available" state, wire the
       parked `beforeinstallprompt` to a first-party Install

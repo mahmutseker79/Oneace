@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 24.
+and iterating on it through Sprint 0 → Sprint 25.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 24.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 23 plus **Sprint 24** are already committed in a
+Sprint 0 through Sprint 24 plus **Sprint 25** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.24.0-sprint24.bundle
+oneace-next/oneace-next-port-v0.25.0-sprint25.bundle
 ```
 
 This bundle contains:
 
-- **56 commits** — 8 Sprint 0 + 1 docs + Sprints 1..24 (each = 1 feature
+- **58 commits** — 8 Sprint 0 + 1 docs + Sprints 1..25 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -50,6 +50,7 @@ This bundle contains:
   - `v0.22.0-sprint22` — Sprint 22 complete (PWA foundation — manifest + service worker)
   - `v0.23.0-sprint23` — Sprint 23 complete (PWA Sprint 2 — items read cache via Dexie)
   - `v0.24.0-sprint24` — Sprint 24 complete (PWA Sprint 3 — picklist caches + static /offline/items)
+  - `v0.25.0-sprint25` — Sprint 25 complete (PWA Sprint 4 Part A — offline write queue substrate)
 
 Older bundles (`oneace-next-port.bundle`,
 `oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.24.0-sprint24.bundle`)
@@ -66,11 +67,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.24.0-sprint24.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.25.0-sprint25.bundle \
           next-port:next-port
 
 # Also pull all twenty-three sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.24.0-sprint24.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.25.0-sprint25.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -94,11 +95,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.24.0-sprint24.bun
           refs/tags/v0.21.0-sprint21:refs/tags/v0.21.0-sprint21 \
           refs/tags/v0.22.0-sprint22:refs/tags/v0.22.0-sprint22 \
           refs/tags/v0.23.0-sprint23:refs/tags/v0.23.0-sprint23 \
-          refs/tags/v0.24.0-sprint24:refs/tags/v0.24.0-sprint24
+          refs/tags/v0.24.0-sprint24:refs/tags/v0.24.0-sprint24 \
+          refs/tags/v0.25.0-sprint25:refs/tags/v0.25.0-sprint25
 
 # Verify
-git log --oneline next-port                # should show 56 commits
-git tag -l                                 # should include all twenty-four sprint tags
+git log --oneline next-port                # should show 58 commits
+git tag -l                                 # should include all twenty-five sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -108,8 +110,79 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
-               v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24
+               v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
+               v0.25.0-sprint25
 ```
+
+### What Sprint 25 added (v0.25.0-sprint25)
+
+- **`src/lib/offline/db.ts`** — bumps `OFFLINE_DB_VERSION` to 2
+  and adds a new `pendingOps` store inside a new
+  `.version(2).stores()` block. The v1 block is preserved
+  verbatim — editing a prior version in place would corrupt
+  Dexie's migration graph because Dexie replays every version
+  on open. The migration is **additive**: no existing rows are
+  touched, no `.upgrade()` callback is needed. Defines
+  `CachedPendingOp` + `CachedPendingOpStatus` (four-state
+  lifecycle: `pending`/`in_flight`/`succeeded`/`failed`) and
+  indexes chosen for the runner's hot path:
+  `[orgId+userId+status]` for scoped drains, `status` alone for
+  cross-scope counts, `createdAt` for deterministic FIFO order
+  across compactions.
+- **`src/lib/offline/queue.ts`** — the full queue API:
+  `enqueueOp` (generates a `crypto.randomUUID()` id — falls back
+  to a non-crypto id if Web Crypto is missing — which doubles as
+  the idempotency key server handlers MUST honor),
+  `listOps` / `countOps` (bounded compound-index range scans),
+  `markOpInFlight` (runs inside a Dexie transaction that only
+  transitions `pending` rows so two tabs can't claim the same
+  op — whichever loses gets `null` and moves on),
+  `markOpSucceeded`, `markOpFailed` (with a `retryable` flag
+  that resets to `pending` or parks as `failed`),
+  `releaseInFlight` (unsticks rows from a crashed previous tab),
+  `clearSucceededOps` (janitor; default 5 min threshold). Every
+  error message is truncated to 500 chars so a runaway server
+  stack trace can't bloat the DB.
+- **`src/components/offline/offline-queue-runner.tsx`** — a
+  `"use client"` **headless** component mounted from the
+  `(app)` layout. Single-flight drain (ref guard so a rapid
+  online + visibility + mount sequence doesn't fire N parallel
+  drains), triggers on `online` + `visibilitychange` + startup,
+  releases stuck `in_flight` rows at mount. Exports
+  `OpDispatcher` + `DispatcherResult` types; the default
+  `DISPATCHERS` registry is **deliberately empty** this sprint.
+  Unknown opTypes are marked as **non-retryable** failures so a
+  typo or a stale op from a removed dispatcher never loops
+  forever. Unhandled throws from a dispatcher are caught and
+  marked as fatal so a buggy handler can't oscillate.
+- **`src/components/offline/offline-queue-banner.tsx`** — a
+  quiet status row mounted above `<main>` in the `(app)`
+  layout. Three visible states plus an invisible idle state:
+  muted "N waiting to sync" (online + pending), amber "N queued
+  offline" (offline + pending), destructive "N failed to sync"
+  (any failed). Polls every 3 seconds because Dexie fires no
+  row-change events and the runner would otherwise race with
+  the banner; a live-query subscription is on the PWA Sprint 5+
+  shopping list.
+- **`src/app/(app)/layout.tsx`** — mounts the runner (headless)
+  and the banner (visible) with a `queueScope` pinned to
+  `(membership.organizationId, session.user.id)`. Re-renders on
+  org switch because `requireActiveMembership` changes, and the
+  runner remounts with the new scope.
+- **`src/lib/i18n/messages/en.ts`** — new `offline.queue.*`
+  block with 3 keys (`pendingOnline`, `pendingOffline`,
+  `failed`) that use the `{count}` placeholder pattern Sprint
+  24 established.
+- **Non-goals this sprint (deferred to Sprint 26+):** any real
+  dispatcher implementation, any server-side changes to
+  existing mutation actions, per-op exponential backoff, Web
+  Locks for strict cross-tab coordination, a `/offline/queue`
+  review UI for failed ops, Dexie live-query subscriptions on
+  the banner.
+- **Triple-verify:** `tsc --noEmit` exit 0,
+  `biome check .` clean (164 files), `prisma validate` green
+  (no Prisma schema change — Dexie-side migration only).
+- **No Prisma schema changes.** No new runtime dependencies.
 
 ### What Sprint 24 added (v0.24.0-sprint24)
 
