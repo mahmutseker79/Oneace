@@ -1,4 +1,4 @@
-import { Eye, Package, Plus } from "lucide-react";
+import { Eye, FileUp, Package, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -58,12 +58,20 @@ export default async function ItemsPage() {
           <h1 className="text-2xl font-semibold">{t.items.heading}</h1>
           <p className="text-muted-foreground">{t.items.subtitle}</p>
         </div>
-        <Button asChild>
-          <Link href="/items/new">
-            <Plus className="h-4 w-4" />
-            {t.items.newItem}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/items/import">
+              <FileUp className="h-4 w-4" />
+              {t.items.importCta}
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/items/new">
+              <Plus className="h-4 w-4" />
+              {t.items.newItem}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {items.length === 0 ? (
