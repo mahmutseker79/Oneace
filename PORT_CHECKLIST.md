@@ -742,6 +742,75 @@ Sprint 17's warehouse axis without clobbering `where.OR`.
 
 ---
 
+## Sprint 19 — per-org default locale + region (shipped 2026-04-11)
+
+Tagged `v0.19.0-sprint19`. Closes the "per-org default locale /
+region override" item from the post-Sprint-18 deferred list.
+First schema change since Sprint 13 (create-another-org flow) —
+adds two nullable columns to `Organization` and requires a
+`db:push` after pulling.
+
+**Design decision — layered resolver, not cookie overwrite.**
+The user's explicit cookie always wins. The org default is a
+DB-backed fallback layer inside `getLocale` / `getRegion`, not a
+side effect of the org switch that mutates the user's cookie —
+a polyglot operator can keep their own interface in one language
+regardless of which org they're viewing.
+
+- [x] `prisma/schema.prisma` — added nullable `defaultLocale
+      String?` and `defaultRegion String?` columns to
+      `Organization` with a comment explaining `null` means
+      "no override, fall through to Accept-Language / platform
+      default". Regenerated Prisma client.
+- [x] `src/lib/session.ts` — new `getActiveOrgPreferences()`
+      helper. Reads `oneace-active-org` cookie, queries org
+      defaults, returns `{ defaultLocale, defaultRegion } | null`.
+      Wrapped in React `cache()` so `getLocale` + `getRegion`
+      together trigger at most one DB query per request.
+      Unauthenticated-safe — any error (no cookie context,
+      deleted org, DB blip) returns `null` so the marketing
+      shell / login pages can't be crashed by the resolver.
+- [x] `src/lib/i18n/index.ts` — resolver rewrite. `getLocale`
+      now has four tiers: user cookie → org default →
+      Accept-Language → `DEFAULT_LOCALE`. `getRegion` has three
+      tiers: user cookie → org default → `DEFAULT_REGION_CODE`.
+      Inline priority-order comments reference Sprint 19.
+- [x] `updateOrgDefaultsAction` — OWNER/ADMIN gated server
+      action. Empty string = clear override (null), non-empty
+      validated against `SUPPORTED_LOCALES` /
+      `SUPPORTED_REGIONS`. `revalidatePath('/', 'layout')` so
+      every server component re-reads on next navigation.
+- [x] `OrgDefaultsForm` client component — two `<Select>`s with
+      a `__platform__` sentinel for the "Platform default"
+      option (can't use `""` as a Radix Select value — collides
+      with placeholder state), maps sentinel to `""` on submit.
+- [x] Settings page — full-width `Card` below Region & currency,
+      gated on the existing `canEditOrg` check. Fetches
+      `defaultLocale` / `defaultRegion` alongside the existing
+      org `findUnique`.
+- [x] i18n — 12 new keys on `t.settings.orgDefaults.*` (heading,
+      description, helpText explaining users can still override,
+      three labels, saved, and four error variants).
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+- [x] **Deployment note**: run `npm run db:push` after pulling
+      to add the two new columns. No migration file because
+      this project uses `db:push`.
+
+### Still to port (deferred post-Sprint-19)
+
+- [ ] Danger zone / organization delete
+- [ ] Audit log
+- [ ] Offline PWA shell + service worker
+- [ ] Invitation tokens + email flow
+- [ ] Reports xlsx/pdf export variants (CSV only today)
+- [ ] Full-text ranking via Postgres `tsvector` (current
+      `contains` scan is fine to ~10k items per org;
+      migrate at 100k)
+- [ ] All items from post-Sprint-18 deferred list (unchanged
+      aside from the locale/region override now being shipped)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**

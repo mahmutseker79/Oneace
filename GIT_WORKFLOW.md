@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 18.
+and iterating on it through Sprint 0 → Sprint 19.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 18.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 17 plus **Sprint 18** are already committed in a
+Sprint 0 through Sprint 18 plus **Sprint 19** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.18.0-sprint18.bundle
+oneace-next/oneace-next-port-v0.19.0-sprint19.bundle
 ```
 
 This bundle contains:
 
-- **44 commits** — 8 Sprint 0 + 1 docs + Sprints 1..18 (each = 1 feature
+- **46 commits** — 8 Sprint 0 + 1 docs + Sprints 1..19 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -44,9 +44,10 @@ This bundle contains:
   - `v0.16.0-sprint16` — Sprint 16 complete (filter-aware PO CSV export)
   - `v0.17.0-sprint17` — Sprint 17 complete (movements warehouse-scope filter)
   - `v0.18.0-sprint18` — Sprint 18 complete (movements item-substring filter)
+  - `v0.19.0-sprint19` — Sprint 19 complete (per-org default locale + region override)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.17.0-sprint17.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.18.0-sprint18.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -60,11 +61,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.18.0-sprint18.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.19.0-sprint19.bundle \
           next-port:next-port
 
-# Also pull all eighteen sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.18.0-sprint18.bundle \
+# Also pull all nineteen sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.19.0-sprint19.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -82,11 +83,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.18.0-sprint18.bun
           refs/tags/v0.15.0-sprint15:refs/tags/v0.15.0-sprint15 \
           refs/tags/v0.16.0-sprint16:refs/tags/v0.16.0-sprint16 \
           refs/tags/v0.17.0-sprint17:refs/tags/v0.17.0-sprint17 \
-          refs/tags/v0.18.0-sprint18:refs/tags/v0.18.0-sprint18
+          refs/tags/v0.18.0-sprint18:refs/tags/v0.18.0-sprint18 \
+          refs/tags/v0.19.0-sprint19:refs/tags/v0.19.0-sprint19
 
 # Verify
-git log --oneline next-port                # should show 44 commits
-git tag -l                                 # should include all eighteen sprint tags
+git log --oneline next-port                # should show 46 commits
+git tag -l                                 # should include all nineteen sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -94,8 +96,55 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
-               v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18
+               v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
+               v0.19.0-sprint19
 ```
+
+### What Sprint 19 added (v0.19.0-sprint19)
+
+- **Schema — `Organization.defaultLocale` + `Organization.defaultRegion`**
+  Two nullable columns. `null` = "no org-level override, fall through
+  to Accept-Language / platform default". **Requires `npm run db:push`**
+  after pulling; no `prisma/migrations/` entry because this project
+  uses `db:push`, not `db:migrate`. First schema change since Sprint 13
+  (create-another-org flow).
+- **`src/lib/session.ts` — new `getActiveOrgPreferences()`**
+  Reads `oneace-active-org` cookie, queries the org's defaults, returns
+  `{ defaultLocale, defaultRegion } | null`. Wrapped in React `cache()`
+  so `getLocale` + `getRegion` together trigger at most one DB query
+  per request. Deliberately unauthenticated-safe: any error
+  (no cookie context, deleted org, DB blip) returns `null` so the
+  marketing shell / login pages can't be crashed by the i18n resolver.
+  Reading an org's default locale is not sensitive, and every query
+  that touches actual org data still goes through
+  `requireActiveMembership`.
+- **`src/lib/i18n/index.ts` — resolver rewrite**
+  `getLocale` now has a four-tier priority: user cookie → org default
+  → Accept-Language → `DEFAULT_LOCALE`. `getRegion` has a three-tier
+  priority: user cookie → org default → `DEFAULT_REGION_CODE`. The
+  org-default layer is inserted *between* the user cookie and the
+  header/platform fallback so a user's explicit choice always wins,
+  but a teammate joining an org automatically inherits the org's
+  preferred language without anyone touching cookies. New
+  `isSupportedRegion` type guard mirrors the existing
+  `isSupportedLocale`.
+- **`updateOrgDefaultsAction`** — OWNER/ADMIN gated server action.
+  Empty string = clear the override (null), non-empty is validated
+  against `SUPPORTED_LOCALES` / `SUPPORTED_REGIONS`. Updates
+  `Organization.{defaultLocale,defaultRegion}` then calls
+  `revalidatePath('/', 'layout')` so every server component re-reads
+  on the next navigation.
+- **`OrgDefaultsForm` client component** — two `<Select>`s with a
+  `__platform__` sentinel for the "Platform default" option. Can't
+  use `""` as a Radix Select value (collides with the placeholder
+  state), so the form maps the sentinel to `""` on submit.
+- **Settings page** — full-width card below Region & currency, gated
+  on the same `canEditOrg` check as Organization profile. Fetches
+  `defaultLocale` / `defaultRegion` alongside the existing org
+  `findUnique`.
+- **i18n** — 12 new keys on `t.settings.orgDefaults.*` (heading,
+  description, helpText explaining users can still override, three
+  labels, saved, and four error variants).
 
 ### What Sprint 18 added (v0.18.0-sprint18)
 
