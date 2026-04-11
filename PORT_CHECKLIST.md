@@ -2366,6 +2366,236 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 39 — Audit coverage: catalog + stock counts (shipped 2026-04-11)
+
+### What shipped
+
+Back-fills Sprint 36's deliberately narrow scope. Sprint 36 only
+instrumented org/membership/invitation/purchase-order surfaces
+because the sprint budget was already spent on the schema, the
+read-path UI, and the nav entry. Sprint 39 closes the remaining
+catalog and stock-count gaps so an OWNER can answer "who renamed
+SKU-123?" or "who archived Warehouse A?" from the `/audit` page
+without digging through git history or dumping Postgres.
+
+No schema changes, no new files, no new routes — this is purely
+a `recordAudit()` instrumentation pass plus the vocabulary
+extensions to `src/lib/audit.ts` and the human-readable label
+catalog in `en.ts`.
+
+### AuditAction + AuditEntityType vocabulary extension
+
+Twelve new `AuditAction` values and four new `AuditEntityType`
+values added to `src/lib/audit.ts`:
+
+```
+item.created        item.updated       item.imported     item.deleted
+warehouse.created   warehouse.updated  warehouse.deleted
+category.created    category.deleted
+stock_count.created stock_count.cancelled stock_count.completed
+```
+
+```
+item · warehouse · category · stock_count
+```
+
+The `Record<AuditAction, string>` constraint on
+`/audit/page.tsx`'s `actionLabel()` catalog arg means the compiler
+now refuses to build until every new AuditAction has a matching
+key in `audit.actions` (en.ts). Same mechanism caught two typos
+during the port and forced the full label set in one pass.
+
+### Write-site coverage
+
+**items/actions.ts** — `createItemAction`, `updateItemAction`,
+`importItemsAction`, `deleteItemAction`.
+
+- `item.created` records sku, name, status.
+- `item.updated` snapshots seven reviewer-relevant scalar fields
+  (sku, name, barcode, status, categoryId, reorderPoint,
+  reorderQty) *before* the update, then builds a `{ field: { from,
+  to } }` diff in memory and only emits the audit row when the
+  diff is non-empty. A no-op resubmit (same-page double submit)
+  skips the log write entirely — mirrors the
+  `member.role_changed` early-return from Sprint 36 to prevent
+  log spam. Decimal money columns and wide text columns
+  (description, imageUrl) are deliberately excluded from the
+  diff: Prisma.Decimal equality needs `.eq()` handling and the
+  audit log is the wrong place for price-change history.
+- `item.imported` records ONE audit row per bulk import, not per
+  row. A 5 000-row CSV must not flood the log with 5 000 events;
+  the entity id is null and the metadata carries the aggregate
+  counts (inserted, skippedInvalid, skippedConflicts) so a
+  reviewer can reconstruct the batch outcome.
+- `item.deleted` reads sku + name BEFORE the delete so the audit
+  row stays useful after the entity id becomes meaningless. The
+  convention was established by the Sprint 36 `purchase_order.deleted`
+  handler: human-readable fields in metadata, entityId on the row
+  for the rare case where it still resolves.
+
+**warehouses/actions.ts** — `createWarehouseAction`,
+`updateWarehouseAction`, `deleteWarehouseAction`.
+
+- `warehouse.created` records name, code, city, isDefault.
+- `warehouse.updated` snapshots name/code/city/country/isDefault
+  before the transaction, then emits the same `changed` diff as
+  items. The pre-check SELECT sits OUTSIDE the transaction
+  because we only need its value for the post-commit audit
+  write — moving it inside would serialize for no gain.
+- `warehouse.deleted` widens the existing `findUnique({ select:
+  { isDefault } })` pre-check to also pull name + code, avoiding
+  a second round-trip. The audit row records `wasDefault` so a
+  reviewer can reconstruct the "which warehouse took over as
+  default?" state transition against the existing
+  default-reassignment code path.
+
+**categories/actions.ts** — `createCategoryAction`,
+`deleteCategoryAction`.
+
+- `category.created` records name, slug, parentId.
+- `category.deleted` reads name + slug before delete.
+- No `updateCategoryAction` to cover: the category surface is
+  create + delete only today (Sprint 1 scope).
+
+**stock-counts/actions.ts** — `createStockCountAction`,
+`cancelStockCountAction`, `completeStockCountAction`.
+
+- `stock_count.created` records name, methodology, warehouseId,
+  itemCount, warehouseCount, and snapshotRows so a reviewer can
+  see the scope of a count at a glance.
+- `stock_count.cancelled` records name, previousState, and the
+  cancel reason (the `cancelReason` column is stored on the
+  StockCount itself but surfacing it in the audit row means it
+  shows up in the global review view without a join).
+- `stock_count.completed` fires AFTER `db.$transaction` closes —
+  matching the `purchase_order.received` convention from Sprint
+  36. The real StockMovement rows are already committed by the
+  time the audit row attempts to write, so a log hiccup cannot
+  roll back the ledger. Metadata records name, applyAdjustments
+  flag, postedMovements count, and varianceRows so a reviewer
+  can tell "reconcile posted 14 adjustments out of 22 variance
+  rows" without joining to the movement stream.
+
+### What we deliberately did NOT audit
+
+**CountEntry writes.** A cycle-count session against 500 SKUs
+emits 500 entries. Auditing each one would flood the `/audit`
+page with noise and tell a reviewer nothing the count's own
+detail page doesn't already show. The count-level lifecycle
+events (created / cancelled / completed) capture the governance
+signal; the per-entry detail stays in-feature. If a future sprint
+needs per-entry traceability for compliance reasons, add a
+dedicated `/stock-counts/[id]/audit` view rather than polluting
+the global stream.
+
+**StockMovement writes** (MANUAL / ADJUSTMENT from
+`/movements/new`). Same reasoning as CountEntry: the movement
+ledger *is* its own audit trail and a per-row audit entry would
+double-log it. The `purchase_order.received` audit row already
+covers the *source* of the largest batch of movements
+operationally; movements that aren't part of a receive or
+reconcile are rare enough that the ledger page is the right
+surface for them.
+
+**StockLevel upserts.** These are derived state — a StockLevel
+change is a consequence of a StockMovement (or a reconcile
+posting), not a user-initiated action.
+
+### i18n keys added
+
+Twelve new entries in `src/lib/i18n/messages/en.ts` under
+`audit.actions`:
+
+```
+item.created → "Created item"
+item.updated → "Updated item"
+item.imported → "Imported items"
+item.deleted → "Deleted item"
+warehouse.created → "Created warehouse"
+warehouse.updated → "Updated warehouse"
+warehouse.deleted → "Deleted warehouse"
+category.created → "Created category"
+category.deleted → "Deleted category"
+stock_count.created → "Started stock count"
+stock_count.cancelled → "Cancelled stock count"
+stock_count.completed → "Completed stock count"
+```
+
+The Sprint 38 PO detail page's inline `auditLabel` helper reads
+the same `t.audit.actions` catalog, so its receipt-history /
+audit-trail card picks up the new labels for free — no changes
+required to the detail page.
+
+### Design decisions
+
+1. **Audit after mutation, never inside the transaction.** An
+   action that already committed should never flip to failed
+   because the audit write hiccuped (`recordAudit` swallows
+   errors by design — see audit.ts header). `stock_count.completed`
+   specifically moves the call outside the `db.$transaction`
+   closure so a log-write failure cannot roll back posted
+   StockMovements.
+
+2. **Update diffs, not full-row snapshots.** A before/after
+   payload of every scalar column on `Item` or `Warehouse` would
+   balloon the audit metadata and bury the signal. Emitting only
+   the `changed` keys keeps each row scannable on the table view
+   and compresses well in Postgres's JSONB.
+
+3. **Skip no-op updates.** `item.updated` and `warehouse.updated`
+   early-return when the computed diff is empty. A same-page
+   double submit shouldn't produce a second row; the Sprint 36
+   `member.role_changed` path set the precedent.
+
+4. **Delete snapshots live in metadata, not entityId.** Deleted
+   entity ids are useless for future lookups (there's nothing to
+   resolve against). The human-readable fields are what a
+   reviewer actually needs to recognise the row, and they belong
+   in the free-form metadata column — entityId stays populated
+   for the short window where the deletion hasn't propagated
+   everywhere yet.
+
+5. **Import gets one row, not N rows.** Bulk operations are
+   audited as the batch, not the individual write. The
+   aggregate counts in metadata are enough to answer "how many
+   rows did that import touch?" and the `items.csv` file itself
+   is the source of truth for the per-row detail.
+
+6. **Stock-count entry writes stay unlogged.** The governance
+   surface is the count lifecycle, not the cycle count data
+   entry. Logging each CountEntry would turn the audit page into
+   a mirror of the stock-count detail page.
+
+7. **Widened the existing warehouse delete `findUnique` select.**
+   Rather than adding a second query for the audit metadata, the
+   existing pre-check now pulls name + code alongside isDefault.
+   Zero extra round-trips.
+
+8. **Zero schema changes, zero new files.** Sprint 36's
+   `AuditEvent` model is already wide enough to hold everything
+   Sprint 39 emits. The ceiling on audit vocabulary is the
+   AuditAction TS union, not the database.
+
+### Verification
+
+- `npx tsc --noEmit` → `EXIT: 0`
+- `npx biome check src` → checked 185 files, no errors (unchanged
+  file count vs Sprint 38 — no new files)
+- `npx prisma validate` → schema valid (no changes)
+
+### Files touched
+
+- `src/lib/audit.ts` (AuditAction + AuditEntityType unions extended)
+- `src/app/(app)/items/actions.ts` (4 write sites: create, update, import, delete)
+- `src/app/(app)/warehouses/actions.ts` (3 write sites: create, update, delete)
+- `src/app/(app)/categories/actions.ts` (2 write sites: create, delete)
+- `src/app/(app)/stock-counts/actions.ts` (3 write sites: create, cancel, complete)
+- `src/lib/i18n/messages/en.ts` (+12 keys under `audit.actions`)
+- `PORT_CHECKLIST.md` (this block)
+- `GIT_WORKFLOW.md` (sprint 39 entry + v0.39.0-sprint39 tag)
+
+---
+
 ## Sprint 38 — Purchase order detail enrichment (shipped 2026-04-11)
 
 ### What shipped

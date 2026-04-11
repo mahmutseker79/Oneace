@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 38.
+and iterating on it through Sprint 0 → Sprint 39.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 38.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 37 plus **Sprint 38** are already committed in a
+Sprint 0 through Sprint 38 plus **Sprint 39** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.38.0-sprint38.bundle
+oneace-next/oneace-next-port-v0.39.0-sprint39.bundle
 ```
 
 This bundle contains:
 
-- **84 commits** — 8 Sprint 0 + 1 docs + Sprints 1..38 (each = 1 feature
+- **86 commits** — 8 Sprint 0 + 1 docs + Sprints 1..39 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -64,9 +64,10 @@ This bundle contains:
   - `v0.36.0-sprint36` — Sprint 36 complete (tenant-scoped append-only audit log — new `AuditEvent` Prisma model with composite `(organizationId, createdAt)` index + secondary `(entityType, entityId)` index, `src/lib/audit.ts` write helper with typed `AuditAction` vocabulary, wired into 12 high-severity actions across settings / users / purchase-orders, new admin-gated `/audit` page with cursor-paginated "Load more", History-icon sidebar entry, full `t.audit` i18n namespace with 13 action labels)
   - `v0.37.0-sprint37` — Sprint 37 complete (production hardening — zod-validated env schema at `src/lib/env.ts` fails boot on missing/malformed required vars, dependency-free structured logger at `src/lib/logger.ts` with JSON-lines-in-prod / pretty-in-dev output, `/app/global-error.tsx` + `(app)/error.tsx` two-layer error boundaries showing Next.js `error.digest`, `/api/health` liveness+readiness probe with `SELECT 1` DB check returning 200/503, five call sites migrated off raw `process.env`, audit helper rewired to `logger.error`)
   - `v0.38.0-sprint38` — Sprint 38 complete (purchase-order detail enrichment — 5-up KPI strip (status + % received + total value + line count + days open) on `/purchase-orders/[id]`, supplier link to `/suppliers/[id]` + "Created by" chip in header, parallelised receipt history card joined via `StockMovement.reference === po.poNumber` with second-bucket grouping so multi-line receives collapse into one event, PO-scoped audit trail card with `OR: [{entityId: po.id}, {entityId: null}]` + in-memory `metadata.poNumber` filter to catch delete-case rows, 9 new i18n keys under `purchaseOrders.detail`, no schema changes)
+  - `v0.39.0-sprint39` — Sprint 39 complete (audit coverage expansion — extended Sprint 36's deliberately narrow audit vocabulary from 13 to 25 actions across 8 entity types by wiring `recordAudit` into the catalog write surfaces (items: create/update-with-diff/import-aggregate/delete; warehouses: create/update-with-diff/delete; categories: create/delete) and stock-count lifecycle transitions (create with row-count metadata, cancel with previousState + reason, complete after-transaction with posted-movements + variance counts), item/warehouse update sites read a `before` snapshot and build a diff so metadata only carries changed fields, deletes pre-read `{name, code/sku}` for human-readable audit metadata, CountEntry/StockMovement/StockLevel writes deliberately stay silent to prevent log flooding, 12 new i18n keys under `audit.actions`, no schema changes)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.38.0-sprint38.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.39.0-sprint39.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -80,11 +81,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.38.0-sprint38.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.39.0-sprint39.bundle \
           next-port:next-port
 
-# Also pull all thirty-eight sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.38.0-sprint38.bundle \
+# Also pull all thirty-nine sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.39.0-sprint39.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -122,11 +123,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.38.0-sprint38.bun
           refs/tags/v0.35.0-sprint35:refs/tags/v0.35.0-sprint35 \
           refs/tags/v0.36.0-sprint36:refs/tags/v0.36.0-sprint36 \
           refs/tags/v0.37.0-sprint37:refs/tags/v0.37.0-sprint37 \
-          refs/tags/v0.38.0-sprint38:refs/tags/v0.38.0-sprint38
+          refs/tags/v0.38.0-sprint38:refs/tags/v0.38.0-sprint38 \
+          refs/tags/v0.39.0-sprint39:refs/tags/v0.39.0-sprint39
 
 # Verify
-git log --oneline next-port                # should show 84 commits
-git tag -l                                 # should include all thirty-eight sprint tags
+git log --oneline next-port                # should show 86 commits
+git tag -l                                 # should include all thirty-nine sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -141,8 +143,146 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
                v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
                v0.34.0-sprint34 v0.35.0-sprint35 v0.36.0-sprint36 \
-               v0.37.0-sprint37 v0.38.0-sprint38
+               v0.37.0-sprint37 v0.38.0-sprint38 v0.39.0-sprint39
 ```
+
+### What Sprint 39 added (v0.39.0-sprint39)
+
+Sprint 39 is the follow-on to Sprint 36's tenant-scoped audit log.
+Sprint 36 shipped the infrastructure (model, helper, `/audit` page)
+but deliberately kept write-site coverage narrow: only 13 actions
+across four entity types (organization / membership / invitation /
+purchase_order). Sprint 39 widens the vocabulary to **25 actions
+across 8 entity types** by wiring `recordAudit()` into the catalog
+and stock-count surfaces that were conspicuously silent.
+
+**1. Vocabulary extension.** `src/lib/audit.ts` gains 12 new
+`AuditAction` values: `item.created`, `item.updated`,
+`item.imported`, `item.deleted`, `warehouse.created`,
+`warehouse.updated`, `warehouse.deleted`, `category.created`,
+`category.deleted`, `stock_count.created`, `stock_count.cancelled`,
+`stock_count.completed`. `AuditEntityType` grows from 4 to 8 to
+match (`item` / `warehouse` / `category` / `stock_count` added).
+Because `t.audit.actions` is typed as `Record<AuditAction, string>`
+the compiler forced the matching 12 i18n labels — no drift
+possible.
+
+**2. Items surface.** `src/app/(app)/items/actions.ts` now pulls
+`session` out of `requireActiveMembership()` and emits an audit
+row at four call sites:
+
+- `createItemAction`: on success with metadata `{sku, name, status}`.
+- `updateItemAction`: reads a `before` snapshot (`findFirst` with
+  `select: { sku, name, barcode, status, categoryId, reorderPoint,
+  reorderQty }`) **before** the mutation, builds a `changed` diff
+  in memory by looping over a tuple of keys, and only emits the
+  row if `Object.keys(changed).length > 0`. A no-op submit (user
+  hits Save without changing anything) stays silent. Metadata is
+  `{sku: after.sku, changed}` so the audit row shows the current
+  SKU plus just the fields that actually moved.
+- `importItemsAction`: emits **one** aggregate row per import run
+  with `entityId: null` and metadata `{inserted, skippedInvalid,
+  skippedConflicts}`. Per-row audit events would flood the log
+  during a 5k-row CSV import — the aggregate row is the unit
+  that actually matters for compliance ("who imported when, how
+  much landed").
+- `deleteItemAction`: pre-reads `{sku, name}` via `findFirst`
+  before the delete so the audit row carries human-readable
+  fields after the PK is gone (same pattern Sprint 36 established
+  for `purchase_order.deleted`).
+
+**3. Warehouses surface.** `src/app/(app)/warehouses/actions.ts`
+mirrors the items pattern:
+
+- `createWarehouseAction`: metadata `{name, code, city, isDefault}`.
+- `updateWarehouseAction`: snapshot selects `{name, code, city,
+  country, isDefault}`, diffs in memory, emits with `{code:
+  after.code, changed}`.
+- `deleteWarehouseAction`: the existing pre-check `findUnique`
+  that guards against deleting the default warehouse is **widened**
+  to also return `{name, code}` in the same query — no extra
+  round-trip. Metadata becomes `{name, code, wasDefault}`.
+
+**4. Categories surface.** `src/app/(app)/categories/actions.ts`
+has only create and delete (no update action on the category
+surface — Sprint 1 deliberately kept category editing out). Both
+are audited: create with `{name, slug, parentId}`, delete with
+`{name, slug}` read via pre-delete `findFirst`.
+
+**5. Stock counts surface.** `src/app/(app)/stock-counts/actions.ts`
+audits **lifecycle state transitions** but deliberately **not** the
+per-entry writes:
+
+- `createStockCountAction`: after the transaction that creates
+  the count + snapshot rows, emits `stock_count.created` with
+  rich metadata `{name, methodology, warehouseId, itemCount,
+  warehouseCount, snapshotRows}` — the snapshot row count is the
+  honest-to-god count of variance lines the counter will walk
+  through, which makes this the most useful single field for "was
+  this count scoped correctly?" post-hoc review.
+- `cancelStockCountAction`: the existing pre-flight `findFirst`
+  that reads `{id, state}` to verify state is widened to also
+  pull `name`; metadata is `{name, previousState: count.state,
+  reason: data.reason}` — the prior state matters because a count
+  can be cancelled from `DRAFT`, `IN_PROGRESS`, or `READY_TO_POST`
+  and each of those tells a different story.
+- `completeStockCountAction`: the audit call lands **after** the
+  `db.$transaction` closes, matching the Sprint 36 convention for
+  `purchase_order.received` — never audit inside a transaction,
+  always after. Metadata is `{name, applyAdjustments,
+  postedMovements: result.posted, varianceRows: variances.length}`.
+  `postedMovements` distinguishes a "book reality" reconcile
+  (applyAdjustments=true, N stock movements posted) from a "count
+  only" reconcile (applyAdjustments=false, 0 movements posted).
+
+**What we deliberately did NOT audit.** The per-entry CountEntry
+writes (`addCountEntryAction`, `submitCountEntryOpAction`), the
+offline-queue replay path, and the raw `StockMovement` /
+`StockLevel` writes. A single physical count can generate
+hundreds or thousands of CountEntry rows; auditing each one would
+drown the log. The audit row on `stock_count.completed` carries
+the aggregate posted-movement count, which is the level of
+granularity compliance review actually needs. If we ever need
+row-level provenance for a specific count we already have it —
+the `CountEntry` rows themselves are the audit trail for that
+surface, with `createdBy` + `createdAt` + `deviceId` fields
+Sprint 3 added.
+
+**i18n keys added.** Twelve new keys under `audit.actions` in
+`src/lib/i18n/messages/en.ts`, one per new `AuditAction` value.
+English prose only, per the standing i18n rule.
+
+**Design decisions.**
+1. Audit AFTER mutation, never inside the transaction — matches
+   Sprint 36 for `purchase_order.received`.
+2. Audit helper swallows its own errors via `logger.error`, so
+   the call sites don't need try/catch.
+3. Deletes pre-read `{name, ...}` before destroying the row so
+   metadata stays human-readable.
+4. Updates diff against a `before` snapshot and skip on no-op.
+5. Bulk operations (CSV import) collapse to **one** aggregate row,
+   not per-item.
+6. State transitions on stock counts, not per-entry writes.
+7. `entityId` on `category` delete is the pre-delete id (we know
+   it exists at snapshot time) — same convention as item/warehouse.
+8. The `AuditEntityType` union is kept in sync — every new action
+   introduces the matching entity type, never a bare string.
+
+**Files touched.**
+- `src/lib/audit.ts` (union extensions)
+- `src/app/(app)/items/actions.ts` (4 audit call sites)
+- `src/app/(app)/warehouses/actions.ts` (3 audit call sites)
+- `src/app/(app)/categories/actions.ts` (2 audit call sites)
+- `src/app/(app)/stock-counts/actions.ts` (3 audit call sites)
+- `src/lib/i18n/messages/en.ts` (+12 keys under `audit.actions`)
+- `PORT_CHECKLIST.md` (Sprint 39 block prepended)
+- `GIT_WORKFLOW.md` (this block + bundle / tag bump to
+  v0.39.0-sprint39)
+
+**Verification.** `npx tsc --noEmit` → exit 0. `npx biome check src`
+→ 185 files clean (unchanged count). `npx prisma validate` →
+schema unchanged, valid.
+
 
 ### What Sprint 38 added (v0.38.0-sprint38)
 
@@ -217,8 +357,8 @@ i18n rule.
 **Files touched.**
 - `src/app/(app)/purchase-orders/[id]/page.tsx` (rewritten, ~600 lines)
 - `src/lib/i18n/messages/en.ts` (+9 keys under `purchaseOrders.detail`)
-- `PORT_CHECKLIST.md` (Sprint 38 block prepended)
-- `GIT_WORKFLOW.md` (this block + bundle / tag bump to v0.38.0-sprint38)
+- `PORT_CHECKLIST.md` (Sprint 38 block prepended at Sprint 38 time)
+- `GIT_WORKFLOW.md` (this block + bundle / tag bump to v0.38.0-sprint38 at Sprint 38 time)
 
 **Verification.** `npx tsc --noEmit` → exit 0. `npx biome check src`
 → 185 files clean after a one-line auto-format collapse on the
