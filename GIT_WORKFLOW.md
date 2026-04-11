@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 9 plus **Sprint 10** are already committed in a
+Sprint 0 through Sprint 10 plus **Sprint 11** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.10.0-sprint10.bundle
+oneace-next/oneace-next-port-v0.11.0-sprint11.bundle
 ```
 
 This bundle contains:
 
-- **28 commits** — 8 Sprint 0 + 1 docs + Sprints 1..10 (each = 1 feature
+- **30 commits** — 8 Sprint 0 + 1 docs + Sprints 1..11 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -36,9 +36,10 @@ This bundle contains:
   - `v0.8.0-sprint8` — Sprint 8 complete (barcode scanner + item lookup)
   - `v0.9.0-sprint9` — Sprint 9 complete (CSV exports + stock-value report)
   - `v0.10.0-sprint10` — Sprint 10 complete (global header search)
+  - `v0.11.0-sprint11` — Sprint 11 complete (header org switcher + active-org cookie)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.9.0-sprint9.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.10.0-sprint10.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -52,11 +53,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.10.0-sprint10.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.11.0-sprint11.bundle \
           next-port:next-port
 
-# Also pull all ten sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.10.0-sprint10.bundle \
+# Also pull all eleven sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.11.0-sprint11.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -66,18 +67,50 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.10.0-sprint10.bun
           refs/tags/v0.7.0-sprint7:refs/tags/v0.7.0-sprint7 \
           refs/tags/v0.8.0-sprint8:refs/tags/v0.8.0-sprint8 \
           refs/tags/v0.9.0-sprint9:refs/tags/v0.9.0-sprint9 \
-          refs/tags/v0.10.0-sprint10:refs/tags/v0.10.0-sprint10
+          refs/tags/v0.10.0-sprint10:refs/tags/v0.10.0-sprint10 \
+          refs/tags/v0.11.0-sprint11:refs/tags/v0.11.0-sprint11
 
 # Verify
-git log --oneline next-port                # should show 28 commits
-git tag -l                                 # should include all ten sprint tags
+git log --oneline next-port                # should show 30 commits
+git tag -l                                 # should include all eleven sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
-               v0.9.0-sprint9 v0.10.0-sprint10
+               v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11
 ```
+
+### What Sprint 11 added (v0.11.0-sprint11)
+
+- **Active-org cookie + session update** — `src/lib/session.ts` now
+  exports `ACTIVE_ORG_COOKIE` and `requireActiveMembership()` reads
+  it, validates against the caller's own memberships, and falls back
+  to the oldest membership when the cookie is missing or stale.
+  Wrapped in React `cache()` so layout + page share one DB hit.
+- **`switchOrganizationAction`** (`src/app/(app)/organizations/
+  actions.ts`) — server action that re-validates membership ownership
+  on every switch (so a stale cookie from a just-removed user can't
+  grant one-frame access), sets the cookie with a 1-year `maxAge` and
+  `sameSite: "lax"`, and `revalidatePath("/", "layout")` so every
+  server component re-reads on next navigation.
+- **`OrgSwitcher` component** (`src/components/shell/org-switcher.tsx`)
+  — renders a read-only badge when the user only belongs to one org
+  (no dropdown affordance when there's nothing to pick) and a proper
+  Select with a Building2 icon otherwise. Calls the action inside
+  `useTransition`, then `router.refresh()` to stay on the current URL
+  — switching orgs should show the same page for the other org, not
+  bounce to the dashboard.
+- **Header + layout rewired** — `Header.tsx` now takes `organizations`
+  + `activeOrganizationId` props in place of the static
+  `organizationName` badge; `(app)/layout.tsx` maps memberships to
+  switcher options and passes them through.
+- **i18n** — new `t.organizations.errors.{invalidId, notAMember}`
+  namespace in `en.ts`.
+
+Note: organization deletion / danger zone is intentionally deferred —
+the cascade surface is large and risks regressions across every other
+sprint. Sprint 11 ships only the read-path half of multi-tenancy.
 
 ### What Sprint 10 added (v0.10.0-sprint10)
 

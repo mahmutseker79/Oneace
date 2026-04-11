@@ -381,6 +381,54 @@ zero schema changes, and kills a visible dead-UI element.
       100k the plan is to migrate to a generated `searchVector`
       column populated on Item/Supplier/Warehouse write
 
+## Sprint 11 — header organization switcher (shipped 2026-04-11)
+
+Tagged `v0.11.0-sprint11`. Completes the read-path half of multi-
+tenancy: the app had full support for multiple memberships in the
+schema since Sprint 0, but no UI for switching between them — every
+session silently picked the oldest membership. Sprint 11 wires the
+real switcher.
+
+- [x] `src/lib/session.ts` — export `ACTIVE_ORG_COOKIE`, update
+      `requireActiveMembership()` to read the cookie + validate it
+      against the user's memberships, fall back to the oldest, and
+      return `memberships` alongside the active one so the header
+      can populate its dropdown from the same query
+- [x] Wrapped `requireActiveMembership` in React `cache()` so the
+      layout + page share a single DB round-trip per request
+- [x] `src/app/(app)/organizations/actions.ts` —
+      `switchOrganizationAction(organizationId)` re-validates the
+      caller owns a membership in the target, sets the cookie
+      (1-year `maxAge`, `sameSite: "lax"`), and
+      `revalidatePath("/", "layout")`
+- [x] `src/components/shell/org-switcher.tsx` — new client
+      component, read-only badge when there's only one org, Select
+      with Building2 icon otherwise; calls the action inside
+      `useTransition` then `router.refresh()` to stay on the same URL
+- [x] `src/components/shell/header.tsx` — accept `organizations` +
+      `activeOrganizationId` props, render `<OrgSwitcher>` in place
+      of the old static badge
+- [x] `src/app/(app)/layout.tsx` — pass memberships → options mapping
+- [x] `t.organizations.errors.{invalidId, notAMember}` i18n added
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-11)
+
+- [ ] Danger zone in `/settings`: organization delete (OWNER only,
+      cascading delete behind an AlertDialog with typed confirmation
+      — deferred because the cascade surface is wide and risks
+      regressions in every other sprint)
+- [ ] Create-another-organization flow from the header switcher
+      (today only `/onboarding` creates the very first org)
+- [ ] Per-org default locale / region override (currently the locale
+      and region cookies are per-browser, not per-org)
+- [ ] Offline PWA shell + service worker (Moat 1 — true on-shelf
+      scanning)
+- [ ] Invitation tokens + email flow (Sprint 7 team management needs
+      the target user to already exist)
+- [ ] Audit log (compliance) — Prisma model + read-path UI + the
+      plumbing in every write action
+
 ---
 
 ## Parked Until Later
