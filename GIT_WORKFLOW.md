@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 40.
+and iterating on it through Sprint 0 → Sprint 41.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 40.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 39 plus **Sprint 40** are already committed in a
+Sprint 0 through Sprint 40 plus **Sprint 41** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.40.0-sprint40.bundle
+oneace-next/oneace-next-port-v0.41.0-sprint41.bundle
 ```
 
 This bundle contains:
 
-- **88 commits** — 8 Sprint 0 + 1 docs + Sprints 1..40 (each = 1 feature
+- **90 commits** — 8 Sprint 0 + 1 docs + Sprints 1..41 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -66,9 +66,10 @@ This bundle contains:
   - `v0.38.0-sprint38` — Sprint 38 complete (purchase-order detail enrichment — 5-up KPI strip (status + % received + total value + line count + days open) on `/purchase-orders/[id]`, supplier link to `/suppliers/[id]` + "Created by" chip in header, parallelised receipt history card joined via `StockMovement.reference === po.poNumber` with second-bucket grouping so multi-line receives collapse into one event, PO-scoped audit trail card with `OR: [{entityId: po.id}, {entityId: null}]` + in-memory `metadata.poNumber` filter to catch delete-case rows, 9 new i18n keys under `purchaseOrders.detail`, no schema changes)
   - `v0.39.0-sprint39` — Sprint 39 complete (audit coverage expansion — extended Sprint 36's deliberately narrow audit vocabulary from 13 to 25 actions across 8 entity types by wiring `recordAudit` into the catalog write surfaces (items: create/update-with-diff/import-aggregate/delete; warehouses: create/update-with-diff/delete; categories: create/delete) and stock-count lifecycle transitions (create with row-count metadata, cancel with previousState + reason, complete after-transaction with posted-movements + variance counts), item/warehouse update sites read a `before` snapshot and build a diff so metadata only carries changed fields, deletes pre-read `{name, code/sku}` for human-readable audit metadata, CountEntry/StockMovement/StockLevel writes deliberately stay silent to prevent log flooding, 12 new i18n keys under `audit.actions`, no schema changes)
   - `v0.40.0-sprint40` — Sprint 40 complete (audit log filters + retention — `/audit` filter bar (action / entity type / actor / date range) with URL as source of truth, shared `./filter.ts` parser with compile-time exhaustiveness trap on the AuditAction/AuditEntityType unions, cursor-pagination "Load more" carries filter state forward, admin-gated `GET /audit/export` CSV route with 2k unfiltered / 10k filtered row caps, new `AUDIT_RETENTION_DAYS` env var (zod-validated, default 365, min 1), manual `npm run audit:prune` script running per-tenant `deleteMany` + self-audit `audit.pruned` row (26th AuditAction), `scripts/run-ts.mjs` tiny jiti wrapper avoids adding tsx/ts-node to devDeps, distinct-actor dropdown query hits the audit table itself so ex-members remain filterable for compliance review, new `audit.filter.*` + `audit.entityTypes.*` i18n keys, no schema changes)
+  - `v0.41.0-sprint41` — Sprint 41 complete (email notifications + low-stock digest — new `NotificationPreference` Prisma model with composite unique `(userId, organizationId, type)` + covering index `(organizationId, type, frequency)` + cascade-on-delete relations to User and Organization, two new enums `NotificationType` (LOW_STOCK_DIGEST only at MVP) and `NotificationFrequency` (NEVER/IMMEDIATE/DAILY/WEEKLY), shared low-stock query extracted to `src/lib/reports/low-stock.ts` so the on-screen report / CSV export / email digest read the exact same data the exact same way, `buildLowStockDigestEmail` template mirroring the Sprint 33 invitation template conventions (escapeHtml + applyPlaceholders + inline-styled table HTML + preheader div + cadence-aware subject/heading + 50-item truncation cap + empty-state branch), `GET /api/cron/notifications/[frequency]` route with Bearer `CRON_SECRET` auth (503 if unset, 401 on mismatch), `?dryRun=true` preview mode, `cadenceWindowStart` idempotency guard (23h for daily, 6d23h for weekly), per-org one-shot digest build so each tenant's shortfall query runs once per cron run, post-send `lastDeliveredAt` update with failed-send-retries-next-run semantics, single aggregate `notification.sent` audit row per (org, run) with `{cadence, type, recipientsAttempted, delivered, failed, skippedAsRecent, totalItems, dryRun}` metadata (27th AuditAction), new `/settings/notifications` server component + client form with save-on-change shadcn Select mirroring the Sprint 19 locale picker ergonomics, explicit `TYPES_IN_UI` list (not `Object.values`) so Prisma enum reorders can't shuffle the UI, server action upserting on the composite unique key, new link card on `/settings` for discoverability, new `CRON_SECRET` env var (optional, 16-char min, blank→undefined guard), new `settings.notifications.*` + `audit.actions["notification.sent"]` + `emails.lowStockDigest.*` i18n keys, all-English per the standing i18n rule)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.40.0-sprint40.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.41.0-sprint41.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -82,11 +83,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.40.0-sprint40.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.41.0-sprint41.bundle \
           next-port:next-port
 
-# Also pull all forty sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.40.0-sprint40.bundle \
+# Also pull all forty-one sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.41.0-sprint41.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -126,11 +127,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.40.0-sprint40.bun
           refs/tags/v0.37.0-sprint37:refs/tags/v0.37.0-sprint37 \
           refs/tags/v0.38.0-sprint38:refs/tags/v0.38.0-sprint38 \
           refs/tags/v0.39.0-sprint39:refs/tags/v0.39.0-sprint39 \
-          refs/tags/v0.40.0-sprint40:refs/tags/v0.40.0-sprint40
+          refs/tags/v0.40.0-sprint40:refs/tags/v0.40.0-sprint40 \
+          refs/tags/v0.41.0-sprint41:refs/tags/v0.41.0-sprint41
 
 # Verify
-git log --oneline next-port                # should show 88 commits
-git tag -l                                 # should include all forty sprint tags
+git log --oneline next-port                # should show 90 commits
+git tag -l                                 # should include all forty-one sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -146,8 +148,191 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
                v0.34.0-sprint34 v0.35.0-sprint35 v0.36.0-sprint36 \
                v0.37.0-sprint37 v0.38.0-sprint38 v0.39.0-sprint39 \
-               v0.40.0-sprint40
+               v0.40.0-sprint40 v0.41.0-sprint41
 ```
+
+### What Sprint 41 added (v0.41.0-sprint41)
+
+Sprint 41 adds the first *operational* email the app sends on its
+own schedule — a low-stock digest grouped by supplier, delivered
+daily or weekly on a cadence each user picks for themselves.
+Sprint 33 built the `Mailer` adapter and the invitation-email
+template; Sprint 41 uses that same adapter for the first email the
+app originates without a user action trigger, plus the schema +
+routing + settings UI to make it reliably opt-in.
+
+**1. `NotificationPreference` schema.** One row per
+`(user, org, type)` triple, composite-unique, covering index on
+`(org, type, frequency)` for the cron fan-out query, cascade on
+both `User` and `Organization` so Sprint 21's org delete and
+user-delete transparently clean up. The `NotificationType` enum
+only lists `LOW_STOCK_DIGEST` at MVP; the `NotificationFrequency`
+enum is the full `NEVER | IMMEDIATE | DAILY | WEEKLY`. A missing
+row means `NEVER` — **opt-in semantics**, the feature ships with
+zero users receiving mail until someone picks a cadence. No
+`NEVER` seed on existing users; the migration is literally just
+the new table.
+
+**2. Shared low-stock helper `src/lib/reports/low-stock.ts`.** The
+single source of truth for "what items are at or below their
+reorder point?". Three callers now read from it — the Sprint 6
+on-screen report, the Sprint 9 CSV export, and the Sprint 41 email
+digest — so they can't drift. If the three surfaces could diverge
+by so much as a `WHERE` clause, a reviewer would see 17 items on
+screen, 16 in the CSV, and 18 in the email and spend an hour
+wondering which lied. Exports `getLowStockItems` + `groupBySupplier`
++ `LowStockItem` / `LowStockGroup` types. The report page and
+export route were refactored to drop their inline queries and
+read from the helper — roughly a 100-line simplification net-net.
+
+**3. Email template `src/lib/mail/templates/low-stock-digest-email.ts`.**
+Mirrors the Sprint 33 invitation template conventions:
+`escapeHtml` + `applyPlaceholders` helpers for safe interpolation,
+inline-styled table HTML (corporate mail clients strip `<style>`
+tags), preheader `<div>` for the Gmail snippet, cadence-aware
+subject/heading ("daily" vs "weekly"), a CTA button linking back
+to `/reports/low-stock`, and two guardrails:
+
+- `MAX_ITEMS_PER_EMAIL = 50` with a "+ N more" truncation note so
+  a pathological shortage (new store with nothing stocked) can't
+  produce a megabyte of HTML. The 10k-row CSV cap is for
+  reviewers; the email cap is for renderers.
+- Empty-state branch: when `totalItems === 0` we still honour the
+  cadence window but substitute "Everything is on reorder point
+  or above" copy. Sending nothing would be silent success — which
+  is indistinguishable from a broken cron — so sending a
+  reassuring empty digest is the explicit acknowledgement.
+
+**4. Cron fan-out route
+`src/app/api/cron/notifications/[frequency]/route.ts`.** The
+engine. `GET` with `Authorization: Bearer <env.CRON_SECRET>` and
+an optional `?dryRun=true` preview. Flow:
+
+1. Auth gate — 503 if `CRON_SECRET` is unset, 401 on mismatch.
+   The 503/401 split is deliberate: a deploy platform's cron
+   wrapper reads "503" as "infra broken, page the operator" and
+   "401" as "auth broken, audit the secret rotation".
+2. Param validation — `frequency` must be `"daily" | "weekly"`,
+   400 otherwise. `IMMEDIATE` / `NEVER` are valid preference
+   values but not valid route params.
+3. Cadence window — `cadenceWindowStart(cadence, now)` is
+   `now - 23h` for daily and `now - 6d23h` for weekly. The
+   one-hour slack absorbs clock skew / scheduler drift without
+   admitting a same-day double-send.
+4. Preference fetch with join to `user` + `organization`,
+   filtered by `frequency = cadence` and `(lastDeliveredAt IS
+   NULL OR lastDeliveredAt < windowStart)`.
+5. Active-membership verification — a second query loads
+   `Membership` rows for the `(userId, organizationId)` pairs
+   the preference query returned, then filters the prefs down
+   to users who still have an active membership. A user who was
+   removed from the org keeps their preference row (we
+   deliberately don't cascade removal through membership) but
+   the cron skips them at runtime.
+6. Per-org grouping + one-shot digest build. Each org's
+   shortfall query + grouping + `buildLowStockDigestEmail` runs
+   **once** per run regardless of how many recipients are on
+   the digest. Then each recipient gets the pre-built message
+   via `getMailer().send()`.
+7. Per-recipient `lastDeliveredAt` update on successful send.
+   A failed send leaves the timestamp alone so the next run
+   retries. Dry-run skips the update entirely.
+8. One aggregate `recordAudit("notification.sent")` per org per
+   run, with `{ cadence, type, recipientsAttempted, delivered,
+   failed, skippedAsRecent, totalItems, dryRun }` metadata.
+   Per-user audit events would drown the log on a 50-member
+   team running daily digests — the aggregate row is what
+   compliance review actually needs.
+9. JSON summary response so a cron wrapper can parse the result
+   and decide whether to page someone.
+
+**5. `CRON_SECRET` env var.** Joins the Sprint 37 zod schema as
+an optional `z.string().min(16)` with a
+`.or(z.literal("").transform(() => undefined))` guard that
+catches the common `CRON_SECRET=` blank-line-in-.env footgun so
+a blank value reads as "not set" rather than "set to empty
+string, allows empty bearer". Optional so existing bootstraps
+don't fail boot on upgrade — but when unset the cron route
+itself returns 503, so a production deploy MUST set it.
+
+**6. `notification.sent` `AuditAction`.** The 27th value in the
+union, added to `src/lib/audit.ts` AND to the `AUDIT_ACTIONS`
+exhaustiveness trap in `src/app/(app)/audit/filter.ts` so the
+filter bar's allow-list stays in sync with the union. Same
+discipline that caught two filter-parser typos during Sprint 40.
+Matching `t.audit.actions["notification.sent"]` label keeps
+the compiler's `Record<AuditAction, string>` check happy.
+
+**7. Settings UI at `/settings/notifications`.** Two-file pair:
+a server component (`page.tsx`) that queries existing preference
+rows and renders one `PreferenceRowControl` per
+`NotificationType` in an explicit `TYPES_IN_UI =
+[LOW_STOCK_DIGEST]` list (not `Object.values(NotificationType)`
+— a Prisma enum reorder must not silently shuffle UI rows), and
+a client form (`preferences-form.tsx`) that uses a shadcn
+`Select` with save-on-change via `useTransition` + `FormData` →
+server action, mirroring the Sprint 19 locale picker's ergonomic
+pattern. "Saved" flash lingers 1.8s (same duration the locale
+picker uses) so fast local networks don't visually skip the
+acknowledgement. The server action in
+`actions.ts` is `"use server"` + zod-validated (types derived
+from Prisma enums via `Object.values(...) as [...]`) + upsert on
+the composite unique key + `revalidatePath("/settings/notifications")`.
+
+**8. Link card on `/settings`.** An `lg:col-span-2` `Card` with a
+shadcn `<Link href="/settings/notifications">`, placed between
+the Sprint 19 `OrgDefaults` card and the Sprint 32 / Sprint 21
+transfer-ownership / danger-zone cards so the page reads "org
+properties → user preferences → org destructive actions". Title
++ description reuse `t.settings.notifications.heading` /
+`.subtitle` so the copy is single-sourced.
+
+**9. i18n coverage.** `en.ts` gains a `settings.notifications.*`
+block, the `audit.actions["notification.sent"]` label, and a
+top-level `emails.lowStockDigest.*` bag with placeholder-aware
+subject/heading/body/cta/footer/moreItemsNote/emptyBody copy.
+All English. Turkish remains absent per the standing i18n rule.
+
+**Deferred.**
+- Slack / Teams / SMS channels — email-only for MVP.
+- In-app notifications (bell icon, unread badge).
+- Additional notification types (PO status changed, stock count
+  completed, member invited). The schema supports them; MVP
+  scope is LOW_STOCK_DIGEST only.
+- Per-item / per-warehouse filter overrides — Sprint 43 concern.
+- Retry-with-backoff on failed sends — next cadence run is the
+  retry.
+- One-click unsubscribe tokens in the email — preferences page
+  is the unsubscribe surface.
+
+**Files touched.**
+
+- Added:
+  - `prisma/schema.prisma` — new model + 2 enums + 2 relation fields
+  - `src/lib/reports/low-stock.ts` (120 lines; shared query + grouping)
+  - `src/lib/mail/templates/low-stock-digest-email.ts` (280 lines)
+  - `src/app/api/cron/notifications/[frequency]/route.ts` (270 lines)
+  - `src/app/(app)/settings/notifications/page.tsx`
+  - `src/app/(app)/settings/notifications/preferences-form.tsx`
+  - `src/app/(app)/settings/notifications/actions.ts`
+- Modified:
+  - `src/lib/env.ts` — `CRON_SECRET` field
+  - `src/lib/audit.ts` — `notification.sent` `AuditAction`
+  - `src/app/(app)/audit/filter.ts` — exhaustiveness trap entry
+  - `src/app/(app)/reports/low-stock/page.tsx` — use shared helper
+  - `src/app/(app)/reports/low-stock/export/route.ts` — use shared helper
+  - `src/app/(app)/settings/page.tsx` — link card to notifications
+  - `src/lib/i18n/messages/en.ts` — settings.notifications +
+    audit.actions + emails.lowStockDigest
+
+**Verification.**
+
+- `npx tsc --noEmit` — 0 errors
+- `npx biome check src` — 195 files, no issues (auto-fixed 4
+  import-wrap nits on the new files in the touched set)
+- `DATABASE_URL=… DIRECT_URL=… npx prisma validate` — schema valid
+
+---
 
 ### What Sprint 40 added (v0.40.0-sprint40)
 
