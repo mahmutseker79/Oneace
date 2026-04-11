@@ -241,9 +241,60 @@ that were blocking the Sprint 6 low-stock report from being fully useful.
 
 ---
 
+## Sprint 8 — Barcode scanner + item lookup (shipped 2026-04-11)
+
+Tagged `v0.8.0-sprint8`. Closes the `/scan` 404 in the sidebar and lights up
+the first Moat-1 capability from the competitor teardown. Scanning is the
+number-one workflow for warehouse staff, so this unlocks the "stand at the
+shelf with a phone" use case that's the whole reason for the PWA bet.
+
+- [x] `/scan` page with camera card + manual entry card side-by-side on
+      desktop, stacked on mobile
+- [x] Feature-detect `BarcodeDetector` via `globalThis` cast — falls back
+      to an "unsupported" alert + manual input on Safari and Firefox
+- [x] `getUserMedia({video: {facingMode: {ideal: "environment"}}})` with
+      clean teardown on unmount and on successful scan
+- [x] Detection loop throttled to ~160 ms (≈6 FPS) via `performance.now()`
+      to avoid burning battery while still feeling instant
+- [x] Supports EAN-13 / EAN-8 / UPC-A / UPC-E / Code-128 / Code-39 / QR /
+      ITF; falls back to no-args constructor if the browser rejects the
+      format list
+- [x] `lookupItemByCodeAction` — OR-matches `barcode` or `sku` within the
+      active org, returns the item with all per-warehouse `stockLevels`
+      and aggregate on-hand / reserved totals
+- [x] Found card — name + SKU + barcode, on-hand / reorder point
+      side-by-side, status badge, per-warehouse stock level list,
+      "View item" button deep-linking to `/items/[id]`
+- [x] Not-found card — displays the queried value and a "Create item"
+      button that deep-links to `/items/new?barcode=<code>`
+- [x] `ItemForm` accepts a `defaultBarcode` prop; `/items/new` reads
+      `?barcode=` from searchParams so create-from-scan pre-fills the field
+- [x] Dashboard quick-action row gains a Scan shortcut (leftmost button)
+- [x] `initialQuery` deep-link: `/scan?barcode=<code>` or `/scan?sku=<code>`
+      kicks off a lookup immediately without requiring camera access
+- [x] i18n: `scan` namespace added to `en.ts` covering camera states,
+      manual entry, found / not-found results, and result card copy
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-8)
+
+- [ ] Offline PWA shell + service worker for the `/scan` route (today
+      everything still requires an active connection; true on-the-shelf
+      scanning needs offline lookup via Dexie + a seeded item cache)
+- [ ] Batch scan mode (continuous scanning that appends to a list, for
+      stock counts and bulk receive) — follows the offline shell
+- [ ] Quantity-adjust inline from the scan result (add 1, remove 1) so
+      warehouse staff can update stock without navigating to item detail
+- [ ] Scan history / recent scans list (in-browser only, backed by
+      localStorage or Dexie once offline lands)
+- [ ] Full ZXing-wasm fallback for Safari and Firefox (BarcodeDetector is
+      Chromium-only today; most real-world users will be on iOS Safari)
+
+---
+
 ## Parked Until Later
 
-- `ScannerView` → Sprint 3 (Moat 1)
+- `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
 - `StockCountView` + `StockCountSession` → Sprint 5 (Moat 2, with the Dexie layer)
 - `ReportsView` → **Sprint 6 (shipped 2026-04-11)**
 - `SettingsView` (org + locale / region picker) → **Sprint 7 (shipped 2026-04-11)**

@@ -13,18 +13,19 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0, Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, **and
-Sprint 7** are already committed in a portable git bundle at:
+Sprint 0 through Sprint 7 plus **Sprint 8** are already committed in a
+portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.7.0-sprint7.bundle
+oneace-next/oneace-next-port-v0.8.0-sprint8.bundle
 ```
 
 This bundle contains:
 
-- **22 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 1 docs +
+- **24 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 1 docs +
   1 Sprint 2 + 1 runbook + 1 Sprint 3 + 1 runbook + 1 Sprint 4 + 1 runbook +
-  1 Sprint 5 + 1 runbook + 1 Sprint 6 + 1 runbook + 1 Sprint 7 + 1 runbook
+  1 Sprint 5 + 1 runbook + 1 Sprint 6 + 1 runbook + 1 Sprint 7 + 1 runbook +
+  1 Sprint 8 + 1 runbook
 - **Branch:** `next-port`
 - **Tags (annotated):**
   - `v0.1.0-sprint1` — Sprint 1 complete (items, warehouses, categories)
@@ -34,16 +35,12 @@ This bundle contains:
   - `v0.5.0-sprint5` — Sprint 5 complete (suppliers + purchase orders + receive flow)
   - `v0.6.0-sprint6` — Sprint 6 complete (live dashboard + low-stock report + PO-from-reorder)
   - `v0.7.0-sprint7` — Sprint 7 complete (settings + team management + Sprint 5 cleanup)
+  - `v0.8.0-sprint8` — Sprint 8 complete (barcode scanner + item lookup)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle`,
-`oneace-next-port-v0.2.0-sprint2.bundle`,
-`oneace-next-port-v0.3.0-sprint3.bundle`,
-`oneace-next-port-v0.4.0-sprint4.bundle`,
-`oneace-next-port-v0.5.0-sprint5.bundle`,
-`oneace-next-port-v0.6.0-sprint6.bundle`) are kept around only because the
-sandbox cannot delete files from the mount — always use the latest versioned
-one.
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.7.0-sprint7.bundle`)
+are kept around only because the sandbox cannot delete files from the mount
+— always use the latest versioned one.
 
 Instead of running all the manual commits in section 1.4, just restore the
 bundle into a fresh clone. This skips 300+ lines of manual git surgery.
@@ -55,28 +52,55 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.7.0-sprint7.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.8.0-sprint8.bundle \
           next-port:next-port
 
-# Also pull all seven sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.7.0-sprint7.bundle \
+# Also pull all eight sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.8.0-sprint8.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
           refs/tags/v0.4.0-sprint4:refs/tags/v0.4.0-sprint4 \
           refs/tags/v0.5.0-sprint5:refs/tags/v0.5.0-sprint5 \
           refs/tags/v0.6.0-sprint6:refs/tags/v0.6.0-sprint6 \
-          refs/tags/v0.7.0-sprint7:refs/tags/v0.7.0-sprint7
+          refs/tags/v0.7.0-sprint7:refs/tags/v0.7.0-sprint7 \
+          refs/tags/v0.8.0-sprint8:refs/tags/v0.8.0-sprint8
 
 # Verify
-git log --oneline next-port                # should show 22 commits
-git tag -l                                 # should include all seven sprint tags
+git log --oneline next-port                # should show 24 commits
+git tag -l                                 # should include all eight sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
-               v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7
+               v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8
 ```
+
+### What Sprint 8 added (v0.8.0-sprint8)
+
+- **Barcode scanner** (`/scan`) — client component using the BarcodeDetector
+  Web API (Chrome, Edge, Android) with a graceful "not supported" fallback
+  for Safari and Firefox. Runs an environment-facing camera stream through
+  a `requestAnimationFrame` loop throttled to ~6 FPS, auto-stops on first
+  successful detection, and supports EAN-13/8, UPC-A/E, Code-128, Code-39,
+  QR, and ITF formats. A manual entry card lets users type/paste a barcode
+  or SKU when the camera API isn't available.
+- **Lookup action** — `lookupItemByCodeAction` does an OR-match on
+  `barcode` or `sku` within the current organization and returns the item
+  with all per-warehouse stock levels plus aggregate on-hand/reserved
+  totals. Found/not-found results render distinct cards; not-found deep-
+  links to `/items/new?barcode=<code>` for fast SKU creation from an
+  unknown scan.
+- **Item form deep-link** — `ItemForm` accepts a `defaultBarcode` prop and
+  the `/items/new` page reads `?barcode=` from searchParams so the barcode
+  field comes pre-filled when the user clicks "Create item" from a
+  not-found scan result.
+- **Dashboard quick-action** — the header row on `/dashboard` gains a Scan
+  shortcut so the most common entry point for warehouse staff is one click
+  from the home screen.
+- **i18n** — `scan` namespace in `en.ts` covering camera states, manual
+  entry, found/not-found result cards, and per-warehouse level table
+  columns.
 
 ### What Sprint 7 added (v0.7.0-sprint7)
 
