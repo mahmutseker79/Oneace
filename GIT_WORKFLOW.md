@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 19.
+and iterating on it through Sprint 0 → Sprint 20.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 19.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 18 plus **Sprint 19** are already committed in a
+Sprint 0 through Sprint 19 plus **Sprint 20** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.19.0-sprint19.bundle
+oneace-next/oneace-next-port-v0.20.0-sprint20.bundle
 ```
 
 This bundle contains:
 
-- **46 commits** — 8 Sprint 0 + 1 docs + Sprints 1..19 (each = 1 feature
+- **48 commits** — 8 Sprint 0 + 1 docs + Sprints 1..20 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -45,9 +45,10 @@ This bundle contains:
   - `v0.17.0-sprint17` — Sprint 17 complete (movements warehouse-scope filter)
   - `v0.18.0-sprint18` — Sprint 18 complete (movements item-substring filter)
   - `v0.19.0-sprint19` — Sprint 19 complete (per-org default locale + region override)
+  - `v0.20.0-sprint20` — Sprint 20 complete (invitation tokens + accept flow)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.18.0-sprint18.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.19.0-sprint19.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -61,11 +62,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.19.0-sprint19.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.20.0-sprint20.bundle \
           next-port:next-port
 
-# Also pull all nineteen sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.19.0-sprint19.bundle \
+# Also pull all twenty sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.20.0-sprint20.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -84,11 +85,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.19.0-sprint19.bun
           refs/tags/v0.16.0-sprint16:refs/tags/v0.16.0-sprint16 \
           refs/tags/v0.17.0-sprint17:refs/tags/v0.17.0-sprint17 \
           refs/tags/v0.18.0-sprint18:refs/tags/v0.18.0-sprint18 \
-          refs/tags/v0.19.0-sprint19:refs/tags/v0.19.0-sprint19
+          refs/tags/v0.19.0-sprint19:refs/tags/v0.19.0-sprint19 \
+          refs/tags/v0.20.0-sprint20:refs/tags/v0.20.0-sprint20
 
 # Verify
-git log --oneline next-port                # should show 46 commits
-git tag -l                                 # should include all nineteen sprint tags
+git log --oneline next-port                # should show 48 commits
+git tag -l                                 # should include all twenty sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -97,8 +99,88 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
-               v0.19.0-sprint19
+               v0.19.0-sprint19 v0.20.0-sprint20
 ```
+
+### What Sprint 20 added (v0.20.0-sprint20)
+
+- **Schema — new `Invitation` model** (second schema change on
+  `next-port`, after Sprint 19). Columns: `id`, `organizationId`,
+  `email`, `role`, `token` (unique), `invitedById`, `expiresAt`,
+  `acceptedAt`, `acceptedById`, `revokedAt`, `createdAt`. Relations:
+  `Organization` (cascade), `User` via named `InvitationsSent` +
+  `InvitationsAccepted` relations (onDelete: Cascade / SetNull
+  respectively). `@@index([organizationId])` and `@@index([email])`
+  on the model. `(organizationId, email)` deliberately **not** unique
+  — the "no two live pending" rule is enforced at the action layer
+  so we can cleanly re-issue after revoke. **Requires `npm run db:push`**
+  after pulling. No `prisma/migrations/` entry because the project
+  uses `db:push`, not `db:migrate`.
+- **`src/lib/invitations.ts` — capability token helpers**
+  `generateInvitationToken()` = `crypto.randomBytes(32).toString("base64url")`
+  which yields 43 characters of opaque entropy (~256 bits). Deliberately
+  not cuid: the token is a capability, so it needs to be unguessable
+  even if the attacker knows the invited email and the organization.
+  `buildInvitationUrl(token)` reads `NEXT_PUBLIC_APP_URL` so dev /
+  staging / prod each mint URLs on their own hostname, falling back
+  to `http://localhost:3000` so tests and local dev just work.
+  `defaultInvitationExpiry()` = 14 days. `classifyInvitation()` is
+  the single source of truth for the `{pending, accepted, revoked,
+  expired}` state machine shared between the accept page and the
+  pending-invitations query filter.
+- **`inviteMemberAction` rewrite** (`src/app/(app)/users/actions.ts`).
+  Previously returned `"user not found"` if the invitee didn't exist.
+  New flow creates an `Invitation` row and returns
+  `{ invitationId, inviteUrl, expiresAt }` so the admin UI can render
+  a copy-link card. Guards: OWNER/ADMIN only, OWNER-only-can-invite-OWNER,
+  reject existing membership, reject existing live pending invite
+  (`acceptedAt: null`, `revokedAt: null`, `expiresAt: { gt: new Date() }`).
+- **`revokeInvitationAction`** — OWNER/ADMIN gated. Stamps `revokedAt`
+  rather than deleting so the audit trail survives. Idempotent on
+  already-revoked invites (returns `{ ok: true }` without a second
+  write). Refuses if the invite has already been accepted.
+- **`acceptInvitationAction`** — calls `requireSession()` (not
+  `requireActiveMembership`, because the user might not be a member
+  of the target org yet). Uses `classifyInvitation()` for state checks,
+  enforces `session.user.email.trim().toLowerCase() === invite.email`
+  as the load-bearing guard that prevents a leaked URL being redeemed
+  by a random third party. Runs an atomic `$transaction` to create
+  the membership + stamp the invite; handles the "user is already a
+  member of this org" edge by stamping the invite only. Revalidates
+  both `/users` and the app layout so the header org switcher sees
+  the new membership on the next navigation.
+- **`src/app/(auth)/invite/[token]/page.tsx`** — server component with
+  a full state machine: `not-found`, `accepted`, `revoked`, `expired`,
+  `unauthenticated`, `wrong-email`, `ready`. Renders under the existing
+  `(auth)` layout (brand panel + centered form area) and deliberately
+  does **not** redirect unauthenticated users; instead it shows the
+  invite details (org, inviter, role, expiry) before prompting sign-in
+  so the user knows what they're committing to. Wrong-email state
+  shows `"signed in as X but invite is for Y"` so the fix is obvious.
+  All copy routed through the new `t.invitePage` i18n block.
+- **`AcceptInviteButton` client component** — `useTransition` + success
+  state. On success, renders an inline confirmation card with a
+  "Go to dashboard" link rather than navigating automatically, so a
+  mobile user can screenshot the confirmation for their records.
+- **`InviteForm` rewrite** — success state now renders the invite URL
+  inside a read-only `<input>` with a Copy button (uses
+  `navigator.clipboard.writeText`, falls back gracefully when the
+  clipboard API is blocked). Includes the invitee email and expiry
+  timestamp in the help copy so the admin knows who to send it to.
+- **Pending invitations card on `/users`** — new `Card` between the
+  invite form and the members table, rendered only when `canManage`.
+  Table of pending invitations (filter mirrors `classifyInvitation`)
+  with per-row copy-link + revoke actions. `InvitationRow` client
+  component uses the existing `AlertDialog` pattern from `MemberRow`
+  for the revoke confirmation.
+- **i18n** — `t.users.invite.errors.userNotFound` removed (dead
+  with user-must-exist requirement gone), `alreadyInvited` added,
+  description/success/success-link copy rewritten for the new flow.
+  New `t.users.invitations.*` block for the pending-invitations card
+  (heading, description, columns, empty, revoke copy, copy-link
+  copy). New top-level `t.invitePage.*` block (36 keys) for the
+  accept page — state titles, labels, CTAs, and an `errors` subtree
+  that mirrors `classifyInvitation`'s enum.
 
 ### What Sprint 19 added (v0.19.0-sprint19)
 

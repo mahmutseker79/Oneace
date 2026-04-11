@@ -811,6 +811,113 @@ regardless of which org they're viewing.
 
 ---
 
+## Sprint 20 — invitation tokens + accept flow (shipped 2026-04-11)
+
+Tagged `v0.20.0-sprint20`. Closes the "user must already exist"
+friction point from Sprint 7's team management flow and the
+"invitation tokens + email flow" item from the post-Sprint-19
+deferred list. Second schema change on `next-port` (after Sprint 19)
+— adds the new `Invitation` model and requires a `db:push` after
+pulling.
+
+**Design decision — capability tokens, not signed JWTs.** The token
+is a random 32-byte (256-bit) url-safe base64 string, opaque on the
+server. We keep the row in the DB and enforce state through it
+(pending → accepted / revoked / expired), which buys us three
+things that a signed JWT wouldn't: (1) server-side revocation is
+just a `revokedAt` stamp, (2) the pending-invitations UI can list
+outstanding invites directly, and (3) the audit trail lives in the
+same row so "revoked by X at Y" is straightforward post-MVP.
+
+**Design decision — no email delivery (MVP).** `inviteMemberAction`
+returns the URL to the admin who pastes it into whatever channel
+they already use (email, Slack, WhatsApp). This defers the email
+sender + deliverability + DKIM/SPF setup until post-MVP without
+blocking multi-user onboarding. The invite-form success card has
+a first-class "Copy link" button so the workflow is not painful.
+
+- [x] `prisma/schema.prisma` — added `Invitation` model with
+      `id`, `organizationId`, `email`, `role`, `token @unique`,
+      `invitedById`, `expiresAt`, `acceptedAt`, `acceptedById`,
+      `revokedAt`, `createdAt`. Named relations
+      `InvitationsSent` / `InvitationsAccepted` on `User`.
+      `@@index([organizationId])`, `@@index([email])`.
+      `(organizationId, email)` deliberately **not** unique so
+      that "revoke + reissue" works without deleting history.
+      Regenerated Prisma client.
+- [x] `src/lib/invitations.ts` — new file. Exports
+      `INVITATION_TTL_DAYS = 14`, `generateInvitationToken()`,
+      `buildInvitationUrl(token)` (reads `NEXT_PUBLIC_APP_URL`),
+      `defaultInvitationExpiry()`, and the shared
+      `classifyInvitation()` function + `InvitationStatus` type
+      used by both the accept page and the pending-invitations
+      query filter.
+- [x] `src/app/(app)/users/actions.ts` — rewrote `inviteMemberAction`
+      to create an `Invitation` row and return
+      `{ invitationId, inviteUrl, expiresAt }` instead of
+      performing a direct `Membership` insert. Preserved guards:
+      OWNER/ADMIN only, OWNER-only-can-invite-OWNER, existing-
+      membership check, existing-live-invite check (rejects
+      duplicates).
+- [x] `revokeInvitationAction` — new. OWNER/ADMIN gated. Stamps
+      `revokedAt`, leaves the row. Idempotent on already-revoked.
+      Refuses if the invite is already accepted.
+- [x] `acceptInvitationAction` — new. Calls `requireSession()`
+      (not `requireActiveMembership`, because the user might not
+      be a member yet). Uses `classifyInvitation()` for state
+      checks, enforces email match
+      (`session.user.email.trim().toLowerCase() === invite.email`)
+      as the load-bearing guard. Runs an atomic `$transaction`
+      to create membership + stamp invite. Handles the already-
+      a-member edge by stamping the invite only.
+      `revalidatePath("/users")` + `revalidatePath("/", "layout")`.
+- [x] `src/app/(auth)/invite/[token]/page.tsx` — server component
+      with a full state machine (not-found / accepted / revoked
+      / expired / unauthenticated / wrong-email / ready). Renders
+      under the existing `(auth)` layout. Deliberately **does
+      not** redirect unauthenticated users — shows invite details
+      before prompting sign-in.
+- [x] `AcceptInviteButton` client component — `useTransition` +
+      inline success card with "Go to dashboard" link. Doesn't
+      auto-navigate so mobile users can screenshot confirmation.
+- [x] `InviteForm` rewrite — success state renders the invite URL
+      inside a read-only `<input>` with a Copy button
+      (`navigator.clipboard.writeText`, falls back gracefully
+      when clipboard API is blocked). Help copy includes invitee
+      email + expiry timestamp.
+- [x] Pending invitations card on `/users` — new `Card` between
+      invite form and members table, gated on `canManage`. Filter
+      mirrors `classifyInvitation`. `InvitationRow` client
+      component uses the existing `AlertDialog` pattern from
+      `MemberRow` for revoke confirmation.
+- [x] i18n — removed dead `t.users.invite.errors.userNotFound`,
+      added `alreadyInvited`, revised description / success /
+      linkHeading / linkHelp / copy / copied. New
+      `t.users.invitations.*` block for the pending-invitations
+      card. New top-level `t.invitePage.*` block (36 keys)
+      covering the accept-page state machine.
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+- [x] **Deployment note**: run `npm run db:push` after pulling
+      to add the `Invitation` table and its indexes. No migration
+      file because this project uses `db:push`.
+
+### Still to port (deferred post-Sprint-20)
+
+- [ ] Danger zone / organization delete
+- [ ] Audit log
+- [ ] Offline PWA shell + service worker
+- [ ] Email delivery for invitations (MVP: admin copies link)
+- [ ] `?next=/invite/[token]` redirect after sign-in so users
+      don't have to revisit the URL manually
+- [ ] Reports xlsx/pdf export variants (CSV only today)
+- [ ] Full-text ranking via Postgres `tsvector` (current
+      `contains` scan is fine to ~10k items per org;
+      migrate at 100k)
+- [ ] All items from post-Sprint-19 deferred list (unchanged
+      aside from the invitation tokens flow now being shipped)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
