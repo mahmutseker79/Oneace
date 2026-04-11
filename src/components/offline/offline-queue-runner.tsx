@@ -2,7 +2,8 @@
 
 /*
  * OfflineQueueRunner — Sprint 25 substrate, Sprint 26 wires the
- * first concrete dispatcher.
+ * first concrete dispatcher, Sprint 31 adds the Web Locks
+ * cross-tab guard.
  *
  * The replay runner. Mounted once per session from the `(app)`
  * layout, kept alive for the duration of the app shell. It owns a
@@ -41,14 +42,24 @@
  *      later, the SW wakes independently" case on browsers that
  *      implement the API (Chrome/Edge/Opera).
  *
- *   3. Single-tab coordination via Dexie row claiming.
+ *   3. Cross-tab coordination via Web Locks (Sprint 31), with
+ *      Dexie row claiming as the always-on fallback.
  *
- *      Two tabs on the same origin may both try to drain at
- *      once. The `markOpInFlight` helper uses a Dexie transaction
- *      that only transitions a `pending` row; whichever tab gets
- *      the write first claims the row, the other gets `null` and
- *      moves on. Good enough until we need proper Web Locks
- *      (deferred to PWA Sprint 5+).
+ *      Two tabs on the same origin may both try to drain at once.
+ *      Sprint 25–30 relied solely on `markOpInFlight` (a Dexie
+ *      transaction that only transitions a `pending` row —
+ *      whichever tab gets the write first claims the row, the
+ *      other gets `null` and moves on). Correct but wasteful:
+ *      every losing tab still paid for a `listOps` scan, a loop
+ *      over every row, and a janitor pass. Sprint 31 wraps the
+ *      whole drain function in `withQueueDrainLock`, which uses
+ *      the Web Locks API with `ifAvailable: true` so a busy lock
+ *      returns `null` immediately and the losing tab bails
+ *      before it even reads `pendingOps`. On browsers without
+ *      Web Locks (or when `navigator.locks` is missing — private
+ *      Safari etc.) `withQueueDrainLock` is a no-op pass-through
+ *      and we fall back to the existing Dexie row claiming,
+ *      which is exactly how the pre-Sprint-31 build ran for weeks.
  *
  *   4. Scope pinned to the active membership at mount time.
  *
@@ -94,6 +105,7 @@ import {
   markOpSucceeded,
   releaseInFlight,
 } from "@/lib/offline/queue";
+import { withQueueDrainLock } from "@/lib/offline/queue-lock";
 
 /**
  * Result a dispatcher returns after attempting an op.
@@ -159,58 +171,69 @@ export function OfflineQueueRunner({ orgId, userId, dispatchers }: OfflineQueueR
     if (drainingRef.current) return;
     drainingRef.current = true;
     try {
-      const scope = scopeRef.current;
+      // Sprint 31 — wrap the whole drain body in
+      // `withQueueDrainLock`. When another tab already holds the
+      // `oneace-queue-drain` Web Lock, the callback never runs
+      // and `acquired` comes back `false` — we simply bail,
+      // trusting that the owning tab will cover whatever pending
+      // rows this trigger would have picked up. On browsers
+      // without Web Locks the helper degrades to a no-op
+      // pass-through and we run the drain inline exactly as we
+      // did pre-Sprint-31, still protected by Dexie row claiming.
+      await withQueueDrainLock(async () => {
+        const scope = scopeRef.current;
 
-      // One drain pass. The runner doesn't loop inside a single
-      // call — it leans on the `online`/`visibilitychange`
-      // re-triggers. This keeps the worst-case blast radius of a
-      // buggy dispatcher small.
-      const pending = await listOps(scope, ["pending"]);
-      if (pending.length === 0) {
-        await clearSucceededOps(scope);
-        return;
-      }
-
-      for (const candidate of pending) {
-        const claimed = await markOpInFlight(candidate.id);
-        if (!claimed) continue; // Another tab got it first.
-
-        const dispatcher = dispatchersRef.current[claimed.opType];
-        if (!dispatcher) {
-          // Unknown opType. Mark as a non-retryable failure so a
-          // typo never lives forever on the queue.
-          await markOpFailed(
-            claimed.id,
-            `no dispatcher registered for opType "${claimed.opType}"`,
-            { retryable: false },
-          );
-          continue;
+        // One drain pass. The runner doesn't loop inside a single
+        // call — it leans on the `online`/`visibilitychange`
+        // re-triggers. This keeps the worst-case blast radius of a
+        // buggy dispatcher small.
+        const pending = await listOps(scope, ["pending"]);
+        if (pending.length === 0) {
+          await clearSucceededOps(scope);
+          return;
         }
 
-        try {
-          const result = await dispatcher(claimed);
-          if (result.kind === "ok") {
-            await markOpSucceeded(claimed.id);
-          } else if (result.kind === "retry") {
-            await markOpFailed(claimed.id, result.reason, { retryable: true });
-          } else {
-            await markOpFailed(claimed.id, result.reason, { retryable: false });
+        for (const candidate of pending) {
+          const claimed = await markOpInFlight(candidate.id);
+          if (!claimed) continue; // Another tab got it first.
+
+          const dispatcher = dispatchersRef.current[claimed.opType];
+          if (!dispatcher) {
+            // Unknown opType. Mark as a non-retryable failure so a
+            // typo never lives forever on the queue.
+            await markOpFailed(
+              claimed.id,
+              `no dispatcher registered for opType "${claimed.opType}"`,
+              { retryable: false },
+            );
+            continue;
           }
-        } catch (err) {
-          // An unhandled throw from a dispatcher is a bug in the
-          // dispatcher. Park the row as a fatal failure so the
-          // runner doesn't loop on it, and a future "failed ops"
-          // review screen can surface it for manual resolution.
-          const reason = err instanceof Error ? err.message : String(err);
-          await markOpFailed(claimed.id, `dispatcher threw: ${reason}`, {
-            retryable: false,
-          });
-        }
-      }
 
-      // Janitor: reclaim space from old succeeded rows. Cheap
-      // no-op if there are none.
-      await clearSucceededOps(scope);
+          try {
+            const result = await dispatcher(claimed);
+            if (result.kind === "ok") {
+              await markOpSucceeded(claimed.id);
+            } else if (result.kind === "retry") {
+              await markOpFailed(claimed.id, result.reason, { retryable: true });
+            } else {
+              await markOpFailed(claimed.id, result.reason, { retryable: false });
+            }
+          } catch (err) {
+            // An unhandled throw from a dispatcher is a bug in the
+            // dispatcher. Park the row as a fatal failure so the
+            // runner doesn't loop on it, and a future "failed ops"
+            // review screen can surface it for manual resolution.
+            const reason = err instanceof Error ? err.message : String(err);
+            await markOpFailed(claimed.id, `dispatcher threw: ${reason}`, {
+              retryable: false,
+            });
+          }
+        }
+
+        // Janitor: reclaim space from old succeeded rows. Cheap
+        // no-op if there are none.
+        await clearSucceededOps(scope);
+      });
     } finally {
       drainingRef.current = false;
     }

@@ -23,16 +23,19 @@
  *     rows are in `failed` status. Sprint 26+ will wire this to a
  *     review UI; for now the count alone communicates enough.
  *
- * The banner refreshes on a short interval (3s) because there's
- * no native event fired when a Dexie row changes status, and the
- * runner would otherwise race with the banner. A Dexie hook-based
- * live-query subscription is on the PWA Sprint 5+ shopping list.
+ * Sprint 31 — the banner no longer polls. A Dexie `liveQuery`
+ * subscription watches the same scoped count queries and re-fires
+ * whenever the underlying `pendingOps` table changes (writes from
+ * the runner, the queue review screen, or another tab). The
+ * `pollIntervalMs` prop is retained for back-compat (older callers
+ * still compile) but is now a dead knob.
  */
 
 import { CloudOff, CloudUpload, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { type PendingOpScope, countOps } from "@/lib/offline/queue";
+import { useLiveQuery } from "@/lib/offline/use-live-query";
 
 export interface OfflineQueueBannerLabels {
   pendingOnline: string; // "{count} waiting to sync"
@@ -53,8 +56,11 @@ export interface OfflineQueueBannerProps {
   scope: PendingOpScope;
   labels: OfflineQueueBannerLabels;
   /**
-   * Poll interval in milliseconds. Defaults to 3 seconds. Kept as
-   * a prop so storybook / tests can set it to a low value.
+   * Sprint 25–30: poll interval in milliseconds (defaulted to
+   * 3000). Sprint 31 replaced the poll with a Dexie `liveQuery`
+   * subscription, so this prop is now a dead knob — retained only
+   * so older callers and storybook fixtures keep compiling
+   * unchanged. Removing it is a follow-up cleanup.
    */
   pollIntervalMs?: number;
 }
@@ -64,48 +70,41 @@ interface QueueCounts {
   failed: number;
 }
 
-export function OfflineQueueBanner({
-  scope,
-  labels,
-  pollIntervalMs = 3000,
-}: OfflineQueueBannerProps) {
-  const [counts, setCounts] = useState<QueueCounts>({ pending: 0, failed: 0 });
+const EMPTY_COUNTS: QueueCounts = Object.freeze({ pending: 0, failed: 0 }) as QueueCounts;
+
+export function OfflineQueueBanner({ scope, labels }: OfflineQueueBannerProps) {
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     if (typeof navigator === "undefined") return true;
     return navigator.onLine;
   });
 
+  // Sprint 31 — live Dexie counts. `liveQuery` fires a fresh
+  // tick whenever a write lands in `pendingOps`, so the banner
+  // picks up the first queued op and the last cleared failure
+  // without any 3-second lag.
+  const counts =
+    useLiveQuery<QueueCounts>(
+      async () => {
+        const [pending, failed] = await Promise.all([
+          countOps(scope, ["pending", "in_flight"]),
+          countOps(scope, ["failed"]),
+        ]);
+        return { pending, failed };
+      },
+      [scope.orgId, scope.userId],
+      EMPTY_COUNTS,
+    ) ?? EMPTY_COUNTS;
+
   useEffect(() => {
-    let cancelled = false;
-
-    const refresh = async () => {
-      const [pending, failed] = await Promise.all([
-        countOps(scope, ["pending", "in_flight"]),
-        countOps(scope, ["failed"]),
-      ]);
-      if (cancelled) return;
-      setCounts({ pending, failed });
-    };
-
-    // Kick off an immediate read so the banner doesn't show a
-    // stale zero during the first poll interval.
-    void refresh();
-    const interval = window.setInterval(() => {
-      void refresh();
-    }, pollIntervalMs);
-
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-
     return () => {
-      cancelled = true;
-      window.clearInterval(interval);
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [scope, pollIntervalMs]);
+  }, []);
 
   const hasPending = counts.pending > 0;
   const hasFailed = counts.failed > 0;

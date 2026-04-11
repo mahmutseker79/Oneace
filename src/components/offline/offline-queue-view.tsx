@@ -45,9 +45,14 @@
  *
  * Live updates:
  *
- *   Same poll cadence as the banner (3s) — no native Dexie event
- *   fires when a row's status changes. Sprint 31 replaces this
- *   with a real Dexie live-query subscription.
+ *   Sprint 31 replaces the Sprint-30 3-second poll with a real
+ *   Dexie `liveQuery` subscription (`useLiveQuery` hook). Writes
+ *   that land in `pendingOps` — from the runner, from another
+ *   tab, or from an action in this view itself — re-fire the
+ *   subscription and re-render the affected sections in the same
+ *   tick. The action handlers no longer need to call `refresh()`
+ *   in their `finally` blocks; the live query picks up the row
+ *   transition natively.
  */
 
 import {
@@ -72,6 +77,7 @@ import {
   listOps,
   requeueFailedOp,
 } from "@/lib/offline/queue";
+import { useLiveQuery } from "@/lib/offline/use-live-query";
 
 /**
  * Full label bundle the server page hands to the shell. Every
@@ -279,18 +285,30 @@ function OfflineQueueEmpty({ labels }: { labels: OfflineQueueViewLabels }) {
 
 /**
  * The main view, mounted once the shell has resolved a scope.
- * Polls Dexie every 3 seconds for pending / in_flight / failed
- * rows and renders them as three grouped sections.
+ * Subscribes to a Dexie `liveQuery` that returns the pending /
+ * in_flight / failed rows for the active scope and re-renders
+ * the three grouped sections whenever the underlying Dexie table
+ * changes — including writes from the runner, other tabs, or the
+ * action handlers in this view itself.
  */
 interface OfflineQueueViewProps {
   scope: PendingOpScope;
   labels: OfflineQueueViewLabels;
 }
 
+interface QueueRowBuckets {
+  pending: CachedPendingOp[];
+  inFlight: CachedPendingOp[];
+  failed: CachedPendingOp[];
+}
+
+const EMPTY_BUCKETS: QueueRowBuckets = Object.freeze({
+  pending: [] as CachedPendingOp[],
+  inFlight: [] as CachedPendingOp[],
+  failed: [] as CachedPendingOp[],
+}) as QueueRowBuckets;
+
 function OfflineQueueView({ scope, labels }: OfflineQueueViewProps) {
-  const [pendingRows, setPendingRows] = useState<CachedPendingOp[]>([]);
-  const [inFlightRows, setInFlightRows] = useState<CachedPendingOp[]>([]);
-  const [failedRows, setFailedRows] = useState<CachedPendingOp[]>([]);
   // `toast` is a transient status row at the top of the view. We
   // intentionally don't pull in a proper toast library — one
   // ephemeral status line keeps the offline bundle tiny, and a
@@ -301,36 +319,31 @@ function OfflineQueueView({ scope, labels }: OfflineQueueViewProps) {
   // double-click retry/discard.
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    const [pending, inFlight, failed] = await Promise.all([
-      listOps(scope, ["pending"]),
-      listOps(scope, ["in_flight"]),
-      listOps(scope, ["failed"]),
-    ]);
-    setPendingRows(pending);
-    setInFlightRows(inFlight);
-    setFailedRows(failed);
-  }, [scope]);
+  // Sprint 31 — live Dexie subscription. `liveQuery` observes the
+  // three scoped status range scans and fires a new result tick
+  // whenever the `pendingOps` table is written to by any code
+  // path in this tab OR (via Dexie's BroadcastChannel transport)
+  // from another tab on the same origin. The `refresh()`-in-
+  // finally dance the Sprint 30 build used is gone — the action
+  // handlers below just need to call the mutating helper and the
+  // live query will re-render the sections in the same tick.
+  const buckets =
+    useLiveQuery<QueueRowBuckets>(
+      async () => {
+        const [pending, inFlight, failed] = await Promise.all([
+          listOps(scope, ["pending"]),
+          listOps(scope, ["in_flight"]),
+          listOps(scope, ["failed"]),
+        ]);
+        return { pending, inFlight, failed };
+      },
+      [scope.orgId, scope.userId],
+      EMPTY_BUCKETS,
+    ) ?? EMPTY_BUCKETS;
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      if (cancelled) return;
-      await refresh();
-    };
-    void run();
-    const interval = window.setInterval(() => {
-      void run();
-    }, 3000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-    // Action handlers force an immediate re-fetch by calling
-    // `refresh()` directly in their `finally` block — no extra
-    // tick dep is needed here because `refresh` closes over
-    // the current scope's state setters stably.
-  }, [refresh]);
+  const pendingRows = buckets.pending;
+  const inFlightRows = buckets.inFlight;
+  const failedRows = buckets.failed;
 
   // Transient toast auto-dismiss after 4s. A ref-based timer
   // would also work but useEffect gives us clean unmount cleanup.
@@ -352,14 +365,14 @@ function OfflineQueueView({ scope, labels }: OfflineQueueViewProps) {
           setToast(labels.retriedToast);
         }
       } finally {
+        // No `refresh()` call in Sprint 31 — the live query
+        // subscription fires as soon as `requeueFailedOp`'s
+        // transaction commits and the row moves from `failed`
+        // to `pending` in the same tick the button is released.
         setBusyId(null);
-        // Force an immediate re-read so the row visibly leaves
-        // the "Failed" section instead of waiting up to 3s for
-        // the next poll tick.
-        await refresh();
       }
     },
-    [busyId, labels.retriedToast, refresh],
+    [busyId, labels.retriedToast],
   );
 
   const handleDiscard = useCallback(
@@ -378,10 +391,9 @@ function OfflineQueueView({ scope, labels }: OfflineQueueViewProps) {
         }
       } finally {
         setBusyId(null);
-        await refresh();
       }
     },
-    [busyId, labels.discardConfirm, labels.discardedToast, refresh],
+    [busyId, labels.discardConfirm, labels.discardedToast],
   );
 
   const handleClearAllFailed = useCallback(async () => {
@@ -397,9 +409,8 @@ function OfflineQueueView({ scope, labels }: OfflineQueueViewProps) {
       }
     } finally {
       setBusyId(null);
-      await refresh();
     }
-  }, [busyId, failedRows.length, labels.clearFailedConfirm, labels.clearedToast, scope, refresh]);
+  }, [busyId, failedRows.length, labels.clearFailedConfirm, labels.clearedToast, scope]);
 
   // Total-rows-zero fast-path renders the same empty state as the
   // scope-empty path. Keeps the UI consistent whether the cache is
