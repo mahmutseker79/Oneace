@@ -2366,6 +2366,347 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 33 — Email delivery for invitations + `?next=` post-login redirect (shipped 2026-04-11)
+
+Goal: close the last gap between the Sprint 20 invite/accept flow
+and a real-world onboarding story. Until this sprint the admin
+literally had to copy a capability URL out of the success toast
+and paste it into their own email/Slack/WhatsApp, and the
+invitee, if they clicked that URL before signing in, saw the
+invite page, then got redirected through `/login` without any
+memory of where they were trying to go — so they had to dig the
+original email back up after authenticating. Sprint 33 fixes both
+halves in a single bundle because they share a cause (the invite
+flow) and neither half is useful without the other.
+
+### Mailer abstraction
+
+NEW `src/lib/mail/` module (5 files, ~250 lines total). Deliberate
+interface-and-adapters split instead of a direct Resend call from
+`inviteMemberAction`:
+
+- **`mailer.ts`** — defines `Mailer` interface with a single
+  `send(message)` method, plus the `MailMessage` and `MailResult`
+  types. `MailResult` is a discriminated union so callers can
+  log the provider error shape uniformly.
+- **`console-mailer.ts`** — `ConsoleMailer` class that logs to
+  stdout and pretends to succeed. Used whenever `RESEND_API_KEY`
+  is unset (local dev, CI smoke, tests that don't want network
+  I/O). The text body is echoed to the terminal so a dev copying
+  the invite link out of their console has something to work
+  with.
+- **`resend-mailer.ts`** — `ResendMailer` class backed by a
+  direct `POST https://api.resend.com/emails` via Node's global
+  `fetch`. We deliberately skip the official `resend` npm SDK:
+  we speak one endpoint, Node 20+ has fetch globally, and every
+  dep we skip is one fewer audit surface and one fewer
+  upgrade-cadence gotcha. Any non-2xx is normalized to
+  `{ ok: false, error: "Resend HTTP <status>: <body>" }` and
+  network failures are caught the same way — the class never
+  throws.
+- **`index.ts`** — `getMailer()` factory. Reads `RESEND_API_KEY`
+  and `MAIL_FROM` from `process.env`, picks `ResendMailer` when
+  both are set and `ConsoleMailer` otherwise, memoizes the
+  instance per-process. Also exports `resetMailerForTests()` so
+  unit tests can swap implementations mid-run by mutating
+  `process.env` and clearing the cache.
+- **Why the adapter pattern.** Tests never reach the network
+  (swap `ConsoleMailer`), local dev works without a Resend key
+  (the admin still has the copyable link fallback), and if we
+  outgrow Resend (bill, deliverability, regional compliance)
+  swapping in Postmark/SES is a one-file change.
+
+### Invitation email template
+
+NEW `src/lib/mail/templates/invitation-email.ts`. Renders both
+plain-text and HTML bodies from pre-resolved i18n labels:
+
+- **Single function returns `{ subject, text, html }`.** The
+  three artifacts are always built together, so a three-way
+  split would just create three imports for every caller.
+- **Template receives pre-resolved strings, not enums or locale
+  codes.** The caller owns i18n resolution and passes a
+  `labels: InvitationEmailLabels` bundle + a pre-constructed
+  `Intl.DateTimeFormat`. This keeps the template locale-agnostic
+  and lets tests snapshot the output with hardcoded labels.
+- **HTML escaping centralized.** `escapeHtml()` handles the five
+  entities that matter for text-node + attribute contexts. The
+  organization name, inviter name, role label, and timestamp
+  string all flow through it before interpolation. The invite
+  URL is escaped for the `href` attribute and the visible
+  fallback copy.
+- **Table-based layout, inline styles.** Email clients in 2026
+  still treat `<div>`-with-flexbox as hostile; tables render
+  consistently from Gmail to Outlook.app to Apple Mail.
+  Self-contained HTML: no external CSS, no webfonts, no remote
+  images. Slate-900 primary button against a neutral
+  `#f5f5f5` body background, no brand palette yet (brand
+  tokens via `theme-factory` skill are tracked for a later
+  sprint).
+- **Preheader div** (display:none, max-height:0) carries a
+  short description so Gmail's inbox preview shows something
+  useful instead of the first line of the heading.
+- **`applyPlaceholders` helper** does `{org}`, `{inviter}`,
+  `{role}`, `{expires}`, `{url}` substitution in one pass.
+
+### `inviteMemberAction` rewrite
+
+Modified `src/app/(app)/users/actions.ts`:
+
+- **Result shape adds `emailDelivered: boolean`.** The invite
+  row is created first (as before). If creation fails, the
+  action still returns `{ ok: false, error }` — email delivery
+  never gets a chance to run. If creation succeeds, we call
+  the new `sendInvitationEmailSafely()` helper and record its
+  boolean result in the response.
+- **`sendInvitationEmailSafely()` is a sibling private function.**
+  Kept out of the main action body so the happy path stays
+  readable, and so tests can stub it without touching the
+  action envelope. It resolves `getMessages()` + `getRegion()`
+  to build the i18n labels and `Intl.DateTimeFormat`, renders
+  the template, calls `getMailer().send(...)`, and logs any
+  failure via `console.warn` before returning `false`. It
+  **never throws** — the outer `try { … } catch (err)` catches
+  any unexpected exception and returns `false` so the admin
+  still gets the copyable fallback link.
+- **Soft-miss philosophy.** A failed email delivery is not a
+  failed action. The row is live, the URL is in the response,
+  the UI has a variant that says "email not delivered — copy
+  the link below". A DNS blip should not block team
+  onboarding.
+
+### `InviteForm` success variants
+
+Modified `src/app/(app)/users/invite-form.tsx`:
+
+- `InviteFormLabels` split the old `success` key into two:
+  `successEmailSent` (happy path — "Invitation sent, you can
+  also copy the link as a backup") and `successLinkOnly`
+  (fallback — "Copy the link and send it through your own
+  channel").
+- `InviteCreated` state adds `emailDelivered: boolean`, sourced
+  from the server action result.
+- Success banner picks the right label at render time.
+- The copyable URL is ALWAYS shown — even on the happy path —
+  because (a) if the email vanishes into spam the admin still
+  has a fallback, and (b) the admin might need to reshare the
+  link weeks later.
+
+### `isSafeRedirect` + `resolveSafeRedirect`
+
+NEW `src/lib/redirects.ts`. Validates a candidate redirect
+target string and returns the fallback on anything unsafe.
+Rules:
+
+- Must be a non-empty string ≤ 512 chars
+- Must start with `/` but NOT `//` (protocol-relative URL)
+- Must not contain `\` (some browser URL parsers treat it as
+  a host separator)
+- Must not contain `@` (userinfo injection like
+  `/@evil.example`)
+- Must not contain control characters (below 0x20 or 0x7F)
+
+We deliberately do NOT try to parse-and-reparse the value as
+a URL. An allowlist of character classes is strict and
+predictable, and staying synchronous means the helper runs
+fine in any `"use client"` component. The test strategy is a
+tight matrix of positive and negative cases — every branch of
+the rule list.
+
+### Login form wiring
+
+Modified `src/app/(auth)/login/login-form.tsx`:
+
+- Reads `?next=` primarily, falls back to `?redirect=` for
+  the pre-Sprint-33 callers.
+- Both values flow through `resolveSafeRedirect(value, "/dashboard")`
+  so a `?next=https://evil.example` is silently downgraded
+  to `/dashboard` instead of executing a post-auth open
+  redirect (classic credential-phishing pivot).
+- The `callbackURL` sent to Better Auth is the already-validated
+  path, not the raw query string.
+
+### Register form + invitee variant
+
+Modified `src/app/(auth)/register/register-form.tsx`:
+
+- Same `?next=` / fallback `?redirect=` resolver as login.
+- **New `isInviteFlow` derivation** — `redirectTo.startsWith("/invite/")`.
+  When true, the register form:
+  - **Hides the organization name input entirely** and shows
+    a muted `role="note"` explainer ("You're signing up to
+    accept a team invitation…").
+  - **Skips the `/api/onboarding/organization` POST** after
+    `signUp.email()` returns. Invitees are joining an
+    existing org, so creating a new one is both wrong and
+    confusing (they'd end up with two tenants).
+  - **Still redirects to the same `redirectTo`** post-signup —
+    the invite page, now authenticated, will detect the
+    matching email and surface the accept button.
+- **New i18n key `t.auth.register.inviteeNotice`** for the
+  notice block. Wired through `register/page.tsx` label prop.
+
+### Invite page CTA wiring
+
+Modified `src/app/(auth)/invite/[token]/page.tsx`:
+
+- The "Sign in" and "Create account" buttons on the
+  unauthenticated-visitor variant now pass
+  `?next=/invite/${encodeURIComponent(token)}`. Token is
+  URL-encoded defensively even though `base64url` is
+  URL-safe by spec, because the path segment still needs
+  consistent encoding if a future invite format uses different
+  characters.
+- No other changes to the page — the wrong-email and accepted
+  variants don't need a next-redirect because the user is
+  already authenticated.
+
+### i18n additions
+
+Modified `src/lib/i18n/messages/en.ts`:
+
+- **`t.users.invite.success` split** into `successEmailSent`
+  and `successLinkOnly`. Callers in `users/page.tsx` updated.
+- **`t.auth.register.inviteeNotice`** — new key for the
+  "joining an org instead of creating one" notice.
+- **NEW `t.mail.invitation` namespace** with 11 keys:
+  `subject` (with `{inviter}`, `{org}`, `{role}` placeholders),
+  `preheader`, `heading` (`{org}`), `bodyIntro`
+  (`{inviter}`, `{org}`, `{role}`), `orgLabel`, `inviterLabel`,
+  `roleLabel`, `cta`, `expiryNotice` (`{expires}`),
+  `fallbackLabel`, `footer`. The `Messages` type derives from
+  `typeof en`, so the new namespace propagates without a
+  separate type declaration.
+
+### Design decisions
+
+- **Adapter over direct Resend call.** Tests, dev, future
+  provider swap. One file of interface + two impls + one
+  factory is worth the indirection.
+- **No `resend` SDK.** Direct fetch to one endpoint. Node 20+
+  has fetch globally. Fewer deps, narrower supply-chain
+  surface, immune to SDK minor-version drift.
+- **Soft-miss on delivery failure.** Create the row, attempt
+  the email, surface either outcome. Don't block the admin
+  on a provider blip.
+- **HTML + plain text both required.** Screen readers and
+  plain-text clients exist; Gmail shows plain text in some
+  contexts. A missing text body would be a deliverability and
+  accessibility regression.
+- **Preheader in a hidden div.** Gmail's inbox preview shows
+  the first visible text; the preheader is invisible to
+  sighted users in the email body but shows up as preview in
+  the list — makes the difference between "You're invited to
+  join…" and "#DOCTYPE HTML" in the inbox row.
+- **`?next=` query param name.** Matches the user memory
+  directive and is the Rails / Django convention. `?redirect=`
+  is still accepted as a fallback so pre-Sprint-33 links in
+  user history keep working.
+- **`isSafeRedirect` is strict, synchronous, allowlist-based.**
+  An open-redirect at the login boundary is a credential
+  phishing primer. Strict character-class validation is
+  simple to reason about and impossible to bypass with
+  creative encoding.
+- **Invitee register skips org creation.** Creating a new
+  org for an invitee then dropping them onto the invite page
+  would leave the invitee owning an empty org forever after
+  accepting. Detecting `/invite/` prefix at render time and
+  hiding the org-name input is the cheapest correct answer.
+- **Copyable URL always visible post-invite.** Even on the
+  happy path. Spam filters exist; invitees change phones;
+  the admin might want to reshare the link days later.
+  Showing the link is strictly additive, never competes
+  with email delivery.
+- **No template engine (Handlebars, MJML, react-email).** A
+  single template with `{placeholder}` substitution is
+  strictly cheaper and easier to audit. If we grow to 10+
+  templates we can revisit.
+
+### Files touched
+
+- NEW `src/lib/redirects.ts` — safe-redirect validator
+- NEW `src/lib/mail/mailer.ts` — Mailer interface + types
+- NEW `src/lib/mail/console-mailer.ts` — dev/test mailer
+- NEW `src/lib/mail/resend-mailer.ts` — prod mailer (direct fetch)
+- NEW `src/lib/mail/index.ts` — factory + barrel
+- NEW `src/lib/mail/templates/invitation-email.ts` — template builder
+- Modified `src/app/(app)/users/actions.ts` — wires mailer into
+  `inviteMemberAction`, adds `sendInvitationEmailSafely` helper,
+  extends `InviteMemberResult` with `emailDelivered`
+- Modified `src/app/(app)/users/invite-form.tsx` — splits
+  success label, tracks `emailDelivered` in state
+- Modified `src/app/(app)/users/page.tsx` — wires new label keys
+- Modified `src/app/(auth)/login/login-form.tsx` — `?next=`
+  param + `resolveSafeRedirect`
+- Modified `src/app/(auth)/register/register-form.tsx` —
+  `?next=` param, `isInviteFlow` derivation, skip org
+  creation for invitees, inviteeNotice label
+- Modified `src/app/(auth)/register/page.tsx` — wires
+  `inviteeNotice` label prop
+- Modified `src/app/(auth)/invite/[token]/page.tsx` — passes
+  `?next=/invite/{token}` on sign-in + create-account CTAs
+- Modified `src/lib/i18n/messages/en.ts` — split invite
+  success labels, add `inviteeNotice`, add `t.mail.invitation`
+  namespace (11 keys)
+- **No schema changes, no Prisma migration, no new runtime
+  dependencies.** Resend is reached via bare fetch.
+
+### Verified clean
+
+- `tsc --noEmit` exit 0
+- `biome check src` clean (176 files — six new vs Sprint 32's
+  170: `redirects.ts`, `mail/mailer.ts`, `mail/console-mailer.ts`,
+  `mail/resend-mailer.ts`, `mail/index.ts`,
+  `mail/templates/invitation-email.ts`)
+- `DATABASE_URL=... DIRECT_URL=... prisma validate` → green
+
+### Env contract
+
+New environment variables (both optional — absence falls back
+to `ConsoleMailer`):
+
+- `RESEND_API_KEY` — API key from resend.com dashboard
+- `MAIL_FROM` — verified sender address (e.g.
+  `"OneAce <invites@mail.oneace.app>"`). Must be verified in
+  Resend or the API will 403.
+
+Absence of either variable puts the mailer in console mode
+with no crash — the invite UI degrades gracefully to the
+"copy the link" path. Startup is never blocked on mail config.
+
+### What this does NOT cover
+
+- **No notification email for other events.** Organization
+  delete, ownership transfer (Sprint 32), member role change,
+  and failed stock-count audits all still happen silently.
+  The mailer abstraction is in place so adding each new
+  email is a two-file change (template + caller wiring),
+  but the Sprint 33 scope was strictly the invitation flow.
+- **No email preview page in-app.** Admins can't see what
+  the email looks like before sending. A later sprint could
+  add a dev-only preview route that renders the template
+  with canned data.
+- **No attachment support.** `MailMessage` is subject + text
+  + html. If we ever need receipt PDFs or export zips, the
+  interface will need a fourth field.
+- **No per-recipient locale detection.** The email is built
+  with the sender's current i18n context (the admin's
+  `getMessages()` bundle), not the invitee's preferred
+  language — which we don't know yet because they haven't
+  signed up. A later `Invitation.locale` column could carry
+  an explicit hint from the sender.
+- **No rate limiting.** A hostile OWNER spamming invites
+  would burn through the Resend quota. Sprint 33 relies on
+  Resend's own per-domain rate limits; a per-org quota is
+  deferred.
+- **No bounce/complaint handling.** Resend webhooks for
+  bounced or complained deliveries are ignored. A later
+  sprint can wire `/api/webhooks/resend` to flag the
+  `Invitation` row and surface the status on the pending-
+  invitations table.
+
+---
+
 ## Sprint 32 — Organization ownership transfer (shipped 2026-04-11)
 
 Goal: close the multi-tenancy story. Sprint 11 shipped the org
@@ -2778,9 +3119,11 @@ together because they share the same "who owns the write" story.
       after Sprint 11 (switcher) and Sprint 21 (delete).
       **Shipped as Sprint 32** — see below.
 - [ ] Audit log
-- [ ] Email delivery for invitations (MVP: admin copies link)
-- [ ] `?next=/invite/[token]` redirect after sign-in so users
+- [x] Email delivery for invitations (MVP: admin copies link)
+      **Shipped as Sprint 33** — see below.
+- [x] `?next=/invite/[token]` redirect after sign-in so users
       don't have to revisit the URL manually
+      **Shipped as Sprint 33** — see below.
 - [ ] Reports xlsx/pdf export variants (CSV only today)
 - [ ] Full-text ranking via Postgres `tsvector` (current
       `contains` scan is fine to ~10k items per org;

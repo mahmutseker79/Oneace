@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 32.
+and iterating on it through Sprint 0 → Sprint 33.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 32.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 31 plus **Sprint 32** are already committed in a
+Sprint 0 through Sprint 32 plus **Sprint 33** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.32.0-sprint32.bundle
+oneace-next/oneace-next-port-v0.33.0-sprint33.bundle
 ```
 
 This bundle contains:
 
-- **72 commits** — 8 Sprint 0 + 1 docs + Sprints 1..32 (each = 1 feature
+- **74 commits** — 8 Sprint 0 + 1 docs + Sprints 1..33 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -58,9 +58,10 @@ This bundle contains:
   - `v0.30.0-sprint30` — Sprint 30 complete (PWA Sprint 7 — failed-ops review UI at /offline/queue: retry / discard / clear-all for queued ops)
   - `v0.31.0-sprint31` — Sprint 31 complete (PWA Sprint 8 — Dexie liveQuery subscriptions in the queue banner + review screen, Web Locks cross-tab drain guard in the runner)
   - `v0.32.0-sprint32` — Sprint 32 complete (organization ownership transfer — atomic OWNER → ADMIN hand-off with typed-slug confirmation, closes the multi-tenancy trio after Sprint 11 switcher + Sprint 21 delete)
+  - `v0.33.0-sprint33` — Sprint 33 complete (invitation email delivery + post-login `?next=/invite/[token]` redirect bundle — Mailer adapter + ConsoleMailer/ResendMailer, rendered invitation-email template, inviteMemberAction wires delivery with soft-miss, login/register forms honour `?next=`, invitee register variant skips org creation)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.31.0-sprint31.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.32.0-sprint32.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -74,11 +75,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.32.0-sprint32.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.33.0-sprint33.bundle \
           next-port:next-port
 
-# Also pull all thirty-two sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.32.0-sprint32.bundle \
+# Also pull all thirty-three sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.33.0-sprint33.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -110,11 +111,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.32.0-sprint32.bun
           refs/tags/v0.29.0-sprint29:refs/tags/v0.29.0-sprint29 \
           refs/tags/v0.30.0-sprint30:refs/tags/v0.30.0-sprint30 \
           refs/tags/v0.31.0-sprint31:refs/tags/v0.31.0-sprint31 \
-          refs/tags/v0.32.0-sprint32:refs/tags/v0.32.0-sprint32
+          refs/tags/v0.32.0-sprint32:refs/tags/v0.32.0-sprint32 \
+          refs/tags/v0.33.0-sprint33:refs/tags/v0.33.0-sprint33
 
 # Verify
-git log --oneline next-port                # should show 72 commits
-git tag -l                                 # should include all thirty-two sprint tags
+git log --oneline next-port                # should show 74 commits
+git tag -l                                 # should include all thirty-three sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -127,8 +129,201 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
-               v0.31.0-sprint31 v0.32.0-sprint32
+               v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33
 ```
+
+### What Sprint 33 added (v0.33.0-sprint33)
+
+Invitation email delivery + post-login `?next=/invite/[token]`
+redirect bundle. Sprint 20 shipped the capability-token invite
+flow but left two loose ends: the admin had to ship the copyable
+invite URL out-of-band themselves, and an invitee clicking the
+link while signed-out bounced through `/login` and landed on
+`/dashboard` instead of the original `/invite/[token]` page.
+Sprint 33 closes both — the admin now sees "Email sent to X"
+(or "Email not configured — copy the link below" as a soft-miss
+variant), and unauthenticated clicks on an invite link now
+round-trip through `/login?next=/invite/{token}` or
+`/register?next=/invite/{token}` and end on the accept screen.
+
+**Mailer abstraction (five new files under `src/lib/mail/`):**
+
+- `mailer.ts` — `Mailer` interface + `MailMessage` +
+  `MailResult` discriminated union. Deliberately minimal: one
+  `send(message)` method, no provider shape leakage. Lets the
+  action layer stay ignorant of Resend vs. console vs. future
+  SES/Postmark.
+- `console-mailer.ts` — `ConsoleMailer` implements `Mailer`.
+  Logs subject/to + html/text byte counts via `console.info`,
+  echoes the plain-text body so a dev copying the invite link
+  from the terminal has something to work with even when
+  Resend is off. Returns `{ ok: true, id: 'console-${Date.now()}' }`.
+- `resend-mailer.ts` — `ResendMailer` class. Talks to Resend's
+  REST API directly (`POST https://api.resend.com/emails`) via
+  global `fetch` — no `resend` npm SDK. Constructor takes
+  `(apiKey, from)` explicitly so tests can instantiate without
+  env vars. Non-2xx normalized to
+  `{ ok: false, error: 'Resend HTTP <status>: <body>' }`; fetch
+  throws (DNS/TLS) caught and wrapped the same way. Never
+  throws out of `send()`.
+- `index.ts` — `getMailer()` factory reads
+  `process.env.RESEND_API_KEY` + `process.env.MAIL_FROM` once,
+  caches the result, returns `ConsoleMailer` if either is
+  missing else `ResendMailer`. Also exports
+  `resetMailerForTests()` and re-exports the types.
+- `templates/invitation-email.ts` — `buildInvitationEmail(params)`
+  returns `{ subject, text, html }`. Takes pre-resolved i18n
+  labels (`InvitationEmailLabels`), an `Intl.DateTimeFormat`,
+  and a `roleLabel: string`. `escapeHtml` handles `& < > " '`.
+  `applyPlaceholders` does `{key}` → value substitution. HTML
+  is table-based with inline styles (email client compat),
+  includes a `display:none` preheader div for Gmail preview,
+  slate-900 primary button, copyable URL fallback, and footer
+  disclaimer.
+
+**Why an adapter instead of calling Resend directly from
+`inviteMemberAction`:** tests never reach the network (swap in
+`ConsoleMailer` or a recording stub); local dev doesn't need a
+Resend API key (admin still has the copyable fallback); and
+swapping providers later is a one-file change.
+
+**Why direct `fetch` instead of the `resend` npm SDK:** one
+endpoint, Node 20+ has `fetch` globally, fewer deps means less
+supply-chain surface and immunity to SDK minor-version drift.
+
+**`inviteMemberAction` (`src/app/(app)/users/actions.ts`):**
+the happy-path variant of `InviteMemberResult` gains
+`emailDelivered: boolean`. `db.invitation.create` now sits in
+its own try/catch; on success, the code calls a new sibling
+helper `sendInvitationEmailSafely(params)` which resolves
+i18n + region + date formatter, builds the template, calls
+`getMailer().send(...)`, and returns a boolean. Delivery
+failures are logged+swallowed — the invite row is still valid,
+the copyable URL is still returned, so a DNS blip does not
+block team onboarding. The helper is a private sibling so the
+happy path in the action stays readable and tests can stub
+the mailer without reaching into action internals.
+
+**`InviteForm` (`src/app/(app)/users/invite-form.tsx`):**
+`InviteFormLabels` splits `success` into `successEmailSent` +
+`successLinkOnly`. `InviteCreated` state gains
+`emailDelivered: boolean`. Success banner picks the label via
+`created.emailDelivered ? successEmailSent : successLinkOnly`,
+so the admin always knows whether the invitee got an email or
+needs to be pinged through another channel. The users page
+(`src/app/(app)/users/page.tsx`) passes both label props.
+
+**`src/lib/redirects.ts` — `isSafeRedirect` helper:**
+synchronous, allowlist-based validator for user-supplied
+redirect strings. Rules: non-empty string ≤512 chars, must
+start with `/` but not `//`, no `\`, no `@`, no control
+characters (below 0x20 or 0x7F). Exports `isSafeRedirect` as
+a type-guard plus `resolveSafeRedirect(value, fallback)`.
+Predictable, impossible to bypass with creative encoding
+schemes that `new URL(...)` parsing might miss. Stays
+synchronous so it can run in client components.
+
+**Login form (`src/app/(auth)/login/login-form.tsx`):** imports
+`resolveSafeRedirect`. Reads `?next=` primarily and falls back
+to the legacy `?redirect=` so any existing call site keeps
+working. `redirectTo = resolveSafeRedirect(nextParam, "/dashboard")`
+and the validated value gets passed to `authClient.signIn.email`
+as `callbackURL`.
+
+**Register form (`src/app/(auth)/register/register-form.tsx`):**
+imports `resolveSafeRedirect` + `useSearchParams`. Derives
+`isInviteFlow = redirectTo.startsWith("/invite/")`. When
+`isInviteFlow`, the form skips the `/api/onboarding/organization`
+POST entirely (the invitee is joining an existing org, not
+creating one), hides the org-name input, and shows an
+`inviteeNotice` explainer instead. The success branch
+redirects to the validated `redirectTo` (not a hard-coded
+`/dashboard`). The register page wires a new
+`inviteeNotice: t.auth.register.inviteeNotice` label prop
+through.
+
+**Invite page CTAs (`src/app/(auth)/invite/[token]/page.tsx`):**
+the unauthenticated "Sign in" and "Create account" buttons now
+point to `/login?next=/invite/${encodeURIComponent(token)}` and
+`/register?next=/invite/${encodeURIComponent(token)}`. The
+token is already base64url-safe but `encodeURIComponent` is
+defensive for any future invite format that uses different
+characters.
+
+**i18n additions (`src/lib/i18n/messages/en.ts`):**
+
+- `t.users.invite`: `success` → `successEmailSent` +
+  `successLinkOnly`
+- `t.auth.register`: new `inviteeNotice` key explaining to
+  invitees that they're joining an existing organization
+- NEW `t.mail.invitation` namespace with 11 keys: `subject`,
+  `preheader`, `heading`, `bodyIntro`, `orgLabel`,
+  `inviterLabel`, `roleLabel`, `cta`, `expiryNotice`,
+  `fallbackLabel`, `footer`. The `Messages` type
+  (`export type Messages = typeof en`) automatically picks up
+  the new namespace without a manual type declaration.
+
+All copy routes through `en.ts` — no Turkish anywhere, same
+rule every sprint has honoured.
+
+**Design decisions** — adapter pattern over direct Resend
+call (swappable, testable, key-free dev); direct fetch over
+Resend SDK (narrower supply chain); soft-miss on email
+delivery failure (invite row is durable, a DNS blip should
+not block onboarding); `?next=` primary / `?redirect=`
+fallback (memory directive + zero regression for the one
+existing call site); allowlist `isSafeRedirect` over
+`new URL(...)` parsing (predictable, synchronous, impossible
+to bypass with creative encoding); invitee register variant
+detected via `redirectTo.startsWith("/invite/")` at render
+time (no new query-param shape, no server round-trip); token
+`encodeURIComponent` in invite page CTAs (defensive against
+future invite-format changes); HTML escape helper inlined
+into the template file (one-file mental footprint for email
+rendering); table-based email layout + inline styles (email
+client compatibility across Gmail/Outlook/Apple Mail).
+
+**Files touched:**
+
+- NEW `src/lib/redirects.ts`
+- NEW `src/lib/mail/mailer.ts`
+- NEW `src/lib/mail/console-mailer.ts`
+- NEW `src/lib/mail/resend-mailer.ts`
+- NEW `src/lib/mail/index.ts`
+- NEW `src/lib/mail/templates/invitation-email.ts`
+- MODIFIED `src/app/(app)/users/actions.ts`
+- MODIFIED `src/app/(app)/users/invite-form.tsx`
+- MODIFIED `src/app/(app)/users/page.tsx`
+- MODIFIED `src/app/(auth)/login/login-form.tsx`
+- MODIFIED `src/app/(auth)/register/register-form.tsx`
+- MODIFIED `src/app/(auth)/register/page.tsx`
+- MODIFIED `src/app/(auth)/invite/[token]/page.tsx`
+- MODIFIED `src/lib/i18n/messages/en.ts`
+
+**No schema changes, no Prisma migration, no new runtime
+dependencies.** Triple-verified clean:
+
+- `tsc --noEmit` exit 0
+- `biome check src` clean (176 files — six new vs Sprint 32's
+  170: `redirects.ts`, `mail/mailer.ts`, `mail/console-mailer.ts`,
+  `mail/resend-mailer.ts`, `mail/index.ts`,
+  `mail/templates/invitation-email.ts`)
+- `DATABASE_URL=... DIRECT_URL=... prisma validate` → green
+
+**Environment contract:** production delivery requires
+`RESEND_API_KEY=re_...` and `MAIL_FROM="OneAce <noreply@your-domain>"`.
+Missing either one falls back to `ConsoleMailer` and the UI
+shows the `successLinkOnly` variant — this is the intended
+local-dev and CI-build experience.
+
+**What this does NOT cover** (still in the deferred list):
+password-reset email flow, email change confirmation,
+transactional notifications on organization events,
+unsubscribe / preferences center, admin preview of rendered
+email, bounce / complaint webhook handling, DKIM/SPF setup
+runbook, and per-org `MAIL_FROM` override.
+
+---
 
 ### What Sprint 32 added (v0.32.0-sprint32)
 
