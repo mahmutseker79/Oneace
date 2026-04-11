@@ -1067,6 +1067,47 @@ export const en = {
         updateFailed: "Could not save organization defaults.",
       },
     },
+    transferOwnership: {
+      heading: "Transfer ownership",
+      description:
+        "Hand over the owner role to another member of this organization. You will be demoted to Admin and keep your existing access, but every owner-only action — including deleting the organization — will move to the new owner.",
+      targetLabel: "Transfer to",
+      targetPlaceholder: "Select a teammate",
+      // Shown when the OWNER is the only member of the org. Transfer is
+      // impossible until they invite someone else, so we surface the
+      // reason instead of rendering a dead dropdown.
+      noCandidates:
+        "You are the only member of this organization. Invite a teammate before transferring ownership.",
+      // Body copy for the confirm dialog. Uses {name} for the new
+      // owner's display name and {org} for the organization name,
+      // so translators can rephrase the sentence however their
+      // language's grammar prefers.
+      confirmBody:
+        "You are about to hand ownership of {org} to {name}. You will be demoted to Admin immediately and this cannot be undone without the new owner's help.",
+      confirmInputLabel: "Type the slug {slug} to confirm",
+      confirmInputPlaceholder: "{slug}",
+      confirmMismatch: "The text must match the slug exactly.",
+      transferCta: "Transfer ownership",
+      transferring: "Transferring…",
+      // Uses a {name} placeholder so the toast reads naturally for any
+      // member name (falls back to email in the action).
+      success: "Ownership transferred to {name}. You are now an Admin.",
+      // Listed consequences keep the UX parallel with the danger-zone
+      // card — bullets make it obvious this isn't a trivial button.
+      consequences: [
+        "The chosen member will immediately become the new owner of this organization.",
+        "You will be demoted to Admin. You keep access to almost everything, but you will no longer be able to delete the organization or transfer ownership again.",
+        "Only owners can promote members back to owner, so if you change your mind you will need to ask the new owner to hand it back.",
+        "This action takes effect immediately. There is no grace period.",
+      ],
+      errors: {
+        forbidden: "Only the current owner can transfer ownership.",
+        selfTarget: "You cannot transfer ownership to yourself.",
+        notFound: "That teammate is no longer a member of this organization.",
+        mismatch: "The confirmation text did not match the organization slug.",
+        transferFailed: "Could not transfer ownership. Please try again.",
+      },
+    },
     dangerZone: {
       heading: "Danger zone",
       description:

@@ -11,6 +11,7 @@ import { LocalePicker } from "./locale-picker";
 import { OrgDefaultsForm } from "./org-defaults-form";
 import { OrgProfileForm } from "./org-profile-form";
 import { RegionPicker } from "./region-picker";
+import { type TransferCandidate, TransferOwnershipCard } from "./transfer-ownership-card";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -18,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SettingsPage() {
-  const { membership } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
   const locale = await getLocale();
   const region = await getRegion();
@@ -46,6 +47,30 @@ export default async function SettingsPage() {
   // an org is irreversible and destroys every user's data in the
   // tenant, so it's scoped tighter than the other edit operations.
   const canDeleteOrg = membership.role === "OWNER";
+  // Sprint 32: transfer ownership is OWNER-only and the caller cannot
+  // target themselves, so there's no point loading candidates if the
+  // caller is not an OWNER.
+  const canTransferOwnership = membership.role === "OWNER";
+
+  const transferCandidates: TransferCandidate[] = canTransferOwnership
+    ? await db.membership
+        .findMany({
+          where: {
+            organizationId: membership.organizationId,
+            NOT: { userId: session.user.id },
+          },
+          include: { user: { select: { id: true, name: true, email: true } } },
+          orderBy: { createdAt: "asc" },
+        })
+        .then((rows) =>
+          rows.map((row) => ({
+            id: row.id,
+            name: row.user.name ?? row.user.email,
+            email: row.user.email,
+            roleLabel: t.users.roles[row.role],
+          })),
+        )
+    : [];
 
   const localeOptions = SUPPORTED_LOCALES.map((code) => ({
     code,
@@ -154,6 +179,31 @@ export default async function SettingsPage() {
             />
           </CardContent>
         </Card>
+
+        {canTransferOwnership ? (
+          <TransferOwnershipCard
+            organization={{ name: organization.name, slug: organization.slug }}
+            canTransfer={canTransferOwnership}
+            candidates={transferCandidates}
+            labels={{
+              heading: t.settings.transferOwnership.heading,
+              description: t.settings.transferOwnership.description,
+              targetLabel: t.settings.transferOwnership.targetLabel,
+              targetPlaceholder: t.settings.transferOwnership.targetPlaceholder,
+              noCandidates: t.settings.transferOwnership.noCandidates,
+              consequences: t.settings.transferOwnership.consequences,
+              confirmInputLabel: t.settings.transferOwnership.confirmInputLabel,
+              confirmInputPlaceholder: t.settings.transferOwnership.confirmInputPlaceholder,
+              confirmMismatch: t.settings.transferOwnership.confirmMismatch,
+              transferCta: t.settings.transferOwnership.transferCta,
+              transferring: t.settings.transferOwnership.transferring,
+              confirmBody: t.settings.transferOwnership.confirmBody,
+              success: t.settings.transferOwnership.success,
+              cancel: t.common.cancel,
+              forbidden: t.settings.transferOwnership.errors.forbidden,
+            }}
+          />
+        ) : null}
 
         {canDeleteOrg ? (
           <DangerZoneCard
