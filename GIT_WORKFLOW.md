@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 27.
+and iterating on it through Sprint 0 → Sprint 28.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 27.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 26 plus **Sprint 27** are already committed in a
+Sprint 0 through Sprint 27 plus **Sprint 28** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.27.0-sprint27.bundle
+oneace-next/oneace-next-port-v0.28.0-sprint28.bundle
 ```
 
 This bundle contains:
 
-- **62 commits** — 8 Sprint 0 + 1 docs + Sprints 1..27 (each = 1 feature
+- **64 commits** — 8 Sprint 0 + 1 docs + Sprints 1..28 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -53,9 +53,10 @@ This bundle contains:
   - `v0.25.0-sprint25` — Sprint 25 complete (PWA Sprint 4 Part A — offline write queue substrate)
   - `v0.26.0-sprint26` — Sprint 26 complete (PWA Sprint 4 Part B — first offline op: movement create)
   - `v0.27.0-sprint27` — Sprint 27 complete (PWA Sprint 4 follow-on — second offline op: count entry add / stock-count offline session)
+  - `v0.28.0-sprint28` — Sprint 28 complete (PWA Sprint 5 — Background Sync API + new-version prompt + first-party Install button)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.26.0-sprint26.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.27.0-sprint27.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -69,11 +70,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.27.0-sprint27.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.28.0-sprint28.bundle \
           next-port:next-port
 
-# Also pull all twenty-seven sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.27.0-sprint27.bundle \
+# Also pull all twenty-eight sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.28.0-sprint28.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -100,11 +101,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.27.0-sprint27.bun
           refs/tags/v0.24.0-sprint24:refs/tags/v0.24.0-sprint24 \
           refs/tags/v0.25.0-sprint25:refs/tags/v0.25.0-sprint25 \
           refs/tags/v0.26.0-sprint26:refs/tags/v0.26.0-sprint26 \
-          refs/tags/v0.27.0-sprint27:refs/tags/v0.27.0-sprint27
+          refs/tags/v0.27.0-sprint27:refs/tags/v0.27.0-sprint27 \
+          refs/tags/v0.28.0-sprint28:refs/tags/v0.28.0-sprint28
 
 # Verify
-git log --oneline next-port                # should show 62 commits
-git tag -l                                 # should include all twenty-seven sprint tags
+git log --oneline next-port                # should show 64 commits
+git tag -l                                 # should include all twenty-eight sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -115,8 +117,130 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
-               v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27
+               v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
+               v0.28.0-sprint28
 ```
+
+### What Sprint 28 added (v0.28.0-sprint28)
+
+PWA Sprint 5: three independent PWA quality-of-life bumps that all sit on
+top of the Sprint 22..27 foundation without touching the queue substrate
+or the dispatchers. The common thread is "use browser APIs that exist
+specifically so PWAs feel like apps, and feature-detect them all the way
+down so Safari/Firefox still load the page".
+
+- **`public/sw.js`** — bumps `CACHE_VERSION` from
+  `oneace-sw-v2` to `oneace-sw-v3` (so the runtime caches
+  get evicted on the next install — mandatory any time we
+  change SW behavior) and adds a **Background Sync** event
+  listener. The handler matches the single
+  `oneace-queue-drain` tag, grabs every open window client
+  via `self.clients.matchAll({ type: "window",
+  includeUncontrolled: true })`, and `postMessage`s a
+  `{ type: "BACKGROUND_SYNC", tag }` envelope to each one.
+  The SW itself **does not drain the queue** — the Dexie
+  writer is in the main-thread client, and trying to replay
+  ops from the SW would double-write. The SW is only a
+  wake-up mechanism.
+- **`src/lib/offline/queue.ts`** — exports a new
+  `QUEUE_DRAIN_SYNC_TAG = "oneace-queue-drain"` constant
+  (shared with the SW by convention — they must match or
+  the wake-up silently fails) and a new
+  `registerBackgroundSync()` helper. The helper is
+  feature-detected end-to-end: `typeof navigator`, then
+  `navigator.serviceWorker`, then `sw.ready` (to make sure
+  there's actually a registration), then the optional
+  `registration.sync` property (Chrome only — Safari /
+  Firefox will skip this entirely). The `SyncManager` type
+  isn't in the DOM lib, so we cast to a minimal shape:
+  `{ sync?: { register: (tag) => Promise<void> } }`. Call
+  is fire-and-forget with a `.catch(() => {})` so a
+  registration failure can never block `enqueueOp` from
+  returning. `enqueueOp` calls `registerBackgroundSync()`
+  immediately after a successful Dexie `put` — the new row
+  is on disk whether or not the browser agrees to wake us
+  up later.
+- **`src/components/offline/offline-queue-runner.tsx`** —
+  adds a fourth drain trigger: a `message` listener on
+  `navigator.serviceWorker` that calls `drain()` when the
+  envelope's `type` is `"BACKGROUND_SYNC"`. Sprint 26 added
+  online + periodic + queue-change triggers; this one is
+  the one that fires **after the tab was reopened by the
+  OS in response to the SW's sync event**. Registered +
+  torn down in the same `useEffect` as the other triggers
+  so the cleanup path is symmetric.
+- **`src/components/pwa/update-prompt.tsx`** — NEW client
+  component. Sprint 22 wired a `message` handler inside
+  the SW that responds to `{ type: "SKIP_WAITING" }` by
+  calling `self.skipWaiting()` — but nothing in the UI was
+  posting that message until now. `UpdatePrompt` watches
+  the current registration for a `waiting` worker (and for
+  any new install transitioning to `installed` while the
+  tab is open), guards against the **first-install case**
+  by checking `navigator.serviceWorker.controller` is
+  already live (no controller = no prior SW = this is an
+  install, not an update), renders a small `<output>` banner
+  with "A new version of OneAce is available." plus
+  Reload / Later buttons, and on Reload posts
+  `SKIP_WAITING` to the waiting worker and listens for
+  `controllerchange` to do a one-shot
+  `window.location.reload()` once the new worker has
+  claimed the page. The `reloaded` latch is important: some
+  browsers re-emit `controllerchange` on bfcache restore,
+  which would cause an infinite reload loop. Biome's
+  `useSemanticElements` rule pushed us from
+  `<div role="status" aria-live="polite">` to an actual
+  `<output>` element — kept because the semantic element
+  is more correct anyway.
+- **`src/components/pwa/install-app-button.tsx`** — NEW
+  client component. Sprint 22 captures the
+  `beforeinstallprompt` event synchronously and parks it on
+  `window.__oneaceInstallPrompt` so the button doesn't race
+  the event. This component reads that parked handle on
+  mount **and** also subscribes to `beforeinstallprompt` in
+  case the event fires after the component is alive (e.g.
+  bfcache restore). Click calls `prompt.prompt()` then
+  `await prompt.userChoice` then clears the handle
+  regardless of outcome — an event instance is single-use.
+  Listens for `appinstalled` to clear the handle so the
+  button disappears without a reload. `BeforeInstallPromptEvent`
+  is not in the DOM lib (the spec is still a W3C Editor's
+  Draft) so we declare a local interface with only the
+  surface we call. Returns `null` when no prompt is
+  available — a button that sometimes works is worse than
+  no button, so iOS Safari users simply never see it.
+- **`src/app/(app)/layout.tsx`** — imports and mounts both
+  new components. `<UpdatePrompt labels={...} />` sits
+  above `<Header>` so the banner occupies the full width
+  inside the lg:pl-64 rail. `<InstallAppButton />` sits in
+  a right-aligned flex row between `<OfflineQueueBanner>`
+  and `<main>`. Only the `(app)` layout mounts them — the
+  `(auth)` routes deliberately have no SW (Sprint 22) and
+  therefore have no update story and no install affordance.
+- **`src/lib/i18n/messages/en.ts`** — adds a new `pwa`
+  block above `offline` with `update.message`,
+  `update.reloadCta`, `update.dismissCta`, and `install.cta`
+  strings. English-only per the project rule; the other
+  locales inherit the fallback path until they are
+  explicitly translated.
+- **Design decisions (captured in PORT_CHECKLIST.md):**
+  SW broadcasts instead of draining to avoid duplicate
+  writers; `QUEUE_DRAIN_SYNC_TAG` shared as a const so the
+  SW and the main thread can't drift; `registerBackgroundSync`
+  is fire-and-forget so enqueue success does not depend on
+  sync registration; suppress update prompt on first install
+  via the controller check; hard reload after
+  `controllerchange` with a one-shot latch to avoid reload
+  loops on bfcache; install button returns null when no
+  prompt (no disabled affordance); `BeforeInstallPromptEvent`
+  typed locally with only the surface we call.
+- **Triple-verify:** `tsc --noEmit` exit 0,
+  `biome check src` clean (161 files — two new files vs
+  Sprint 27's 159), `prisma validate` green (no schema
+  changes this sprint).
+- **No new runtime dependencies.** Everything in Sprint 28
+  uses existing browser APIs + existing React/lucide-react
+  imports. Schema unchanged.
 
 ### What Sprint 27 added (v0.27.0-sprint27)
 

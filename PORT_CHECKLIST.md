@@ -1816,6 +1816,183 @@ stops at "the submit button works offline" on purpose.
 
 ---
 
+## Sprint 28 — PWA Sprint 5: background sync + update-prompt + Install button (shipped 2026-04-11)
+
+Tagged `v0.28.0-sprint28`. Three deliberately-small PWA
+conveniences, none of which change business data or server
+behavior, all of which round out the Sprint 22 foundation:
+
+1. **Background Sync wakes the queue runner when no tab is
+   foregrounded.** The browser (Chrome/Edge/Opera) fires a
+   `sync` event on the SW when it decides connectivity is back;
+   our SW broadcasts `{ type: "BACKGROUND_SYNC" }` to every
+   controlled client and the runner listens for it and drains.
+2. **"New version available" banner.** When a new SW finishes
+   installing and a controller is already live, a small banner
+   slides in at the top of the app shell. Clicking "Reload"
+   posts `{ type: "SKIP_WAITING" }` to the waiting worker and
+   listens for `controllerchange` before doing a hard reload
+   so the page is served by the new SW.
+3. **First-party Install button.** The `beforeinstallprompt`
+   handler that Sprint 22 parked on `window.__oneaceInstallPrompt`
+   now has a consumer: a small "Install app" button in the
+   shell. The button reads the parked handle on mount and also
+   subscribes to `beforeinstallprompt` directly so a fresh
+   event from a bfcache restore still surfaces.
+
+**Design decision — the SW broadcasts, clients drain.** The
+drain path reads Dexie and calls Server Actions. Dexie inside
+the SW would create a second writer we don't want, and Server
+Actions don't work from the SW context at all. The SW's only
+job for Background Sync is to broadcast a wake-up message;
+the runner (which already has its single-flight guard and its
+Dexie row-claiming discipline from Sprint 25) handles the
+actual drain. On browsers without Background Sync (Safari,
+Firefox), the SW listener simply never fires and the runner's
+existing `online` / `visibilitychange` / mount-drain triggers
+cover everything — graceful degradation with no special cases.
+
+**Design decision — the tag name is shared via a const, not
+duplicated.** `QUEUE_DRAIN_SYNC_TAG = "oneace-queue-drain"`
+lives in `src/lib/offline/queue.ts` and is mirrored in
+`public/sw.js` as a top-of-file constant. A rename here would
+require a matching rename in the worker; this is documented
+inline so a future me doesn't accidentally break the contract.
+
+**Design decision — `registerBackgroundSync` is
+fire-and-forget, called from `enqueueOp` on the success path.**
+The Dexie row is the source of truth for the pending op; a
+failed sync registration (browser without the API, quota
+pressure, a transient SW error) must never roll back the
+enqueue. The call is `void sw.ready.then(...).catch(() => {})`
+so nothing downstream awaits it.
+
+**Design decision — the update prompt is a banner, not a
+toast.** Toasts auto-dismiss; missing this one would leave the
+user stuck on an old shell until manual reload, which defeats
+the point of the prompt. The banner sits above the content,
+stays put until the user makes a choice, and has an explicit
+"Later" button so dismissing is also a choice.
+
+**Design decision — suppress the update prompt on first
+install.** Checking `navigator.serviceWorker.controller`
+before showing the banner avoids a confusing "new version
+available" message on a user's very first page load, where the
+installing worker is installing because there was no SW
+yesterday — not because there's an update. Without the
+controller check, Chrome fires `installed` on the first SW
+activation too.
+
+**Design decision — `controllerchange` triggers a hard
+reload.** When the waiting worker takes control we
+`window.location.reload()`. Skipping the reload would leave
+RSC payloads and cached assets inconsistent between the old
+SW's view of the app and the new one. A one-shot `reloaded`
+latch prevents reload loops on browsers that re-emit
+`controllerchange` on bfcache restore.
+
+**Design decision — the install button renders nothing until
+the prompt is available.** A disabled "Install app" button
+that only works sometimes would be worse than no button. If
+the user is on iOS Safari (no `beforeinstallprompt`), or
+already installed the app, or the browser decided the origin
+is ineligible, the component just returns `null`. The Install
+affordance is discoverable without being noisy.
+
+**Design decision — `BeforeInstallPromptEvent` is typed
+locally, not imported.** The event is still a W3C Editor's
+Draft and not in TypeScript's DOM lib. We declare an interface
+that describes the two methods we actually call (`prompt()`,
+`userChoice`) and cast on use. This matches how every other
+production app handles the event today and will be a trivial
+one-line change when the type lands upstream.
+
+- [x] `public/sw.js` — `CACHE_VERSION` bumped `oneace-sw-v2` →
+      `oneace-sw-v3` so `activate()` evicts the v2 caches
+      atomically on rollout. Adds a `sync` event listener that
+      matches on `QUEUE_DRAIN_SYNC_TAG = "oneace-queue-drain"`,
+      calls `self.clients.matchAll({ type: "window",
+      includeUncontrolled: true })`, and postMessages
+      `{ type: "BACKGROUND_SYNC", tag }` to every live client.
+      Uses `event.waitUntil` so the browser keeps the SW alive
+      until the broadcast finishes. Top-of-file doc block
+      updated to document the Sprint 28 addition alongside the
+      Sprint 22 foundation and Sprint 24 precache tweak.
+- [x] `src/lib/offline/queue.ts` — exports
+      `QUEUE_DRAIN_SYNC_TAG` (string, shared with sw.js by
+      convention) and `registerBackgroundSync()` which
+      fire-and-forgets a `navigator.serviceWorker.ready`
+      chain, feature-detects `registration.sync`, calls
+      `sync.register(tag)`, and swallows all errors. Called
+      from `enqueueOp` right after the successful `put` so
+      every enqueue registers the wake-up hint.
+- [x] `src/components/offline/offline-queue-runner.tsx` — adds
+      a fourth drain trigger listening on
+      `navigator.serviceWorker` for `message` events whose
+      `data.type === "BACKGROUND_SYNC"`. The listener calls
+      `void drain()` which reuses the existing single-flight
+      guard, so two simultaneous triggers (e.g. online +
+      BACKGROUND_SYNC arriving in the same tick) still produce
+      exactly one drain pass. Cleanup in the effect's return
+      removes the message listener alongside the online and
+      visibilitychange listeners. Component-level doc block
+      updated to document the fourth trigger.
+- [x] `src/components/pwa/update-prompt.tsx` — NEW. Client
+      component that subscribes to the SW registration on
+      mount, tracks installing workers via `updatefound` +
+      `statechange: installed`, and sets state to show a
+      banner only when there is already an active controller
+      (so the first-ever install doesn't show the banner).
+      Renders an `<output aria-live="polite">` element with a
+      `RefreshCw` icon, the i18n message, a "Reload" primary
+      button that posts `{ type: "SKIP_WAITING" }` to the
+      waiting worker, and a "Later" ghost button that flips
+      a local `dismissed` flag. Listens for `controllerchange`
+      on the SW container and does a one-shot
+      `window.location.reload()` when the new worker claims
+      the page. All DOM access is feature-detected so SSR and
+      browsers without `navigator.serviceWorker` render
+      nothing.
+- [x] `src/components/pwa/install-app-button.tsx` — NEW.
+      Client component that reads the Sprint 22
+      `window.__oneaceInstallPrompt` park on mount and also
+      subscribes to `beforeinstallprompt` directly so bfcache
+      restores still get a button. Renders a small outline
+      `<Button>` with a `Download` icon and the i18n label
+      only when the prompt is available; otherwise returns
+      `null`. On click calls `prompt.prompt()`, awaits
+      `prompt.userChoice`, then clears both local state and
+      the parked window handle so a second click does
+      nothing. Also clears on `appinstalled`. Declares a local
+      `BeforeInstallPromptEvent` interface with just the two
+      methods we call; no `any` casts at the call site.
+- [x] `src/app/(app)/layout.tsx` — imports `<UpdatePrompt>`
+      and `<InstallAppButton>`, mounts the update prompt
+      above the header, and mounts the install button in a
+      right-aligned row between the offline queue banner and
+      `<main>`. Adds new label props `t.pwa.update.message`,
+      `t.pwa.update.reloadCta`, `t.pwa.update.dismissCta`,
+      and `t.pwa.install.cta`. `SwRegister` still runs as the
+      primary beforeinstallprompt capture; the install button
+      reads the parked handle as its primary source.
+- [x] `src/lib/i18n/messages/en.ts` — new top-level `pwa`
+      block with two sub-blocks: `pwa.update.{message,
+      reloadCta, dismissCta}` and `pwa.install.cta`. Four new
+      keys total, all English. Placed above the `offline`
+      block to group PWA-related copy together.
+- [x] Verified clean: `prisma validate` (dummy env vars) +
+      `tsc --noEmit` exit 0 + `biome check src` clean after
+      one auto-format pass (collapsed the install button's
+      multi-line `<Button>` props and swapped
+      `<div role="status">` for `<output>` to satisfy
+      `useSemanticElements`). 161 files.
+- [x] **No new runtime dependencies.** The two new components
+      use `lucide-react` icons already in the tree and the
+      existing `<Button>` from `@/components/ui/button`. No
+      schema changes.
+
+---
+
 ### Still to port (deferred post-Sprint-22)
 
 - [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
@@ -1832,10 +2009,10 @@ stops at "the submit button works offline" on purpose.
       as Sprint 27** (second op: count entry add — the
       stock-count multi-row scan workflow, the Flutter moat, now
       drops into the queue on transport failure).
-- [ ] PWA Sprint 5 — background sync + update-prompt UX
+- [x] PWA Sprint 5 — background sync + update-prompt UX
       (surface the "new version available" state, wire the
       parked `beforeinstallprompt` to a first-party Install
-      button).
+      button). **Shipped as Sprint 28** — see below.
 - [ ] Audit log
 - [ ] Email delivery for invitations (MVP: admin copies link)
 - [ ] `?next=/invite/[token]` redirect after sign-in so users
