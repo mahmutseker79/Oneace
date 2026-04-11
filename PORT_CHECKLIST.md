@@ -1664,6 +1664,158 @@ changes to the queue API. Every future op lands the same way.
 
 ---
 
+## Sprint 27 — PWA Sprint 4 follow-on: stock-count offline session (shipped 2026-04-11)
+
+Tagged `v0.27.0-sprint27`. Wires the **second concrete op**
+(`countEntry.add`) onto the Sprint 25 queue substrate. This is
+OneAce's Flutter moat going offline-first: a warehouse counter
+walking bins on a phone with flaky reception can now record
+entries continuously without losing a scan when the cell tower
+blinks. The form stamps an idempotency key, tries the direct
+server action first, and on any transport failure drops the
+entry into the Dexie queue so the runner replays it when
+connectivity returns.
+
+The sprint deliberately targets ONLY `addCountEntryAction` — the
+hot path a counter hits hundreds of times per shift. Create,
+cancel, and complete remain online-only because they're rare
+admin actions that don't need offline resilience and carry
+cross-table state (snapshot inserts, ledger adjustment posts)
+that would dramatically expand the queue contract if replayed.
+
+**Design decision — mirror the Sprint 26 pattern exactly.** The
+stock-count offline story uses the same four moving parts:
+compound unique `(organizationId, idempotencyKey)` on the write
+table; shared `writeCountEntry` helper called from both the
+legacy FormData action and the new JSON-op action; dispatcher
+module that re-validates the payload it pulled out of Dexie;
+form that stamps a UUID once and reuses it for both the direct
+attempt and the fallback enqueue. Copying the substrate keeps
+every future op (stock count create, invite accept, etc.)
+landing the same way and makes the dispatcher registry the one
+place new ops get wired.
+
+**Design decision — `writeCountEntry` lives inline in
+`actions.ts`, not a new `lib/` module.** The helper has one
+caller outside the legacy path (the new `submitCountEntryOpAction`
+in the same file), is tightly coupled to the count state
+machine, and doesn't benefit from being pulled to `lib/`. If a
+third caller appears (e.g. bulk import) it will get lifted.
+Same reasoning as Sprint 26's `writeMovement`.
+
+**Design decision — entry-form's prop renamed from `scope` to
+`rows` for the cartesian list, and a new `scope: EntryFormScope`
+prop carries `{ orgId, userId }`.** The Sprint 3 entry form
+already had a `scope` prop holding the flat `(item × warehouse)`
+cartesian from the count snapshots. Sprint 27 needs a separate
+`{ orgId, userId }` pair for the offline queue, so the cartesian
+list was renamed to `rows` and `scope` repurposed. Consistent
+with `MovementFormScope` in Sprint 26 so a future refactor can
+factor a common `OfflineFormScope` type without needing to
+reconcile naming.
+
+**Design decision — after save, reset qty + note but keep
+itemId.** The Sprint 3 online form already did this; Sprint 27
+preserves it across both the online-ok and queued branches so
+the counter's muscle memory works identically in both modes.
+Resetting the whole form on every scan would add a click per
+bin in a workflow where counters hammer the same SKU across
+dozens of warehouse locations.
+
+**Design decision — Dexie session-state cache is NOT in this
+sprint.** The current implementation requires the counter to be
+online at navigation time to load the count detail page — only
+the *submit* action is offline-safe. Caching the open count +
+snapshot rows + entry log in Dexie so a counter can navigate to
+an in-progress count while offline is a larger piece of work
+that belongs in Sprint 29 (the `/offline/stock-counts` viewer),
+where it can share the same Dexie store design and be tested
+as one coherent offline-navigation story. Sprint 27's scope
+stops at "the submit button works offline" on purpose.
+
+- [x] `prisma/schema.prisma` — `CountEntry.idempotencyKey
+      String?` nullable column + `@@unique([organizationId,
+      idempotencyKey])`. Comment inline documents the Sprint 27
+      purpose. Validated with `prisma validate` (dummy env
+      vars). Prisma client regenerated via the same tmp-schema
+      workaround as Sprint 26 — copy `prisma/schema.prisma` to
+      `prisma/schema.tmp.prisma`, rewrite its `output` to a
+      `/tmp` path, `prisma generate --schema=…`, then
+      `cat`-overwrite each file in `src/generated/prisma/`.
+      `prisma/schema.tmp.prisma` cannot be unlinked in the
+      sandbox so it's truncated to 0 bytes and added to
+      `.gitignore`.
+- [x] `src/lib/validation/stockcount.ts` — new
+      `countEntryOpPayloadSchema = z.object({ idempotencyKey:
+      z.string().uuid(...), input: addEntryInputSchema })` and
+      `type CountEntryOpPayload = z.infer<...>`. Reuses
+      `addEntryInputSchema` verbatim so there is exactly one
+      source of truth for what a valid count entry looks like.
+- [x] `src/app/(app)/stock-counts/actions.ts` — refactored.
+      New `writeCountEntry(args)` internal helper handles the
+      transactional work (count lookup, state guard, scope
+      check, pre-check idempotency index, transaction with
+      OPEN → IN_PROGRESS transition, P2002 race fallback) and
+      is called by both the legacy FormData
+      `addCountEntryAction` and the new JSON-op action. New
+      `submitCountEntryOpAction(payload)` never throws,
+      returns `CountEntryOpResult` with explicit
+      `retryable: boolean`. Does NOT revalidate on the replay
+      branch (`alreadyExists`) to avoid cache churn when a
+      replay just reports an already-successful op.
+- [x] `src/lib/offline/dispatchers/count-entry-add.ts` — NEW.
+      Exports `COUNT_ENTRY_ADD_OP_TYPE = "countEntry.add"`,
+      `buildCountEntryAddPayload` (colocated producer-side
+      schema parse), and `dispatchCountEntryAdd: OpDispatcher`.
+      Defensively re-parses `op.payload` against
+      `countEntryOpPayloadSchema`. A malformed row from a stale
+      client is fatal (would loop forever). Transport throws
+      map to retry.
+- [x] `src/components/offline/offline-queue-runner.tsx` — adds
+      the second entry to `DISPATCHERS`. One import + one map
+      row. Comment updated to note that Sprint 27 adds
+      `countEntry.add` alongside the Sprint 26 `movement.create`.
+      Zero other changes to the runner.
+- [x] `src/app/(app)/stock-counts/[id]/entry-form.tsx` —
+      rewritten. New props: `scope: EntryFormScope` (orgId,
+      userId), `rows: ScopeOption[]` (renamed from the old
+      `scope` prop). `generateIdempotencyKey` uses
+      `crypto.randomUUID()` with the same RFC4122 v4 fallback.
+      `handleSubmit` does the try-direct-then-enqueue flow
+      with `navigator.onLine === false` pre-flight.
+      `enqueueAndReset` enqueues under
+      `COUNT_ENTRY_ADD_OP_TYPE` and resets the form without
+      navigating away (counter stays on the detail page). The
+      submit button shows a `CloudOff` icon when offline, and
+      the "queued" label replaces the normal submit label
+      while offline so the counter knows what to expect.
+- [x] `src/app/(app)/stock-counts/[id]/page.tsx` — destructures
+      `session` out of `requireActiveMembership`, renames the
+      local `scope` variable to `scopeRows`, passes
+      `scope={{ orgId, userId }}` and `rows={scopeRows}` to
+      `<EntryForm>`, and adds
+      `submittingLabel`/`queuedLabel` to the labels object
+      from the new i18n keys.
+- [x] `src/lib/i18n/messages/en.ts` — adds
+      `t.stockCounts.offlineSubmitting` ("Saving…") and
+      `t.stockCounts.offlineQueued` ("Entry queued — will
+      sync when you're back online."). All English; future
+      locales extend en.ts.
+- [x] `.gitignore` — adds `prisma/schema.tmp.prisma` so the
+      sandbox-unremovable temp file used for Prisma
+      regeneration doesn't pollute the tree.
+- [x] Verified clean: `prisma validate` (dummy env vars) +
+      `tsc --noEmit` + `biome check src` (159 files, no
+      errors after one formatter auto-fix pass on the
+      dispatcher import and the entry-form single-line
+      collapses).
+- [x] **No new runtime dependencies.** The sprint adds zero
+      npm packages. The one schema change is additive +
+      nullable and was pushed via `prisma db:push` workflow
+      (no migration file).
+
+---
+
 ### Still to port (deferred post-Sprint-22)
 
 - [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
@@ -1671,15 +1823,15 @@ changes to the queue API. Every future op lands the same way.
 - [x] PWA Sprint 3 — picklist caches for warehouses +
       categories, plus a static `/offline/items` route served
       directly from Dexie. Shipped as Sprint 24 (see above).
-- [ ] PWA Sprint 4 — offline stock counts (write queue, replay
+- [x] PWA Sprint 4 — offline stock counts (write queue, replay
       on reconnect, optimistic-UI markers). **Part A shipped as
       Sprint 25** (queue substrate, runner, banner — no op
       wired). **Part B shipped as Sprint 26** (first concrete
       op: movement create, with idempotency-key server contract
-      + try-direct-then-enqueue form flow). The stock-count
-      session (multi-row scan workflow) is still pending as a
-      follow-on sprint — that's where the Flutter moat actually
-      lives.
+      + try-direct-then-enqueue form flow). **Follow-on shipped
+      as Sprint 27** (second op: count entry add — the
+      stock-count multi-row scan workflow, the Flutter moat, now
+      drops into the queue on transport failure).
 - [ ] PWA Sprint 5 — background sync + update-prompt UX
       (surface the "new version available" state, wire the
       parked `beforeinstallprompt` to a first-party Install

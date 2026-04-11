@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 26.
+and iterating on it through Sprint 0 → Sprint 27.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 26.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 25 plus **Sprint 26** are already committed in a
+Sprint 0 through Sprint 26 plus **Sprint 27** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.26.0-sprint26.bundle
+oneace-next/oneace-next-port-v0.27.0-sprint27.bundle
 ```
 
 This bundle contains:
 
-- **60 commits** — 8 Sprint 0 + 1 docs + Sprints 1..26 (each = 1 feature
+- **62 commits** — 8 Sprint 0 + 1 docs + Sprints 1..27 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -52,9 +52,10 @@ This bundle contains:
   - `v0.24.0-sprint24` — Sprint 24 complete (PWA Sprint 3 — picklist caches + static /offline/items)
   - `v0.25.0-sprint25` — Sprint 25 complete (PWA Sprint 4 Part A — offline write queue substrate)
   - `v0.26.0-sprint26` — Sprint 26 complete (PWA Sprint 4 Part B — first offline op: movement create)
+  - `v0.27.0-sprint27` — Sprint 27 complete (PWA Sprint 4 follow-on — second offline op: count entry add / stock-count offline session)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.25.0-sprint25.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.26.0-sprint26.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -68,11 +69,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.26.0-sprint26.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.27.0-sprint27.bundle \
           next-port:next-port
 
-# Also pull all twenty-three sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.26.0-sprint26.bundle \
+# Also pull all twenty-seven sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.27.0-sprint27.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -98,11 +99,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.26.0-sprint26.bun
           refs/tags/v0.23.0-sprint23:refs/tags/v0.23.0-sprint23 \
           refs/tags/v0.24.0-sprint24:refs/tags/v0.24.0-sprint24 \
           refs/tags/v0.25.0-sprint25:refs/tags/v0.25.0-sprint25 \
-          refs/tags/v0.26.0-sprint26:refs/tags/v0.26.0-sprint26
+          refs/tags/v0.26.0-sprint26:refs/tags/v0.26.0-sprint26 \
+          refs/tags/v0.27.0-sprint27:refs/tags/v0.27.0-sprint27
 
 # Verify
-git log --oneline next-port                # should show 60 commits
-git tag -l                                 # should include all twenty-six sprint tags
+git log --oneline next-port                # should show 62 commits
+git tag -l                                 # should include all twenty-seven sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -113,8 +115,116 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
-               v0.25.0-sprint25 v0.26.0-sprint26
+               v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27
 ```
+
+### What Sprint 27 added (v0.27.0-sprint27)
+
+PWA Sprint 4 follow-on: the **stock-count entry** path is now offline-first,
+mirroring the Sprint 26 movement-create pattern. This is the Flutter moat —
+a warehouse counter walking bins on flaky wifi must not lose a single scan.
+
+- **`prisma/schema.prisma`** — adds `idempotencyKey String?`
+  nullable column to `CountEntry` plus a compound unique
+  index `@@unique([organizationId, idempotencyKey])`. Same
+  shape as Sprint 26's StockMovement change: nullable so the
+  legacy online FormData action (`addCountEntryAction`) keeps
+  working without a key, compound with `organizationId` so two
+  tenants can't collide on the same UUID. Pushed via
+  `prisma db:push` (no migration file).
+- **`src/lib/validation/stockcount.ts`** — new
+  `countEntryOpPayloadSchema = z.object({ idempotencyKey:
+  z.string().uuid(), input: addEntryInputSchema })` with a
+  matching `CountEntryOpPayload` type. Used by the entry form
+  (producer), the dispatcher (consumer re-validating a Dexie
+  row), and the server action (authoritative).
+- **`src/app/(app)/stock-counts/actions.ts`** — substantial
+  refactor. New shared `writeCountEntry(args)` helper takes a
+  `WriteCountEntryArgs` and returns a
+  `WriteCountEntryOutcome` discriminated union
+  (`ok | alreadyExists | countNotFound | notEditable |
+  outOfScope | transientError`). Both the legacy
+  `addCountEntryAction` and the new `submitCountEntryOpAction`
+  delegate to it, so every path shares the same count lookup,
+  state guard (`canAddEntry`), scope check against
+  `countSnapshot`, pre-check-then-insert idempotency
+  handling, OPEN → IN_PROGRESS auto-transition, and P2002 race
+  fallback. `submitCountEntryOpAction(payload:
+  CountEntryOpPayload)` is the queue-aware entry point: never
+  throws, wraps `requireActiveMembership` in a try/catch so a
+  token expiry reports as `retryable: false` instead of
+  crashing the dispatcher, and does **not** revalidate when
+  the outcome is `alreadyExists` (a replay on a count that has
+  already been closed should not bust caches).
+- **`src/lib/offline/dispatchers/count-entry-add.ts`** — NEW
+  file. Second concrete dispatcher wired into the Sprint 25
+  substrate. Pure client module (no `"use client"` needed
+  because no JSX/hooks). Exports
+  `COUNT_ENTRY_ADD_OP_TYPE = "countEntry.add"`, a co-located
+  `buildCountEntryAddPayload` helper, and
+  `dispatchCountEntryAdd: OpDispatcher`. The dispatcher
+  defensively re-parses the Dexie payload via
+  `countEntryOpPayloadSchema.safeParse` (a stale-client
+  payload becomes **fatal** so it surfaces in the failed-ops
+  UI instead of looping), calls `submitCountEntryOpAction`,
+  translates the `CountEntryOpResult` into a
+  `DispatcherResult.kind`, and maps any transport throw to
+  `retry`.
+- **`src/components/offline/offline-queue-runner.tsx`** —
+  registers the second dispatcher at the same seam Sprint 26
+  introduced. One import + one map entry:
+  `[COUNT_ENTRY_ADD_OP_TYPE]: dispatchCountEntryAdd`. The
+  drain loop, triggers, and single-flight guard are
+  untouched — every future op type will be added the same way.
+- **`src/app/(app)/stock-counts/[id]/entry-form.tsx`** —
+  rewritten end-to-end. New required
+  `scope: EntryFormScope` prop (`{ orgId, userId }`); the
+  previous `scope` prop (the list of snapshot pairs) is
+  renamed to `rows` so the shape matches
+  `MovementFormScope` from Sprint 26. New
+  `generateIdempotencyKey()` uses `crypto.randomUUID()` with
+  a Math.random RFC4122 v4 fallback. `handleSubmit` generates
+  the key **once** before any network attempt,
+  pre-flight-checks `navigator.onLine === false`, tries
+  `submitCountEntryOpAction` directly, and falls through to
+  `enqueueOp` on transport throw / `retryable: true` / offline
+  pre-flight — all using the **same key** so a flaky network
+  can't double-count. Non-retryable errors (validation,
+  out-of-scope row, count not found, not editable) surface
+  inline and are **not** enqueued. `resetAfterSave` clears
+  qty + note but **keeps `itemId`** so the counter can hammer
+  the same SKU across multiple bin locations without clicking
+  the dropdown again. `CloudOff` icon replaces the spinner in
+  the pending button when the user is offline.
+- **`src/app/(app)/stock-counts/[id]/page.tsx`** — plumbs
+  `scope={{ orgId: membership.organizationId, userId:
+  session.user.id }}` and the new `submittingLabel` /
+  `queuedLabel` labels into `<EntryForm>`. Local
+  `scope` variable renamed to `scopeRows` to free the name
+  for the new prop shape. Destructures `session` out of
+  `requireActiveMembership` alongside `membership`.
+- **`src/lib/i18n/messages/en.ts`** — adds
+  `t.stockCounts.offlineSubmitting = "Saving…"` and
+  `t.stockCounts.offlineQueued = "Entry queued — will sync
+  when you're back online."`.
+- **Design decisions (captured in PORT_CHECKLIST.md):**
+  mirror Sprint 26 end-to-end so both offline ops follow one
+  pattern; keep `writeCountEntry` inline in actions.ts rather
+  than extracting a cross-module service (the shared code is
+  ~40 lines and both callers live in the same file); rename
+  `scope` → `rows` instead of inventing a new name; preserve
+  `itemId` after save because that's the real ergonomic win
+  for a counter walking a warehouse; defer Dexie session-state
+  caching (offline resume of an in-progress count) to
+  Sprint 29 where it belongs with the `/offline/stock-counts`
+  viewer.
+- **Triple-verify:** `tsc --noEmit` exit 0,
+  `biome check src` clean (159 files), `prisma validate`
+  green against the new unique constraint.
+- **No new runtime dependencies.** Zod, Dexie, and Prisma
+  were all already in the tree. The schema change is additive
+  + nullable and was pushed via the `prisma db:push` workflow
+  (no migration file).
 
 ### What Sprint 26 added (v0.26.0-sprint26)
 
