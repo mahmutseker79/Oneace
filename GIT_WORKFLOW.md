@@ -13,24 +13,25 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0, Sprint 1, **and Sprint 2** are already committed in a portable git
-bundle at:
+Sprint 0, Sprint 1, Sprint 2, **and Sprint 3** are already committed in a
+portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.2.0-sprint2.bundle
+oneace-next/oneace-next-port-v0.3.0-sprint3.bundle
 ```
 
 This bundle contains:
 
-- **11 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 2
+- **13 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 2 + 1 runbook + 1 Sprint 3 + 1 runbook
 - **Branch:** `next-port`
 - **Tags (annotated):**
   - `v0.1.0-sprint1` — Sprint 1 complete (items, warehouses, categories)
   - `v0.2.0-sprint2` — Sprint 2 complete (stock movement ledger + item detail)
+  - `v0.3.0-sprint3` — Sprint 3 complete (stock counts + variance reconcile)
 
-Older bundles (`oneace-next-port.bundle`, `oneace-next-port-v0.1.0-sprint1.bundle`)
-are kept around only because the sandbox cannot delete files from the mount —
-always use the latest versioned one.
+Older bundles (`oneace-next-port.bundle`, `oneace-next-port-v0.1.0-sprint1.bundle`,
+`oneace-next-port-v0.2.0-sprint2.bundle`) are kept around only because the
+sandbox cannot delete files from the mount — always use the latest versioned one.
 
 Instead of running all the manual commits in section 1.4, just restore the
 bundle into a fresh clone. This skips 300+ lines of manual git surgery.
@@ -42,21 +43,22 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.2.0-sprint2.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.3.0-sprint3.bundle \
           next-port:next-port
 
-# Also pull both tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.2.0-sprint2.bundle \
+# Also pull all three sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.3.0-sprint3.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
-          refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2
+          refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
+          refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3
 
 # Verify
-git log --oneline next-port                # should show 11 commits
-git tag -l                                 # should include both sprint tags
+git log --oneline next-port                # should show 13 commits
+git tag -l                                 # should include all three sprint tags
 
 # Push to GitHub
 git push -u origin next-port
-git push origin v0.1.0-sprint1 v0.2.0-sprint2
+git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3
 ```
 
 > **Note on history:** the bundle's `next-port` branch has no common ancestor
