@@ -2,7 +2,8 @@
  * OneAce service worker — Sprint 22 foundation,
  * Sprint 24 adds /offline/items to the precache list,
  * Sprint 28 adds a Background Sync "drain queue" hook,
- * Sprint 29 adds /offline/stock-counts to the precache list.
+ * Sprint 29 adds /offline/stock-counts to the precache list,
+ * Sprint 30 adds /offline/queue to the precache list.
  *
  * Scope: this worker deliberately does NOT cache business data.
  * The goals are:
@@ -27,7 +28,7 @@
  * activate() can evict the old version atomically.
  */
 
-const CACHE_VERSION = "oneace-sw-v4";
+const CACHE_VERSION = "oneace-sw-v5";
 const PRECACHE = `${CACHE_VERSION}-precache`;
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
@@ -45,10 +46,17 @@ const STATIC_CACHE = `${CACHE_VERSION}-static`;
 // force-static route that reads the `stockCounts` + `stockCountRows`
 // Dexie tables and lets the user resume an in-progress count while
 // offline. Same safety profile as /offline/items.
+//
+// Sprint 30 (PWA Sprint 7) adds /offline/queue — a force-static
+// review screen that lists every pending / in_flight / failed op
+// in the `pendingOps` Dexie table and lets the user retry,
+// discard, or bulk-clear failures that the runner couldn't
+// dispatch. Same safety profile: no auth, no cookies, no DB calls.
 const PRECACHE_URLS = [
   "/offline",
   "/offline/items",
   "/offline/stock-counts",
+  "/offline/queue",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",

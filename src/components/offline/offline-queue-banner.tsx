@@ -38,6 +38,15 @@ export interface OfflineQueueBannerLabels {
   pendingOnline: string; // "{count} waiting to sync"
   pendingOffline: string; // "{count} queued offline"
   failed: string; // "{count} failed to sync"
+  /**
+   * Sprint 30 — label on the "Review" link rendered next to the
+   * failed count. The link routes to `/offline/queue`, the
+   * force-static review page for pending / in-flight / failed
+   * ops. Optional because the banner ships before the failed
+   * review screen existed; a layout mounting an older label set
+   * simply won't render the link and the banner still works.
+   */
+  reviewCta?: string;
 }
 
 export interface OfflineQueueBannerProps {
@@ -126,6 +135,14 @@ export function OfflineQueueBanner({
         <span className="flex items-center gap-1.5 text-destructive">
           <TriangleAlert className="h-3.5 w-3.5" aria-hidden />
           {renderCount(labels.failed, counts.failed)}
+          {labels.reviewCta ? (
+            <a
+              href="/offline/queue"
+              className="ml-1 underline decoration-destructive/50 underline-offset-2 hover:decoration-destructive"
+            >
+              {labels.reviewCta}
+            </a>
+          ) : null}
         </span>
       ) : null}
     </div>

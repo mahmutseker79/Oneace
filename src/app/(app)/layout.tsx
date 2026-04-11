@@ -62,6 +62,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             pendingOnline: t.offline.queue.pendingOnline,
             pendingOffline: t.offline.queue.pendingOffline,
             failed: t.offline.queue.failed,
+            reviewCta: t.offline.queue.reviewCta,
           }}
         />
         <div className="flex justify-end px-4 pt-2 lg:px-6">

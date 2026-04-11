@@ -347,6 +347,104 @@ export async function releaseInFlight(scope: PendingOpScope): Promise<number> {
 }
 
 /**
+ * Transition a `failed` op back to `pending` so the runner will
+ * attempt it again on the next drain. Sprint 30 (PWA Sprint 7) —
+ * the "retry" button on the /offline/queue review screen calls
+ * this. `attemptCount` is **not** reset, so the row still carries
+ * its full history — a retried op that fails again is
+ * distinguishable from a brand-new one. `lastError` is cleared so
+ * the UI doesn't render a stale message while the retry is in
+ * flight.
+ *
+ * Returns true on success, false if the row doesn't exist or is
+ * not currently in `failed`. Only `failed` rows can be requeued
+ * this way — retrying an already-pending row is a no-op anyway
+ * and retrying an `in_flight` row would double-dispatch.
+ */
+export async function requeueFailedOp(id: string): Promise<boolean> {
+  const db = getOfflineDb();
+  if (!db) return false;
+
+  try {
+    return await db.transaction("rw", db.pendingOps, async () => {
+      const row = await db.pendingOps.get(id);
+      if (!row) return false;
+      if (row.status !== "failed") return false;
+      const updated: CachedPendingOp = {
+        ...row,
+        status: "pending",
+        updatedAt: new Date().toISOString(),
+        lastError: null,
+      };
+      await db.pendingOps.put(updated);
+      return true;
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Hard-delete a single op from the queue. Sprint 30 — the
+ * "discard" button on the /offline/queue review screen calls
+ * this for failed ops the user does NOT want to retry (the op is
+ * stale, the user already re-did it manually, etc).
+ *
+ * Intentionally permissive about status: a user who clicks
+ * discard on an op that has already been auto-retried into
+ * `succeeded` should still see it disappear, not get a confusing
+ * "couldn't delete" error. The dispatcher already ran with the
+ * row's id as the idempotency key, so deleting here never
+ * changes server state.
+ *
+ * Returns true if the row existed and was deleted. false
+ * indicates either the row was already gone or IndexedDB is
+ * unavailable — the caller should not distinguish the two.
+ */
+export async function deleteOp(id: string): Promise<boolean> {
+  const db = getOfflineDb();
+  if (!db) return false;
+
+  try {
+    const existing = await db.pendingOps.get(id);
+    if (!existing) return false;
+    await db.pendingOps.delete(id);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Delete every `failed` op in a given scope. Sprint 30 —
+ * the "clear all failed" janitor button on the /offline/queue
+ * review screen. Bounded by the (orgId, userId) index so a
+ * multi-tenant browser only clears the active user's failures.
+ *
+ * Returns the number of rows deleted. This number is meaningful
+ * to the UI — rendering "3 failed ops cleared" gives the user
+ * confidence the button actually did something, which matters
+ * because failed ops are the one UX surface where trust is
+ * fragile.
+ */
+export async function clearFailedOps(scope: PendingOpScope): Promise<number> {
+  const db = getOfflineDb();
+  if (!db) return 0;
+
+  try {
+    const victims = await db.pendingOps
+      .where("[orgId+userId+status]")
+      .equals([scope.orgId, scope.userId, "failed"])
+      .primaryKeys();
+    if (victims.length === 0) return 0;
+    await db.pendingOps.bulkDelete(victims);
+    return victims.length;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Delete `succeeded` ops older than the provided threshold. The
  * runner calls this after a successful drain so the store never
  * grows unbounded. Returns the number of rows deleted.

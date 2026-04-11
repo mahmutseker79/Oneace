@@ -77,6 +77,12 @@ export default async function OfflinePage() {
           >
             {t.offline.viewCachedStockCountsCta}
           </Link>
+          <Link
+            href="/offline/queue"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            {t.offline.viewQueueCta}
+          </Link>
           <p className="text-xs text-muted-foreground">{t.offline.tip}</p>
         </div>
       </div>
