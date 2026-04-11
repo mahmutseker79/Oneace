@@ -86,8 +86,11 @@ export interface CachedWarehouse {
   orgId: string;
   userId: string;
   name: string;
-  code: string | null;
-  kind: string;
+  /** Short code identifier — non-nullable per the Prisma schema. */
+  code: string;
+  city: string | null;
+  region: string | null;
+  country: string | null;
   isDefault: boolean;
 }
 

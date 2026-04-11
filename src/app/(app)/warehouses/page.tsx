@@ -2,6 +2,7 @@ import { Plus, Warehouse as WarehouseIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import type { WarehouseSnapshotRow } from "@/lib/offline/warehouses-cache";
 import { requireActiveMembership } from "@/lib/session";
 
 import { deleteWarehouseAction } from "./actions";
@@ -31,13 +33,30 @@ function formatLocation(parts: Array<string | null | undefined>, fallback: strin
 }
 
 export default async function WarehousesPage() {
-  const { membership } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
 
   const warehouses = await db.warehouse.findMany({
     where: { organizationId: membership.organizationId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
+
+  // Build the serializable snapshot the picklist sync writes to
+  // Dexie. Keeping this in the page itself (vs. inside a helper)
+  // makes the dependency on Prisma's row shape explicit.
+  const cacheScope = {
+    orgId: membership.organizationId,
+    userId: session.user.id,
+  };
+  const cacheRows: WarehouseSnapshotRow[] = warehouses.map((w) => ({
+    id: w.id,
+    name: w.name,
+    code: w.code,
+    city: w.city,
+    region: w.region,
+    country: w.country,
+    isDefault: w.isDefault,
+  }));
 
   return (
     <div className="space-y-6">
@@ -119,6 +138,8 @@ export default async function WarehousesPage() {
           </CardContent>
         </Card>
       )}
+
+      <PicklistCacheSync table="warehouses" scope={cacheScope} rows={cacheRows} />
     </div>
   );
 }

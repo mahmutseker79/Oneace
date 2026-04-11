@@ -1,6 +1,7 @@
 import { FolderTree } from "lucide-react";
 import type { Metadata } from "next";
 
+import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import type { CategorySnapshotRow } from "@/lib/offline/categories-cache";
 import { requireActiveMembership } from "@/lib/session";
 
 import { deleteCategoryAction } from "./actions";
@@ -24,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CategoriesPage() {
-  const { membership } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
 
   const categories = await db.category.findMany({
@@ -35,6 +37,19 @@ export default async function CategoriesPage() {
     },
     orderBy: { name: "asc" },
   });
+
+  // Serializable snapshot for the Dexie picklist cache. Parent id
+  // is the only relational field we keep — the tree structure is
+  // rebuilt client-side from the parentId pointers.
+  const cacheScope = {
+    orgId: membership.organizationId,
+    userId: session.user.id,
+  };
+  const cacheRows: CategorySnapshotRow[] = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    parentId: c.parentId,
+  }));
 
   const labels: CategoryCreateFormLabels = {
     fields: t.categories.fields,
@@ -113,6 +128,8 @@ export default async function CategoriesPage() {
           </CardContent>
         </Card>
       )}
+
+      <PicklistCacheSync table="categories" scope={cacheScope} rows={cacheRows} />
     </div>
   );
 }

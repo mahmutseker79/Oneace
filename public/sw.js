@@ -19,7 +19,7 @@
  * activate() can evict the old version atomically.
  */
 
-const CACHE_VERSION = "oneace-sw-v1";
+const CACHE_VERSION = "oneace-sw-v2";
 const PRECACHE = `${CACHE_VERSION}-precache`;
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
@@ -27,8 +27,14 @@ const STATIC_CACHE = `${CACHE_VERSION}-static`;
 // the offline fallback HTML and the PWA manifest/icons. We do NOT
 // precache the home page or any app routes — those need auth and
 // would go stale instantly.
+//
+// Sprint 24 (PWA Sprint 3) adds /offline/items — a force-static
+// route whose client component reads the cached catalog directly
+// from Dexie. Because it does not touch auth or the DB, it is safe
+// to precache and serve when the user is offline.
 const PRECACHE_URLS = [
   "/offline",
+  "/offline/items",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",

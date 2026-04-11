@@ -1291,6 +1291,31 @@ export const en = {
       offlineEmpty: "Offline · no cached catalog yet. Reconnect to sync.",
       neverSynced: "Offline catalog not yet cached on this device.",
     },
+    viewCachedItemsCta: "View cached catalog",
+    items: {
+      metaTitle: "Cached catalog — Offline",
+      title: "Cached catalog",
+      subtitle: "Read-only view of the items snapshot stored on this device.",
+      loading: "Loading cached catalog…",
+      emptyTitle: "No cached catalog",
+      emptyBody:
+        "We haven't stored a catalog snapshot on this device yet. Reconnect and open the items page to sync it.",
+      errorTitle: "Cache unavailable",
+      errorBody:
+        "We couldn't read the offline catalog from this browser. Your private mode or storage settings may be blocking IndexedDB.",
+      syncedLabel: "Last synced",
+      columnSku: "SKU",
+      columnName: "Item",
+      columnCategory: "Category",
+      columnStock: "On hand",
+      columnStatus: "Status",
+      statusActive: "Active",
+      statusArchived: "Archived",
+      statusDraft: "Draft",
+      noneCategory: "—",
+      cachedCount: "{count} cached",
+      backHome: "Back to home",
+    },
   },
 } as const;
 

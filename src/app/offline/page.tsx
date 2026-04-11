@@ -65,6 +65,12 @@ export default async function OfflinePage() {
           >
             {t.offline.retryCta}
           </Link>
+          <Link
+            href="/offline/items"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          >
+            {t.offline.viewCachedItemsCta}
+          </Link>
           <p className="text-xs text-muted-foreground">{t.offline.tip}</p>
         </div>
       </div>
