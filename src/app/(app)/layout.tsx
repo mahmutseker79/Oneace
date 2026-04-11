@@ -1,3 +1,4 @@
+import { SwRegister } from "@/components/pwa/sw-register";
 import { Header } from "@/components/shell/header";
 import { Sidebar } from "@/components/shell/sidebar";
 import { getMessages } from "@/lib/i18n";
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
 
   return (
     <div className="min-h-screen">
+      <SwRegister />
       <Sidebar
         labels={{
           brand: t.app.name,

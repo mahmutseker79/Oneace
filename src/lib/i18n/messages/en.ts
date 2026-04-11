@@ -1275,6 +1275,16 @@ export const en = {
       "SMB inventory",
     ],
   },
+
+  offline: {
+    metaTitle: "Offline",
+    iconLabel: "Wi-Fi off",
+    title: "You're offline",
+    description:
+      "OneAce needs a network connection to load fresh data. Reconnect and we'll pick up where you left off.",
+    retryCta: "Try again",
+    tip: "Tip: install OneAce to your home screen to keep the app shell available between sessions.",
+  },
 } as const;
 
 export type Messages = typeof en;
