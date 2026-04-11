@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 13.
+and iterating on it through Sprint 0 → Sprint 14.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 13.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 12 plus **Sprint 13** are already committed in a
+Sprint 0 through Sprint 13 plus **Sprint 14** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.13.0-sprint13.bundle
+oneace-next/oneace-next-port-v0.14.0-sprint14.bundle
 ```
 
 This bundle contains:
 
-- **34 commits** — 8 Sprint 0 + 1 docs + Sprints 1..13 (each = 1 feature
+- **36 commits** — 8 Sprint 0 + 1 docs + Sprints 1..14 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -39,9 +39,10 @@ This bundle contains:
   - `v0.11.0-sprint11` — Sprint 11 complete (header org switcher + active-org cookie)
   - `v0.12.0-sprint12` — Sprint 12 complete (supplier performance report + CSV)
   - `v0.13.0-sprint13` — Sprint 13 complete (create-another-organization flow)
+  - `v0.14.0-sprint14` — Sprint 14 complete (movements date-range + type filter)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.12.0-sprint12.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.13.0-sprint13.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -55,11 +56,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.13.0-sprint13.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.14.0-sprint14.bundle \
           next-port:next-port
 
-# Also pull all thirteen sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.13.0-sprint13.bundle \
+# Also pull all fourteen sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.14.0-sprint14.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -72,19 +73,62 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.13.0-sprint13.bun
           refs/tags/v0.10.0-sprint10:refs/tags/v0.10.0-sprint10 \
           refs/tags/v0.11.0-sprint11:refs/tags/v0.11.0-sprint11 \
           refs/tags/v0.12.0-sprint12:refs/tags/v0.12.0-sprint12 \
-          refs/tags/v0.13.0-sprint13:refs/tags/v0.13.0-sprint13
+          refs/tags/v0.13.0-sprint13:refs/tags/v0.13.0-sprint13 \
+          refs/tags/v0.14.0-sprint14:refs/tags/v0.14.0-sprint14
 
 # Verify
-git log --oneline next-port                # should show 34 commits
-git tag -l                                 # should include all thirteen sprint tags
+git log --oneline next-port                # should show 36 commits
+git tag -l                                 # should include all fourteen sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
-               v0.13.0-sprint13
+               v0.13.0-sprint13 v0.14.0-sprint14
 ```
+
+### What Sprint 14 added (v0.14.0-sprint14)
+
+- **`src/app/(app)/movements/filter.ts`** — strict parser for
+  `from` / `to` (`YYYY-MM-DD` → UTC start/end of day) and `type`
+  (validated against the `StockMovementType` Prisma enum via
+  `Object.values(...)`). Rejects 2026-02-30-style month overflow
+  through a round-trip check. Inverted ranges (`from > to`) return
+  an "impossible id" where clause instead of throwing, so a stale
+  URL degrades to empty instead of 500. Exports
+  `parseMovementFilter`, `buildMovementWhere`, `hasAnyFilter`, and
+  the `MovementSearchParams` / `MovementFilter` types.
+- **`/movements` page rewrite** — wires the parser into the server
+  component, bumps the row cap from 200 (unfiltered) to 500
+  (filtered), and renders a new `<MovementsFilterBar>` above the
+  table. Shows a per-filter count line + a truncation notice when
+  the row count equals the cap. Empty states are split: unfiltered
+  still shows the "record your first movement" CTA, filtered shows
+  "no matches for this filter" with a different body. Export
+  button's href carries the current filter as query params so the
+  CSV matches the on-screen view.
+- **`MovementsFilterBar` client component** — two native
+  `<input type="date">` fields (always speak `YYYY-MM-DD` on the
+  wire) cross-referenced via `min` / `max` so the native date
+  picker can't pick an impossible range to begin with, plus a
+  Select for type with a `__all__` sentinel ("All types"). Submits
+  via `router.push` (not server action — filtering is read state,
+  the URL is the source of truth); JS-side guard blocks `from > to`
+  before submit as UX polish. "Clear" button only appears when a
+  filter is actually active.
+- **`/movements/export` CSV route** — parses the same filter out
+  of the request URL, applies `buildMovementWhere`, and bumps the
+  row cap from 5,000 (unfiltered) to 20,000 (filtered). Filtered
+  callers have already told us what window they want, so they can
+  pull much more.
+- **i18n** — 13 new keys on `t.movements.filter` (`heading`,
+  `fromLabel`, `toLabel`, `typeLabel`, `typeAll`, `apply`, `clear`,
+  `activeLabel`, `resultCount`, `resultCountUnfiltered`,
+  `truncatedNotice`, `emptyFilteredTitle`, `emptyFilteredBody`,
+  `invalidRange`).
+
+No schema changes. Pure read-path + URL state.
 
 ### What Sprint 13 added (v0.13.0-sprint13)
 

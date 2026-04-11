@@ -516,6 +516,57 @@ the header switcher, not only via the first-org `/onboarding` route.
 
 ---
 
+## Sprint 14 — movements date-range + type filter (shipped 2026-04-11)
+
+Tagged `v0.14.0-sprint14`. Cuts the "ledger is too noisy" complaint
+by letting users scope the stock-movement view (and its CSV export)
+to a date window and/or movement type. Pure read state, no schema
+changes — filter lives in the URL so it's bookmarkable and the
+server page reads it back out of `searchParams`.
+
+- [x] `src/app/(app)/movements/filter.ts` — strict filter parser
+      shared by the page and the CSV export route. Dates gated by
+      `^\d{4}-\d{2}-\d{2}$` regex + manual UTC parse + round-trip
+      check (rejects `2026-02-30`-style month overflow); type
+      validated against `Object.values(StockMovementType)`.
+      `buildMovementWhere` returns an impossible-id clause when
+      `from > to` so a stale URL degrades to empty results instead
+      of a 500
+- [x] `movements/page.tsx` rewrite — conditional row cap (200
+      unfiltered, 500 filtered), count line + truncation notice,
+      split empty states (filter-active vs pristine), export button
+      href carries the same filter query, `searchParams: Promise`
+      shape for Next 15
+- [x] `MovementsFilterBar` client component — two `<input type="date">`
+      with cross-referenced `min`/`max`, type `Select` with
+      `__all__` sentinel (empty string rejected by primitive),
+      `router.push` submit (not a server action — pure read state),
+      client-side `from > to` guard as UX polish over the server
+      defense
+- [x] `/movements/export` route accepts the same filter via query
+      string, re-uses `parseMovementFilter(Promise.resolve(...))`,
+      row caps bumped to 5 000 unfiltered / 20 000 filtered so a
+      filtered caller can pull a real window
+- [x] 14 new i18n keys on `t.movements.filter.*` (heading, from/to
+      labels, type label + "All types", apply/clear, active label,
+      two result-count variants, truncated-notice, empty-filtered
+      title/body, invalid-range)
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-14)
+
+- [ ] Per-org default locale / region override (still browser-level)
+- [ ] Danger zone / organization delete (cascade surface still wide)
+- [ ] Audit log (compliance)
+- [ ] Offline PWA shell + service worker (Moat 1)
+- [ ] Invitation tokens + email flow
+- [ ] Movements filter: warehouse + item scope (the two remaining
+      natural axes on the ledger — held back until a user actually
+      asks; the date/type cut already removes 90% of the noise)
+- [ ] All items from post-Sprint-13 deferred list (unchanged)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
