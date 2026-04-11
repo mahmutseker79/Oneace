@@ -2366,6 +2366,137 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 38 — Purchase order detail enrichment (shipped 2026-04-11)
+
+### What shipped
+
+Sprint 38 is a read-only enrichment of the existing PO detail page at
+`/purchase-orders/[id]`. The Sprint 5 action surface (mark sent, edit,
+receive, cancel) is preserved verbatim. No schema changes, no new
+mutations — the sprint is pure server-component rendering work that
+turns an isolated, form-heavy page into the single place a buyer can
+reason about a PO's full lifecycle.
+
+Four additions:
+
+1. **KPI strip (5 cards)** — status (with colored dot), % received
+   (qty-weighted), total value (currency-formatted), line count, and
+   days open (calendar delta from order date). The percent received
+   calculation sums `line.receivedQty / line.qty` across lines to
+   handle partial-multi-line POs without double-counting.
+
+2. **Header enrichments** — supplier becomes a `<Link>` pointing to
+   `/suppliers/[id]` so buyers can pivot to the supplier record in
+   one click, and a "Created by" chip surfaces the initiating user's
+   name (ops asked for this after a couple of "who entered this PO"
+   threads during receive reconciliation).
+
+3. **Receipt history card** — a parallelised
+   `db.stockMovement.findMany` query against
+   `{ type: "RECEIPT", reference: po.poNumber }` (the Sprint-era
+   convention for linking receipts back to the originating PO, since
+   `StockMovement` has no FK to `PurchaseOrder`). Returned rows are
+   grouped into "events" by `Math.floor(createdAt.getTime() / 1000)`
+   so a single receive transaction that posted 5 lines renders as
+   one event with 5 collapsed line rows. Each event surfaces actor
+   name, posted-at timestamp, destination warehouse, and the
+   per-item SKU + qty table.
+
+4. **PO-scoped audit trail card** — reads
+   `AuditEvent where { entityType: "purchase_order", OR: [{entityId: po.id}, {entityId: null}] }`
+   then filters `entityId: null` rows in memory where
+   `metadata.poNumber === po.poNumber`. The OR branch is there to
+   catch the delete-case: when a PO is deleted the audit row has a
+   `null` entityId (the PK is gone) but the metadata preserves the
+   `poNumber`. For a live PO this is a no-op, but for a restored
+   or historically investigated PO number the audit trail will
+   surface the delete event too. Action labels and metadata
+   rendering reuse the `auditLabel` / `renderAuditMetadata` helpers
+   from `/audit/page.tsx` (inlined here rather than extracted — one
+   call site).
+
+### i18n keys added
+
+Nine new keys under `purchaseOrders.detail` in `src/lib/i18n/messages/en.ts`:
+`kpiPercentReceived`, `kpiTotalValue`, `kpiLineCount`, `kpiDaysOpen`,
+`receiptsHeading`, `receiptsEmpty`, `receiptSystemActor`,
+`auditHeading`, `auditEmpty`. All English, all prose — no Turkish, per
+the standing i18n rule.
+
+### Design decisions
+
+1. **No schema changes.** `StockMovement.reference` is already populated
+   with `po.poNumber` by the Sprint 5 receive flow — the PO → receipts
+   join rides on that convention. Adding a proper FK would be a
+   multi-sprint migration (backfill + uniqueness + handler rewrites)
+   and the string join is perfectly adequate because `poNumber` is
+   already unique-per-org and the query is scoped to org.
+
+2. **Receipts grouped by second-bucket, not transaction ID.** The
+   Sprint 5 receive handler writes one row per line in a single
+   Prisma transaction, so every row shares the same `createdAt` to
+   the millisecond. Bucketing by `Math.floor(ms / 1000)` collapses
+   them into a single event without requiring a new `receiptId`
+   column. The worst case is a second user receiving a different
+   line on the exact same PO within the same second — exotic enough
+   to be acceptable UI noise rather than a blocker.
+
+3. **Audit filter runs in memory, not in SQL.** JSON column filters
+   are dialect-specific in Prisma (Postgres has `path`, SQLite does
+   not, so raw queries would lock us out of local dev). A 100-row
+   in-memory filter is cheap and portable. Take is capped at 100 so
+   the filter stays O(100) even for heavily-audited POs.
+
+4. **Take limits: 200 receipts, 100 audit events.** Derived from the
+   upper bound of realistic per-PO activity. A single PO with 200+
+   partial receipts or 100+ audit events would indicate a data
+   quality problem upstream, and the user should see the fact that
+   the list is truncated, not silently paginate — both cards include
+   a "showing latest N" footnote when the cap is hit.
+
+5. **KPI strip is pure render, no new queries.** All five KPIs
+   derive from data already loaded by the existing
+   `db.purchaseOrder.findFirst({ include: { lines, supplier,
+   warehouse, createdBy } })` call. Zero extra round trips for the
+   summary strip.
+
+6. **Supplier link is a standard `<Link>` — no supplier drawer, no
+   modal.** The supplier page already renders in the same shell, so
+   a full navigation is the cheapest primitive and gives the user
+   back-button + URL-sharing semantics for free.
+
+7. **"Created by" chip falls back to "—" when the creator user has
+   been deleted.** The relation is `createdBy?` (nullable after the
+   Sprint 12 user-archive flow) and `User.name` is guaranteed; the
+   only case where the chip is empty is "user permanently removed".
+
+8. **System actor label reuse.** Both the receipts card and the
+   audit card fall back to `receiptSystemActor: "System"` when the
+   actor relation is null — consistent with the convention
+   established by the audit page that background jobs and
+   retention sweeps show up as "System" rather than blank.
+
+9. **`auditLabel` / `renderAuditMetadata` inlined, not extracted.**
+   One other call site (`/audit/page.tsx`) uses these helpers. A
+   shared module is premature — the inline copy keeps the detail
+   page a self-contained unit for future rewrites. If a third call
+   site appears, extract then.
+
+### Verification
+
+- `npx tsc --noEmit` → `EXIT: 0`
+- `npx biome check src` → checked 185 files, no errors after auto-format
+- `npx prisma validate` → schema valid (no changes)
+
+### Files touched
+
+- `src/app/(app)/purchase-orders/[id]/page.tsx` (rewritten, ~600 lines)
+- `src/lib/i18n/messages/en.ts` (+9 keys under `purchaseOrders.detail`)
+- `PORT_CHECKLIST.md` (this block)
+- `GIT_WORKFLOW.md` (sprint 38 entry + v0.38.0-sprint38 tag)
+
+---
+
 ## Sprint 37 — Production hardening (shipped 2026-04-11)
 
 ### What shipped

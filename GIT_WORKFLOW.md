@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 37.
+and iterating on it through Sprint 0 → Sprint 38.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 37.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 36 plus **Sprint 37** are already committed in a
+Sprint 0 through Sprint 37 plus **Sprint 38** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.37.0-sprint37.bundle
+oneace-next/oneace-next-port-v0.38.0-sprint38.bundle
 ```
 
 This bundle contains:
 
-- **82 commits** — 8 Sprint 0 + 1 docs + Sprints 1..37 (each = 1 feature
+- **84 commits** — 8 Sprint 0 + 1 docs + Sprints 1..38 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -63,9 +63,10 @@ This bundle contains:
   - `v0.35.0-sprint35` — Sprint 35 complete (ZXing-wasm scanner fallback — pluggable detector abstraction at `src/lib/scanner/detector.ts`, lazy-loaded `@zxing/browser` backend for Safari + Firefox, engine badge in the camera card, scanning now works on iPhones; closes the biggest `/scan` usability cliff since Sprint 8)
   - `v0.36.0-sprint36` — Sprint 36 complete (tenant-scoped append-only audit log — new `AuditEvent` Prisma model with composite `(organizationId, createdAt)` index + secondary `(entityType, entityId)` index, `src/lib/audit.ts` write helper with typed `AuditAction` vocabulary, wired into 12 high-severity actions across settings / users / purchase-orders, new admin-gated `/audit` page with cursor-paginated "Load more", History-icon sidebar entry, full `t.audit` i18n namespace with 13 action labels)
   - `v0.37.0-sprint37` — Sprint 37 complete (production hardening — zod-validated env schema at `src/lib/env.ts` fails boot on missing/malformed required vars, dependency-free structured logger at `src/lib/logger.ts` with JSON-lines-in-prod / pretty-in-dev output, `/app/global-error.tsx` + `(app)/error.tsx` two-layer error boundaries showing Next.js `error.digest`, `/api/health` liveness+readiness probe with `SELECT 1` DB check returning 200/503, five call sites migrated off raw `process.env`, audit helper rewired to `logger.error`)
+  - `v0.38.0-sprint38` — Sprint 38 complete (purchase-order detail enrichment — 5-up KPI strip (status + % received + total value + line count + days open) on `/purchase-orders/[id]`, supplier link to `/suppliers/[id]` + "Created by" chip in header, parallelised receipt history card joined via `StockMovement.reference === po.poNumber` with second-bucket grouping so multi-line receives collapse into one event, PO-scoped audit trail card with `OR: [{entityId: po.id}, {entityId: null}]` + in-memory `metadata.poNumber` filter to catch delete-case rows, 9 new i18n keys under `purchaseOrders.detail`, no schema changes)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.37.0-sprint37.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.38.0-sprint38.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -79,11 +80,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.37.0-sprint37.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.38.0-sprint38.bundle \
           next-port:next-port
 
-# Also pull all thirty-seven sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.37.0-sprint37.bundle \
+# Also pull all thirty-eight sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.38.0-sprint38.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -120,11 +121,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.37.0-sprint37.bun
           refs/tags/v0.34.0-sprint34:refs/tags/v0.34.0-sprint34 \
           refs/tags/v0.35.0-sprint35:refs/tags/v0.35.0-sprint35 \
           refs/tags/v0.36.0-sprint36:refs/tags/v0.36.0-sprint36 \
-          refs/tags/v0.37.0-sprint37:refs/tags/v0.37.0-sprint37
+          refs/tags/v0.37.0-sprint37:refs/tags/v0.37.0-sprint37 \
+          refs/tags/v0.38.0-sprint38:refs/tags/v0.38.0-sprint38
 
 # Verify
-git log --oneline next-port                # should show 82 commits
-git tag -l                                 # should include all thirty-seven sprint tags
+git log --oneline next-port                # should show 84 commits
+git tag -l                                 # should include all thirty-eight sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -139,8 +141,89 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
                v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
                v0.34.0-sprint34 v0.35.0-sprint35 v0.36.0-sprint36 \
-               v0.37.0-sprint37
+               v0.37.0-sprint37 v0.38.0-sprint38
 ```
+
+### What Sprint 38 added (v0.38.0-sprint38)
+
+Sprint 38 enriches the existing Sprint 5 purchase-order detail page
+at `/purchase-orders/[id]` with four read-only additions, all
+landing in a single rewritten server component. No schema changes,
+no new mutations — the sprint is pure rendering work that turns an
+isolated, form-heavy page into the single place a buyer can reason
+about a PO's full lifecycle.
+
+**1. KPI strip (5 cards).** Status (with a colored status dot
+reusing the existing PO status palette), % received (qty-weighted
+sum of `line.receivedQty / line.qty` across lines so a partial
+multi-line PO reports honestly), total value (currency-formatted
+via the existing `formatCurrency` helper), line count, and days
+open (calendar delta from `orderDate` for live POs, or to
+`closedAt` once we add one — today it's delta-to-now). All five
+KPIs derive from data already loaded by the single existing
+`db.purchaseOrder.findFirst({ include: { lines, supplier,
+warehouse, createdBy } })` query — zero extra round trips.
+
+**2. Supplier link + creator chip.** The supplier label in the
+header meta strip is now a `<Link href={/suppliers/${po.supplier.id}}>`
+pointing at the Sprint 34 supplier drill-down page, so buyers can
+pivot to the supplier record in one click. A new "Created by" chip
+shows the initiating user's name (pulled from the existing
+`createdBy` relation, falls back to `—` if the creator was
+permanently removed via the Sprint 12 archive flow). Both were ops
+asks — the supplier link closes a 2-click nav dead-end and the
+creator chip settles the "who entered this PO?" thread that kept
+coming up during receive reconciliation.
+
+**3. Receipt history card.** A parallelised
+`db.stockMovement.findMany` query against
+`{ type: "RECEIPT", reference: po.poNumber }` (the Sprint 5
+convention: `StockMovement` has no FK to `PurchaseOrder`, receipts
+are linked by the PO number string, which is unique-per-org).
+Returned rows are grouped into "events" by
+`Math.floor(createdAt.getTime() / 1000)` so a single receive
+transaction that posted 5 lines renders as one event row with a
+5-line collapsed sub-table rather than 5 separate event rows —
+multi-line receives all share the same Prisma transaction
+`createdAt` down to the millisecond, so second-bucketing is safe
+in practice. Each event shows actor name, posted-at timestamp,
+destination warehouse, and the per-item SKU + qty grid. Take is
+capped at 200 with a "showing latest 200" footnote — a PO with
+200+ partial receipts indicates a data quality problem upstream.
+
+**4. PO-scoped audit trail card.** Reads
+`AuditEvent where { entityType: "purchase_order", OR: [{entityId:
+po.id}, {entityId: null}] }`, then filters the `entityId: null`
+branch in memory where `metadata.poNumber === po.poNumber`. The
+OR branch exists so the delete-case is captured: when a PO is
+deleted the audit row has `entityId: null` (the PK is gone) but
+the metadata preserves the `poNumber`. For a live PO this is a
+no-op, but historical or restored PO numbers get their delete
+events surfaced too. JSON column filters are dialect-specific in
+Prisma (PG has `path`, SQLite does not), so running the filter in
+memory keeps the query portable. Take is capped at 100 so the
+in-memory filter stays O(100) even for heavily-audited POs.
+Action labels and metadata rendering reuse the `auditLabel` /
+`renderAuditMetadata` helpers from `/audit/page.tsx` — inlined
+rather than extracted because there are only two call sites.
+
+**i18n keys added.** Nine new keys under `purchaseOrders.detail`
+in `src/lib/i18n/messages/en.ts`: `kpiPercentReceived`,
+`kpiTotalValue`, `kpiLineCount`, `kpiDaysOpen`, `receiptsHeading`,
+`receiptsEmpty`, `receiptSystemActor`, `auditHeading`,
+`auditEmpty`. All English prose, no Turkish — per the standing
+i18n rule.
+
+**Files touched.**
+- `src/app/(app)/purchase-orders/[id]/page.tsx` (rewritten, ~600 lines)
+- `src/lib/i18n/messages/en.ts` (+9 keys under `purchaseOrders.detail`)
+- `PORT_CHECKLIST.md` (Sprint 38 block prepended)
+- `GIT_WORKFLOW.md` (this block + bundle / tag bump to v0.38.0-sprint38)
+
+**Verification.** `npx tsc --noEmit` → exit 0. `npx biome check src`
+→ 185 files clean after a one-line auto-format collapse on the
+audit-card `<li>`. `npx prisma validate` → schema unchanged, valid.
+
 
 ### What Sprint 37 added (v0.37.0-sprint37)
 
