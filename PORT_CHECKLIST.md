@@ -115,11 +115,44 @@ Ported in advance so Sprint 1 feature work lands directly on a complete UI primi
 
 ---
 
+## Sprint 5 — Suppliers + Purchase Orders + Receive flow (shipped 2026-04-11)
+
+Tagged `v0.5.0-sprint5`. The procure-to-stock path is live.
+
+- [x] Prisma: `Supplier`, `PurchaseOrder`, `PurchaseOrderLine`, status enum,
+      `Item.supplierId` (preferred supplier, nullable)
+- [x] Zod schemas: `supplier.ts`, `purchase-order.ts` (input + receive + line)
+- [x] Suppliers CRUD — list/new/edit, active/inactive, FK-safe delete
+- [x] Purchase Orders CRUD — list/new/edit/detail with auto-generated PO
+      numbers (`PO-000001`) and P2002 retry for concurrent-writer races
+- [x] Dynamic line items with stable `crypto.randomUUID()` keys + live total
+- [x] Prerequisite-guard chain on `/purchase-orders/new` (supplier →
+      warehouse → items)
+- [x] Status state machine: DRAFT/SENT editable; RECEIVED/CANCELLED
+      terminal; edit page redirects out if status is terminal
+- [x] Mark-sent action (DRAFT → SENT) with single-purpose button
+- [x] Receive flow (`/purchase-orders/[id]/receive`) — transactional
+      `db.$transaction`: create `RECEIPT` StockMovement, upsert StockLevel,
+      increment `receivedQty`, recompute PO status, stamp `receivedAt`,
+      per-line overflow protection
+- [x] i18n: `suppliers` + `purchaseOrders` namespaces in `en.ts`
+- [x] Sidebar: Suppliers (`Truck`) nav item
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-5)
+
+- [ ] Item form `preferredSupplierId` field (schema exists; UI defers to
+      Sprint 6 alongside replenishment hints)
+- [ ] PO cancel action surfaced as a detail-page button (server action
+      exists but no UI affordance yet)
+- [ ] PO print / email (waits on the email template track in Sprint 10)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → Sprint 3 (Moat 1)
 - `StockCountView` + `StockCountSession` → Sprint 5 (Moat 2, with the Dexie layer)
-- `PurchaseOrderView` → Sprint 6
 - `ReportsView` → Sprint 7
 - `SettingsView` (org + billing + locale / region picker) → Sprint 8–9
 

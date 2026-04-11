@@ -13,28 +13,30 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0, Sprint 1, Sprint 2, Sprint 3, **and Sprint 4** are already committed
-in a portable git bundle at:
+Sprint 0, Sprint 1, Sprint 2, Sprint 3, Sprint 4, **and Sprint 5** are already
+committed in a portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.4.0-sprint4.bundle
+oneace-next/oneace-next-port-v0.5.0-sprint5.bundle
 ```
 
 This bundle contains:
 
-- **15 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 2 + 1 runbook +
-  1 Sprint 3 + 1 runbook + 1 Sprint 4
+- **16 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 2 + 1 runbook +
+  1 Sprint 3 + 1 runbook + 1 Sprint 4 + 1 runbook + 1 Sprint 5
 - **Branch:** `next-port`
 - **Tags (annotated):**
   - `v0.1.0-sprint1` — Sprint 1 complete (items, warehouses, categories)
   - `v0.2.0-sprint2` — Sprint 2 complete (stock movement ledger + item detail)
   - `v0.3.0-sprint3` — Sprint 3 complete (stock counts + variance reconcile)
   - `v0.4.0-sprint4` — Sprint 4 complete (CSV import wizard + bulk action)
+  - `v0.5.0-sprint5` — Sprint 5 complete (suppliers + purchase orders + receive flow)
 
 Older bundles (`oneace-next-port.bundle`,
 `oneace-next-port-v0.1.0-sprint1.bundle`,
 `oneace-next-port-v0.2.0-sprint2.bundle`,
-`oneace-next-port-v0.3.0-sprint3.bundle`) are kept around only because the
+`oneace-next-port-v0.3.0-sprint3.bundle`,
+`oneace-next-port-v0.4.0-sprint4.bundle`) are kept around only because the
 sandbox cannot delete files from the mount — always use the latest versioned
 one.
 
@@ -48,24 +50,45 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.4.0-sprint4.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.5.0-sprint5.bundle \
           next-port:next-port
 
-# Also pull all four sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.4.0-sprint4.bundle \
+# Also pull all five sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.5.0-sprint5.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
-          refs/tags/v0.4.0-sprint4:refs/tags/v0.4.0-sprint4
+          refs/tags/v0.4.0-sprint4:refs/tags/v0.4.0-sprint4 \
+          refs/tags/v0.5.0-sprint5:refs/tags/v0.5.0-sprint5
 
 # Verify
-git log --oneline next-port                # should show 15 commits
-git tag -l                                 # should include all four sprint tags
+git log --oneline next-port                # should show 16 commits
+git tag -l                                 # should include all five sprint tags
 
 # Push to GitHub
 git push -u origin next-port
-git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4
+git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 v0.5.0-sprint5
 ```
+
+### What Sprint 5 added (v0.5.0-sprint5)
+
+- **Suppliers CRUD** (`/suppliers`) — org-scoped master data with code
+  uniqueness, active/inactive toggle, FK-safe delete (blocks when the
+  supplier is referenced by any PO)
+- **Purchase Orders CRUD** (`/purchase-orders`) — auto-generated PO
+  numbers (`PO-000001`), dynamic line items with live total, status
+  state machine (DRAFT → SENT → PARTIALLY_RECEIVED → RECEIVED, or
+  CANCELLED from any non-terminal), terminal-state edit guards
+- **Receive flow** (`/purchase-orders/[id]/receive`) — transactional:
+  creates `RECEIPT` StockMovement per line, upserts StockLevel,
+  increments `receivedQty`, recomputes PO status, stamps `receivedAt`
+  — all inside one `db.$transaction` with per-line overflow protection
+- **Prerequisite-guard chain** on `/purchase-orders/new` — friendly CTA
+  to `/suppliers/new` / `/warehouses/new` / `/items/new` when any
+  required master-data set is empty
+- **i18n** — full `suppliers` + `purchaseOrders` namespaces in
+  `src/lib/i18n/messages/en.ts` (including the receive flow copy)
+- **Sidebar** — Suppliers (`Truck`) nav item landed
 
 > **Note on history:** the bundle's `next-port` branch has no common ancestor
 > with `main` because the port is a full replacement of the Vite source, not
