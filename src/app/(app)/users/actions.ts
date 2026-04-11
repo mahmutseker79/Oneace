@@ -3,6 +3,7 @@
 import { Role } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import {
@@ -169,6 +170,15 @@ export async function inviteMemberAction(formData: FormData): Promise<InviteMemb
     return { ok: false, error: t.users.invite.errors.createFailed };
   }
 
+  await recordAudit({
+    organizationId: membership.organizationId,
+    actorId: session.user.id,
+    action: "member.invited",
+    entityType: "invitation",
+    entityId: created.id,
+    metadata: { email, role, expiresAt: expiresAt.toISOString() },
+  });
+
   const inviteUrl = buildInvitationUrl(token);
 
   // Sprint 33: fire the invitation email. Any failure here is a soft
@@ -258,7 +268,7 @@ async function sendInvitationEmailSafely(params: {
  * show "revoked by X at Y" as an audit trail.
  */
 export async function revokeInvitationAction(invitationId: string): Promise<UsersActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!canManageTeam(membership.role)) {
@@ -270,6 +280,8 @@ export async function revokeInvitationAction(invitationId: string): Promise<User
     select: {
       id: true,
       organizationId: true,
+      email: true,
+      role: true,
       acceptedAt: true,
       revokedAt: true,
     },
@@ -289,6 +301,14 @@ export async function revokeInvitationAction(invitationId: string): Promise<User
     await db.invitation.update({
       where: { id: invitationId },
       data: { revokedAt: new Date() },
+    });
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "invitation.revoked",
+      entityType: "invitation",
+      entityId: invite.id,
+      metadata: { email: invite.email, role: invite.role },
     });
     revalidatePath("/users");
     return { ok: true };
@@ -376,6 +396,18 @@ export async function acceptInvitationAction(token: string): Promise<AcceptInvit
         data: { acceptedAt: new Date(), acceptedById: session.user.id },
       });
     }
+    await recordAudit({
+      organizationId: invite.organizationId,
+      actorId: session.user.id,
+      action: "invitation.accepted",
+      entityType: "invitation",
+      entityId: invite.id,
+      metadata: {
+        email: invite.email,
+        role: invite.role,
+        alreadyMember: Boolean(existing),
+      },
+    });
     revalidatePath("/users");
     revalidatePath("/", "layout");
     return { ok: true, organizationId: invite.organizationId };
@@ -388,7 +420,7 @@ export async function updateMemberRoleAction(
   membershipId: string,
   rawRole: string,
 ): Promise<UsersActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!canManageTeam(membership.role)) {
@@ -403,7 +435,12 @@ export async function updateMemberRoleAction(
 
   const target = await db.membership.findUnique({
     where: { id: membershipId },
-    select: { id: true, role: true, organizationId: true },
+    select: {
+      id: true,
+      role: true,
+      organizationId: true,
+      userId: true,
+    },
   });
   if (!target || target.organizationId !== membership.organizationId) {
     return { ok: false, error: t.users.errors.notFound };
@@ -421,10 +458,28 @@ export async function updateMemberRoleAction(
     return { ok: false, error: t.users.errors.forbidden };
   }
 
+  // No-op role updates aren't worth a log row — skip the audit and the
+  // revalidate. Still return ok so the caller stays idempotent.
+  if (target.role === nextRole) {
+    return { ok: true };
+  }
+
   try {
     await db.membership.update({
       where: { id: membershipId },
       data: { role: nextRole },
+    });
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "member.role_changed",
+      entityType: "membership",
+      entityId: target.id,
+      metadata: {
+        targetUserId: target.userId,
+        from: target.role,
+        to: nextRole,
+      },
     });
     revalidatePath("/users");
     return { ok: true };
@@ -434,7 +489,7 @@ export async function updateMemberRoleAction(
 }
 
 export async function removeMemberAction(membershipId: string): Promise<UsersActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!canManageTeam(membership.role)) {
@@ -447,7 +502,13 @@ export async function removeMemberAction(membershipId: string): Promise<UsersAct
 
   const target = await db.membership.findUnique({
     where: { id: membershipId },
-    select: { id: true, role: true, organizationId: true },
+    select: {
+      id: true,
+      role: true,
+      organizationId: true,
+      userId: true,
+      user: { select: { email: true } },
+    },
   });
   if (!target || target.organizationId !== membership.organizationId) {
     return { ok: false, error: t.users.errors.notFound };
@@ -459,6 +520,18 @@ export async function removeMemberAction(membershipId: string): Promise<UsersAct
 
   try {
     await db.membership.delete({ where: { id: membershipId } });
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "member.removed",
+      entityType: "membership",
+      entityId: target.id,
+      metadata: {
+        targetUserId: target.userId,
+        targetEmail: target.user.email,
+        role: target.role,
+      },
+    });
     revalidatePath("/users");
     return { ok: true };
   } catch {

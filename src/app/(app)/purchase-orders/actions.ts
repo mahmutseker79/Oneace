@@ -3,6 +3,7 @@
 import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -174,6 +175,21 @@ export async function createPurchaseOrderAction(formData: FormData): Promise<Act
         return created;
       });
 
+      await recordAudit({
+        organizationId: orgId,
+        actorId: session.user.id,
+        action: "purchase_order.created",
+        entityType: "purchase_order",
+        entityId: result.id,
+        metadata: {
+          supplierId: input.supplierId,
+          warehouseId: input.warehouseId,
+          status: input.status,
+          lineCount: input.lines.length,
+          currency: input.currency,
+        },
+      });
+
       revalidatePath("/purchase-orders");
       return { ok: true, id: result.id };
     } catch (error) {
@@ -280,12 +296,12 @@ export async function updatePurchaseOrderAction(
 }
 
 export async function markPurchaseOrderSentAction(id: string): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const existing = await db.purchaseOrder.findFirst({
     where: { id, organizationId: membership.organizationId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, poNumber: true },
   });
   if (!existing) return { ok: false, error: t.purchaseOrders.errors.notFound };
   if (existing.status !== "DRAFT") {
@@ -296,6 +312,14 @@ export async function markPurchaseOrderSentAction(id: string): Promise<ActionRes
     where: { id, organizationId: membership.organizationId },
     data: { status: "SENT" },
   });
+  await recordAudit({
+    organizationId: membership.organizationId,
+    actorId: session.user.id,
+    action: "purchase_order.sent",
+    entityType: "purchase_order",
+    entityId: existing.id,
+    metadata: { poNumber: existing.poNumber, from: existing.status, to: "SENT" },
+  });
 
   revalidatePath("/purchase-orders");
   revalidatePath(`/purchase-orders/${id}`);
@@ -303,12 +327,12 @@ export async function markPurchaseOrderSentAction(id: string): Promise<ActionRes
 }
 
 export async function cancelPurchaseOrderAction(id: string): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const existing = await db.purchaseOrder.findFirst({
     where: { id, organizationId: membership.organizationId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, poNumber: true },
   });
   if (!existing) return { ok: false, error: t.purchaseOrders.errors.notFound };
   if (existing.status === "RECEIVED" || existing.status === "CANCELLED") {
@@ -319,6 +343,14 @@ export async function cancelPurchaseOrderAction(id: string): Promise<ActionResul
     where: { id, organizationId: membership.organizationId },
     data: { status: "CANCELLED", cancelledAt: new Date() },
   });
+  await recordAudit({
+    organizationId: membership.organizationId,
+    actorId: session.user.id,
+    action: "purchase_order.cancelled",
+    entityType: "purchase_order",
+    entityId: existing.id,
+    metadata: { poNumber: existing.poNumber, from: existing.status },
+  });
 
   revalidatePath("/purchase-orders");
   revalidatePath(`/purchase-orders/${id}`);
@@ -326,12 +358,17 @@ export async function cancelPurchaseOrderAction(id: string): Promise<ActionResul
 }
 
 export async function deletePurchaseOrderAction(id: string): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const existing = await db.purchaseOrder.findFirst({
     where: { id, organizationId: membership.organizationId },
-    select: { id: true, status: true, lines: { select: { receivedQty: true } } },
+    select: {
+      id: true,
+      status: true,
+      poNumber: true,
+      lines: { select: { receivedQty: true } },
+    },
   });
   if (!existing) return { ok: false, error: t.purchaseOrders.errors.notFound };
 
@@ -346,6 +383,16 @@ export async function deletePurchaseOrderAction(id: string): Promise<ActionResul
 
   await db.purchaseOrder.delete({
     where: { id, organizationId: membership.organizationId },
+  });
+  // NOTE: entityId intentionally omitted — the PO row is gone; the
+  // poNumber in metadata is the durable reference for the /audit reader.
+  await recordAudit({
+    organizationId: membership.organizationId,
+    actorId: session.user.id,
+    action: "purchase_order.deleted",
+    entityType: "purchase_order",
+    entityId: null,
+    metadata: { poNumber: existing.poNumber, wasStatus: existing.status },
   });
 
   revalidatePath("/purchase-orders");
@@ -507,6 +554,20 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
       });
 
       return allReceived;
+    });
+
+    await recordAudit({
+      organizationId: orgId,
+      actorId: session.user.id,
+      action: "purchase_order.received",
+      entityType: "purchase_order",
+      entityId: existing.id,
+      metadata: {
+        poNumber: existing.poNumber,
+        receivedLineCount,
+        fullyReceived,
+        totalQty: Array.from(deltaByLine.values()).reduce((a, b) => a + b, 0),
+      },
     });
 
     revalidatePath("/purchase-orders");

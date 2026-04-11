@@ -52,6 +52,8 @@ model Organization {
   purchaseOrderLines PurchaseOrderLine[]
   // Sprint 20: outstanding / historical invitations for this org.
   invitations      Invitation[]
+  // Sprint 36: append-only audit trail scoped to this org.
+  auditEvents      AuditEvent[]
 
   @@index([slug])
 }
@@ -152,6 +154,10 @@ model User {
   // Sprint 20: invitations this user has sent / accepted.
   invitationsSent     Invitation[] @relation("InvitationsSent")
   invitationsAccepted Invitation[] @relation("InvitationsAccepted")
+  // Sprint 36: audit events authored by this user (nullable actor on the
+  // other side so system-generated events can persist after the user row
+  // is deleted).
+  auditEventsLogged   AuditEvent[]
 
   @@index([email])
 }
@@ -606,4 +612,53 @@ enum PurchaseOrderStatus {
   PARTIALLY_RECEIVED // some lines received
   RECEIVED           // all lines received, terminal
   CANCELLED          // cancelled, terminal
+}
+
+// =========================
+// Sprint 36: Audit log
+// =========================
+//
+// An append-only ledger of interesting mutations scoped to an organization.
+// Sprint 36 wires this into the high-severity actions (org lifecycle,
+// membership/invitation lifecycle, purchase-order lifecycle); the rest of
+// the surface area (items / warehouses / stock movements / counts) is a
+// follow-up sprint. Rows are never updated or deleted from application
+// code — the `/audit` reviewer reads them chronologically.
+//
+// Design notes
+// ------------
+// 1. `organizationId` is required so rows are always scoped to a tenant.
+//    The `/audit` page filters on the active membership's org.
+// 2. `actorId` is nullable: we keep the row even if the user is later
+//    deleted (SetNull), and system/cron-generated events can legitimately
+//    have no actor.
+// 3. `action` is a free-form short verb ("organization.updated",
+//    "purchase_order.received"); we don't use an enum so new actions can
+//    be added without a migration. The `/audit` UI groups/filters by
+//    prefix (everything before the dot).
+// 4. `entityType` + `entityId` identify the subject row. `entityId` is
+//    optional so we can also record org-wide events that don't map to a
+//    single row (e.g. "organization.transferred").
+// 5. `metadata Json?` carries the before/after diff, invoked parameters,
+//    or any contextual details the action chose to record. Keep it small —
+//    this is a log, not a data warehouse.
+// 6. Composite index `(organizationId, createdAt)` supports the default
+//    "latest first, cursor-paginated" query without a full scan; the
+//    `(entityType, entityId)` index lets a future per-entity drill-down
+//    filter cheaply.
+model AuditEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  actorId        String?
+  action         String
+  entityType     String
+  entityId       String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
 }

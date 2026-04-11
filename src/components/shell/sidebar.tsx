@@ -6,6 +6,7 @@ import {
   BarChart3,
   ClipboardList,
   FolderTree,
+  History,
   LayoutDashboard,
   Package,
   ScanLine,
@@ -34,6 +35,7 @@ export type SidebarLabels = {
     purchaseOrders: string;
     reports: string;
     users: string;
+    audit: string;
     settings: string;
   };
 };
@@ -60,6 +62,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     { label: labels.nav.purchaseOrders, href: "/purchase-orders", icon: ShoppingCart },
     { label: labels.nav.reports, href: "/reports", icon: BarChart3 },
     { label: labels.nav.users, href: "/users", icon: Users },
+    { label: labels.nav.audit, href: "/audit", icon: History },
     { label: labels.nav.settings, href: "/settings", icon: Settings },
   ];
 

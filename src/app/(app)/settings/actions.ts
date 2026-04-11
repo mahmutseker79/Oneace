@@ -4,6 +4,7 @@ import { Prisma, Role } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import {
@@ -28,7 +29,7 @@ function isAdmin(role: Role): boolean {
 export async function updateOrganizationProfileAction(
   formData: FormData,
 ): Promise<SettingsActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!isAdmin(membership.role)) {
@@ -47,10 +48,29 @@ export async function updateOrganizationProfileAction(
     };
   }
 
+  // Snapshot the before-values so the audit entry can carry a minimal
+  // before/after diff without a second round-trip. We only record the
+  // fields the user actually changed to keep the metadata payload small.
+  const before = {
+    name: membership.organization.name,
+    slug: membership.organization.slug,
+  };
+
   try {
     await db.organization.update({
       where: { id: membership.organizationId },
       data: { name: parsed.data.name, slug: parsed.data.slug },
+    });
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "organization.updated",
+      entityType: "organization",
+      entityId: membership.organizationId,
+      metadata: {
+        before,
+        after: { name: parsed.data.name, slug: parsed.data.slug },
+      },
     });
     revalidatePath("/settings");
     revalidatePath("/", "layout");
@@ -225,6 +245,11 @@ export type DeleteOrganizationResult =
 export async function deleteOrganizationAction(
   confirmation: string,
 ): Promise<DeleteOrganizationResult> {
+  // NOTE (Sprint 36): we deliberately do NOT write an audit event here.
+  // AuditEvent.organizationId is a required FK with `onDelete: Cascade`,
+  // so any row we write would be wiped in the same transaction as the
+  // organization delete. Organization-deletion observability belongs in
+  // the server-side structured logger (Sprint 37) instead.
   const { membership, memberships } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -366,7 +391,7 @@ export async function transferOrganizationAction(
   targetMembershipId: string,
   confirmation: string,
 ): Promise<TransferOrganizationResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (membership.role !== Role.OWNER) {
@@ -436,6 +461,20 @@ export async function transferOrganizationAction(
       reason: "transferFailed",
     };
   }
+
+  await recordAudit({
+    organizationId: membership.organizationId,
+    actorId: session.user.id,
+    action: "organization.transferred",
+    entityType: "organization",
+    entityId: membership.organizationId,
+    metadata: {
+      fromUserId: session.user.id,
+      toUserId: target.user.id,
+      toUserEmail: target.user.email,
+      toMembershipId: target.id,
+    },
+  });
 
   // Revalidate the layout so any future OWNER-gated surfaces pick
   // up the caller's new ADMIN role on the next navigation, and
