@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronLeft, ShoppingCart } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, Download, ShoppingCart } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -116,12 +116,20 @@ export default async function LowStockReportPage() {
             {t.reports.lowStock.backToReports}
           </Link>
         </Button>
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="text-muted-foreground mt-1 h-5 w-5" />
-          <div>
-            <h1 className="text-2xl font-semibold">{t.reports.lowStock.heading}</h1>
-            <p className="text-muted-foreground">{t.reports.lowStock.subtitle}</p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="text-muted-foreground mt-1 h-5 w-5" />
+            <div>
+              <h1 className="text-2xl font-semibold">{t.reports.lowStock.heading}</h1>
+              <p className="text-muted-foreground">{t.reports.lowStock.subtitle}</p>
+            </div>
           </div>
+          <Button asChild variant="outline">
+            <Link href="/reports/low-stock/export">
+              <Download className="h-4 w-4" />
+              {t.common.exportCsv}
+            </Link>
+          </Button>
         </div>
       </div>
 

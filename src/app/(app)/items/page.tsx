@@ -1,4 +1,4 @@
-import { Eye, FileUp, Package, Plus } from "lucide-react";
+import { Download, Eye, FileUp, Package, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -59,6 +59,12 @@ export default async function ItemsPage() {
           <p className="text-muted-foreground">{t.items.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/items/export">
+              <Download className="h-4 w-4" />
+              {t.common.exportCsv}
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href="/items/import">
               <FileUp className="h-4 w-4" />

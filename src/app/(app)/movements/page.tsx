@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Plus } from "lucide-react";
+import { ArrowLeftRight, Download, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -62,12 +62,20 @@ export default async function MovementsPage() {
           <h1 className="text-2xl font-semibold">{t.movements.heading}</h1>
           <p className="text-muted-foreground">{t.movements.subtitle}</p>
         </div>
-        <Button asChild>
-          <Link href="/movements/new">
-            <Plus className="h-4 w-4" />
-            {t.movements.newMovement}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/movements/export">
+              <Download className="h-4 w-4" />
+              {t.common.exportCsv}
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/movements/new">
+              <Plus className="h-4 w-4" />
+              {t.movements.newMovement}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {movements.length === 0 ? (

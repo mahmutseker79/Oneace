@@ -35,6 +35,7 @@ export const en = {
     no: "No",
     confirm: "Confirm",
     confirmDelete: "This action cannot be undone. Are you sure?",
+    exportCsv: "Export CSV",
   },
 
   nav: {
@@ -852,6 +853,28 @@ export const en = {
       totalItems: "{count} item(s)",
       totalSuppliers: "{count} supplier group(s)",
       backToReports: "Back to reports",
+    },
+    stockValue: {
+      metaTitle: "Stock value report",
+      heading: "Stock value",
+      subtitle:
+        "Total at-cost value of on-hand inventory, rolled up per warehouse. Use this for finance snapshots and month-end close.",
+      backToReports: "Back to reports",
+      emptyTitle: "No stock on hand",
+      emptyBody:
+        "Receive some stock or run your first count to start tracking inventory value here.",
+      totalValueLabel: "Total value at cost",
+      totalUnitsLabel: "Total on-hand units",
+      distinctItemsLabel: "Distinct items",
+      missingCostWarning:
+        "{count} item(s) have no cost price set and are not included in the total. Set cost prices on item detail pages to include them.",
+      warehouseSubtitle: "{items} item(s) · {units} units on hand",
+      warehouseTotalLabel: "Warehouse value",
+      columnItem: "Item",
+      columnSku: "SKU",
+      columnOnHand: "On hand",
+      columnCostPrice: "Cost price",
+      columnValue: "Value at cost",
     },
   },
 

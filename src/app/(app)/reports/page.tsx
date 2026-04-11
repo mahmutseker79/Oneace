@@ -1,4 +1,4 @@
-import { AlertTriangle, FileBarChart } from "lucide-react";
+import { AlertTriangle, DollarSign, FileBarChart } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -21,6 +21,12 @@ export default async function ReportsPage() {
       icon: AlertTriangle,
       title: t.reports.lowStock.heading,
       description: t.reports.lowStock.subtitle,
+    },
+    {
+      href: "/reports/stock-value",
+      icon: DollarSign,
+      title: t.reports.stockValue.heading,
+      description: t.reports.stockValue.subtitle,
     },
   ];
 
