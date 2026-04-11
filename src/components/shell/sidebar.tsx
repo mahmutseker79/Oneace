@@ -51,7 +51,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     { label: labels.nav.items, href: "/items", icon: Package },
     { label: labels.nav.categories, href: "/categories", icon: FolderTree },
     { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
-    { label: labels.nav.counts, href: "/counts", icon: ClipboardList },
+    { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
     { label: labels.nav.scan, href: "/scan", icon: ScanLine },
     { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
     { label: labels.nav.purchaseOrders, href: "/purchase-orders", icon: ShoppingCart },

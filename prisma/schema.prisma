@@ -2,6 +2,11 @@
 // Sprint 0: Auth + multi-tenancy foundation (User, Organization, Membership, Better Auth tables).
 // Sprint 1: Warehouse, Category, Item, StockLevel — core inventory domain.
 // Sprint 2: StockMovement — append-only ledger with transactional level recompute.
+// Sprint 3: StockCount + CountSnapshot + CountEntry — physical count with
+//           variance reconciliation and automatic ledger adjustments. This
+//           is the moat feature: counting that feels like a first-class
+//           workflow with a variance preview, six methodologies, and an
+//           honest audit trail.
 // Later sprints expand this — see OneAce_Roadmap.md for the full model outline.
 
 generator client {
@@ -32,6 +37,9 @@ model Organization {
   items          Item[]
   stockLevels    StockLevel[]
   stockMovements StockMovement[]
+  stockCounts    StockCount[]
+  countSnapshots CountSnapshot[]
+  countEntries   CountEntry[]
 
   @@index([slug])
 }
@@ -80,6 +88,8 @@ model User {
   accounts       Account[]
   memberships    Membership[]
   stockMovements StockMovement[]
+  stockCounts    StockCount[]
+  countEntries   CountEntry[]
 
   @@index([email])
 }
@@ -151,6 +161,9 @@ model Warehouse {
   stockLevels         StockLevel[]
   movements           StockMovement[] @relation("MovementFromWarehouse")
   movementsTransferIn StockMovement[] @relation("MovementToWarehouse")
+  stockCounts         StockCount[]
+  countSnapshots      CountSnapshot[]
+  countEntries        CountEntry[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -197,6 +210,8 @@ model Item {
   category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   stockLevels    StockLevel[]
   movements      StockMovement[]
+  countSnapshots CountSnapshot[]
+  countEntries   CountEntry[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -286,4 +301,113 @@ enum StockMovementType {
   ADJUSTMENT
   TRANSFER
   COUNT
+}
+
+// =========================
+// Stock Counting (Sprint 3) — the moat
+// =========================
+//
+// A count is a frozen-in-time snapshot of expected quantities for a set of
+// items in one (or all) warehouses, plus an append-only log of "here's what
+// I physically counted" entries. When the supervisor reconciles the count,
+// variances become ADJUSTMENT movements in the existing ledger — the
+// StockCount + ADJUSTMENT pair is the audit trail.
+//
+// State machine: open -> in_progress -> completed | cancelled
+//   - open: just created, no entries yet.
+//   - in_progress: auto-transitioned after the first entry.
+//   - completed: reconciled. Terminal.
+//   - cancelled: aborted with a reason. Terminal. Snapshot + entries kept
+//     for audit.
+//
+// Blind and double-blind methodologies hide the expected quantity in the
+// UI but the snapshot is still persisted — blindness is a view-time rule,
+// not a data rule.
+
+model StockCount {
+  id              String             @id @default(cuid())
+  organizationId  String
+  warehouseId     String?
+  name            String
+  state           StockCountState    @default(OPEN)
+  methodology     CountMethodology   @default(CYCLE)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdByUserId String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  warehouse       Warehouse?         @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  createdBy       User?              @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  snapshots       CountSnapshot[]
+  entries         CountEntry[]
+
+  @@index([organizationId, state])
+  @@index([organizationId, createdAt])
+  @@index([warehouseId])
+}
+
+// One row per (count, item, warehouse) frozen at create time. The
+// `expectedQuantity` never changes once the count leaves the OPEN state;
+// it's the reference point variance is measured against.
+model CountSnapshot {
+  id               String       @id @default(cuid())
+  organizationId   String
+  countId          String
+  itemId           String
+  warehouseId      String
+  expectedQuantity Int
+  createdAt        DateTime     @default(now())
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  count            StockCount   @relation(fields: [countId], references: [id], onDelete: Cascade)
+  item             Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse        Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([countId, itemId, warehouseId])
+  @@index([countId])
+  @@index([organizationId])
+}
+
+// Append-only log of physical count entries. Multiple entries per
+// (count, item) are allowed and are summed at reconcile time — this
+// lets a counter scan the same SKU several times across a shift
+// without deleting anything.
+model CountEntry {
+  id               String       @id @default(cuid())
+  organizationId   String
+  countId          String
+  itemId           String
+  warehouseId      String
+  countedQuantity  Int
+  counterTag       String?
+  note             String?
+  countedAt        DateTime     @default(now())
+  countedByUserId  String?
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  count            StockCount   @relation(fields: [countId], references: [id], onDelete: Cascade)
+  item             Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse        Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  countedBy        User?        @relation(fields: [countedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([countId, countedAt])
+  @@index([countId, itemId])
+  @@index([organizationId])
+}
+
+enum StockCountState {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CountMethodology {
+  CYCLE
+  FULL
+  SPOT
+  BLIND
+  DOUBLE_BLIND
+  DIRECTED
 }
