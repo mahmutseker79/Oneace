@@ -149,11 +149,54 @@ Tagged `v0.5.0-sprint5`. The procure-to-stock path is live.
 
 ---
 
+## Sprint 6 — Live dashboard + Low-stock report + PO-from-reorder (shipped 2026-04-11)
+
+Tagged `v0.6.0-sprint6`. The full reorder loop is live: see what's low →
+one-click new PO prefilled from the supplier → receive it → stock goes
+back up.
+
+- [x] `/dashboard` rewritten with live data — 8-way `Promise.all` pulling
+      active/archived item counts, stock levels + cost for stock value,
+      warehouse count, low-stock items, open/in-progress stock counts,
+      last 6 stock movements
+- [x] 4 live KPI cards (total items / stock value / low stock / active
+      counts) all wrapped in `<Link>` → drill-downs
+- [x] Top-5 low-stock table on the dashboard with "View all" to the full
+      report
+- [x] Recent activity table on the dashboard with last 6 stock movements
+      and signed quantities (`direction * quantity`)
+- [x] Quick actions row: low-stock report + receive stock
+- [x] `/reports` — reports index hub (card grid, ready for more entries)
+- [x] `/reports/low-stock` — grouped by preferred supplier (alphabetical,
+      "no supplier" last), shortfall-sorted table per group, per-supplier
+      "Create PO" button that routes to
+      `/purchase-orders/new?supplier=X&items=a,b,c`
+- [x] `/purchase-orders/new` — reads `supplier` + `items` query params,
+      resolves items org-scoped, validates supplier belongs to org, builds
+      a `PurchaseOrderPrefill` with one line per item using its
+      `reorderQty` (fallback `1`) — `PurchaseOrderForm` accepts the new
+      optional `prefill` prop
+- [x] Sidebar: Reports (`BarChart3`) nav item between purchase-orders and
+      users
+- [x] i18n: `dashboard` namespace rewritten, `reports` namespace added
+      with `lowStock` subnamespace in `en.ts`
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-6)
+
+- [ ] Item form `preferredSupplierId` field (schema exists; UI will
+      land in Sprint 7 alongside replenishment hints)
+- [ ] Stock-value over time (waits on a price-snapshot table)
+- [ ] Supplier performance report (lead time, fill rate) — needs
+      richer received/ordered history
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → Sprint 3 (Moat 1)
 - `StockCountView` + `StockCountSession` → Sprint 5 (Moat 2, with the Dexie layer)
-- `ReportsView` → Sprint 7
+- `ReportsView` → **Sprint 6 (shipped 2026-04-11)**
 - `SettingsView` (org + billing + locale / region picker) → Sprint 8–9
 
 ---
