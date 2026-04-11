@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 39.
+and iterating on it through Sprint 0 → Sprint 40.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 39.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 38 plus **Sprint 39** are already committed in a
+Sprint 0 through Sprint 39 plus **Sprint 40** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.39.0-sprint39.bundle
+oneace-next/oneace-next-port-v0.40.0-sprint40.bundle
 ```
 
 This bundle contains:
 
-- **86 commits** — 8 Sprint 0 + 1 docs + Sprints 1..39 (each = 1 feature
+- **88 commits** — 8 Sprint 0 + 1 docs + Sprints 1..40 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -65,9 +65,10 @@ This bundle contains:
   - `v0.37.0-sprint37` — Sprint 37 complete (production hardening — zod-validated env schema at `src/lib/env.ts` fails boot on missing/malformed required vars, dependency-free structured logger at `src/lib/logger.ts` with JSON-lines-in-prod / pretty-in-dev output, `/app/global-error.tsx` + `(app)/error.tsx` two-layer error boundaries showing Next.js `error.digest`, `/api/health` liveness+readiness probe with `SELECT 1` DB check returning 200/503, five call sites migrated off raw `process.env`, audit helper rewired to `logger.error`)
   - `v0.38.0-sprint38` — Sprint 38 complete (purchase-order detail enrichment — 5-up KPI strip (status + % received + total value + line count + days open) on `/purchase-orders/[id]`, supplier link to `/suppliers/[id]` + "Created by" chip in header, parallelised receipt history card joined via `StockMovement.reference === po.poNumber` with second-bucket grouping so multi-line receives collapse into one event, PO-scoped audit trail card with `OR: [{entityId: po.id}, {entityId: null}]` + in-memory `metadata.poNumber` filter to catch delete-case rows, 9 new i18n keys under `purchaseOrders.detail`, no schema changes)
   - `v0.39.0-sprint39` — Sprint 39 complete (audit coverage expansion — extended Sprint 36's deliberately narrow audit vocabulary from 13 to 25 actions across 8 entity types by wiring `recordAudit` into the catalog write surfaces (items: create/update-with-diff/import-aggregate/delete; warehouses: create/update-with-diff/delete; categories: create/delete) and stock-count lifecycle transitions (create with row-count metadata, cancel with previousState + reason, complete after-transaction with posted-movements + variance counts), item/warehouse update sites read a `before` snapshot and build a diff so metadata only carries changed fields, deletes pre-read `{name, code/sku}` for human-readable audit metadata, CountEntry/StockMovement/StockLevel writes deliberately stay silent to prevent log flooding, 12 new i18n keys under `audit.actions`, no schema changes)
+  - `v0.40.0-sprint40` — Sprint 40 complete (audit log filters + retention — `/audit` filter bar (action / entity type / actor / date range) with URL as source of truth, shared `./filter.ts` parser with compile-time exhaustiveness trap on the AuditAction/AuditEntityType unions, cursor-pagination "Load more" carries filter state forward, admin-gated `GET /audit/export` CSV route with 2k unfiltered / 10k filtered row caps, new `AUDIT_RETENTION_DAYS` env var (zod-validated, default 365, min 1), manual `npm run audit:prune` script running per-tenant `deleteMany` + self-audit `audit.pruned` row (26th AuditAction), `scripts/run-ts.mjs` tiny jiti wrapper avoids adding tsx/ts-node to devDeps, distinct-actor dropdown query hits the audit table itself so ex-members remain filterable for compliance review, new `audit.filter.*` + `audit.entityTypes.*` i18n keys, no schema changes)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.39.0-sprint39.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.40.0-sprint40.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -81,11 +82,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.39.0-sprint39.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.40.0-sprint40.bundle \
           next-port:next-port
 
-# Also pull all thirty-nine sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.39.0-sprint39.bundle \
+# Also pull all forty sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.40.0-sprint40.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -124,11 +125,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.39.0-sprint39.bun
           refs/tags/v0.36.0-sprint36:refs/tags/v0.36.0-sprint36 \
           refs/tags/v0.37.0-sprint37:refs/tags/v0.37.0-sprint37 \
           refs/tags/v0.38.0-sprint38:refs/tags/v0.38.0-sprint38 \
-          refs/tags/v0.39.0-sprint39:refs/tags/v0.39.0-sprint39
+          refs/tags/v0.39.0-sprint39:refs/tags/v0.39.0-sprint39 \
+          refs/tags/v0.40.0-sprint40:refs/tags/v0.40.0-sprint40
 
 # Verify
-git log --oneline next-port                # should show 86 commits
-git tag -l                                 # should include all thirty-nine sprint tags
+git log --oneline next-port                # should show 88 commits
+git tag -l                                 # should include all forty sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -143,8 +145,143 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
                v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
                v0.34.0-sprint34 v0.35.0-sprint35 v0.36.0-sprint36 \
-               v0.37.0-sprint37 v0.38.0-sprint38 v0.39.0-sprint39
+               v0.37.0-sprint37 v0.38.0-sprint38 v0.39.0-sprint39 \
+               v0.40.0-sprint40
 ```
+
+### What Sprint 40 added (v0.40.0-sprint40)
+
+Sprint 40 closes the governance loop on the Sprint 36 audit log.
+Sprint 36 shipped the append-only `AuditEvent` model and the
+read-path `/audit` page; Sprint 39 widened the write-site vocabulary
+from 13 to 25 actions across 8 entity types. Sprint 40 delivers the
+three reviewer affordances the log was always going to need:
+**filtering**, **offline export**, and a **retention story**.
+
+**1. Filter bar on `/audit`.** Four axes: action, entity type, actor,
+and date range. The filter bar is a pure read-state client component
+that pushes its selection into the URL and lets Next.js re-render
+the server page from the new searchParams — exactly the pattern
+Sprint 14's `MovementsFilterBar` established for the movements page.
+Shareable URLs and natural back-button behaviour fall out for free.
+The cursor-pagination "Load more" link carries the filter state
+forward so continuing to page through results doesn't reset to the
+full log.
+
+The actor dropdown is populated from a distinct query on the audit
+table itself (not the live member roster) so ex-members whose
+history matters for compliance review still appear as filterable
+options. Capped at 200 — beyond that we'd want a search-as-you-type
+picker rather than quietly truncating.
+
+**2. Shared filter parser at `src/app/(app)/audit/filter.ts`.**
+The page and the new export route both parse searchParams through
+the same module, guaranteeing the CSV download matches on-screen
+results row-for-row. Core exports:
+
+- `parseAuditFilter` — strict `YYYY-MM-DD` round-trip date parse,
+  allow-list validation of `action` + `entityType` against the
+  `AuditAction` / `AuditEntityType` unions, actor id length cap.
+- `buildAuditWhere` — Prisma `where` clause with inverted-range
+  guard (returns `{ id: "__inverted-range__" }` so the page degrades
+  to empty results instead of crashing).
+- `filterToParams` — serializes axes back to URLSearchParams so
+  "Load more" and "Download CSV" share the exact contract.
+- `AUDIT_ACTION_VALUES` / `AUDIT_ENTITY_TYPE_VALUES` — option lists
+  for the filter bar selects, plus a compile-time exhaustiveness
+  trap (`Record<AuditAction, true> = Object.fromEntries(...)`). If
+  a future sprint extends the union, the build fails here until the
+  const array catches up. This is the same discipline that caught
+  two typos during filter development.
+
+**3. GET `/audit/export` CSV route.** Admins-only (`OWNER` / `ADMIN`
+→ pass, everyone else → 403), reuses the shared parser, and returns
+a UTF-8 BOM'd CSV through the Sprint 16 CSV helpers
+(`csvResponse` / `serializeCsv` / `todayIsoDate`). Row cap is 2k
+unfiltered / 10k filtered — identical to the PO export shape.
+Columns: When (UTC), Actor, Actor email, Action, Action label,
+Entity type, Entity id, Metadata. Metadata is rendered to a
+single-line `key=value | key={nested,keys}` string so the
+downloaded file lines up visually with the on-screen Details
+column. Action labels go through `getMessages()` once per request
+(not per row) so the CSV is localised the same way the page is.
+
+**4. Retention script `npm run audit:prune`.** Sprint 40 explicitly
+chose "manual script, env-configured cutoff" over a scheduled cron
+or a background worker — MVP installs don't need the complexity,
+and deploy platforms already offer their own cron hooks for
+operators who want automation.
+
+- New `AUDIT_RETENTION_DAYS` env var joins the Sprint 37 zod schema
+  (default 365 because SOX / HIPAA / GDPR-style audit policies
+  generally bottom out at a year, `z.coerce.number().int().min(1)`
+  because env vars arrive as strings).
+- `src/scripts/prune-audit.ts` computes the cutoff once at script
+  start, finds tenants with stale rows via `groupBy` (skipping
+  empty tenants entirely), then runs a per-tenant `deleteMany`
+  over the indexed `(organizationId, createdAt)` composite.
+- After each successful delete, the script writes a self-audit row
+  using the new 26th `AuditAction`, `audit.pruned`, with metadata
+  `{ retentionDays, cutoffDate, deletedCount, expectedCount }`.
+  The self-audit write goes through raw `db.auditEvent.create`
+  (not `recordAudit`) because `recordAudit` deliberately swallows
+  errors — the app-path must never fail because audit writes fail
+  — and a retention script wants loud failures.
+- The script runs outside any transaction. The pragma is "never
+  let audit writes block the path forward", and a crash between
+  delete and audit-write just means the next run sees fewer rows
+  to delete. A failed self-audit row logs `logger.error` and
+  continues to the next tenant.
+- Exit 0 on success, 1 on any failure. External cron wrappers rely
+  on this, and a zero-delete run is still a success (common case
+  on small installs).
+
+**5. TS runner without a new devDependency.** Neither `tsx` nor
+`ts-node` is installed, and adding one would tangle with the
+`fuse-mount` symlinked `node_modules`. Instead, `scripts/run-ts.mjs`
+is a 44-line wrapper around `jiti` (already installed as a
+transitive Next.js dep) using the programmatic `createJiti` API
+with an explicit `alias: { "@": resolve(repoRoot, "src") }` so the
+script's `@/lib/db` / `@/lib/env` / `@/lib/logger` imports resolve
+the way they do inside the Next.js build. The npm script is simply
+`node scripts/run-ts.mjs src/scripts/prune-audit.ts`.
+
+**6. i18n coverage.** `en.ts` gains an `audit.filter.*` block
+(heading, per-axis labels, `__all__` option labels, apply/clear
+button text, inline `invalidRange` error, `emptyFiltered` for the
+zero-results branch), an `audit.entityTypes.*` label bag for the
+entity-type dropdown, `audit.exportButton`, and the
+`audit.actions["audit.pruned"]` label. All English, no Turkish per
+the i18n rule.
+
+**Files touched.**
+
+- Added:
+  - `src/app/(app)/audit/filter.ts` (290 lines; parser + exhaustiveness trap)
+  - `src/app/(app)/audit/audit-filter-bar.tsx` (242 lines; client component)
+  - `src/app/(app)/audit/export/route.ts` (142 lines; CSV export route)
+  - `src/scripts/prune-audit.ts` (166 lines; retention script)
+  - `scripts/run-ts.mjs` (44 lines; jiti runner wrapper)
+- Modified:
+  - `src/lib/env.ts` — `AUDIT_RETENTION_DAYS` field + doc block
+  - `src/lib/audit.ts` — `audit.pruned` added to the `AuditAction` union
+  - `src/lib/i18n/messages/en.ts` — filter/export/pruned label keys
+  - `src/app/(app)/audit/page.tsx` — filter bar render + parallel
+    queries for results + distinct-actor dropdown + filter-preserving
+    `loadMoreHref` / `exportHref`
+  - `package.json` — `audit:prune` script entry
+
+**Verification.**
+
+- `npx tsc --noEmit` — 0 errors
+- `npx biome check src` — 189 files, no issues (auto-fixed
+  formatter nits on 4 files in the touched set)
+- `DATABASE_URL=… DIRECT_URL=… npx prisma validate` — schema valid
+  (no schema changes in Sprint 40; sanity check only)
+- `node scripts/run-ts.mjs src/scripts/prune-audit.ts` smoke-run
+  with stub env vars — alias resolution + env validation + logger
+  import chain all reach the main function before the expected
+  DB connection failure, confirming the runner is wired end-to-end.
 
 ### What Sprint 39 added (v0.39.0-sprint39)
 

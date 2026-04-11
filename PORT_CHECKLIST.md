@@ -2366,6 +2366,273 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 40 — Audit log filters + retention (shipped 2026-04-11)
+
+### What shipped
+
+Sprint 36 delivered the append-only log and the read-path UI, Sprint
+39 closed the vocabulary gap across catalog + stock counts. Sprint 40
+closes the governance loop: reviewers can now slice the log by every
+axis that matters, take the results offline as CSV, and the data has
+a retention story that operators can actually run from cron.
+
+Three surfaces, one sprint:
+
+1. Filter bar on `/audit` covering action, entity type, actor, and
+   date range. Filter state lives in the URL — shareable, back-button
+   friendly, and the cursor-pagination "Load more" link carries the
+   filter forward rather than resetting to the full log.
+2. GET `/audit/export` returning a UTF-8 BOM'd CSV that mirrors the
+   on-screen filter state row-for-row. Same admin gate as the page;
+   row cap of 2k unfiltered / 10k filtered.
+3. `npm run audit:prune` — manual retention enforcement keyed on a
+   new `AUDIT_RETENTION_DAYS` env var, zod-validated with a 365-day
+   default. Emits one self-audit row per tenant on success (the 26th
+   `AuditAction`, `audit.pruned`).
+
+### Filter parser (`src/app/(app)/audit/filter.ts`)
+
+New shared module between the page and the export route so both
+surfaces parse the same search params the same way. The shape mirrors
+Sprint 14's `movements/filter.ts`: strict `YYYY-MM-DD` round-trip
+check (no `new Date(string)` traps), an inverted-range guard that
+returns an impossible-id clause instead of crashing, and an
+exhaustiveness trap on the union allow-lists:
+
+```ts
+const AUDIT_ACTIONS = [
+  "organization.updated",
+  // ... 25 more ...
+  "audit.pruned",
+] as const satisfies readonly AuditAction[];
+
+const _ACTION_EXHAUSTIVENESS: Record<AuditAction, true> =
+  Object.fromEntries(AUDIT_ACTIONS.map((a) => [a, true] as const)) as
+  Record<AuditAction, true>;
+```
+
+If a future sprint adds a new `AuditAction` value, the next build
+fails here with a missing-key error until the filter's allow-list
+catches up. Same discipline already caught two typos in the filter
+parser during development.
+
+Exported surface:
+
+- `parseAuditFilter(searchParams)` → typed filter + raw strings for
+  rehydrating the filter bar inputs without re-reading the URL.
+- `buildAuditWhere(filter)` → Prisma `where` clause; caller merges in
+  `organizationId` separately (tenancy is not this helper's concern).
+- `hasAnyAuditFilter(filter)` → controls "Clear filters" visibility
+  and the empty-state copy branching.
+- `filterToParams(filter)` → serializes axes back to URLSearchParams
+  so "Load more" and "Download CSV" share the exact contract.
+- `AUDIT_ACTION_VALUES` / `AUDIT_ENTITY_TYPE_VALUES` → Options lists
+  for the filter bar selects, handed to the client component from the
+  server so the client bundle never imports the i18n catalog.
+
+Deliberately out of scope: multi-select axes (simpler mental model,
+run the filter twice if needed), free-text search over metadata (same
+JSON-in-SQL portability problem Sprint 38's PO detail had to work
+around), and sorting (the cursor invariant demands newest-first).
+
+### `/audit` page rewrite
+
+Key changes versus Sprint 36's baseline:
+
+- Renders `<AuditFilterBar>` above the results Card.
+- Parallel `Promise.all` for the main results query and the
+  distinct-actor query that feeds the actor dropdown. The distinct
+  query hits the audit table itself (not the live member roster) so
+  ex-members whose history matters for compliance still appear.
+  Capped at `ACTOR_DROPDOWN_CAP = 200`; beyond that we'd want
+  search-as-you-type instead of quietly truncating.
+- `rawCursor.cursor` is read separately from the filter params —
+  pagination is ephemeral state, not a filter axis.
+- `loadMoreHref` and `exportHref` both go through `filterToParams`
+  so a filtered "Load more" continues the same view and a filtered
+  "Download CSV" hands back the same row set.
+- Empty state copy branches on `filterActive` → shows
+  `t.audit.filter.emptyFiltered` vs the existing `t.audit.empty`.
+- `PAGE_SIZE` held at 50. Reviewers who need hundreds of rows
+  either narrow the filter or export the CSV.
+
+### `AuditFilterBar` (client component)
+
+Pure read state, URL as source of truth, `router.push` on submit —
+the same pattern Sprint 14's `MovementsFilterBar` established for the
+movements page. Three `<Select>`s stacked in a 3-column grid (action,
+entity type, actor), a date range row with cross-referenced
+`min`/`max` attrs, and Apply + Clear buttons.
+
+Sentinels: Radix `Select` rejects an empty string as an item value,
+so each axis has its own `__all__` token that translates back to an
+empty query param on submit. Client-side guard: `from > to` shows an
+inline alert and refuses to push, but the server-side
+`buildAuditWhere` also returns an impossible-id clause as the belt.
+
+### `/audit/export` CSV route
+
+- Admins-only gate (`membership.role !== OWNER && !== ADMIN` → 403).
+  The UI hides the button from non-admins because the page
+  short-circuits, but URLs are shareable so we defend on the server
+  too.
+- Uses `parseAuditFilter(Promise.resolve(rawParams))` from the shared
+  module — the filter bar and the CSV always agree on interpretation.
+- `UNFILTERED_LIMIT = 2000`, `FILTERED_LIMIT = 10000`. Same 2k/10k
+  shape as Sprint 16's PO export. A year of real-world audit
+  activity comfortably fits under 10k rows per org.
+- Columns: When (UTC), Actor, Actor email, Action, Action label,
+  Entity type, Entity id, Metadata. Metadata is rendered to a
+  single-line `key=value | key={nested,keys}` string so the
+  downloaded CSV lines up visually with the on-screen Details
+  column.
+- Uses the existing Sprint 16 CSV helpers (`csvResponse`,
+  `serializeCsv`, `todayIsoDate`) for UTF-8 BOM + RFC 4180 escaping.
+- Action labels are rendered in the reviewer's locale via
+  `getMessages()` — the lookup happens once per request, not per
+  row.
+
+### Retention script (`src/scripts/prune-audit.ts`)
+
+Six design decisions, all documented in the file header:
+
+1. **Tenant-by-tenant, not global.** The delete runs per organization
+   so the self-audit `audit.pruned` row can accurately attribute the
+   count to that tenant. A single global `deleteMany` would be ~10%
+   faster at MVP scale but would lose the per-tenant provenance a
+   reviewer needs.
+2. **The prune writes its own audit row.** Missing this row is its
+   own alarm signal — "the log is short because nothing happened" vs
+   "the log is short because prune ran" must be distinguishable
+   without external tooling. The self-audit writes AFTER the delete.
+3. **Cutoff computed once, at script start.** Every tenant uses the
+   same cutoff date — a slow prune run doesn't silently bite newer
+   data created during the run.
+4. **Self-audit rows are themselves eligible for future prunes.** We
+   deliberately don't exempt old `audit.pruned` rows from the
+   retention window. The goal is "any given retention window shows
+   its own prune row if one occurred", not permanent provenance.
+5. **No transaction.** `deleteMany` + `auditEvent.create` can't be
+   usefully atomic here because the delete is unbounded and our
+   pragma is "audit writes never block the path forward". A crash
+   between delete and audit-write just means the next run sees
+   fewer rows to delete.
+6. **Exit 0 on success, 1 on any failure.** External cron wrappers
+   rely on this. A zero-delete run is still a success (common case
+   on small installs).
+
+Shape of a run:
+
+```
+AUDIT_RETENTION_DAYS=90 npm run audit:prune
+→ cutoffDate = now - 90d
+→ groupBy organizationId where createdAt < cutoffDate
+→ for each tenant: deleteMany + audit.pruned self-audit row
+→ logger.info summary with totalDeleted + orgsProcessed
+```
+
+The pre-check `groupBy` means tenants with no stale rows are skipped
+entirely — at MVP scale we'd be scanning empty partitions per tenant
+otherwise. If this ever gets slow we swap in a distinct-by-org query
+that walks an index, but the comment block notes this as a future
+problem, not today's.
+
+Self-audit writes go through raw `db.auditEvent.create`, not
+`recordAudit()`. `recordAudit()` deliberately swallows errors (the
+app-path never fails because audit writes fail) but a script wants
+loud failures — a silent swallow would hide the one signal operators
+care about. A failed self-audit row logs loudly via
+`logger.error("audit:prune failed to write self-audit row")` and
+continues — subsequent tenants still get their chance.
+
+### TS runner: `scripts/run-ts.mjs`
+
+Neither `tsx` nor `ts-node` is in devDeps, so we lean on `jiti` which
+ships transitively with Next.js. `scripts/run-ts.mjs` is a tiny 40-
+line wrapper that uses the programmatic `createJiti` API with an
+explicit `alias: { "@": resolve(repoRoot, "src") }` so the script's
+`@/lib/db`, `@/lib/env`, `@/lib/logger` imports resolve the way they
+do inside the Next.js build. No new devDependencies needed, no
+fragile `JITI_ALIAS` env-var dance in `package.json`, and any future
+ad-hoc TS script can use the same runner.
+
+`package.json` scripts entry:
+
+```
+"audit:prune": "node scripts/run-ts.mjs src/scripts/prune-audit.ts"
+```
+
+### Env schema (`src/lib/env.ts`)
+
+One new field in the Sprint 37 zod schema, defaulted so existing
+deployments continue to validate without any env change:
+
+```ts
+AUDIT_RETENTION_DAYS: z.coerce
+  .number()
+  .int("AUDIT_RETENTION_DAYS must be a whole number of days")
+  .min(1, "AUDIT_RETENTION_DAYS must be at least 1 day")
+  .default(365),
+```
+
+`z.coerce` because env vars are always strings; `.default(365)`
+because 365 days is the lower bound of what SOX / HIPAA / GDPR-style
+audit retention policies typically demand. Keeping the knob in the
+single zod schema means the runtime-config story stays uniform —
+retention joins `LOG_LEVEL`, `RATE_LIMIT_*`, etc. as one more
+fail-on-boot validated env var.
+
+### i18n keys
+
+`en.ts` gets a new `audit.filter.*` block (heading, axis labels, all-
+option labels, apply/clear, inline `invalidRange` error, and an
+`emptyFiltered` branch for when a filter returns zero rows), an
+`audit.entityTypes.*` label bag for the entity-type dropdown, an
+`audit.exportButton` label, and the `audit.actions["audit.pruned"]`
+label ("Pruned audit log"). All strings in English; Turkish remains
+absent from the codebase per the i18n rule.
+
+### Files touched
+
+- **Added:**
+  - `src/app/(app)/audit/filter.ts` (290 lines; parser + exhaustiveness trap)
+  - `src/app/(app)/audit/audit-filter-bar.tsx` (242 lines; client component)
+  - `src/app/(app)/audit/export/route.ts` (142 lines; CSV export route)
+  - `src/scripts/prune-audit.ts` (166 lines; retention script)
+  - `scripts/run-ts.mjs` (44 lines; jiti runner wrapper)
+- **Modified:**
+  - `src/lib/env.ts` (AUDIT_RETENTION_DAYS field + doc block)
+  - `src/lib/audit.ts` (`audit.pruned` AuditAction union member)
+  - `src/lib/i18n/messages/en.ts` (filter/export/pruned labels)
+  - `src/app/(app)/audit/page.tsx` (filter bar + parallel queries +
+    filter-preserving cursor/export links)
+  - `package.json` (`audit:prune` script entry)
+
+### Verification
+
+- `npx tsc --noEmit` — 0 errors
+- `npx biome check src` — 189 files, no issues
+- `DATABASE_URL=… DIRECT_URL=… npx prisma validate` — schema valid
+  (no schema changes, sanity check only)
+- `node scripts/run-ts.mjs src/scripts/prune-audit.ts` smoke-tested
+  with stub env vars — alias resolution + env validation + logger
+  import chain all confirmed to reach the main function before the
+  expected DB connection failure
+
+### Deferred
+
+- Automated prune scheduling. Sprint 40 explicitly chose "manual
+  script, env-configured cutoff" — if the team later wants this on
+  a schedule, a one-liner in the deploy platform's cron will do.
+- Filter bar "save this view" affordances. URLs are already
+  shareable; bookmarks work. We'll revisit only if reviewers start
+  asking for it.
+- Multi-select action axis. Run the filter twice.
+- Audit log archival (cold storage before delete). Out of scope for
+  MVP — the retention policy we ship is a simple truncate.
+
+---
+
 ## Sprint 39 — Audit coverage: catalog + stock counts (shipped 2026-04-11)
 
 ### What shipped
