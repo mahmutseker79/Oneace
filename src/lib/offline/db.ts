@@ -42,8 +42,19 @@
 
 import Dexie, { type Table } from "dexie";
 
-/** Schema version — bump whenever the stores or indexes change. */
-export const OFFLINE_DB_VERSION = 1;
+/**
+ * Schema version — bump whenever the stores or indexes change.
+ *
+ * History:
+ *   - v1 (Sprint 23): items / warehouses / categories / meta
+ *   - v2 (Sprint 25): + pendingOps (offline write queue)
+ *
+ * Every bump MUST append a new `.version(N).stores({...}).upgrade()`
+ * block in the Dexie constructor below. Never edit a prior version
+ * in place — Dexie replays versions on open, so rewriting an older
+ * block corrupts the migration graph.
+ */
+export const OFFLINE_DB_VERSION = 2;
 
 /** The single top-level DB name. One database per origin, not per org. */
 export const OFFLINE_DB_NAME = "oneace-offline";
@@ -107,6 +118,59 @@ export interface CachedCategory {
 }
 
 /**
+ * One row in the offline write queue. A "pending op" captures a
+ * user intent (e.g. "adjust stock for item X by -3") that could
+ * not reach the server at the time it was created, either because
+ * the device was offline or because an explicit "queue it" path
+ * was taken.
+ *
+ * The queue is intentionally operation-agnostic: `opType` is a
+ * free-form string that the replay runner maps to a dispatcher via
+ * a registry. Payload is `unknown` at the schema level because
+ * different ops carry different shapes; each opType's dispatcher is
+ * responsible for validating the payload before calling the server.
+ *
+ * Status machine (all transitions are forward-only except the
+ * `in_flight -> pending` retry on transient failure):
+ *
+ *   pending    — enqueued, waiting for the runner to pick it up
+ *   in_flight  — runner is currently dispatching to the server
+ *   succeeded  — server accepted the op (kept around briefly so
+ *                the UI can confirm "4 queued ops synced")
+ *   failed     — dispatcher rejected the op with a non-retryable
+ *                error (kept around so the user can inspect and
+ *                manually resolve)
+ *
+ * The scoping contract matches the read caches: every op carries
+ * `orgId` + `userId` so the runner never replays Alice's queued
+ * ops while Bob is signed in on the same browser.
+ */
+export type CachedPendingOpStatus = "pending" | "in_flight" | "succeeded" | "failed";
+
+export interface CachedPendingOp {
+  /** Primary key — a UUID generated at enqueue time. Also acts as
+   * the idempotency key that downstream server actions will
+   * receive so replays are safe. */
+  id: string;
+  orgId: string;
+  userId: string;
+  /** Free-form discriminator. The dispatcher registry keys on this. */
+  opType: string;
+  /** Arbitrary op-specific payload. Serialized by Dexie via structured clone. */
+  payload: unknown;
+  /** Current status in the queue lifecycle. */
+  status: CachedPendingOpStatus;
+  /** ISO timestamp of the original enqueue (never changes on retry). */
+  createdAt: string;
+  /** ISO timestamp of the most recent status transition. */
+  updatedAt: string;
+  /** Total number of dispatch attempts so far (0 when first enqueued). */
+  attemptCount: number;
+  /** Serialized error message from the most recent failed attempt, if any. */
+  lastError: string | null;
+}
+
+/**
  * Meta row — there is exactly one per (table, orgId, userId) tuple.
  * `syncedAt` is written as an ISO string so Dexie serializes it
  * deterministically across browser Date implementations.
@@ -134,13 +198,18 @@ class OneaceOfflineDb extends Dexie {
   warehouses!: Table<CachedWarehouse, string>;
   categories!: Table<CachedCategory, string>;
   meta!: Table<CacheMeta, string>;
+  pendingOps!: Table<CachedPendingOp, string>;
 
   constructor() {
     super(OFFLINE_DB_NAME);
     // NOTE: when bumping OFFLINE_DB_VERSION, append a `.version(N)`
     // block here with the new stores + an `.upgrade()` callback.
-    // Never edit a previous version in place.
-    this.version(OFFLINE_DB_VERSION).stores({
+    // Never edit a previous version in place — Dexie replays every
+    // version on open, so touching an older block corrupts the
+    // migration graph for anyone upgrading from that point.
+
+    // v1 — Sprint 23: read caches + meta. Do not edit.
+    this.version(1).stores({
       // Dexie store declaration: primary key first, then secondary
       // indexes. We index `orgId` on every table so scope-switching
       // clears are O(index lookup) rather than a full scan.
@@ -148,6 +217,26 @@ class OneaceOfflineDb extends Dexie {
       warehouses: "key, orgId, userId",
       categories: "key, orgId, userId, parentId",
       meta: "key, [orgId+userId+table]",
+    });
+
+    // v2 — Sprint 25: write queue (`pendingOps`). Additive
+    // migration: all v1 stores remain, a new `pendingOps` store is
+    // introduced. Dexie auto-opens it on first access; no
+    // `.upgrade()` callback is needed because existing rows are
+    // untouched.
+    this.version(2).stores({
+      items: "key, orgId, userId, status, categoryId",
+      warehouses: "key, orgId, userId",
+      categories: "key, orgId, userId, parentId",
+      meta: "key, [orgId+userId+table]",
+      // Indexes chosen so the runner can cheaply scan:
+      //   - `[orgId+userId+status]` for "drain all pending ops in
+      //     my active scope" (the hot path),
+      //   - `status` alone for a cross-scope "how many ops exist
+      //     at all" badge,
+      //   - `createdAt` so FIFO replay order survives any DB
+      //     compaction.
+      pendingOps: "id, [orgId+userId+status], status, createdAt",
     });
   }
 }

@@ -1,3 +1,5 @@
+import { OfflineQueueBanner } from "@/components/offline/offline-queue-banner";
+import { OfflineQueueRunner } from "@/components/offline/offline-queue-runner";
 import { SwRegister } from "@/components/pwa/sw-register";
 import { Header } from "@/components/shell/header";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -13,9 +15,15 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     name: m.organization.name,
   }));
 
+  const queueScope = {
+    orgId: membership.organizationId,
+    userId: session.user.id,
+  };
+
   return (
     <div className="min-h-screen">
       <SwRegister />
+      <OfflineQueueRunner orgId={queueScope.orgId} userId={queueScope.userId} />
       <Sidebar
         labels={{
           brand: t.app.name,
@@ -37,6 +45,14 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             organization: t.common.organization,
             organizationCreate: t.organizations.switcherCreateLabel,
             signOut: t.header.signOut,
+          }}
+        />
+        <OfflineQueueBanner
+          scope={queueScope}
+          labels={{
+            pendingOnline: t.offline.queue.pendingOnline,
+            pendingOffline: t.offline.queue.pendingOffline,
+            failed: t.offline.queue.failed,
           }}
         />
         <main className="p-4 lg:p-6">{children}</main>

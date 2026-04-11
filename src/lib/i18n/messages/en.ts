@@ -1292,6 +1292,11 @@ export const en = {
       neverSynced: "Offline catalog not yet cached on this device.",
     },
     viewCachedItemsCta: "View cached catalog",
+    queue: {
+      pendingOnline: "{count} waiting to sync",
+      pendingOffline: "{count} queued offline",
+      failed: "{count} failed to sync",
+    },
     items: {
       metaTitle: "Cached catalog — Offline",
       title: "Cached catalog",
