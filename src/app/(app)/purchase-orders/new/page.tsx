@@ -8,7 +8,11 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
-import { PurchaseOrderForm, type PurchaseOrderFormLabels } from "../purchase-order-form";
+import {
+  PurchaseOrderForm,
+  type PurchaseOrderFormLabels,
+  type PurchaseOrderPrefill,
+} from "../purchase-order-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -17,9 +21,24 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function NewPurchaseOrderPage() {
+type SearchParams = Promise<{ supplier?: string; items?: string }>;
+
+export default async function NewPurchaseOrderPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  const params = (await searchParams) ?? {};
+  const prefillSupplierId = params.supplier?.trim() || undefined;
+  const prefillItemIds = params.items
+    ? params.items
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0)
+    : [];
 
   const [suppliers, warehouses, items] = await Promise.all([
     db.supplier.findMany({
@@ -95,6 +114,39 @@ export default async function NewPurchaseOrderPage() {
     costPrice: item.costPrice ? Number(item.costPrice) : null,
   }));
 
+  // Build prefill only from supplier/item IDs that actually belong to this org
+  // (since we fetched them via org-scoped queries above, this is already safe).
+  let prefill: PurchaseOrderPrefill | undefined;
+  if (prefillSupplierId || prefillItemIds.length > 0) {
+    const supplierIsValid = prefillSupplierId && suppliers.some((s) => s.id === prefillSupplierId);
+    const prefillLines: Array<{ itemId: string; quantity: number }> = [];
+    if (prefillItemIds.length > 0) {
+      // Fetch reorderQty for the requested items (org-scoped)
+      const prefillItems = await db.item.findMany({
+        where: {
+          organizationId: membership.organizationId,
+          id: { in: prefillItemIds },
+          status: "ACTIVE",
+        },
+        select: { id: true, reorderQty: true },
+      });
+      const reorderQtyById = new Map(prefillItems.map((i) => [i.id, i.reorderQty ?? 0]));
+      // Preserve the order given in the URL
+      for (const id of prefillItemIds) {
+        if (reorderQtyById.has(id)) {
+          const qty = reorderQtyById.get(id) ?? 0;
+          prefillLines.push({ itemId: id, quantity: qty > 0 ? qty : 1 });
+        }
+      }
+    }
+    if (supplierIsValid || prefillLines.length > 0) {
+      prefill = {
+        supplierId: supplierIsValid ? prefillSupplierId : undefined,
+        lines: prefillLines.length > 0 ? prefillLines : undefined,
+      };
+    }
+  }
+
   const labels: PurchaseOrderFormLabels = {
     fields: t.purchaseOrders.fields,
     statusBadge: t.purchaseOrders.statusBadge,
@@ -131,6 +183,7 @@ export default async function NewPurchaseOrderPage() {
         suppliers={suppliers}
         warehouses={warehouses}
         items={itemOptions}
+        prefill={prefill}
       />
     </div>
   );

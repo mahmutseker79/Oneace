@@ -106,6 +106,11 @@ type InitialPo = {
   }>;
 };
 
+export type PurchaseOrderPrefill = {
+  supplierId?: string;
+  lines?: Array<{ itemId: string; quantity: number }>;
+};
+
 type PurchaseOrderFormProps = {
   labels: PurchaseOrderFormLabels;
   mode: "create" | "edit";
@@ -113,6 +118,7 @@ type PurchaseOrderFormProps = {
   warehouses: WarehouseOption[];
   items: ItemOption[];
   initial?: InitialPo;
+  prefill?: PurchaseOrderPrefill;
 };
 
 function formatDateInput(date: Date | null | undefined): string {
@@ -142,13 +148,14 @@ export function PurchaseOrderForm({
   warehouses,
   items,
   initial,
+  prefill,
 }: PurchaseOrderFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
-  const initialSupplierId = initial?.supplierId ?? suppliers[0]?.id ?? "";
+  const initialSupplierId = initial?.supplierId ?? prefill?.supplierId ?? suppliers[0]?.id ?? "";
   const initialWarehouseId = initial?.warehouseId ?? warehouses[0]?.id ?? "";
 
   const [supplierId, setSupplierId] = useState(initialSupplierId);
@@ -159,14 +166,25 @@ export function PurchaseOrderForm({
   const [status, setStatus] = useState<InitialPo["status"]>(initial?.status ?? "DRAFT");
 
   const [lines, setLines] = useState<LineDraft[]>(() => {
-    if (!initial || initial.lines.length === 0) return [blankLine()];
-    return initial.lines.map((line) => ({
-      key: line.id,
-      itemId: line.itemId,
-      quantity: String(line.orderedQty),
-      unitCost: line.unitCost,
-      notes: line.note ?? "",
-    }));
+    if (initial && initial.lines.length > 0) {
+      return initial.lines.map((line) => ({
+        key: line.id,
+        itemId: line.itemId,
+        quantity: String(line.orderedQty),
+        unitCost: line.unitCost,
+        notes: line.note ?? "",
+      }));
+    }
+    if (!initial && prefill?.lines && prefill.lines.length > 0) {
+      return prefill.lines.map((line) => ({
+        key: crypto.randomUUID(),
+        itemId: line.itemId,
+        quantity: String(line.quantity > 0 ? line.quantity : 1),
+        unitCost: "",
+        notes: "",
+      }));
+    }
+    return [blankLine()];
   });
 
   const itemsById = useMemo(() => {
