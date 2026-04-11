@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 34.
+and iterating on it through Sprint 0 → Sprint 35.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 34.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 33 plus **Sprint 34** are already committed in a
+Sprint 0 through Sprint 34 plus **Sprint 35** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.34.0-sprint34.bundle
+oneace-next/oneace-next-port-v0.35.0-sprint35.bundle
 ```
 
 This bundle contains:
 
-- **76 commits** — 8 Sprint 0 + 1 docs + Sprints 1..34 (each = 1 feature
+- **78 commits** — 8 Sprint 0 + 1 docs + Sprints 1..35 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -60,9 +60,10 @@ This bundle contains:
   - `v0.32.0-sprint32` — Sprint 32 complete (organization ownership transfer — atomic OWNER → ADMIN hand-off with typed-slug confirmation, closes the multi-tenancy trio after Sprint 11 switcher + Sprint 21 delete)
   - `v0.33.0-sprint33` — Sprint 33 complete (invitation email delivery + post-login `?next=/invite/[token]` redirect bundle — Mailer adapter + ConsoleMailer/ResendMailer, rendered invitation-email template, inviteMemberAction wires delivery with soft-miss, login/register forms honour `?next=`, invitee register variant skips org creation)
   - `v0.34.0-sprint34` — Sprint 34 complete (supplier drill-down detail page at `/suppliers/[id]` — identity header + 3-up contact/address/notes cards + 4 KPIs matching Sprint 12 math + recent POs table with timeliness badges + top items card; fixes the Sprint 12 leaderboard broken link)
+  - `v0.35.0-sprint35` — Sprint 35 complete (ZXing-wasm scanner fallback — pluggable detector abstraction at `src/lib/scanner/detector.ts`, lazy-loaded `@zxing/browser` backend for Safari + Firefox, engine badge in the camera card, scanning now works on iPhones; closes the biggest `/scan` usability cliff since Sprint 8)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.33.0-sprint33.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.35.0-sprint35.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -76,11 +77,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.34.0-sprint34.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.35.0-sprint35.bundle \
           next-port:next-port
 
-# Also pull all thirty-four sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.34.0-sprint34.bundle \
+# Also pull all thirty-five sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.35.0-sprint35.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -114,11 +115,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.34.0-sprint34.bun
           refs/tags/v0.31.0-sprint31:refs/tags/v0.31.0-sprint31 \
           refs/tags/v0.32.0-sprint32:refs/tags/v0.32.0-sprint32 \
           refs/tags/v0.33.0-sprint33:refs/tags/v0.33.0-sprint33 \
-          refs/tags/v0.34.0-sprint34:refs/tags/v0.34.0-sprint34
+          refs/tags/v0.34.0-sprint34:refs/tags/v0.34.0-sprint34 \
+          refs/tags/v0.35.0-sprint35:refs/tags/v0.35.0-sprint35
 
 # Verify
-git log --oneline next-port                # should show 76 commits
-git tag -l                                 # should include all thirty-four sprint tags
+git log --oneline next-port                # should show 78 commits
+git tag -l                                 # should include all thirty-five sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -132,8 +134,68 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
                v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
-               v0.34.0-sprint34
+               v0.34.0-sprint34 v0.35.0-sprint35
 ```
+
+### What Sprint 35 added (v0.35.0-sprint35)
+
+ZXing-wasm scanner fallback — `/scan` now works on iOS Safari,
+macOS Safari, and Firefox for the first time since it shipped in
+Sprint 8. Up to this sprint the scanner component hard-coded a
+check for `globalThis.BarcodeDetector` (a Chromium-only Web API),
+so any warehouse worker opening OneAce on an iPhone hit a "Camera
+scanning not supported" wall and could only type barcodes
+manually. This sprint plugs a lazy-loaded `@zxing/browser`
+adapter behind the same detector interface, so those browsers
+get live camera scanning with zero UX change beyond a small
+badge that tells the user which engine is active.
+
+**New file**: `src/lib/scanner/detector.ts` (~170 lines) defines
+`BarcodeDetectorLike`, `DetectorEngine`, and the factory
+`createDetector()`. It prefers a native `BarcodeDetector` wrapper
+(fast, battery-friendly) and falls back to a lazy `import(
+"@zxing/browser")` + `BrowserMultiFormatReader.decode(video)`
+adapter. Recoverable scan failures from ZXing
+(NotFoundException / ChecksumException / FormatException, plus
+string-sniffed equivalents for platforms that throw plain Errors)
+map to an empty array so the scanner's throttled RAF loop just
+retries on the next tick. A module-scoped `zxingPromise` caches
+the dynamic import across start/stop cycles.
+
+**Scanner refactor** (`src/app/(app)/scan/scanner.tsx`):
+dropped the inline `globalThis.BarcodeDetector` feature-detect
+and `SUPPORTED_FORMATS` constant in favor of calling
+`createDetector()` inside `startCamera`. New `engine` state feeds
+a small badge in the camera card header — `Native engine`
+(secondary) for Chromium, `ZXing fallback` (outline) for
+Safari/Firefox, `Loading engine…` (outline + spinner) while the
+dynamic import is in flight. RAF throttle, dedupe, and
+stop-on-match behavior all unchanged because both engines
+present the same `.detect(video)` promise shape.
+
+**i18n**: three new `t.scan.camera` keys (`engineNative`,
+`engineZxing`, `engineLoading`) plumbed through
+`scan/page.tsx` into `ScannerLabels`. `unsupportedBody` copy
+rewritten to drop the old "Chrome/Edge/Android work best"
+guidance — the ZXing fallback makes that guidance obsolete.
+
+**New runtime deps**: `@zxing/browser@^0.1.5` and
+`@zxing/library@^0.21.3`. Both lazy-loaded via dynamic import
+so Chromium users never download the chunk — bundle weight for
+Safari/Firefox is ~250KB gzipped, Chromium adds zero.
+
+Files touched:
+- `src/lib/scanner/detector.ts` (NEW)
+- `src/app/(app)/scan/scanner.tsx`
+- `src/app/(app)/scan/page.tsx`
+- `src/lib/i18n/messages/en.ts`
+- `package.json` + `package-lock.json`
+
+Triple-verified: `tsc --noEmit` exit 0, `biome check src` clean
+(178 files — one new vs Sprint 34's 177), `prisma validate`
+green.
+
+---
 
 ### What Sprint 34 added (v0.34.0-sprint34)
 

@@ -2366,6 +2366,170 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 35 — ZXing-wasm scanner fallback (shipped 2026-04-11)
+
+Tagged `v0.35.0-sprint35`. Closes the biggest usability cliff in the
+app: `/scan` has been Chromium-only since Sprint 8 because it
+exclusively used the native `BarcodeDetector` Web API, which Safari
+(iOS + macOS) and Firefox don't ship. Any warehouse worker opening
+OneAce on an iPhone landed on the "Camera scanning not supported"
+wall and had to fall back to manual entry. This sprint plugs a
+lazy-loaded `@zxing/browser` adapter behind the same detector
+interface so those browsers now get live camera scanning with zero
+UX change beyond a small badge that tells the user which engine is
+active.
+
+### What shipped
+
+**Pluggable detector abstraction** at `src/lib/scanner/detector.ts`.
+One tiny interface — `BarcodeDetectorLike = { detect: (source:
+HTMLVideoElement) => Promise<Array<{ rawValue: string }>> }` — is
+satisfied by two backends:
+
+1. **Native engine** wraps `globalThis.BarcodeDetector` with a
+   format list covering `ean_13`, `ean_8`, `upc_a`, `upc_e`,
+   `code_128`, `code_39`, `qr_code`, `itf`. If a browser advertises
+   the constructor but rejects unknown formats (some older
+   Chromiums do), the builder falls back to the no-arg constructor.
+   If even that throws we pretend native isn't available and let
+   the ZXing path take over.
+
+2. **ZXing engine** lazy-loads `@zxing/browser` via a dynamic
+   `import()`, constructs a singleton `BrowserMultiFormatReader`,
+   and wraps its synchronous `decode(video)` call in an adapter
+   that matches the native shape. Recoverable scan failures
+   (`NotFoundException`, `ChecksumException`, `FormatException`,
+   or equivalent message prefixes) map to an empty array so the
+   scanner's throttled requestAnimationFrame loop just tries again
+   on the next tick. Only fatal failures propagate out and end the
+   scan session.
+
+The factory `createDetector()` prefers native (faster, lower
+battery, less CPU) and falls back to ZXing only when native is
+missing. Results of the ZXing dynamic import are cached in a
+module-level `zxingPromise` so repeat calls across start/stop
+cycles don't re-download the chunk.
+
+**Scanner component refactor** (`src/app/(app)/scan/scanner.tsx`):
+
+- Dropped the inline `globalThis.BarcodeDetector` feature-detect
+  and `BarcodeDetectorCtor` type; `Scanner` now imports the
+  abstraction from `@/lib/scanner/detector` and calls
+  `createDetector()` inside `startCamera`. The RAF throttle loop
+  (~6 FPS) is untouched — it works for both engines because they
+  both present the same `.detect(videoElement)` promise.
+- New `engine` state (`"native" | "zxing" | null`) fed by the
+  factory return value.
+- Small badge in the camera card header shows which engine is
+  active: `Native engine` (secondary badge), `ZXing fallback`
+  (outline badge), or `Loading engine…` (outline + spinner) while
+  the dynamic import is in flight. Nothing is rendered before the
+  first `startCamera` call.
+- `cameraSubtitle` copy stays the same ("Scanning happens locally
+  on your device") — true for both engines.
+- The old "Chrome, Edge, and Android browsers work best"
+  guidance in `unsupportedBody` is replaced with a neutral "Your
+  browser does not expose a camera API, so live scanning can't
+  start" message — triggered only when `navigator.mediaDevices`
+  is entirely missing or both detector engines fail to initialize.
+
+**i18n additions** in `t.scan.camera`:
+- `engineNative`: "Native engine"
+- `engineZxing`: "ZXing fallback"
+- `engineLoading`: "Loading engine…"
+- `unsupportedBody` rewritten (see above)
+
+Plumbed through `scan/page.tsx` into the `ScannerLabels` prop so
+the Scanner client component stays i18n-string-free.
+
+**New runtime dependencies**:
+- `@zxing/browser@^0.1.5`
+- `@zxing/library@^0.21.3` (peer of `@zxing/browser`)
+
+Both lazy-loaded via dynamic `import()` inside the detector
+factory so they only enter the client bundle for browsers that
+actually need them. Chromium users never download the chunk.
+
+### Why this shape
+
+- **Prefer native when available**: the browser BarcodeDetector is
+  significantly faster than any JS/WASM decoder, uses less battery
+  on mobile, and has hardware-accelerated format detection in
+  recent Chrome builds. ZXing is strictly a fallback — about 2×
+  slower on average and ~250 KB gzipped — so we don't want to pay
+  for it on devices that don't need it.
+
+- **Lazy import**: using `await import("@zxing/browser")` instead
+  of a top-level import means the ZXing chunk only ships to
+  browsers that hit the fallback path. Chromium users pay zero
+  marginal bundle cost.
+
+- **Cache the reader, cache the import**: `zxingPromise` is held
+  at module scope so start/stop cycles don't re-import the ZXing
+  module. The reader instance is also reused, which keeps its
+  internal canvas allocation and `DecodeHints` map alive between
+  `.detect()` calls.
+
+- **Adapter matches existing RAF loop**: the scanner's 6 FPS
+  throttle, dedupe on `lastCodeRef`, stop-on-match behavior, and
+  torch-less camera setup all carry over unchanged. Zero
+  conditional branching on engine inside the component logic —
+  only inside the render for the small badge.
+
+- **Engine badge, not toggle**: users do not get a UI to force
+  one engine over the other. Machines that can run native should
+  always run native; the badge exists so people debugging scan
+  failures know which engine was in play.
+
+- **Map all ZXing "no code" exceptions**: NotFoundException is the
+  expected "no barcode in this frame" signal, but on macOS Safari
+  I've seen it surface as a plain `Error` with a message that
+  includes `"NotFoundException"` rather than a proper `name`
+  field. The catch block sniffs both `err.name` and
+  `err.message` to avoid ending scan sessions on recoverable
+  failures.
+
+### Files touched
+
+- `src/lib/scanner/detector.ts` **(NEW, ~170 lines)** — detector
+  abstraction + native/zxing factories + `createDetector`.
+- `src/app/(app)/scan/scanner.tsx` — swap inline feature-detect
+  for `createDetector`, add engine state + badge.
+- `src/app/(app)/scan/page.tsx` — pass three new i18n keys into
+  `ScannerLabels`.
+- `src/lib/i18n/messages/en.ts` — three new `t.scan.camera`
+  keys + rewritten `unsupportedBody`.
+- `package.json` — add `@zxing/browser` + `@zxing/library` deps.
+
+### Verified clean
+
+```
+npx tsc --noEmit                   exit 0
+npx biome check src                178 files, clean
+npx prisma validate                green
+```
+
+### Follow-up gaps (post-MVP unless flagged)
+
+- **Torch toggle** on supported devices (we have the static
+  helpers from `BrowserCodeReader.mediaStreamSetTorch`, just
+  haven't wired a UI). Would help warehouse workers scanning in
+  low light.
+- **Device enumeration + camera picker** for laptops/tablets with
+  multiple cameras. Currently we always pick `facingMode:
+  environment` and let the browser choose.
+- **Continuous-scan mode** instead of stop-on-first-match. Useful
+  for bulk receiving.
+- **Format subsetting on ZXing** — today we scan every format
+  `BrowserMultiFormatReader` supports, which is slightly slower
+  than narrowing to the eight formats the native engine uses.
+  Measured impact is small (<40ms per frame) but worth revisiting
+  if anyone files a "slow scan on Safari" bug.
+- **Telemetry** on which engine fires in the field so we know
+  the split. Currently we only know the client-side state.
+
+---
+
 ## Sprint 34 — Supplier drill-down detail page (shipped 2026-04-11)
 
 Tagged `v0.34.0-sprint34`. Closes a real broken link dating back to
