@@ -1,6 +1,8 @@
 import { OfflineQueueBanner } from "@/components/offline/offline-queue-banner";
 import { OfflineQueueRunner } from "@/components/offline/offline-queue-runner";
+import { InstallAppButton } from "@/components/pwa/install-app-button";
 import { SwRegister } from "@/components/pwa/sw-register";
+import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { Header } from "@/components/shell/header";
 import { Sidebar } from "@/components/shell/sidebar";
 import { getMessages } from "@/lib/i18n";
@@ -33,6 +35,13 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         }}
       />
       <div className="lg:pl-64">
+        <UpdatePrompt
+          labels={{
+            message: t.pwa.update.message,
+            reloadCta: t.pwa.update.reloadCta,
+            dismissCta: t.pwa.update.dismissCta,
+          }}
+        />
         <Header
           userName={session.user.name}
           organizations={orgOptions}
@@ -55,6 +64,9 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             failed: t.offline.queue.failed,
           }}
         />
+        <div className="flex justify-end px-4 pt-2 lg:px-6">
+          <InstallAppButton labels={{ install: t.pwa.install.cta }} />
+        </div>
         <main className="p-4 lg:p-6">{children}</main>
       </div>
     </div>

@@ -23,7 +23,7 @@
  *      so a typo never lives forever on the queue.
  *
  *   2. Triggers on `online` event + `visibilitychange` + a
- *      one-shot mount drain.
+ *      one-shot mount drain + Sprint 28 Background Sync relay.
  *
  *      `online` is the ideal hint but it's unreliable — some
  *      browsers lie about the network and some OS-level captive
@@ -32,6 +32,14 @@
  *      network may have recovered while the tab was hidden. The
  *      mount drain handles the "I opened a fresh tab that had a
  *      stuck in_flight row from a previous crashed session" case.
+ *      Sprint 28 adds a fourth trigger: the SW receives a `sync`
+ *      event from the browser's Background Sync API and
+ *      broadcasts a `{ type: "BACKGROUND_SYNC" }` message to
+ *      every controlled client; this runner listens for it on
+ *      `navigator.serviceWorker` and drains. That covers the
+ *      "user closed the tab with queued writes, turned wifi on
+ *      later, the SW wakes independently" case on browsers that
+ *      implement the API (Chrome/Edge/Opera).
  *
  *   3. Single-tab coordination via Dexie row claiming.
  *
@@ -231,11 +239,29 @@ export function OfflineQueueRunner({ orgId, userId, dispatchers }: OfflineQueueR
       }
     };
 
+    // Sprint 28 — Background Sync relay. `public/sw.js` listens
+    // for the `sync` event from the browser's Background Sync
+    // API and postMessages every controlled client with
+    // `{ type: "BACKGROUND_SYNC", tag }`. This runner treats
+    // that as a fourth drain trigger. Feature-detected: on
+    // browsers without the API (Safari, Firefox) the listener
+    // simply never fires and the foreground triggers still
+    // cover everything.
+    const handleSwMessage = (event: MessageEvent) => {
+      const data = event.data as { type?: unknown } | null;
+      if (data && data.type === "BACKGROUND_SYNC") {
+        void drain();
+      }
+    };
+
     if (typeof window !== "undefined") {
       window.addEventListener("online", handleOnline);
     }
     if (typeof document !== "undefined") {
       document.addEventListener("visibilitychange", handleVisibility);
+    }
+    if (typeof navigator !== "undefined" && navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener("message", handleSwMessage);
     }
 
     return () => {
@@ -245,6 +271,9 @@ export function OfflineQueueRunner({ orgId, userId, dispatchers }: OfflineQueueR
       }
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", handleVisibility);
+      }
+      if (typeof navigator !== "undefined" && navigator.serviceWorker) {
+        navigator.serviceWorker.removeEventListener("message", handleSwMessage);
       }
     };
   }, [drain]);

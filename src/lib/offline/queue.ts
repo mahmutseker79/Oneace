@@ -39,9 +39,61 @@
 
 import { type CachedPendingOp, type CachedPendingOpStatus, getOfflineDb } from "./db";
 
+/**
+ * Sprint 28 — Background Sync tag.
+ *
+ * Shared between `enqueueOp` (which registers the tag when the
+ * first offline write lands) and `public/sw.js` (which listens
+ * for it and broadcasts a wake-up to every live client). Keep
+ * these two constants in lockstep — Dexie tracks nothing about
+ * the SW side of this contract, so a rename here requires a
+ * matching rename in the worker.
+ */
+export const QUEUE_DRAIN_SYNC_TAG = "oneace-queue-drain";
+
 export interface PendingOpScope {
   orgId: string;
   userId: string;
+}
+
+/**
+ * Best-effort Background Sync registration.
+ *
+ * Called from `enqueueOp` after a successful write so the browser
+ * knows to wake the SW when connectivity returns — even if every
+ * tab has been closed in the meantime. This is a hint: on
+ * browsers without the API (Safari, Firefox), the promise chain
+ * falls through silently and the existing runner triggers
+ * (`online`, `visibilitychange`, mount drain) still cover the
+ * drain on foreground.
+ *
+ * Intentionally fire-and-forget. The caller does not await, and
+ * any rejection is swallowed — a failed registration must never
+ * stop the enqueue from succeeding, because the queue row is the
+ * source of truth and the runner will eventually replay it on
+ * the next tab open regardless of the sync tag.
+ */
+export function registerBackgroundSync(): void {
+  if (typeof navigator === "undefined") return;
+  const sw = navigator.serviceWorker;
+  if (!sw) return;
+
+  void sw.ready
+    .then((registration) => {
+      // `sync` is only present on browsers that implement the
+      // Background Sync API (Chrome/Edge/Opera at time of writing).
+      const syncManager = (
+        registration as ServiceWorkerRegistration & {
+          sync?: { register: (tag: string) => Promise<void> };
+        }
+      ).sync;
+      if (!syncManager || typeof syncManager.register !== "function") return;
+      return syncManager.register(QUEUE_DRAIN_SYNC_TAG);
+    })
+    .catch(() => {
+      // Silent fallback — the runner's foreground triggers still
+      // cover the drain on the next user interaction.
+    });
 }
 
 /**
@@ -97,6 +149,10 @@ export async function enqueueOp(input: EnqueueOpInput): Promise<string | null> {
       lastError: null,
     };
     await db.pendingOps.put(row);
+    // Sprint 28 — best-effort Background Sync hint. Fire-and-
+    // forget: the queue row is the source of truth, so a failed
+    // sync registration must not roll back the enqueue.
+    registerBackgroundSync();
     return id;
   } catch {
     // Quota exceeded, transaction aborted, schema-upgrade in

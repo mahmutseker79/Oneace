@@ -1,25 +1,32 @@
 /*
- * OneAce service worker — Sprint 22 foundation.
+ * OneAce service worker — Sprint 22 foundation,
+ * Sprint 24 adds /offline/items to the precache list,
+ * Sprint 28 adds a Background Sync "drain queue" hook.
  *
- * Scope: this sprint deliberately does NOT cache business data.
- * The only goals are:
+ * Scope: this worker deliberately does NOT cache business data.
+ * The goals are:
  *   1. Make the app installable (manifest + a controlling SW).
  *   2. Serve a friendly offline page when navigation fails.
  *   3. Cache immutable /_next/static assets so the shell loads
  *      fast on repeat visits.
+ *   4. Relay a Background Sync wake-up to every controlled client
+ *      so the offline queue runner can drain on connectivity
+ *      return — even if no tab is currently foregrounded
+ *      (Sprint 28, feature-detected; silently absent on Safari
+ *      and Firefox).
  *
- * Non-goals for this sprint (deliberate — each deserves its own
- * sprint with proper conflict-resolution design):
+ * Non-goals (deliberate — each deserves its own design pass):
  *   - Caching /api/* responses
  *   - Caching App Router route RSC payloads
- *   - IndexedDB / Dexie writes
- *   - Background sync or push notifications
+ *   - IndexedDB writes *inside* the SW (the runner lives in the
+ *     client; we just post a message so it knows to drain)
+ *   - Push notifications
  *
  * The cache name MUST be bumped whenever this file changes so
  * activate() can evict the old version atomically.
  */
 
-const CACHE_VERSION = "oneace-sw-v2";
+const CACHE_VERSION = "oneace-sw-v3";
 const PRECACHE = `${CACHE_VERSION}-precache`;
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
@@ -180,4 +187,51 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+/**
+ * Sprint 28 — Background Sync relay.
+ *
+ * The offline write queue (`src/lib/offline/queue.ts`) lives in
+ * the client, not here: IndexedDB access from inside a SW would
+ * duplicate the schema owner and create a second writer we don't
+ * need. Instead, `enqueueOp` registers a `sync` tag with the SW,
+ * and when the browser decides network is back (possibly while
+ * every tab is closed), this handler wakes and postMessages every
+ * controlled client. The `OfflineQueueRunner` component listens
+ * for that message and runs a drain pass.
+ *
+ * Why a broadcast instead of running the drain here:
+ *   - Dexie is the single source of truth; we don't want a second
+ *     Dexie instance (one in the SW, one per tab) fighting over
+ *     the pending-ops store.
+ *   - Server Actions (our dispatcher transport) are client-side;
+ *     the SW can't call them directly.
+ *   - If no clients are open when sync fires, there's nothing to
+ *     wake — the next foreground drain will handle the queue via
+ *     the existing mount-time / visibilitychange triggers. This
+ *     is the correct graceful degradation.
+ *
+ * The tag name is opaque — only the client and this handler need
+ * to agree on it. `oneace-queue-drain` is stable.
+ */
+const QUEUE_DRAIN_SYNC_TAG = "oneace-queue-drain";
+
+self.addEventListener("sync", (event) => {
+  if (event.tag !== QUEUE_DRAIN_SYNC_TAG) return;
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      // Tell every live client to drain. The runner has a single-
+      // flight guard so two tabs receiving the same message will
+      // still only produce one drain pass per row via Dexie
+      // row-claiming.
+      for (const client of clients) {
+        client.postMessage({ type: "BACKGROUND_SYNC", tag: QUEUE_DRAIN_SYNC_TAG });
+      }
+    })(),
+  );
 });

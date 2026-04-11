@@ -1284,6 +1284,17 @@ export const en = {
     ],
   },
 
+  pwa: {
+    update: {
+      message: "A new version of OneAce is available.",
+      reloadCta: "Reload",
+      dismissCta: "Later",
+    },
+    install: {
+      cta: "Install app",
+    },
+  },
+
   offline: {
     metaTitle: "Offline",
     iconLabel: "Wi-Fi off",
