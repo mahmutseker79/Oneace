@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 11.
+and iterating on it through Sprint 0 → Sprint 12.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 10 plus **Sprint 11** are already committed in a
+Sprint 0 through Sprint 11 plus **Sprint 12** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.11.0-sprint11.bundle
+oneace-next/oneace-next-port-v0.12.0-sprint12.bundle
 ```
 
 This bundle contains:
 
-- **30 commits** — 8 Sprint 0 + 1 docs + Sprints 1..11 (each = 1 feature
+- **32 commits** — 8 Sprint 0 + 1 docs + Sprints 1..12 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -37,9 +37,10 @@ This bundle contains:
   - `v0.9.0-sprint9` — Sprint 9 complete (CSV exports + stock-value report)
   - `v0.10.0-sprint10` — Sprint 10 complete (global header search)
   - `v0.11.0-sprint11` — Sprint 11 complete (header org switcher + active-org cookie)
+  - `v0.12.0-sprint12` — Sprint 12 complete (supplier performance report + CSV)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.10.0-sprint10.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.11.0-sprint11.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -53,11 +54,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.11.0-sprint11.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.12.0-sprint12.bundle \
           next-port:next-port
 
-# Also pull all eleven sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.11.0-sprint11.bundle \
+# Also pull all twelve sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.12.0-sprint12.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -68,18 +69,61 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.11.0-sprint11.bun
           refs/tags/v0.8.0-sprint8:refs/tags/v0.8.0-sprint8 \
           refs/tags/v0.9.0-sprint9:refs/tags/v0.9.0-sprint9 \
           refs/tags/v0.10.0-sprint10:refs/tags/v0.10.0-sprint10 \
-          refs/tags/v0.11.0-sprint11:refs/tags/v0.11.0-sprint11
+          refs/tags/v0.11.0-sprint11:refs/tags/v0.11.0-sprint11 \
+          refs/tags/v0.12.0-sprint12:refs/tags/v0.12.0-sprint12
 
 # Verify
-git log --oneline next-port                # should show 30 commits
-git tag -l                                 # should include all eleven sprint tags
+git log --oneline next-port                # should show 32 commits
+git tag -l                                 # should include all twelve sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
-               v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11
+               v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12
 ```
+
+### What Sprint 12 added (v0.12.0-sprint12)
+
+- **`/reports/suppliers` page** — new App Router server component
+  that rolls up every active supplier's purchase order activity into
+  five metrics: total POs (all statuses), open POs
+  (`SENT` + `PARTIALLY_RECEIVED`), received value
+  (sum of `receivedQty × unitCost` across all lines), on-time rate
+  (% of `RECEIVED` POs where `receivedAt <= expectedAt`), and average
+  lead time in calendar days (ordered → received, `Math.round`,
+  `RECEIVED` only). Rows sort by received value desc; three KPI cards
+  on top (total received, total POs with open count, supplier count);
+  per-supplier table links name to `/suppliers/{id}`.
+- **Currency caveat** — POs carry their own `currency` string;
+  the report shows totals in the region currency, and an italic
+  mixed-currency notice appears when any PO uses a non-region
+  currency OR a single supplier mixes currencies. This is the same
+  lower-bound honesty pattern Sprint 9's stock-value report uses.
+- **Scope boundaries documented in the file header** — CANCELLED
+  POs count toward *total* (you may still care that supplier X
+  cancels a lot) but not lead time; DRAFT counts toward total but
+  not open; `expectedAt`-less POs contribute to volume but not
+  on-time rate; lead time uses `Math.round` calendar days (finance
+  cares about "6 vs 14 days", not "6.3"). These choices are
+  intentional and called out in the comment header so a future
+  change doesn't need to re-litigate them.
+- **CSV export at `/reports/suppliers/export`** — same seven columns
+  as the on-screen table, but on-time rate and avg lead time are
+  emitted as **empty cells** (not `0` and not `"—"`) when there are
+  zero eligible samples. Downstream analysts can then distinguish
+  "this supplier is actually 0% on-time" from "not enough data to
+  know", which is the question that prompted the design. Received
+  value is fixed-point 2 decimals, lead time 1 decimal, rows sort
+  by received value desc.
+- **i18n** — new `t.reports.supplierPerformance` namespace in
+  `en.ts` with 20 keys (headings, subtitle, back link, empty state,
+  three KPI labels, mixed-currency caveat, detail heading, six
+  column headers, `notAvailable` dash, `daysSuffix` format). All
+  user-visible text goes through it.
+- **Reports hub tile** — `/reports/page.tsx` adds a third tile
+  (after low-stock and stock-value) using the `Truck` lucide icon
+  and pulling its title + description from the new i18n namespace.
 
 ### What Sprint 11 added (v0.11.0-sprint11)
 

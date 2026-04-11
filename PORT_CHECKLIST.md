@@ -431,6 +431,54 @@ real switcher.
 
 ---
 
+## Sprint 12 — supplier performance report (shipped 2026-04-11)
+
+Tagged `v0.12.0-sprint12`. Rounds out the reports hub with the
+per-supplier roll-up procurement teams ask for when they pick up
+the phone. No schema changes — pure read-path work on top of the
+PO model shipped in Sprint 5.
+
+- [x] `src/app/(app)/reports/suppliers/page.tsx` — five metrics per
+      supplier (total POs, open POs, received value, on-time rate,
+      avg lead time), three KPI cards on top, mixed-currency caveat
+      when any PO uses a non-region currency, per-supplier table
+      sorted by received value descending, supplier name links to
+      `/suppliers/{id}`
+- [x] `src/app/(app)/reports/suppliers/export/route.ts` — CSV export
+      with the same seven columns; on-time rate + avg lead time
+      emitted as empty cells (not `0`, not `"—"`) when there are no
+      eligible samples so analysts can distinguish "actually 0%" from
+      "not enough data"; received value fixed-point 2dp, lead time 1dp
+- [x] `src/app/(app)/reports/page.tsx` — reports hub tile added
+      (Truck icon, title + subtitle from new i18n namespace)
+- [x] `t.reports.supplierPerformance` i18n namespace (20 keys:
+      headings, KPI labels, table columns, empty state, mixed-currency
+      caveat, `notAvailable` dash, `daysSuffix`)
+- [x] Scope boundaries documented in the page file header —
+      CANCELLED POs count toward total but not lead time/on-time;
+      DRAFT counts toward total but not open; `expectedAt`-less POs
+      contribute to volume but not on-time rate; `Math.round` calendar
+      days for lead time (MVP noise tolerance)
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-12)
+
+- [ ] Historical stock-value + supplier-performance time series
+      (needs price/rate snapshots — a new `PriceSnapshot` table and a
+      cron job; deferred until there's a story for "as of date")
+- [ ] PO search (PO number / supplier / status filters on a dedicated
+      `/purchase-orders?q=` route — blocked on a cheap status index)
+- [ ] xlsx / pdf export variants for every report (currently CSV only
+      — users with spreadsheet add-ons can open CSV directly)
+- [ ] Movement date-range filter (currently ledger shows all-time)
+- [ ] Per-supplier drill-down page showing the underlying POs ranked
+      by value and lead-time outlier
+- [ ] Audit log (compliance) — unchanged from post-Sprint-11 deferral
+- [ ] Offline PWA shell + service worker (Moat 1)
+- [ ] Invitation tokens + email flow
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
