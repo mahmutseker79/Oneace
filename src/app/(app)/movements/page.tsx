@@ -48,12 +48,14 @@ function buildExportHref(filter: {
   rawTo: string;
   rawType: string;
   rawWarehouse: string;
+  rawQ: string;
 }): string {
   const params = new URLSearchParams();
   if (filter.rawFrom) params.set("from", filter.rawFrom);
   if (filter.rawTo) params.set("to", filter.rawTo);
   if (filter.rawType) params.set("type", filter.rawType);
   if (filter.rawWarehouse) params.set("warehouse", filter.rawWarehouse);
+  if (filter.rawQ) params.set("q", filter.rawQ);
   const qs = params.toString();
   return qs ? `/movements/export?${qs}` : "/movements/export";
 }
@@ -150,6 +152,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
         initialTo={filter.rawTo}
         initialType={filter.rawType}
         initialWarehouse={filter.rawWarehouse}
+        initialQ={filter.rawQ}
         typeOptions={typeOptions}
         warehouseOptions={warehouses}
         labels={{
@@ -160,6 +163,8 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
           typeAll: t.movements.filter.typeAll,
           warehouseLabel: t.movements.filter.warehouseLabel,
           warehouseAll: t.movements.filter.warehouseAll,
+          itemLabel: t.movements.filter.itemLabel,
+          itemPlaceholder: t.movements.filter.itemPlaceholder,
           apply: t.movements.filter.apply,
           clear: t.movements.filter.clear,
           invalidRange: t.movements.filter.invalidRange,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, X } from "lucide-react";
+import { Filter, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
@@ -26,6 +26,8 @@ type MovementsFilterBarLabels = {
   typeAll: string;
   warehouseLabel: string;
   warehouseAll: string;
+  itemLabel: string;
+  itemPlaceholder: string;
   apply: string;
   clear: string;
   invalidRange: string;
@@ -36,6 +38,7 @@ type MovementsFilterBarProps = {
   initialTo: string;
   initialType: string;
   initialWarehouse: string;
+  initialQ: string;
   typeOptions: TypeOption[];
   warehouseOptions: WarehouseOption[];
   labels: MovementsFilterBarLabels;
@@ -72,6 +75,7 @@ export function MovementsFilterBar({
   initialTo,
   initialType,
   initialWarehouse,
+  initialQ,
   typeOptions,
   warehouseOptions,
   labels,
@@ -81,9 +85,12 @@ export function MovementsFilterBar({
   const [to, setTo] = useState(initialTo);
   const [typeValue, setTypeValue] = useState(initialType || TYPE_ALL);
   const [warehouseValue, setWarehouseValue] = useState(initialWarehouse || WAREHOUSE_ALL);
+  const [q, setQ] = useState(initialQ);
   const [error, setError] = useState<string | null>(null);
 
-  const hasFilter = Boolean(initialFrom || initialTo || initialType || initialWarehouse);
+  const hasFilter = Boolean(
+    initialFrom || initialTo || initialType || initialWarehouse || initialQ,
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -103,6 +110,8 @@ export function MovementsFilterBar({
     if (warehouseValue && warehouseValue !== WAREHOUSE_ALL) {
       params.set("warehouse", warehouseValue);
     }
+    const trimmedQ = q.trim();
+    if (trimmedQ) params.set("q", trimmedQ);
     const qs = params.toString();
     router.push(qs ? `/movements?${qs}` : "/movements");
   }
@@ -112,6 +121,7 @@ export function MovementsFilterBar({
     setTo("");
     setTypeValue(TYPE_ALL);
     setWarehouseValue(WAREHOUSE_ALL);
+    setQ("");
     setError(null);
     router.push("/movements");
   }
@@ -125,6 +135,24 @@ export function MovementsFilterBar({
       <div className="flex items-center gap-2 text-sm font-medium">
         <Filter className="text-muted-foreground h-4 w-4" />
         <span>{labels.heading}</span>
+      </div>
+
+      <div className="space-y-1">
+        <Label htmlFor="movements-filter-q" className="text-xs">
+          {labels.itemLabel}
+        </Label>
+        <div className="relative">
+          <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+          <Input
+            id="movements-filter-q"
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={labels.itemPlaceholder}
+            maxLength={64}
+            className="pl-9"
+          />
+        </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto] md:items-end">

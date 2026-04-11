@@ -19,12 +19,17 @@ export type MovementFilter = {
   // Sprint 17: warehouse scope — opaque id, cross-referenced in the
   // outer org-scoped query so a cross-org guess returns zero rows.
   warehouseId: string | undefined;
+  // Sprint 18: item substring search (sku / name / barcode). Empty
+  // string means "no filter" so the server can treat it uniformly.
+  // Capped at 64 chars so a runaway query can't bloat the SQL.
+  q: string;
   // Raw trimmed strings so the filter bar can rehydrate its inputs
   // without re-reading the searchParams on the client.
   rawFrom: string;
   rawTo: string;
   rawType: string;
   rawWarehouse: string;
+  rawQ: string;
 };
 
 export type MovementSearchParams = {
@@ -32,6 +37,7 @@ export type MovementSearchParams = {
   to?: string | string[];
   type?: string | string[];
   warehouse?: string | string[];
+  q?: string | string[];
 };
 
 function pickString(raw: string | string[] | undefined): string {
@@ -83,6 +89,17 @@ function parseWarehouseId(raw: string): string | undefined {
   return raw;
 }
 
+// Sprint 18: item substring query. Trim + 64-char cap mirrors the
+// Sprint 15 PO-number filter so SKU-style strings (~20 chars) and
+// name fragments both fit comfortably without letting a pathological
+// URL like `?q=<10k chars>` blow up the generated SQL. Empty string
+// = "no filter", which the caller treats uniformly.
+function parseQuery(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return "";
+  return trimmed.slice(0, 64);
+}
+
 export async function parseMovementFilter(
   searchParams: Promise<MovementSearchParams>,
 ): Promise<MovementFilter> {
@@ -91,16 +108,19 @@ export async function parseMovementFilter(
   const rawTo = pickString(params.to);
   const rawType = pickString(params.type);
   const rawWarehouse = pickString(params.warehouse);
+  const rawQ = pickString(params.q);
 
   return {
     from: rawFrom ? parseIsoDate(rawFrom, false) : undefined,
     to: rawTo ? parseIsoDate(rawTo, true) : undefined,
     type: parseType(rawType),
     warehouseId: parseWarehouseId(rawWarehouse),
+    q: parseQuery(rawQ),
     rawFrom,
     rawTo,
     rawType,
     rawWarehouse,
+    rawQ,
   };
 }
 
@@ -145,6 +165,25 @@ export function buildMovementWhere(filter: MovementFilter): Prisma.StockMovement
     where.OR = [{ warehouseId: filter.warehouseId }, { toWarehouseId: filter.warehouseId }];
   }
 
+  if (filter.q.length > 0) {
+    // Relation-level OR on the referenced Item: sku / name / barcode
+    // substring, case-insensitive. Living on `where.item` means it
+    // does NOT clobber the top-level `where.OR` the warehouse axis
+    // already uses — Prisma composes them under the implicit outer
+    // AND, so a user can narrow by warehouse *and* item at the same
+    // time. Using `contains` (not `startsWith`) is deliberate so a
+    // partial SKU like "ABC" finds "SKU-ABC-123"; stays index-friendly
+    // enough at MVP-scale (≤ ~10k items/org). Migrate to a tsvector
+    // column if we ever see a single org cross 100k items.
+    where.item = {
+      OR: [
+        { sku: { contains: filter.q, mode: "insensitive" } },
+        { name: { contains: filter.q, mode: "insensitive" } },
+        { barcode: { contains: filter.q, mode: "insensitive" } },
+      ],
+    };
+  }
+
   return where;
 }
 
@@ -153,5 +192,7 @@ export function buildMovementWhere(filter: MovementFilter): Prisma.StockMovement
  * whether to show the "Clear filters" control and tweak the empty state.
  */
 export function hasAnyFilter(filter: MovementFilter): boolean {
-  return Boolean(filter.from || filter.to || filter.type || filter.warehouseId);
+  return Boolean(
+    filter.from || filter.to || filter.type || filter.warehouseId || filter.q.length > 0,
+  );
 }

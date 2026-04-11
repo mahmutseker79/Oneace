@@ -461,6 +461,8 @@ export const en = {
       typeAll: "All types",
       warehouseLabel: "Warehouse",
       warehouseAll: "All warehouses",
+      itemLabel: "Item",
+      itemPlaceholder: "Search by SKU, name, or barcode",
       apply: "Apply",
       clear: "Clear",
       activeLabel: "Filters applied",
@@ -468,7 +470,8 @@ export const en = {
       resultCountUnfiltered: "Showing the most recent {count} movement(s).",
       truncatedNotice: "Capped at {limit} rows. Narrow the filter further to see older entries.",
       emptyFilteredTitle: "No movements match this filter",
-      emptyFilteredBody: "Try widening the date range or clearing the type or warehouse filter.",
+      emptyFilteredBody:
+        "Try widening the date range, clearing the type or warehouse filter, or removing the item search.",
       invalidRange: "The start date must be on or before the end date.",
     },
   },

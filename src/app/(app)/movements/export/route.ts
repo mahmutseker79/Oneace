@@ -54,15 +54,23 @@ export async function GET(request: Request) {
   const { membership } = await requireActiveMembership();
 
   // Pull the same filter shape the /movements page uses so the CSV
-  // snapshot matches the on-screen view.
+  // snapshot matches the on-screen view. All five axes (Sprint 14
+  // date/type, Sprint 17 warehouse, Sprint 18 item `q`) are mirrored
+  // here so the Export button can deep-link into a fully narrowed
+  // CSV. `parseMovementFilter` validates each axis centrally so a
+  // bogus URL degrades to "no filter" instead of a 500.
   const url = new URL(request.url);
   const rawParams: MovementSearchParams = {
     from: url.searchParams.get("from") ?? undefined,
     to: url.searchParams.get("to") ?? undefined,
     type: url.searchParams.get("type") ?? undefined,
+    warehouse: url.searchParams.get("warehouse") ?? undefined,
+    q: url.searchParams.get("q") ?? undefined,
   };
   const filter = await parseMovementFilter(Promise.resolve(rawParams));
-  const filterActive = Boolean(filter.from || filter.to || filter.type);
+  const filterActive = Boolean(
+    filter.from || filter.to || filter.type || filter.warehouseId || filter.q.length > 0,
+  );
   const limit = filterActive ? FILTERED_LIMIT : UNFILTERED_LIMIT;
 
   const movements = await db.stockMovement.findMany({
