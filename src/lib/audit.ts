@@ -19,6 +19,7 @@
 // more clever tends to drift from what the reviewer actually wants to see.
 
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 /**
  * Canonical `action` values used by the server-action layer. Treat this
@@ -105,9 +106,9 @@ export async function recordAudit(input: AuditInput): Promise<void> {
     });
   } catch (err) {
     // Swallow and log — see the file header for the rationale.
-    // Using console.error keeps this visible in Vercel/Next server logs
-    // without pulling in the Sprint 37 structured logger (still pending).
-    console.error("[audit] failed to record event", {
+    // Sprint 37 wired this through the structured logger so failures
+    // land in the same JSON stream as the rest of the server log.
+    logger.error("audit: failed to record event", {
       action: input.action,
       entityType: input.entityType,
       entityId: input.entityId,

@@ -14,6 +14,8 @@
 
 import { randomBytes } from "node:crypto";
 
+import { env } from "@/lib/env";
+
 /** How long an invitation lives before it expires. */
 export const INVITATION_TTL_DAYS = 14;
 
@@ -33,7 +35,10 @@ export function generateInvitationToken(): string {
  * work.
  */
 export function buildInvitationUrl(token: string): string {
-  const base = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  // Sprint 37: `env.NEXT_PUBLIC_APP_URL` is already the trimmed,
+  // validated URL (or `undefined` when unset in local dev). We
+  // still keep the trailing-slash scrub because environments vary.
+  const base = (env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
   return `${base}/invite/${token}`;
 }
 

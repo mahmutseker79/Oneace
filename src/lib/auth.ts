@@ -1,13 +1,17 @@
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
+// Sprint 37: env vars are now read through the validated `env`
+// module so a missing / malformed secret fails at boot instead of
+// producing a cryptic 500 on the first real request.
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: env.BETTER_AUTH_URL,
+  secret: env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
@@ -27,7 +31,7 @@ export const auth = betterAuth({
       // Extend here with locale, timezone, etc. as profile fields grow.
     },
   },
-  trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"],
+  trustedOrigins: [env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"],
 });
 
 export type Session = typeof auth.$Infer.Session;

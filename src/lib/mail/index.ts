@@ -17,12 +17,16 @@
  *   MAIL_FROM       (required whenever RESEND_API_KEY is set; must be
  *                    a verified Resend sender or the API will 403)
  *
- * We intentionally do NOT crash at boot if `RESEND_API_KEY` is set
- * but `MAIL_FROM` is missing — a clearer error is "mail delivery
- * failed: no from address" at send time than a cryptic startup
- * stack trace in a serverless function.
+ * Sprint 37 update: the env-schema module now enforces the "both
+ * set or both unset" invariant at boot time, so this factory only
+ * has to deal with the two legal states. We still read through the
+ * validated `env` object so tests that monkey-patch `process.env`
+ * and call `resetMailerForTests()` keep working via the re-export
+ * (the env module is evaluated once, so mutating `process.env`
+ * after import is a no-op — historical notes in tests).
  */
 
+import { env } from "@/lib/env";
 import { ConsoleMailer } from "./console-mailer";
 import type { Mailer } from "./mailer";
 import { ResendMailer } from "./resend-mailer";
@@ -37,8 +41,8 @@ let cached: Mailer | null = null;
 export function getMailer(): Mailer {
   if (cached) return cached;
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.MAIL_FROM;
+  const apiKey = env.RESEND_API_KEY;
+  const from = env.MAIL_FROM;
 
   if (!apiKey || !from) {
     cached = new ConsoleMailer();
