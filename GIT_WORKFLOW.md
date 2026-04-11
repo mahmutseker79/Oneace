@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 23.
+and iterating on it through Sprint 0 → Sprint 24.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 23.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 22 plus **Sprint 23** are already committed in a
+Sprint 0 through Sprint 23 plus **Sprint 24** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.23.0-sprint23.bundle
+oneace-next/oneace-next-port-v0.24.0-sprint24.bundle
 ```
 
 This bundle contains:
 
-- **54 commits** — 8 Sprint 0 + 1 docs + Sprints 1..23 (each = 1 feature
+- **56 commits** — 8 Sprint 0 + 1 docs + Sprints 1..24 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -49,9 +49,10 @@ This bundle contains:
   - `v0.21.0-sprint21` — Sprint 21 complete (organization delete / danger zone)
   - `v0.22.0-sprint22` — Sprint 22 complete (PWA foundation — manifest + service worker)
   - `v0.23.0-sprint23` — Sprint 23 complete (PWA Sprint 2 — items read cache via Dexie)
+  - `v0.24.0-sprint24` — Sprint 24 complete (PWA Sprint 3 — picklist caches + static /offline/items)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.22.0-sprint22.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.24.0-sprint24.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -65,11 +66,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.23.0-sprint23.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.24.0-sprint24.bundle \
           next-port:next-port
 
 # Also pull all twenty-three sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.23.0-sprint23.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.24.0-sprint24.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -92,11 +93,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.23.0-sprint23.bun
           refs/tags/v0.20.0-sprint20:refs/tags/v0.20.0-sprint20 \
           refs/tags/v0.21.0-sprint21:refs/tags/v0.21.0-sprint21 \
           refs/tags/v0.22.0-sprint22:refs/tags/v0.22.0-sprint22 \
-          refs/tags/v0.23.0-sprint23:refs/tags/v0.23.0-sprint23
+          refs/tags/v0.23.0-sprint23:refs/tags/v0.23.0-sprint23 \
+          refs/tags/v0.24.0-sprint24:refs/tags/v0.24.0-sprint24
 
 # Verify
-git log --oneline next-port                # should show 54 commits
-git tag -l                                 # should include all twenty-three sprint tags
+git log --oneline next-port                # should show 56 commits
+git tag -l                                 # should include all twenty-four sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -106,8 +108,78 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
-               v0.22.0-sprint22 v0.23.0-sprint23
+               v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24
 ```
+
+### What Sprint 24 added (v0.24.0-sprint24)
+
+- **`src/lib/offline/warehouses-cache.ts`** and
+  **`src/lib/offline/categories-cache.ts`** — mirrors of
+  `items-cache.ts` for the two picklists the stock-count / scan
+  flows will need in future sprints. Same replace-on-write
+  semantics inside a single Dexie rw transaction, same
+  `(orgId, userId)` scoping, same silent-false return on
+  IndexedDB unavailable so callers never need a try/catch.
+- **`src/lib/offline/db.ts`** — `CachedWarehouse` now tracks the
+  real Prisma columns (`code`, `city`, `region`, `country`,
+  `isDefault`) instead of the Sprint 23 placeholder shape. Still
+  schema v1: the stores and indexes are unchanged, so this is a
+  pure TypeScript-type tightening and requires no `.version(2)`
+  block.
+- **`src/components/offline/picklist-cache-sync.tsx`** — generic
+  client bridge that dispatches to the right cache writer via a
+  discriminator string (`"warehouses" | "categories"`). Why a
+  discriminator and not a writer function prop: Next.js client
+  components can only receive Server Action functions across the
+  RSC boundary; a plain `writer` callback fails to serialize.
+  Reuses the Sprint 23 ref + signature-string pattern so biome's
+  `useExhaustiveDependencies` doesn't flag the effect.
+- **`src/app/(app)/warehouses/page.tsx`** and
+  **`src/app/(app)/categories/page.tsx`** — both build a
+  serializable `*SnapshotRow[]` from their Prisma query and
+  mount `<PicklistCacheSync>` at the end of the JSX tree. No
+  banner yet (the warehouses/categories lists are small so a
+  stale indicator is lower priority than on the items list).
+- **`src/components/offline/offline-items-view.tsx`** —
+  `"use client"` viewer that opens Dexie on mount, picks the
+  most-recently-synced `(orgId, userId)` snapshot for the
+  `items` table via `db.meta`, and renders a read-only table
+  (SKU / name / category / stock / status). Sorts rows by
+  `name.localeCompare` with the caller's locale. Four-state
+  machine (loading / empty / error / ready). The "newest
+  snapshot wins" policy is documented inline: when two users
+  share a browser, whoever synced most recently gets their
+  cache back on the offline screen, and since the cache is
+  always written *before* logout it can never leak forward to
+  a user who hasn't logged in yet.
+- **`src/app/offline/items/page.tsx`** — a new `force-static`
+  route with `robots: noindex`. Calls `getMessages()` on the
+  server, packs the labels into a plain object, and hands them
+  to `<OfflineItemsView>`. Never touches auth, cookies, or the
+  database — that's what makes it safe for the SW to precache.
+- **`public/sw.js`** — `CACHE_VERSION` bumped to
+  `oneace-sw-v2` (so the old precache is evicted on activate)
+  and `PRECACHE_URLS` now includes `/offline/items` so the
+  cached catalog is available on the first cold-start offline
+  navigation after install.
+- **`src/app/offline/page.tsx`** — adds a primary CTA linking
+  to `/offline/items` so users who land on the SW fallback
+  page have a one-click path to their cached catalog.
+- **`src/lib/i18n/messages/en.ts`** — new `offline.items.*`
+  block (20 keys covering title, subtitle, loading, empty /
+  error states, column headers, status labels, cached-count
+  placeholder, and the back-home CTA) plus a top-level
+  `offline.viewCachedItemsCta` for the /offline page link.
+- **Non-goals this sprint:** cached-warehouses or
+  cached-categories banners on their respective pages, an
+  `/offline/warehouses` or `/offline/categories` viewer (Sprint
+  25+), a write queue for offline mutations, login-aware
+  snapshot selection, and any kind of filter / search inside
+  the cached catalog viewer.
+- **Triple-verify:** `tsc --noEmit` exit 0, `biome check .`
+  clean (161 files, no errors, no warnings),
+  `prisma validate` green.
+- **No schema changes.**
 
 ### What Sprint 23 added (v0.23.0-sprint23)
 

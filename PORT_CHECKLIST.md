@@ -1204,13 +1204,156 @@ quiet muted-grey text. This keeps the status row invisible to
 - [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
 - [x] **No schema changes.**
 
+## Sprint 24 — PWA Sprint 3: picklist caches + static /offline/items (shipped 2026-04-11)
+
+Tagged `v0.24.0-sprint24`. Extends Sprint 23's items-only cache to
+cover **warehouses + categories picklists** (data plane) and ships
+a **`force-static` `/offline/items` route** that reads directly
+from Dexie (route plane), precached by the service worker so a
+cold-start offline navigation can land on real business data
+without any auth, cookies, or DB round-trips.
+
+**Design decision — picklist caches mirror items-cache exactly.**
+Rather than abstracting over "caches" with a generic helper, each
+cache gets its own file (`warehouses-cache.ts`,
+`categories-cache.ts`) with the same replace-on-write semantics,
+the same `(orgId, userId)` scoping, and the same silent-false
+fallback on IndexedDB failure. This is deliberate: three files
+with 80% overlap is easier to read and change than one
+type-parameterized helper, and the overlap will shrink as each
+cache accumulates domain-specific concerns (e.g., a category tree
+rebuild helper that warehouses don't need).
+
+**Design decision — PicklistCacheSync dispatches on a
+discriminator string, not a writer function.** The first draft
+took a `writer` callback prop; it crashed at RSC-boundary
+serialization because client-component props can only be
+functions if they're Server Actions. The fix is a
+`{ table: "warehouses" | "categories" }` discriminated union
+that lets the client component import both writers directly and
+dispatch in-process. Reuses the Sprint 23 ref + signature-string
+pattern so biome's `useExhaustiveDependencies` stays quiet.
+
+**Design decision — `/offline/items` is `force-static`.** The
+`(app)` layout calls `requireActiveMembership()` which needs a
+live DB connection and cookies — both of which are gone the
+moment the user is offline. A sibling route tree rooted at
+`/offline/` bypasses the layout entirely and stays auth-free,
+DB-free, and cookie-free. Because the server component never
+hits anything dynamic, Next.js prerenders it at build time and
+the service worker precaches the resulting HTML during install.
+Cold-start navigation while offline can now reach a real UI
+instead of the SW fallback-only page.
+
+**Design decision — viewer picks the most-recently-synced
+snapshot.** Multiple users may share a browser; each can have
+their own `(orgId, userId)` snapshot in the meta table. Sorting
+by `syncedAt` descending and taking the first row is the right
+behavior for the "I was just looking at this before the network
+dropped" use case. This is documented inline as safe because the
+cache is always written *before* logout, so a future user who
+hasn't logged in yet can't see someone else's data through this
+path. Login-aware snapshot selection is PWA Sprint 4+ territory
+once we have a proper offline auth story.
+
+**Design decision — server builds the labels, client reads
+Dexie.** `/offline/items/page.tsx` calls `getMessages()` once on
+the server, assembles an `OfflineItemsViewLabels` plain object,
+and passes it to the client viewer. The client never imports any
+i18n machinery — all it does is open Dexie, read the newest
+snapshot, sort rows by `name.localeCompare(locale)`, and render a
+four-state machine (loading / empty / error / ready). Keeps the
+client bundle small and keeps the precachable HTML localized.
+
+**Design decision — no `/offline/warehouses` or
+`/offline/categories` viewers this sprint.** The items catalog is
+the one stock-operator-critical screen. Adding two more viewers
+would triple the precache surface for two screens that are rarely
+consulted on their own. The picklist caches are staged now so
+future sprints (scan-into-stock-count, offline quick-count) can
+consume them without another data-plane sprint.
+
+- [x] `src/lib/offline/warehouses-cache.ts` — mirror of
+      `items-cache.ts`. Exports `WarehouseSnapshotRow` (the
+      serializable input shape), `WarehouseSnapshotScope`,
+      `writeWarehousesSnapshot` (single rw transaction: delete
+      scoped rows → bulkPut → put meta row), and
+      `readWarehousesSnapshot`. Silent-false fallback on any
+      IndexedDB failure.
+- [x] `src/lib/offline/categories-cache.ts` — same structure
+      for categories. `CategorySnapshotRow` carries only
+      `id / name / parentId`; the tree is rebuilt client-side
+      from the parentId pointers when a future consumer needs
+      it.
+- [x] `src/lib/offline/db.ts` — `CachedWarehouse` now holds the
+      real Prisma columns (`code` non-nullable; `city`, `region`,
+      `country` nullable; `isDefault` bool) instead of the Sprint
+      23 placeholder shape. Schema version unchanged (still v1)
+      because no stores or indexes were touched.
+- [x] `src/components/offline/picklist-cache-sync.tsx` — generic
+      `"use client"` bridge dispatched by a
+      `table: "warehouses" | "categories"` discriminator.
+      Uses `useRef` for the hot props and a signature-string
+      effect key so unrelated parent re-renders don't thrash
+      IndexedDB. `void signature;` inside the effect body so
+      biome's `useExhaustiveDependencies` sees the signature
+      as a real dependency.
+- [x] `src/app/(app)/warehouses/page.tsx` — builds
+      `WarehouseSnapshotRow[]` from the Prisma query and
+      mounts `<PicklistCacheSync table="warehouses">` after
+      every successful render. Scope pinned to
+      `(membership.organizationId, session.user.id)`.
+- [x] `src/app/(app)/categories/page.tsx` — same pattern with
+      `CategorySnapshotRow[]`. Only `id`, `name`, `parentId`
+      are cached — the tree structure is reconstructable on
+      the client.
+- [x] `src/components/offline/offline-items-view.tsx` —
+      `"use client"` viewer. On mount: open Dexie, pull every
+      meta row where `table === "items"`, sort by `syncedAt`
+      desc, read the scoped items rows, sort them by
+      `name.localeCompare(labels.locale)`, render a read-only
+      table with SKU / name / category / stock / status. Four
+      states: loading, empty (Dexie unavailable OR no meta
+      row), error (exception during read), ready. Safe under
+      SSR — the effect only runs client-side and bails out if
+      `getOfflineDb()` returns null.
+- [x] `src/app/offline/items/page.tsx` — server component
+      with `export const dynamic = "force-static"`.
+      `generateMetadata` sets the title and
+      `robots: { index: false, follow: false }`. Calls
+      `getMessages()` once, packs every `OfflineItemsViewLabels`
+      field into a plain object, and renders `<OfflineItemsView>`.
+      Imports nothing from the DB or auth helpers.
+- [x] `public/sw.js` — `CACHE_VERSION` bumped to
+      `oneace-sw-v2` (so the old precache is evicted on
+      activate) and `PRECACHE_URLS` now includes
+      `/offline/items`. Install still uses `cache: "reload"`
+      to bypass any HTTP cache, and a partial precache still
+      lets the worker activate (the `.catch(() => {})` per-URL
+      is unchanged).
+- [x] `src/app/offline/page.tsx` — adds a primary CTA linking
+      to `/offline/items` so users landing on the SW fallback
+      page have a one-click path to their cached catalog. Old
+      retry and tip copy unchanged.
+- [x] `src/lib/i18n/messages/en.ts` — new `offline.items.*`
+      block (20 keys) + top-level `offline.viewCachedItemsCta`
+      for the /offline page link. All copy English-only per
+      the i18n rule; future locales extend en.ts, they don't
+      fork it.
+- [x] Verified clean: `prisma validate` (with dummy
+      DATABASE_URL/DIRECT_URL env vars to satisfy the CLI) +
+      `tsc --noEmit` + `biome check .` (161 files, no errors).
+- [x] **No schema changes.** No new runtime dependencies.
+
+---
+
 ### Still to port (deferred post-Sprint-22)
 
 - [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
       cache + Dexie wrapper). Shipped as Sprint 23 (see below).
-- [ ] PWA Sprint 3 — offline-capable items route that serves
-      cached rows when the network is down, plus cached
-      warehouses + categories picklist.
+- [x] PWA Sprint 3 — picklist caches for warehouses +
+      categories, plus a static `/offline/items` route served
+      directly from Dexie. Shipped as Sprint 24 (see above).
 - [ ] PWA Sprint 4 — offline stock counts (write queue, replay
       on reconnect, optimistic-UI markers). This is where the
       Flutter moat actually lives.
