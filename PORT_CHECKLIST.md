@@ -640,6 +640,56 @@ helper module pays off a second time.
 
 ---
 
+## Sprint 17 — movements warehouse filter (shipped 2026-04-11)
+
+Tagged `v0.17.0-sprint17`. Closes half of the post-Sprint-14
+"warehouse + item scope" deferred item: movements can now be
+narrowed to a specific warehouse, with correct TRANSFER-both-sides
+semantics. Item scope stays deferred — a flat `<Select>` over
+10 k+ items is the wrong UX; that axis needs a dedicated
+substring-style design pass.
+
+- [x] `src/app/(app)/movements/filter.ts` — extended
+      `MovementFilter` with `warehouseId` + `rawWarehouse`,
+      `MovementSearchParams` with `warehouse`, added
+      `parseWarehouseId` (opaque pass-through, 64-char cap — the
+      outer org-scoped query neutralises cross-org guesses).
+      `buildMovementWhere` uses `where.OR = [{ warehouseId },
+      { toWarehouseId }]` so filtering by warehouse X includes
+      both outgoing and *incoming* transfers. Prisma composes
+      the OR under the implicit outer AND so it layers cleanly
+      on top of an active `type` filter.
+- [x] `MovementsFilterBar` — fourth column: warehouse
+      `<Select>` with a `__all__` sentinel, grid template grew
+      from `1fr_1fr_1fr_auto` to `1fr_1fr_1fr_1fr_auto`, clear
+      button also resets the warehouse value.
+- [x] `/movements` page — loads warehouses via `Promise.all`
+      alongside the ledger query, `isArchived: false`, NOT
+      filtered by the active filter (so a narrowed view doesn't
+      make the selected warehouse vanish from the dropdown and
+      strand the user). `buildExportHref` now carries
+      `warehouse` into the CSV route — no changes to the export
+      handler needed because `parseMovementFilter` reads it.
+- [x] i18n — two new keys on `t.movements.filter`
+      (`warehouseLabel`, `warehouseAll`). `truncatedNotice` and
+      `emptyFilteredBody` copy refreshed to mention the new
+      warehouse axis.
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-17)
+
+- [ ] Item-scope axis on the movements filter (needs
+      substring search design, not a flat Select)
+- [ ] Per-org default locale / region override
+- [ ] Danger zone / organization delete
+- [ ] Audit log
+- [ ] Offline PWA shell + service worker
+- [ ] Invitation tokens + email flow
+- [ ] Reports xlsx/pdf export variants (CSV only today)
+- [ ] All items from post-Sprint-16 deferred list (unchanged)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
