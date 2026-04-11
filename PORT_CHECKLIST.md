@@ -606,6 +606,40 @@ driven filter pattern as Sprint 14.
 
 ---
 
+## Sprint 16 — filter-aware purchase-order CSV export (shipped 2026-04-11)
+
+Tagged `v0.16.0-sprint16`. Completes the Sprint 15 filter story
+by letting users pull their narrowed PO list into a spreadsheet.
+Mirrors the Sprint 14 movements-export pattern so the filter
+helper module pays off a second time.
+
+- [x] `src/app/(app)/purchase-orders/export/route.ts` — 14-column
+      `GET /purchase-orders/export` CSV, re-uses
+      `parsePurchaseOrderFilter` + `buildPurchaseOrderWhere`,
+      aggregates `lines` into `totalQuantity` and `totalValue`
+      (the latter `.toFixed(2)` so spreadsheets don't re-introduce
+      FP noise on `Decimal(12,2)` data), row cap 2 000 unfiltered /
+      10 000 filtered (lower than movements because each row
+      carries aggregated line data)
+- [x] `/purchase-orders` page — Export CSV button + `buildExportHref`
+      helper so the button deep-links the current filter state
+      into the CSV. Uses the shared `t.common.exportCsv` label
+      (no new i18n keys needed)
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-16)
+
+- [ ] Per-org default locale / region override
+- [ ] Danger zone / organization delete
+- [ ] Audit log
+- [ ] Offline PWA shell + service worker
+- [ ] Invitation tokens + email flow
+- [ ] Warehouse + item scope on the movements filter
+- [ ] Reports xlsx/pdf export variants (CSV only today)
+- [ ] All items from post-Sprint-15 deferred list (unchanged)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**

@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 15.
+and iterating on it through Sprint 0 → Sprint 16.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 15.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 14 plus **Sprint 15** are already committed in a
+Sprint 0 through Sprint 15 plus **Sprint 16** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.15.0-sprint15.bundle
+oneace-next/oneace-next-port-v0.16.0-sprint16.bundle
 ```
 
 This bundle contains:
 
-- **38 commits** — 8 Sprint 0 + 1 docs + Sprints 1..15 (each = 1 feature
+- **40 commits** — 8 Sprint 0 + 1 docs + Sprints 1..16 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -41,9 +41,10 @@ This bundle contains:
   - `v0.13.0-sprint13` — Sprint 13 complete (create-another-organization flow)
   - `v0.14.0-sprint14` — Sprint 14 complete (movements date-range + type filter)
   - `v0.15.0-sprint15` — Sprint 15 complete (purchase-order status + supplier + PO-number filter)
+  - `v0.16.0-sprint16` — Sprint 16 complete (filter-aware PO CSV export)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.14.0-sprint14.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.16.0-sprint16.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -57,11 +58,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.15.0-sprint15.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.16.0-sprint16.bundle \
           next-port:next-port
 
-# Also pull all fifteen sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.15.0-sprint15.bundle \
+# Also pull all sixteen sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.16.0-sprint16.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -76,19 +77,41 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.15.0-sprint15.bun
           refs/tags/v0.12.0-sprint12:refs/tags/v0.12.0-sprint12 \
           refs/tags/v0.13.0-sprint13:refs/tags/v0.13.0-sprint13 \
           refs/tags/v0.14.0-sprint14:refs/tags/v0.14.0-sprint14 \
-          refs/tags/v0.15.0-sprint15:refs/tags/v0.15.0-sprint15
+          refs/tags/v0.15.0-sprint15:refs/tags/v0.15.0-sprint15 \
+          refs/tags/v0.16.0-sprint16:refs/tags/v0.16.0-sprint16
 
 # Verify
-git log --oneline next-port                # should show 38 commits
-git tag -l                                 # should include all fifteen sprint tags
+git log --oneline next-port                # should show 40 commits
+git tag -l                                 # should include all sixteen sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
-               v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15
+               v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
+               v0.16.0-sprint16
 ```
+
+### What Sprint 16 added (v0.16.0-sprint16)
+
+- **`src/app/(app)/purchase-orders/export/route.ts`** — new
+  `GET /purchase-orders/export` route mirroring the Sprint 14
+  movements export. Re-uses `parsePurchaseOrderFilter` /
+  `buildPurchaseOrderWhere` so the CSV the user downloads matches
+  the filter on the /purchase-orders screen row-for-row. 14-column
+  layout (PO number, status, currency, supplier, destination
+  warehouse, ordered/expected/received/cancelled ISO timestamps,
+  line count, aggregate ordered qty, aggregate value as
+  `Decimal(12,2)` stringified, notes, created-by). Row cap 2,000
+  unfiltered / 10,000 filtered — lower than movements (5k/20k)
+  because each row aggregates line data and we'd rather bound
+  the per-PO fan-out.
+- **`/purchase-orders` page** — Export CSV button added next to
+  "New purchase order"; `buildExportHref` composes the same three
+  filter axes into the query string so the button deep-links
+  into a filtered CSV if the user already narrowed on screen.
+  Uses the shared `t.common.exportCsv` label (no new i18n).
 
 ### What Sprint 15 added (v0.15.0-sprint15)
 
