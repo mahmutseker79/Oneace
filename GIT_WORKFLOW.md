@@ -13,18 +13,18 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0, Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, **and Sprint 6**
-are already committed in a portable git bundle at:
+Sprint 0, Sprint 1, Sprint 2, Sprint 3, Sprint 4, Sprint 5, Sprint 6, **and
+Sprint 7** are already committed in a portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.6.0-sprint6.bundle
+oneace-next/oneace-next-port-v0.7.0-sprint7.bundle
 ```
 
 This bundle contains:
 
-- **20 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 1 docs +
+- **22 commits** — 8 Sprint 0 + 1 docs + 1 Sprint 1 + 1 Sprint 1 docs +
   1 Sprint 2 + 1 runbook + 1 Sprint 3 + 1 runbook + 1 Sprint 4 + 1 runbook +
-  1 Sprint 5 + 1 runbook + 1 Sprint 6 + 1 runbook
+  1 Sprint 5 + 1 runbook + 1 Sprint 6 + 1 runbook + 1 Sprint 7 + 1 runbook
 - **Branch:** `next-port`
 - **Tags (annotated):**
   - `v0.1.0-sprint1` — Sprint 1 complete (items, warehouses, categories)
@@ -33,13 +33,15 @@ This bundle contains:
   - `v0.4.0-sprint4` — Sprint 4 complete (CSV import wizard + bulk action)
   - `v0.5.0-sprint5` — Sprint 5 complete (suppliers + purchase orders + receive flow)
   - `v0.6.0-sprint6` — Sprint 6 complete (live dashboard + low-stock report + PO-from-reorder)
+  - `v0.7.0-sprint7` — Sprint 7 complete (settings + team management + Sprint 5 cleanup)
 
 Older bundles (`oneace-next-port.bundle`,
 `oneace-next-port-v0.1.0-sprint1.bundle`,
 `oneace-next-port-v0.2.0-sprint2.bundle`,
 `oneace-next-port-v0.3.0-sprint3.bundle`,
 `oneace-next-port-v0.4.0-sprint4.bundle`,
-`oneace-next-port-v0.5.0-sprint5.bundle`) are kept around only because the
+`oneace-next-port-v0.5.0-sprint5.bundle`,
+`oneace-next-port-v0.6.0-sprint6.bundle`) are kept around only because the
 sandbox cannot delete files from the mount — always use the latest versioned
 one.
 
@@ -53,27 +55,56 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.6.0-sprint6.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.7.0-sprint7.bundle \
           next-port:next-port
 
-# Also pull all six sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.6.0-sprint6.bundle \
+# Also pull all seven sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.7.0-sprint7.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
           refs/tags/v0.4.0-sprint4:refs/tags/v0.4.0-sprint4 \
           refs/tags/v0.5.0-sprint5:refs/tags/v0.5.0-sprint5 \
-          refs/tags/v0.6.0-sprint6:refs/tags/v0.6.0-sprint6
+          refs/tags/v0.6.0-sprint6:refs/tags/v0.6.0-sprint6 \
+          refs/tags/v0.7.0-sprint7:refs/tags/v0.7.0-sprint7
 
 # Verify
-git log --oneline next-port                # should show 20 commits
-git tag -l                                 # should include all six sprint tags
+git log --oneline next-port                # should show 22 commits
+git tag -l                                 # should include all seven sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
-               v0.5.0-sprint5 v0.6.0-sprint6
+               v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7
 ```
+
+### What Sprint 7 added (v0.7.0-sprint7)
+
+- **Settings page** (`/settings`) — three cards wired to real server actions:
+  - **Organization profile**: edit name + URL slug, with slug regex validation
+    and P2002 conflict mapping; plan shown read-only; gated to OWNER/ADMIN.
+  - **Locale picker**: Select of all 8 supported languages writing the
+    `oneace-locale` cookie (1-year maxAge) and triggering a layout revalidate.
+  - **Region picker**: Select of all 7 supported regions showing currency +
+    time zone for the current pick, writing the `oneace-region` cookie.
+- **Users page** (`/users`) — team management for OWNER/ADMIN roles:
+  - Team list sorted by role (OWNER → VIEWER) then join date, with the current
+    user flagged via a "You" badge.
+  - Invite-by-email flow that looks up an existing user, creates a membership,
+    and returns friendly errors for P2002 (already member) / unknown email.
+  - Inline role change via a Select with guardrails: non-owners cannot
+    promote anyone to OWNER, the last OWNER cannot be demoted, and the active
+    user cannot change their own row.
+  - Remove-member flow in an AlertDialog: blocks self-removal, blocks removing
+    the last OWNER, and refreshes the list on success.
+- **Sprint 5 cleanup** finally landed: the item form has a `preferredSupplier`
+  Select (unblocking the Sprint 6 low-stock supplier grouping), and the PO
+  detail page surfaces a cancel button wired to the existing
+  `cancelPurchaseOrderAction`.
+- **Validation** — two new schemas in `src/lib/validation/`:
+  `organization.ts` (name + slug) and `membership.ts` (invite + role update).
+- **i18n** — `settings` and `users` namespaces added to `en.ts`, covering
+  all labels, help text, error messages, and role descriptions.
 
 ### What Sprint 6 added (v0.6.0-sprint6)
 

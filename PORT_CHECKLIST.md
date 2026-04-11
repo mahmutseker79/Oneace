@@ -184,11 +184,60 @@ back up.
 
 ### Still to port (deferred post-Sprint-6)
 
-- [ ] Item form `preferredSupplierId` field (schema exists; UI will
-      land in Sprint 7 alongside replenishment hints)
+- [x] Item form `preferredSupplierId` field — **shipped in Sprint 7**
 - [ ] Stock-value over time (waits on a price-snapshot table)
 - [ ] Supplier performance report (lead time, fill rate) — needs
       richer received/ordered history
+
+---
+
+## Sprint 7 — Settings + Team management + Sprint 5 cleanup (shipped 2026-04-11)
+
+Tagged `v0.7.0-sprint7`. Fills the biggest remaining UX holes in the sidebar
+(`/settings` and `/users` were 404s) and clears the Sprint 5 cleanup items
+that were blocking the Sprint 6 low-stock report from being fully useful.
+
+- [x] `/settings` page with three cards: organization profile, locale picker,
+      region picker — all wired to real server actions
+- [x] `updateOrganizationProfileAction` — zod-validated name + slug, P2002
+      conflict mapped to a friendly field error, gated to OWNER/ADMIN
+- [x] `setLocaleAction` / `setRegionAction` — cookie writes (1-year maxAge,
+      lax sameSite) + `revalidatePath("/", "layout")` so the new locale /
+      region renders on the very next request
+- [x] `LocalePicker` — Select of all 8 supported locales, shows "saved" on
+      success, reverts on failure
+- [x] `RegionPicker` — Select of all 7 supported regions with a live
+      currency + time-zone readout
+- [x] `/users` page with a role-sorted member table (OWNER → VIEWER), the
+      current user badged as "You", and a createdAt column formatted via
+      the active region's `numberLocale`
+- [x] `InviteForm` — looks up the user by email, creates a membership,
+      handles P2002 (already a member) and unknown-email as field errors
+- [x] `MemberRow` — inline role change Select + AlertDialog remove button;
+      all mutations routed through `updateMemberRoleAction` /
+      `removeMemberAction`
+- [x] Guardrails: last-OWNER cannot be demoted or removed; non-OWNERs
+      cannot promote anyone to OWNER; the active user cannot change their
+      own row or remove themselves
+- [x] Item form gains a `preferredSupplierId` Select (with a `None` option)
+      wired through the `itemInputSchema` and both create/update actions
+- [x] PO detail surfaces a `CancelPoButton` client component using the
+      AlertDialog primitive, wired to the existing
+      `cancelPurchaseOrderAction` — visible for DRAFT/SENT/PARTIALLY_RECEIVED
+- [x] New validation schemas: `organization.ts` (name + slug),
+      `membership.ts` (invite + role update)
+- [x] i18n: `settings` and `users` namespaces in `en.ts`
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-7)
+
+- [ ] Invitation tokens / email flow (MVP uses "user must already exist";
+      full pending-invitation flow needs an `Invitation` model + mailer)
+- [ ] Organization switcher in the header (multi-org memberships exist in
+      the schema but `requireActiveMembership` always picks the oldest)
+- [ ] Organization delete / "danger zone" card on `/settings`
+- [ ] Stock-value over time + supplier performance (still blocked on
+      price-snapshot table and richer received/ordered history)
 
 ---
 
@@ -197,7 +246,8 @@ back up.
 - `ScannerView` → Sprint 3 (Moat 1)
 - `StockCountView` + `StockCountSession` → Sprint 5 (Moat 2, with the Dexie layer)
 - `ReportsView` → **Sprint 6 (shipped 2026-04-11)**
-- `SettingsView` (org + billing + locale / region picker) → Sprint 8–9
+- `SettingsView` (org + locale / region picker) → **Sprint 7 (shipped 2026-04-11)**
+- Billing & plan upgrades → Sprint 9+
 
 ---
 
