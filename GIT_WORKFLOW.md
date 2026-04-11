@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 25.
+and iterating on it through Sprint 0 → Sprint 26.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 25.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 24 plus **Sprint 25** are already committed in a
+Sprint 0 through Sprint 25 plus **Sprint 26** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.25.0-sprint25.bundle
+oneace-next/oneace-next-port-v0.26.0-sprint26.bundle
 ```
 
 This bundle contains:
 
-- **58 commits** — 8 Sprint 0 + 1 docs + Sprints 1..25 (each = 1 feature
+- **60 commits** — 8 Sprint 0 + 1 docs + Sprints 1..26 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -51,9 +51,10 @@ This bundle contains:
   - `v0.23.0-sprint23` — Sprint 23 complete (PWA Sprint 2 — items read cache via Dexie)
   - `v0.24.0-sprint24` — Sprint 24 complete (PWA Sprint 3 — picklist caches + static /offline/items)
   - `v0.25.0-sprint25` — Sprint 25 complete (PWA Sprint 4 Part A — offline write queue substrate)
+  - `v0.26.0-sprint26` — Sprint 26 complete (PWA Sprint 4 Part B — first offline op: movement create)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.24.0-sprint24.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.25.0-sprint25.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -67,11 +68,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.25.0-sprint25.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.26.0-sprint26.bundle \
           next-port:next-port
 
 # Also pull all twenty-three sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.25.0-sprint25.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.26.0-sprint26.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -96,11 +97,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.25.0-sprint25.bun
           refs/tags/v0.22.0-sprint22:refs/tags/v0.22.0-sprint22 \
           refs/tags/v0.23.0-sprint23:refs/tags/v0.23.0-sprint23 \
           refs/tags/v0.24.0-sprint24:refs/tags/v0.24.0-sprint24 \
-          refs/tags/v0.25.0-sprint25:refs/tags/v0.25.0-sprint25
+          refs/tags/v0.25.0-sprint25:refs/tags/v0.25.0-sprint25 \
+          refs/tags/v0.26.0-sprint26:refs/tags/v0.26.0-sprint26
 
 # Verify
-git log --oneline next-port                # should show 58 commits
-git tag -l                                 # should include all twenty-five sprint tags
+git log --oneline next-port                # should show 60 commits
+git tag -l                                 # should include all twenty-six sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -111,8 +113,94 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
-               v0.25.0-sprint25
+               v0.25.0-sprint25 v0.26.0-sprint26
 ```
+
+### What Sprint 26 added (v0.26.0-sprint26)
+
+- **`prisma/schema.prisma`** — adds `idempotencyKey String?`
+  nullable column to `StockMovement` plus a compound unique
+  index `@@unique([organizationId, idempotencyKey])`. Nullable
+  because the legacy online fast-path (the Sprint 14 FormData
+  action) doesn't carry a key — only the new queue-aware JSON
+  path does. Compound with `organizationId` so two orgs can't
+  collide on the same UUID (unlikely but the constraint shape
+  should match how we scope everything else).
+- **`src/lib/validation/movement.ts`** — new
+  `movementOpPayloadSchema = z.object({ idempotencyKey:
+  z.string().uuid(), input: movementInputSchema })` with a
+  matching `MovementOpPayload` type. Used by the form
+  (producer), the dispatcher (consumer re-validating payloads
+  from IndexedDB), and the server action (authoritative).
+- **`src/app/(app)/movements/actions.ts`** — refactored. New
+  internal `writeMovement(args)` helper does the transactional
+  ledger write for **both** callers — the legacy FormData
+  `createMovementAction` and the new JSON/idempotent
+  `submitMovementOpAction`. Shared body, shared membership
+  guards, shared stockLevel upserts, shared P2002/P2025
+  handling. The new `submitMovementOpAction(payload)` is the
+  queue-aware entry point: never throws, returns a
+  `MovementOpResult` discriminated union with an explicit
+  `retryable: boolean` so the dispatcher can pick the right
+  queue verdict. Pre-checks the idempotency index with a
+  `findUnique` before opening the transaction so the common
+  "replay hit" path is a single indexed SELECT instead of a
+  failed INSERT + rollback; P2002 handling inside the catch
+  block still covers the rare pre-check-vs-insert race.
+- **`src/lib/offline/dispatchers/movement-create.ts`** — NEW
+  file. Pure client module (no `"use client"` directive needed
+  because no JSX/hooks). Exports
+  `MOVEMENT_CREATE_OP_TYPE = "movement.create"`, a co-located
+  `buildMovementCreatePayload` helper, and
+  `dispatchMovementCreate: OpDispatcher`. The dispatcher
+  defensively re-parses the Dexie payload via
+  `movementOpPayloadSchema.safeParse` (a malformed row from a
+  stale client becomes a **fatal** failure — otherwise it
+  would loop forever), calls `submitMovementOpAction`,
+  translates `ok/retryable/non-retryable` into
+  `DispatcherResult.kind` values, and maps any transport
+  throw to `retry`.
+- **`src/components/offline/offline-queue-runner.tsx`** —
+  registers the first dispatcher at the Sprint 25 seam. One
+  import + one map entry:
+  `[MOVEMENT_CREATE_OP_TYPE]: dispatchMovementCreate`. The
+  top-of-file doc block is updated from "Sprint 25 substrate"
+  to "Sprint 25 substrate, Sprint 26 wires the first concrete
+  dispatcher". Drain loop, triggers, and single-flight guard
+  are all untouched — every future op will be added the same
+  way.
+- **`src/app/(app)/movements/movement-form.tsx`** — rewritten
+  end-to-end. New required `scope: MovementFormScope` prop
+  (`{ orgId, userId }`). New `buildInput(form)` helper
+  produces a typed `MovementInput` directly instead of a
+  FormData blob. New `generateIdempotencyKey()` uses
+  `crypto.randomUUID()` with a Math.random RFC4122 v4
+  fallback. `handleSubmit` generates the key **once** (before
+  any network attempt), pre-flight-checks
+  `navigator.onLine === false`, tries
+  `submitMovementOpAction` first, and falls through to
+  `enqueueOp` on transport throw / `retryable: true` / offline
+  pre-flight — all using the **same key** so a flaky network
+  can't double-post. Non-retryable errors (validation, missing
+  item, membership denied) surface inline with field-level
+  messages and are **not** enqueued (would loop forever). New
+  `CloudOff` icon replaces the spinner in the pending button
+  when the user is offline.
+- **`src/app/(app)/movements/new/page.tsx`** — plumbs
+  `scope={{ orgId, userId }}` and the new `submittingLabel` /
+  `queuedLabel` labels into `<MovementForm>`. Now destructures
+  `session` out of `requireActiveMembership` alongside
+  `membership`.
+- **`src/lib/i18n/messages/en.ts`** — adds
+  `t.movements.offlineQueued` and
+  `t.movements.offlineSubmitting`.
+- **Triple-verify:** `tsc --noEmit` exit 0,
+  `biome check src` clean (158 files), `prisma validate` green
+  against the new unique constraint.
+- **No new runtime dependencies.** Zod, Dexie, and Prisma
+  were all already in the tree. The schema change is additive
+  + nullable and was pushed via the `prisma db:push` workflow
+  (no migration file).
 
 ### What Sprint 25 added (v0.25.0-sprint25)
 

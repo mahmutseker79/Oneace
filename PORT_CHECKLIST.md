@@ -1485,6 +1485,185 @@ that returns `null` — it has no UI, it only orchestrates.
 
 ---
 
+## Sprint 26 — PWA Sprint 4 Part B: first offline op (movement create) (shipped 2026-04-11)
+
+Tagged `v0.26.0-sprint26`. Wires the **first concrete op**
+(`movement.create`) onto the Sprint 25 queue substrate. From this
+sprint onward, a user can create a stock movement while offline:
+the form stamps an idempotency key, tries the direct server action
+first, and on any transport failure enqueues to Dexie so the
+runner can replay it when connectivity returns. Server-side
+idempotency is enforced by a compound unique constraint
+(`organizationId`, `idempotencyKey`) so a replay can never
+double-apply a ledger entry.
+
+This is deliberately **movement-create only**, not stock counts.
+Movement create is the simplest single-transaction vertical slice
+and already has an established form surface, so it's the right
+place to prove the substrate end-to-end. Stock counts have
+multi-row session state that deserves its own sprint — they're
+still on the PWA Sprint 4 line item but will ship as a follow-on
+(Sprint 27+).
+
+**Design decision — idempotency via compound unique index, not a
+separate table.** `StockMovement.idempotencyKey String?` +
+`@@unique([organizationId, idempotencyKey])`. Three benefits:
+(1) atomic with the insert — no race window between key-store and
+movement-create; (2) nullable column means the legacy online
+fast-path (no key) still writes without exercising the constraint;
+(3) P2002 on duplicate gives the "replay hit" branch for free.
+The alternative — a separate `IdempotencyKey` table joined at
+write time — would need its own transaction boundary and would
+leave a narrow window where a crash between "key written" and
+"movement written" would wedge the queue forever.
+
+**Design decision — pre-check the index before opening the
+transaction.** `writeMovement` does a `findUnique` on
+`(organizationId, idempotencyKey)` before the `$transaction`. If
+the key already has a row, return `alreadyExists` immediately —
+one indexed SELECT instead of a failed INSERT + rollback. The
+P2002 branch in the catch block is still load-bearing because two
+tabs can race between the pre-check and the insert, but the
+common "replayed successful op" case never touches the rollback
+path.
+
+**Design decision — shared `writeMovement` helper, two callers.**
+Refactored the Sprint 14 FormData `createMovementAction` to
+delegate to a new internal `writeMovement(args)` helper that's
+also called by the new `submitMovementOpAction`. Both callers go
+through the same transaction body — same membership guards, same
+stockLevel upserts, same constraint handling — so the legacy
+online fast-path and the new JSON+idempotent path can never
+diverge. The helper returns a `WriteMovementOutcome` discriminated
+union so each caller maps it to its own result shape
+(`ActionResult` vs `MovementOpResult`).
+
+**Design decision — `submitMovementOpAction` never throws.** The
+action wraps `requireActiveMembership` in try/catch (auth failures
+become non-retryable), uses `safeParse` for validation (validation
+errors become non-retryable), and catches all DB errors into a
+structured `MovementOpResult` discriminated union. This is
+load-bearing for the dispatcher: an unhandled throw would be
+caught by the runner's outer try/catch and marked non-retryable,
+which would be *wrong* for transient DB issues. Every error path
+explicitly picks `retryable: true | false` instead.
+
+**Design decision — form always enqueues with the same idempotency
+key that was used for the direct attempt.** The form generates
+the key **once**, before any network attempt. If the direct
+`submitMovementOpAction` call fails (transport throw, `retryable:
+true` from the server, or `navigator.onLine === false`
+pre-flight), the fallback `enqueueOp` uses the *same* key. This
+guarantees that if the direct call actually made it through the
+server but the response got lost, the queued replay will hit the
+unique index and resolve to the original row — not create a
+duplicate. Without this single-key discipline, a flaky network is
+a double-post waiting to happen.
+
+**Design decision — non-retryable errors in the direct path do
+NOT enqueue.** A validation error, missing item, or membership
+denial is not going to succeed on replay. Enqueueing it would
+just create a stuck row that loops until the queue is manually
+drained. The form shows the error inline with field-level
+messages, and the user can correct the input and resubmit. Only
+retryable / transport errors fall through to the queue.
+
+**Design decision — dispatcher module is pure client code, no
+`"use client"` directive.** `src/lib/offline/dispatchers/movement-
+create.ts` imports the Server Action directly. Next.js lifts
+Server Actions to an RPC boundary at build time, so any client
+module can import and call them without being a React component.
+The dispatcher has no JSX, no hooks, no state — it's just a plain
+async function that maps `MovementOpResult` kinds to
+`DispatcherResult` kinds. Keeping it framework-free makes it
+trivially testable with a vitest spy on the action.
+
+**Design decision — registration is one import + one map entry in
+the runner.** The Sprint 25 substrate shipped `DISPATCHERS` as an
+empty `Record<string, OpDispatcher>` for exactly this moment.
+Sprint 26 adds:
+`import { MOVEMENT_CREATE_OP_TYPE, dispatchMovementCreate } from "@/lib/offline/dispatchers/movement-create";`
+and
+`const DISPATCHERS = { [MOVEMENT_CREATE_OP_TYPE]: dispatchMovementCreate };`
+No changes to the drain loop, no changes to the banner, no
+changes to the queue API. Every future op lands the same way.
+
+- [x] `prisma/schema.prisma` — `StockMovement.idempotencyKey
+      String?` nullable column + `@@unique([organizationId,
+      idempotencyKey])`. Comment inline documents the Sprint 26
+      purpose. Validated with `prisma validate` (dummy env
+      vars). Prisma client regenerated via tmp-directory
+      workaround because the sandboxed filesystem blocks `unlink`
+      on the existing generated files — cloned prisma/ to /tmp,
+      generated there, `cat`-overwrote each file in place.
+- [x] `src/lib/validation/movement.ts` — new
+      `movementOpPayloadSchema = z.object({ idempotencyKey:
+      z.string().uuid(...), input: movementInputSchema })` and
+      `type MovementOpPayload = z.infer<...>`. Used by both the
+      form (producer), the dispatcher (consumer re-validating
+      what came out of Dexie), and the server action
+      (authoritative parse).
+- [x] `src/app/(app)/movements/actions.ts` — refactored. New
+      internal `writeMovement(args)` helper does the transactional
+      work for both legacy FormData and new JSON paths. New
+      `submitMovementOpAction(payload)` server action is the
+      JSON+idempotent entry point — never throws, returns
+      `MovementOpResult` discriminated union. Legacy
+      `createMovementAction` kept as a thin wrapper for
+      backwards compat. `MovementOpResult` explicitly carries
+      `retryable: boolean` so the dispatcher can decide the
+      correct queue verdict.
+- [x] `src/lib/offline/dispatchers/movement-create.ts` — NEW.
+      Exports `MOVEMENT_CREATE_OP_TYPE = "movement.create"`,
+      `buildMovementCreatePayload` (co-located producer-side
+      schema parse), and `dispatchMovementCreate: OpDispatcher`.
+      The dispatcher defensively re-parses
+      `op.payload as unknown` against
+      `movementOpPayloadSchema` — a malformed row from a stale
+      client is a fatal failure (would loop forever otherwise),
+      not a transient one. Transport throws map to retry.
+- [x] `src/components/offline/offline-queue-runner.tsx` —
+      registers the first dispatcher. Imports the op type and
+      handler, populates `DISPATCHERS` with a single entry.
+      Top-of-file doc block updated from "Sprint 25 substrate"
+      to "Sprint 25 substrate, Sprint 26 wires the first
+      concrete dispatcher". No changes to the drain loop, the
+      triggers, the single-flight guard, or any other logic.
+- [x] `src/app/(app)/movements/movement-form.tsx` — rewritten.
+      New `scope: MovementFormScope` prop (`{ orgId, userId }`).
+      `buildInput(form)` constructs a typed `MovementInput`
+      directly (no more FormData path). `generateIdempotencyKey`
+      uses `crypto.randomUUID()` with a Math.random RFC4122 v4
+      fallback for odd test environments. `handleSubmit` does the
+      try-direct-then-enqueue flow with a `navigator.onLine
+      === false` pre-flight, inline field-error display, and a
+      `CloudOff` icon in the pending button when the user is
+      offline. `enqueueAndNavigate(idempotencyKey, input)` helper
+      calls `enqueueOp` then `router.push/refresh`; on enqueue
+      failure (Dexie unavailable), surfaces the original error
+      instead of falsely claiming queued.
+- [x] `src/app/(app)/movements/new/page.tsx` — plumbs the new
+      `scope={{ orgId: membership.organizationId, userId:
+      session.user.id }}` prop and the new
+      `submittingLabel`/`queuedLabel` label fields from
+      `t.movements.offlineSubmitting`/`t.movements.offlineQueued`.
+      Destructures `session` out of `requireActiveMembership`
+      alongside `membership`.
+- [x] `src/lib/i18n/messages/en.ts` — adds
+      `t.movements.offlineQueued` ("Movement queued — will sync
+      when you're back online.") and
+      `t.movements.offlineSubmitting` ("Saving…"). All English;
+      future locales extend en.ts.
+- [x] Verified clean: `prisma validate` (with dummy
+      DATABASE_URL/DIRECT_URL env vars) + `tsc --noEmit` +
+      `biome check src` (158 files, no errors).
+- [x] **No new runtime dependencies.** Zod, Dexie, and Prisma
+      were all already in the tree. The one schema change is
+      additive + nullable and was pushed via `prisma db:push`
+      workflow (no migration file).
+
+---
+
 ### Still to port (deferred post-Sprint-22)
 
 - [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
@@ -1495,8 +1674,11 @@ that returns `null` — it has no UI, it only orchestrates.
 - [ ] PWA Sprint 4 — offline stock counts (write queue, replay
       on reconnect, optimistic-UI markers). **Part A shipped as
       Sprint 25** (queue substrate, runner, banner — no op
-      wired). Part B (first concrete op: stock counts) is
-      Sprint 26's job. This is where the Flutter moat actually
+      wired). **Part B shipped as Sprint 26** (first concrete
+      op: movement create, with idempotency-key server contract
+      + try-direct-then-enqueue form flow). The stock-count
+      session (multi-row scan workflow) is still pending as a
+      follow-on sprint — that's where the Flutter moat actually
       lives.
 - [ ] PWA Sprint 5 — background sync + update-prompt UX
       (surface the "new version available" state, wire the
