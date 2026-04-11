@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 
 type TypeOption = { value: string; label: string };
+type WarehouseOption = { id: string; name: string };
 
 type MovementsFilterBarLabels = {
   heading: string;
@@ -23,6 +24,8 @@ type MovementsFilterBarLabels = {
   toLabel: string;
   typeLabel: string;
   typeAll: string;
+  warehouseLabel: string;
+  warehouseAll: string;
   apply: string;
   clear: string;
   invalidRange: string;
@@ -32,14 +35,17 @@ type MovementsFilterBarProps = {
   initialFrom: string;
   initialTo: string;
   initialType: string;
+  initialWarehouse: string;
   typeOptions: TypeOption[];
+  warehouseOptions: WarehouseOption[];
   labels: MovementsFilterBarLabels;
 };
 
-// Sentinel value for the "All types" option. The Select primitive
-// rejects an empty string as an item value, so we use a distinct
-// token and translate it to an empty query param on submit.
+// Sentinel values for the "All …" options. The Select primitive
+// rejects an empty string as an item value, so each axis gets a
+// distinct token translated to an empty query param on submit.
 const TYPE_ALL = "__all__";
+const WAREHOUSE_ALL = "__all__";
 
 /**
  * Filter bar that lives above the movements table and the CSV export
@@ -65,16 +71,19 @@ export function MovementsFilterBar({
   initialFrom,
   initialTo,
   initialType,
+  initialWarehouse,
   typeOptions,
+  warehouseOptions,
   labels,
 }: MovementsFilterBarProps) {
   const router = useRouter();
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
   const [typeValue, setTypeValue] = useState(initialType || TYPE_ALL);
+  const [warehouseValue, setWarehouseValue] = useState(initialWarehouse || WAREHOUSE_ALL);
   const [error, setError] = useState<string | null>(null);
 
-  const hasFilter = Boolean(initialFrom || initialTo || initialType);
+  const hasFilter = Boolean(initialFrom || initialTo || initialType || initialWarehouse);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,6 +100,9 @@ export function MovementsFilterBar({
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     if (typeValue && typeValue !== TYPE_ALL) params.set("type", typeValue);
+    if (warehouseValue && warehouseValue !== WAREHOUSE_ALL) {
+      params.set("warehouse", warehouseValue);
+    }
     const qs = params.toString();
     router.push(qs ? `/movements?${qs}` : "/movements");
   }
@@ -99,6 +111,7 @@ export function MovementsFilterBar({
     setFrom("");
     setTo("");
     setTypeValue(TYPE_ALL);
+    setWarehouseValue(WAREHOUSE_ALL);
     setError(null);
     router.push("/movements");
   }
@@ -114,7 +127,7 @@ export function MovementsFilterBar({
         <span>{labels.heading}</span>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+      <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto] md:items-end">
         <div className="space-y-1">
           <Label htmlFor="movements-filter-from" className="text-xs">
             {labels.fromLabel}
@@ -154,6 +167,25 @@ export function MovementsFilterBar({
               {typeOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1">
+          <Label htmlFor="movements-filter-warehouse" className="text-xs">
+            {labels.warehouseLabel}
+          </Label>
+          <Select value={warehouseValue} onValueChange={setWarehouseValue}>
+            <SelectTrigger id="movements-filter-warehouse">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={WAREHOUSE_ALL}>{labels.warehouseAll}</SelectItem>
+              {warehouseOptions.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {opt.name}
                 </SelectItem>
               ))}
             </SelectContent>

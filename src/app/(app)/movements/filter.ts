@@ -16,17 +16,22 @@ export type MovementFilter = {
   from: Date | undefined;
   to: Date | undefined;
   type: StockMovementType | undefined;
+  // Sprint 17: warehouse scope — opaque id, cross-referenced in the
+  // outer org-scoped query so a cross-org guess returns zero rows.
+  warehouseId: string | undefined;
   // Raw trimmed strings so the filter bar can rehydrate its inputs
   // without re-reading the searchParams on the client.
   rawFrom: string;
   rawTo: string;
   rawType: string;
+  rawWarehouse: string;
 };
 
 export type MovementSearchParams = {
   from?: string | string[];
   to?: string | string[];
   type?: string | string[];
+  warehouse?: string | string[];
 };
 
 function pickString(raw: string | string[] | undefined): string {
@@ -68,6 +73,16 @@ function parseType(raw: string): StockMovementType | undefined {
   return undefined;
 }
 
+// Warehouse ids are cuids (~25 chars); we cap at 64 as a cheap
+// defense so a runaway `?warehouse=` can't be stuffed into a
+// Prisma equality check. The outer query is already org-scoped
+// so a cross-org id guess just returns zero rows.
+function parseWarehouseId(raw: string): string | undefined {
+  if (raw.length === 0) return undefined;
+  if (raw.length > 64) return undefined;
+  return raw;
+}
+
 export async function parseMovementFilter(
   searchParams: Promise<MovementSearchParams>,
 ): Promise<MovementFilter> {
@@ -75,14 +90,17 @@ export async function parseMovementFilter(
   const rawFrom = pickString(params.from);
   const rawTo = pickString(params.to);
   const rawType = pickString(params.type);
+  const rawWarehouse = pickString(params.warehouse);
 
   return {
     from: rawFrom ? parseIsoDate(rawFrom, false) : undefined,
     to: rawTo ? parseIsoDate(rawTo, true) : undefined,
     type: parseType(rawType),
+    warehouseId: parseWarehouseId(rawWarehouse),
     rawFrom,
     rawTo,
     rawType,
+    rawWarehouse,
   };
 }
 
@@ -117,6 +135,16 @@ export function buildMovementWhere(filter: MovementFilter): Prisma.StockMovement
     where.type = filter.type;
   }
 
+  if (filter.warehouseId) {
+    // Match both sides of a TRANSFER so "show me everything that
+    // happened in warehouse X" includes incoming transfers, not
+    // just outgoing. RECEIPT/ISSUE/ADJUSTMENT only set `warehouseId`
+    // so the `toWarehouseId` branch is effectively a no-op for
+    // them. Prisma composes this OR under the implicit outer AND
+    // so it combines cleanly with an active `type` filter.
+    where.OR = [{ warehouseId: filter.warehouseId }, { toWarehouseId: filter.warehouseId }];
+  }
+
   return where;
 }
 
@@ -125,5 +153,5 @@ export function buildMovementWhere(filter: MovementFilter): Prisma.StockMovement
  * whether to show the "Clear filters" control and tweak the empty state.
  */
 export function hasAnyFilter(filter: MovementFilter): boolean {
-  return Boolean(filter.from || filter.to || filter.type);
+  return Boolean(filter.from || filter.to || filter.type || filter.warehouseId);
 }

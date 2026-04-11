@@ -43,11 +43,17 @@ type MovementsPageProps = {
   searchParams: Promise<MovementSearchParams>;
 };
 
-function buildExportHref(filter: { rawFrom: string; rawTo: string; rawType: string }): string {
+function buildExportHref(filter: {
+  rawFrom: string;
+  rawTo: string;
+  rawType: string;
+  rawWarehouse: string;
+}): string {
   const params = new URLSearchParams();
   if (filter.rawFrom) params.set("from", filter.rawFrom);
   if (filter.rawTo) params.set("to", filter.rawTo);
   if (filter.rawType) params.set("type", filter.rawType);
+  if (filter.rawWarehouse) params.set("warehouse", filter.rawWarehouse);
   const qs = params.toString();
   return qs ? `/movements/export?${qs}` : "/movements/export";
 }
@@ -61,20 +67,33 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
   const filterActive = hasAnyFilter(filter);
   const limit = filterActive ? FILTERED_LIMIT : UNFILTERED_LIMIT;
 
-  const movements = await db.stockMovement.findMany({
-    where: {
-      organizationId: membership.organizationId,
-      ...buildMovementWhere(filter),
-    },
-    include: {
-      item: { select: { id: true, sku: true, name: true, unit: true } },
-      warehouse: { select: { id: true, name: true, code: true } },
-      toWarehouse: { select: { id: true, name: true, code: true } },
-      createdBy: { select: { id: true, name: true, email: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-  });
+  // Load the org's warehouses for the filter dropdown in parallel
+  // with the ledger query. Independent of the active filter so a
+  // warehouse you've already selected doesn't disappear from the
+  // dropdown if a different filter narrows the ledger — otherwise
+  // you'd lose the ability to broaden. Warehouse counts per org are
+  // bounded for SMBs, so loading them all is cheap.
+  const [movements, warehouses] = await Promise.all([
+    db.stockMovement.findMany({
+      where: {
+        organizationId: membership.organizationId,
+        ...buildMovementWhere(filter),
+      },
+      include: {
+        item: { select: { id: true, sku: true, name: true, unit: true } },
+        warehouse: { select: { id: true, name: true, code: true } },
+        toWarehouse: { select: { id: true, name: true, code: true } },
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    }),
+    db.warehouse.findMany({
+      where: { organizationId: membership.organizationId, isArchived: false },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   const dateFormatter = new Intl.DateTimeFormat(region.numberLocale, {
     dateStyle: "medium",
@@ -130,13 +149,17 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
         initialFrom={filter.rawFrom}
         initialTo={filter.rawTo}
         initialType={filter.rawType}
+        initialWarehouse={filter.rawWarehouse}
         typeOptions={typeOptions}
+        warehouseOptions={warehouses}
         labels={{
           heading: t.movements.filter.heading,
           fromLabel: t.movements.filter.fromLabel,
           toLabel: t.movements.filter.toLabel,
           typeLabel: t.movements.filter.typeLabel,
           typeAll: t.movements.filter.typeAll,
+          warehouseLabel: t.movements.filter.warehouseLabel,
+          warehouseAll: t.movements.filter.warehouseAll,
           apply: t.movements.filter.apply,
           clear: t.movements.filter.clear,
           invalidRange: t.movements.filter.invalidRange,
