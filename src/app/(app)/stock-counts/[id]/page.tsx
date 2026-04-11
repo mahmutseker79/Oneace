@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { StockCountCacheSync } from "@/components/offline/stock-count-cache-sync";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,10 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
+import type {
+  StockCountSnapshotHeader,
+  StockCountSnapshotRowInput,
+} from "@/lib/offline/stockcounts-cache";
 import { requireActiveMembership } from "@/lib/session";
 import { canAddEntry, canCancel, canReconcile } from "@/lib/stockcount/machine";
 import { type VarianceStatus, calculateVariances } from "@/lib/stockcount/variance";
@@ -145,6 +150,48 @@ export default async function StockCountDetailPage({ params }: PageProps) {
     };
   });
 
+  // Sprint 29: build an offline-cacheable snapshot of this count
+  // and hand it to <StockCountCacheSync /> below. The header +
+  // resolved rows here are plain serializable values so Next can
+  // pass them across the server/client boundary without fanning
+  // out another query at render time. We piggy-back on the bulk
+  // lookups (items/warehouses) that the page already ran for its
+  // own render, so the cache write costs nothing extra on the
+  // server side.
+  const offlineHeader: StockCountSnapshotHeader = {
+    id: count.id,
+    name: count.name,
+    state,
+    methodology,
+    warehouseId: count.warehouse?.id ?? null,
+    warehouseName: count.warehouse?.name ?? null,
+    createdAt: count.createdAt.toISOString(),
+    startedAt: count.startedAt ? count.startedAt.toISOString() : null,
+    entryCount: count.entries.length,
+  };
+  // Sum entries per (itemId, warehouseId) so each snapshot row
+  // carries its current counted quantity. Uses the same variance
+  // rows the render below uses — no extra walk over `count.entries`.
+  const countedByScope = new Map<string, number>();
+  for (const variance of varianceRows) {
+    countedByScope.set(`${variance.itemId}:${variance.warehouseId}`, variance.countedQuantity);
+  }
+  const offlineRows: StockCountSnapshotRowInput[] = count.snapshots.map((snapshot) => {
+    const item = itemById.get(snapshot.itemId);
+    const warehouse = warehouseById.get(snapshot.warehouseId);
+    return {
+      snapshotId: snapshot.id,
+      itemId: snapshot.itemId,
+      itemSku: item?.sku ?? snapshot.itemId,
+      itemName: item?.name ?? snapshot.itemId,
+      itemUnit: item?.unit ?? "",
+      warehouseId: snapshot.warehouseId,
+      warehouseName: warehouse?.name ?? snapshot.warehouseId,
+      expectedQuantity: snapshot.expectedQuantity,
+      countedQuantity: countedByScope.get(`${snapshot.itemId}:${snapshot.warehouseId}`) ?? 0,
+    };
+  });
+
   const entryFormLabels: EntryFormLabels = {
     heading: t.stockCounts.detail.addEntryHeading,
     item: t.stockCounts.detail.addEntryItem,
@@ -189,6 +236,15 @@ export default async function StockCountDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
+      {/* Sprint 29: write this count's header + resolved rows into
+          Dexie so /offline/stock-counts can resume it after a drop.
+          Renders null — no layout impact. */}
+      <StockCountCacheSync
+        scope={{ orgId: membership.organizationId, userId: session.user.id }}
+        header={offlineHeader}
+        rows={offlineRows}
+      />
+
       {/* Back button */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>

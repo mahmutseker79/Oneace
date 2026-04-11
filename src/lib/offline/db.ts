@@ -48,13 +48,17 @@ import Dexie, { type Table } from "dexie";
  * History:
  *   - v1 (Sprint 23): items / warehouses / categories / meta
  *   - v2 (Sprint 25): + pendingOps (offline write queue)
+ *   - v3 (Sprint 29): + stockCounts / stockCountRows (offline
+ *     stock-count session detail) and the `stockCounts` meta
+ *     row type so the /offline/stock-counts viewer can resume
+ *     an in-progress count after a network drop.
  *
  * Every bump MUST append a new `.version(N).stores({...}).upgrade()`
  * block in the Dexie constructor below. Never edit a prior version
  * in place — Dexie replays versions on open, so rewriting an older
  * block corrupts the migration graph.
  */
-export const OFFLINE_DB_VERSION = 2;
+export const OFFLINE_DB_VERSION = 3;
 
 /** The single top-level DB name. One database per origin, not per org. */
 export const OFFLINE_DB_NAME = "oneace-offline";
@@ -171,6 +175,83 @@ export interface CachedPendingOp {
 }
 
 /**
+ * A cached stock-count session — the "header" row that the
+ * /offline/stock-counts viewer lists. Sprint 29.
+ *
+ * We store one CachedStockCount per (org, count) tuple. The matching
+ * scope rows live in the `stockCountRows` table keyed by
+ * `${orgId}:${countId}:${snapshotId}` so a single count can be
+ * looked up in a single indexed range scan and a count delete can
+ * cheaply drop every row belonging to it.
+ *
+ * `entryCount` is the number of entries *at sync time* — it is
+ * intentionally a point-in-time figure, not a live counter.
+ * Sprint 27's offline queue keeps growing entries in its own
+ * `pendingOps` table between syncs; the viewer's "progress"
+ * indicator adds those together. We do NOT try to reconcile them
+ * here — that's what the reconcile flow is for, and it only runs
+ * online anyway.
+ */
+export interface CachedStockCount {
+  /** Composite key: `${orgId}:${id}`. */
+  key: string;
+  /** The Prisma stockCount id. */
+  id: string;
+  orgId: string;
+  userId: string;
+  name: string;
+  state: "OPEN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  methodology: "CYCLE" | "FULL" | "SPOT" | "BLIND" | "DOUBLE_BLIND" | "DIRECTED";
+  warehouseId: string | null;
+  warehouseName: string | null;
+  /** ISO timestamp — point-in-time sync capture. */
+  createdAt: string;
+  /** ISO timestamp — nullable until the first entry is logged. */
+  startedAt: string | null;
+  /** Number of scope rows captured in `stockCountRows` for this id. */
+  rowCount: number;
+  /** Number of entries recorded on the server at sync time. The
+   * viewer adds any locally-queued `countEntry.add` ops on top. */
+  entryCount: number;
+  /** ISO timestamp of the most recent sync — duplicated here (the
+   * meta row already tracks it) so the list view can sort by it
+   * without a join. */
+  syncedAt: string;
+}
+
+/**
+ * A single snapshot row inside a cached stock count — one scope
+ * line (item × warehouse) that the counter is expected to hit.
+ * Resolved to display labels at sync time so the offline viewer
+ * never has to walk the items/warehouses caches.
+ */
+export interface CachedStockCountRow {
+  /** Composite key: `${orgId}:${countId}:${snapshotId}` — the
+   * `snapshotId` is the Prisma CountSnapshot.id which is unique
+   * per scope row. Prefixing by `countId` keeps a Dexie range scan
+   * fast for "give me every row in this count". */
+  key: string;
+  orgId: string;
+  userId: string;
+  countId: string;
+  snapshotId: string;
+  itemId: string;
+  itemSku: string;
+  itemName: string;
+  itemUnit: string;
+  warehouseId: string;
+  warehouseName: string;
+  /** Snapshot quantity at the time the count was opened. For blind
+   * counts the viewer hides this, but we store it anyway so a
+   * methodology switch doesn't require a resync. */
+  expectedQuantity: number;
+  /** Sum of entries for this (itemId, warehouseId) row at sync
+   * time. The viewer adds locally-queued entries from `pendingOps`
+   * on top. */
+  countedQuantity: number;
+}
+
+/**
  * Meta row — there is exactly one per (table, orgId, userId) tuple.
  * `syncedAt` is written as an ISO string so Dexie serializes it
  * deterministically across browser Date implementations.
@@ -181,7 +262,7 @@ export interface CacheMeta {
   orgId: string;
   userId: string;
   /** Which domain table this meta row describes. */
-  table: "items" | "warehouses" | "categories";
+  table: "items" | "warehouses" | "categories" | "stockCounts";
   /** ISO timestamp of the last successful snapshot write. */
   syncedAt: string;
   /** Number of records captured in that snapshot. */
@@ -199,6 +280,8 @@ class OneaceOfflineDb extends Dexie {
   categories!: Table<CachedCategory, string>;
   meta!: Table<CacheMeta, string>;
   pendingOps!: Table<CachedPendingOp, string>;
+  stockCounts!: Table<CachedStockCount, string>;
+  stockCountRows!: Table<CachedStockCountRow, string>;
 
   constructor() {
     super(OFFLINE_DB_NAME);
@@ -237,6 +320,33 @@ class OneaceOfflineDb extends Dexie {
       //   - `createdAt` so FIFO replay order survives any DB
       //     compaction.
       pendingOps: "id, [orgId+userId+status], status, createdAt",
+    });
+
+    // v3 — Sprint 29: stock-count session caches. Two new stores
+    // introduced. Existing rows in items/warehouses/categories/
+    // meta/pendingOps are left untouched — Dexie only creates the
+    // missing stores. No `.upgrade()` callback is needed because
+    // nothing is being migrated in place.
+    //
+    // Index choices:
+    //   - `stockCounts.[orgId+userId]` — the list viewer pulls
+    //     every cached count for the active scope in one range
+    //     scan.
+    //   - `stockCounts.syncedAt` — the list viewer sorts
+    //     newest-first without loading rows into memory first.
+    //   - `stockCountRows.countId` — the detail viewer pulls
+    //     every row for a given count in one range scan.
+    //   - `stockCountRows.[orgId+userId]` — the scope cleanup
+    //     path (wipe every row for an (org, user) tuple when the
+    //     tuple changes) is one indexed scan.
+    this.version(3).stores({
+      items: "key, orgId, userId, status, categoryId",
+      warehouses: "key, orgId, userId",
+      categories: "key, orgId, userId, parentId",
+      meta: "key, [orgId+userId+table]",
+      pendingOps: "id, [orgId+userId+status], status, createdAt",
+      stockCounts: "key, id, [orgId+userId], syncedAt, state",
+      stockCountRows: "key, countId, [orgId+userId]",
     });
   }
 }
@@ -283,4 +393,14 @@ export function cacheRowKey(orgId: string, id: string): string {
  */
 export function cacheMetaKey(orgId: string, userId: string, table: CacheMeta["table"]): string {
   return `${orgId}:${userId}:${table}`;
+}
+
+/**
+ * Build the composite key used by `stockCountRows`. Prefix by
+ * `countId` so a Dexie range scan can load every row in a given
+ * count in one shot, and suffix with the Prisma snapshot id so two
+ * rows in the same count cannot collide.
+ */
+export function stockCountRowKey(orgId: string, countId: string, snapshotId: string): string {
+  return `${orgId}:${countId}:${snapshotId}`;
 }

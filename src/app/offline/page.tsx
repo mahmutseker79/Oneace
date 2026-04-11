@@ -71,6 +71,12 @@ export default async function OfflinePage() {
           >
             {t.offline.viewCachedItemsCta}
           </Link>
+          <Link
+            href="/offline/stock-counts"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            {t.offline.viewCachedStockCountsCta}
+          </Link>
           <p className="text-xs text-muted-foreground">{t.offline.tip}</p>
         </div>
       </div>
