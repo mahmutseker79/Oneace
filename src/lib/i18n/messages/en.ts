@@ -453,6 +453,24 @@ export const en = {
     recentHeading: "Recent movements",
     recentEmpty: "No movements recorded for this item yet.",
     viewAll: "View all movements",
+    filter: {
+      heading: "Filter",
+      fromLabel: "From",
+      toLabel: "To",
+      typeLabel: "Type",
+      typeAll: "All types",
+      apply: "Apply",
+      clear: "Clear",
+      activeLabel: "Filters applied",
+      resultCount: "Showing {count} movement(s) matching the filter.",
+      resultCountUnfiltered: "Showing the most recent {count} movement(s).",
+      truncatedNotice:
+        "Capped at {limit} rows. Narrow the date range or type to see older entries.",
+      emptyFilteredTitle: "No movements match this filter",
+      emptyFilteredBody:
+        "Try widening the date range or clearing the type filter to see more entries.",
+      invalidRange: "The start date must be on or before the end date.",
+    },
   },
 
   itemDetail: {

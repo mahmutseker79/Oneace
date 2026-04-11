@@ -14,23 +14,58 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
-import { getMessages, getRegion } from "@/lib/i18n";
+import { format, getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
+import {
+  type MovementSearchParams,
+  buildMovementWhere,
+  hasAnyFilter,
+  parseMovementFilter,
+} from "./filter";
+import { MovementsFilterBar } from "./movements-filter-bar";
+
 type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "COUNT";
+
+// Result cap. Unfiltered view shows the most recent 200 (unchanged
+// from Sprint 2); filtered view raises to 500 so a date range can
+// actually surface older history. Anyone who needs more can use the
+// CSV export at /movements/export, which carries the same filters.
+const UNFILTERED_LIMIT = 200;
+const FILTERED_LIMIT = 500;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
   return { title: t.movements.metaTitle };
 }
 
-export default async function MovementsPage() {
+type MovementsPageProps = {
+  searchParams: Promise<MovementSearchParams>;
+};
+
+function buildExportHref(filter: { rawFrom: string; rawTo: string; rawType: string }): string {
+  const params = new URLSearchParams();
+  if (filter.rawFrom) params.set("from", filter.rawFrom);
+  if (filter.rawTo) params.set("to", filter.rawTo);
+  if (filter.rawType) params.set("type", filter.rawType);
+  const qs = params.toString();
+  return qs ? `/movements/export?${qs}` : "/movements/export";
+}
+
+export default async function MovementsPage({ searchParams }: MovementsPageProps) {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
 
+  const filter = await parseMovementFilter(searchParams);
+  const filterActive = hasAnyFilter(filter);
+  const limit = filterActive ? FILTERED_LIMIT : UNFILTERED_LIMIT;
+
   const movements = await db.stockMovement.findMany({
-    where: { organizationId: membership.organizationId },
+    where: {
+      organizationId: membership.organizationId,
+      ...buildMovementWhere(filter),
+    },
     include: {
       item: { select: { id: true, sku: true, name: true, unit: true } },
       warehouse: { select: { id: true, name: true, code: true } },
@@ -38,7 +73,7 @@ export default async function MovementsPage() {
       createdBy: { select: { id: true, name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
-    take: 200,
+    take: limit,
   });
 
   const dateFormatter = new Intl.DateTimeFormat(region.numberLocale, {
@@ -55,6 +90,19 @@ export default async function MovementsPage() {
     return <Badge variant="outline">{label}</Badge>;
   }
 
+  const typeOptions = (["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER", "COUNT"] as const).map(
+    (type) => ({
+      value: type,
+      label: t.movements.types[type],
+    }),
+  );
+
+  const countLine = filterActive
+    ? format(t.movements.filter.resultCount, { count: movements.length })
+    : format(t.movements.filter.resultCountUnfiltered, { count: movements.length });
+
+  const truncated = movements.length === limit;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -64,7 +112,7 @@ export default async function MovementsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline">
-            <Link href="/movements/export">
+            <Link href={buildExportHref(filter)}>
               <Download className="h-4 w-4" />
               {t.common.exportCsv}
             </Link>
@@ -78,81 +126,121 @@ export default async function MovementsPage() {
         </div>
       </div>
 
+      <MovementsFilterBar
+        initialFrom={filter.rawFrom}
+        initialTo={filter.rawTo}
+        initialType={filter.rawType}
+        typeOptions={typeOptions}
+        labels={{
+          heading: t.movements.filter.heading,
+          fromLabel: t.movements.filter.fromLabel,
+          toLabel: t.movements.filter.toLabel,
+          typeLabel: t.movements.filter.typeLabel,
+          typeAll: t.movements.filter.typeAll,
+          apply: t.movements.filter.apply,
+          clear: t.movements.filter.clear,
+          invalidRange: t.movements.filter.invalidRange,
+        }}
+      />
+
       {movements.length === 0 ? (
         <Card>
           <CardHeader className="items-center text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <ArrowLeftRight className="h-6 w-6 text-muted-foreground" />
             </div>
-            <CardTitle>{t.movements.emptyTitle}</CardTitle>
-            <CardDescription>{t.movements.emptyBody}</CardDescription>
+            <CardTitle>
+              {filterActive ? t.movements.filter.emptyFilteredTitle : t.movements.emptyTitle}
+            </CardTitle>
+            <CardDescription>
+              {filterActive ? t.movements.filter.emptyFilteredBody : t.movements.emptyBody}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button asChild>
-              <Link href="/movements/new">
-                <Plus className="h-4 w-4" />
-                {t.movements.emptyCta}
-              </Link>
-            </Button>
-          </CardContent>
+          {!filterActive ? (
+            <CardContent className="flex justify-center">
+              <Button asChild>
+                <Link href="/movements/new">
+                  <Plus className="h-4 w-4" />
+                  {t.movements.emptyCta}
+                </Link>
+              </Button>
+            </CardContent>
+          ) : null}
         </Card>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t.movements.columnDate}</TableHead>
-                  <TableHead>{t.movements.columnItem}</TableHead>
-                  <TableHead>{t.movements.columnType}</TableHead>
-                  <TableHead>{t.movements.columnWarehouse}</TableHead>
-                  <TableHead className="text-right">{t.movements.columnQuantity}</TableHead>
-                  <TableHead>{t.movements.columnReference}</TableHead>
-                  <TableHead>{t.movements.columnUser}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {movements.map((m) => {
-                  const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
-                  const qtyPrefix =
-                    signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
-                  const absQty = Math.abs(signedQty);
-                  const warehouseCell =
-                    m.type === "TRANSFER" && m.toWarehouse
-                      ? `${m.warehouse.name} ${t.movements.transferLabel} ${m.toWarehouse.name}`
-                      : m.warehouse.name;
-                  const userLabel =
-                    m.createdBy?.name ?? m.createdBy?.email ?? t.movements.unknownUser;
-                  return (
-                    <TableRow key={m.id}>
-                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        {dateFormatter.format(m.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/items/${m.item.id}`} className="font-medium hover:underline">
-                          {m.item.name}
-                        </Link>
-                        <div className="font-mono text-xs text-muted-foreground">{m.item.sku}</div>
-                      </TableCell>
-                      <TableCell>{typeBadge(m.type as MovementType)}</TableCell>
-                      <TableCell className="text-sm">{warehouseCell}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        <span className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}>
-                          {qtyPrefix}
-                          {absQty} {m.item.unit}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {m.reference ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{userLabel}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <>
+          <div className="text-muted-foreground flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">
+            <span>{countLine}</span>
+            {truncated ? (
+              <span className="italic">
+                {format(t.movements.filter.truncatedNotice, { limit })}
+              </span>
+            ) : null}
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.movements.columnDate}</TableHead>
+                    <TableHead>{t.movements.columnItem}</TableHead>
+                    <TableHead>{t.movements.columnType}</TableHead>
+                    <TableHead>{t.movements.columnWarehouse}</TableHead>
+                    <TableHead className="text-right">{t.movements.columnQuantity}</TableHead>
+                    <TableHead>{t.movements.columnReference}</TableHead>
+                    <TableHead>{t.movements.columnUser}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {movements.map((m) => {
+                    const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
+                    const qtyPrefix =
+                      signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
+                    const absQty = Math.abs(signedQty);
+                    const warehouseCell =
+                      m.type === "TRANSFER" && m.toWarehouse
+                        ? `${m.warehouse.name} ${t.movements.transferLabel} ${m.toWarehouse.name}`
+                        : m.warehouse.name;
+                    const userLabel =
+                      m.createdBy?.name ?? m.createdBy?.email ?? t.movements.unknownUser;
+                    return (
+                      <TableRow key={m.id}>
+                        <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
+                          {dateFormatter.format(m.createdAt)}
+                        </TableCell>
+                        <TableCell>
+                          <Link
+                            href={`/items/${m.item.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {m.item.name}
+                          </Link>
+                          <div className="text-muted-foreground font-mono text-xs">
+                            {m.item.sku}
+                          </div>
+                        </TableCell>
+                        <TableCell>{typeBadge(m.type as MovementType)}</TableCell>
+                        <TableCell className="text-sm">{warehouseCell}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          <span
+                            className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}
+                          >
+                            {qtyPrefix}
+                            {absQty} {m.item.unit}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {m.reference ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">{userLabel}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );

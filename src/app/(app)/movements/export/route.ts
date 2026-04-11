@@ -2,14 +2,25 @@ import { type CsvColumn, csvResponse, serializeCsv, todayIsoDate } from "@/lib/c
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 
+import { type MovementSearchParams, buildMovementWhere, parseMovementFilter } from "../filter";
+
 /**
- * GET /movements/export — CSV snapshot of the most recent stock
- * movements in the active org.
+ * GET /movements/export — CSV snapshot of stock movements in the
+ * active org, optionally filtered by `?from=YYYY-MM-DD&to=YYYY-MM-DD&type=...`.
  *
- * Capped at 5,000 rows to keep responses bounded. Anyone who needs
- * the full tail can filter via searchParams later; for MVP the "last
- * 5k" window is already bigger than most SMBs will touch in a year.
+ * The filter is parsed via the same `parseMovementFilter` helper the
+ * /movements page uses, so the CSV a user downloads matches what
+ * they currently see on screen row-for-row (modulo the row cap).
+ *
+ * Row cap: unfiltered exports are capped at 5,000, filtered exports
+ * at 20,000. Filtered callers already told us what they want to
+ * look at, so we let them pull a much bigger window; unfiltered
+ * exports stay bounded so a casual click doesn't stream the entire
+ * ledger for a long-running org.
  */
+
+const UNFILTERED_LIMIT = 5000;
+const FILTERED_LIMIT = 20000;
 
 type ExportRow = {
   createdAt: string;
@@ -39,11 +50,26 @@ const columns: CsvColumn<ExportRow>[] = [
   { header: "Created by", value: (r) => r.createdBy },
 ];
 
-export async function GET() {
+export async function GET(request: Request) {
   const { membership } = await requireActiveMembership();
 
+  // Pull the same filter shape the /movements page uses so the CSV
+  // snapshot matches the on-screen view.
+  const url = new URL(request.url);
+  const rawParams: MovementSearchParams = {
+    from: url.searchParams.get("from") ?? undefined,
+    to: url.searchParams.get("to") ?? undefined,
+    type: url.searchParams.get("type") ?? undefined,
+  };
+  const filter = await parseMovementFilter(Promise.resolve(rawParams));
+  const filterActive = Boolean(filter.from || filter.to || filter.type);
+  const limit = filterActive ? FILTERED_LIMIT : UNFILTERED_LIMIT;
+
   const movements = await db.stockMovement.findMany({
-    where: { organizationId: membership.organizationId },
+    where: {
+      organizationId: membership.organizationId,
+      ...buildMovementWhere(filter),
+    },
     include: {
       item: { select: { sku: true, name: true } },
       warehouse: { select: { name: true } },
@@ -51,7 +77,7 @@ export async function GET() {
       createdBy: { select: { name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
-    take: 5000,
+    take: limit,
   });
 
   const rows: ExportRow[] = movements.map((m) => ({
