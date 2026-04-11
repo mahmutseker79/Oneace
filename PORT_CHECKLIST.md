@@ -471,8 +471,8 @@ PO model shipped in Sprint 5.
 - [ ] xlsx / pdf export variants for every report (currently CSV only
       — users with spreadsheet add-ons can open CSV directly)
 - [ ] Movement date-range filter (currently ledger shows all-time)
-- [ ] Per-supplier drill-down page showing the underlying POs ranked
-      by value and lead-time outlier
+- [x] Per-supplier drill-down page showing the underlying POs ranked
+      by value and lead-time outlier — shipped as Sprint 34, see below
 - [ ] Audit log (compliance) — unchanged from post-Sprint-11 deferral
 - [ ] Offline PWA shell + service worker (Moat 1)
 - [ ] Invitation tokens + email flow
@@ -2363,6 +2363,223 @@ replace both the banner's poll and this one.
       runner continues to treat `failed` rows the same
       way — the difference is the user can now see them
       and act on them.
+
+---
+
+## Sprint 34 — Supplier drill-down detail page (shipped 2026-04-11)
+
+Tagged `v0.34.0-sprint34`. Closes a real broken link dating back to
+Sprint 12 — the supplier-performance report (`/reports/suppliers`)
+has been rendering each row as a `<Link href={"/suppliers/${id}"}>`
+since it shipped, but until this sprint the only thing living under
+`/suppliers/[id]/` was `/edit`, so clicking a supplier name in the
+leaderboard 404'd. No schema changes, no new runtime dependencies,
+no migrations — one new server component page, one list-page patch,
+one new i18n sub-namespace.
+
+### NEW `src/app/(app)/suppliers/[id]/page.tsx` (~540 lines)
+
+Server component, three stacked sections + an identity header.
+Single `supplier.findFirst({ id, organizationId })` query with a
+nested `purchaseOrders → lines → item` include pulls everything
+needed for the whole page in one round-trip. Defense-in-depth:
+even though the route is gated by `requireActiveMembership`
+upstream, the `organizationId` predicate on the supplier query is
+how a crafted URL with a cross-tenant supplier id trips
+`notFound()` — no implicit trust of URL params.
+
+**Identity header** — `Truck` icon + supplier name + optional
+code (mono, muted) + Active/Inactive `<Badge>`. Action buttons
+row: `Back`, `Edit`, `New PO` (deep-links the generic
+`/purchase-orders/new`; a later sprint can add `?supplierId=` to
+prefill the supplier select). A tiny lead-time-sample line under
+the title shows "Across {N} received PO(s)" as quick context
+before the KPIs render below.
+
+**Identity cards (3-up grid)**:
+
+- `Contact` — contactName, email (mailto link), phone, website
+  (external-link icon), and the supplier's default currency
+  displayed as `Default currency: USD` in a mono chip. Empty
+  state: "No contact details on file" italic muted.
+- `Address` — `<address>` block with `addressLine1`,
+  `addressLine2`, postal+city, region, country — each line only
+  renders if non-empty, `addressParts` filter drops empties before
+  map. Empty state: "No address on file".
+- `Notes` — `whitespace-pre-wrap` paragraph preserving the text
+  format from the supplier edit form. Empty state: "No notes".
+
+**Activity section** — `<h2>` + subtitle, then either the empty
+state card (CalendarClock icon + "No purchase orders yet" + "Raise
+your first PO against this supplier…" + `New PO` CTA) when
+`totalPos === 0`, or the four-KPI card grid when there is
+activity.
+
+**Four KPI cards** (2×2 on md, 4×1 on xl) with identical math to
+the Sprint 12 supplier-performance report so totals reconcile
+byte-for-byte between the two surfaces:
+
+- **Received value** — `sum(receivedQty × unitCost)` across every
+  line of every PO regardless of PO status, so
+  `PARTIALLY_RECEIVED` POs contribute their shipped-so-far value.
+  Rendered in region currency via `formatCurrency`.
+- **Total POs** — `purchaseOrders.length` (DRAFT + SENT +
+  PARTIALLY_RECEIVED + RECEIVED + CANCELLED). Card body:
+  "{openPos} open right now" where "open" is `SENT +
+  PARTIALLY_RECEIVED` only — DRAFT doesn't count as committed
+  business.
+- **On-time rate** — `onTimeCount / onTimeEligible × 100`,
+  computed over RECEIVED POs that have an `expectedAt` date.
+  Denominator excludes POs without an expected date (not counted
+  as misses). Body: "{onTimeCount} of {onTimeEligible} received
+  on or before the expected date". `N/A` when denominator is 0.
+- **Avg lead time** — mean of `round((receivedMs - orderedMs) /
+  86400000)` across RECEIVED POs with non-negative lead days
+  (guards against clock-skewed data). Body: "Across {N} received
+  PO(s)". `N/A` when sample is empty.
+
+Mixed-currency caveat — if `currencyMix.size > 1` or any PO uses
+a non-region currency, a muted italic caveat explains the 1:1
+conversion and hints at the missing historical FX source.
+
+**Recent POs table card** — "Newest first, up to the last 10
+orders" subtitle + `View all purchase orders` ghost button that
+links back to `/purchase-orders`. Seven columns: PO number (mono,
+deep-links `/purchase-orders/[id]`), Status + timeliness badge,
+Ordered date, Expected date, Received date, Lines count, PO
+value. The PO value cell uses the same `receivedQty × unitCost`
+math as the aggregate KPI so a sharp user clicking through the
+table can reconcile line-by-line.
+
+Per-row **timeliness badge** logic (on top of the status badge):
+
+- RECEIVED + receivedAt + expectedAt → compare timestamps. Diff
+  > 0 → destructive "Late"; diff < 0 → secondary "Early"; diff
+  === 0 → default "On time".
+- SENT or PARTIALLY_RECEIVED → outline "Outstanding" (nothing to
+  compare yet — the PO is live).
+- DRAFT or CANCELLED → no badge (DRAFT hasn't been committed;
+  CANCELLED is a dead end, no timeliness to report).
+
+**Top items card** — top 5 items ordered from this supplier by
+total `orderedQty`, with both Ordered qty and Received qty
+columns so the operator can spot chronic short-shipments (high
+ordered, low received). Aggregation is in-memory via a `Map<id,
+{name, sku, ordered, received}>` accumulated during the KPI pass
+— no second query. Empty state: "This supplier has no ordered
+lines yet" italic.
+
+### Deep-link wiring
+
+Updated `src/app/(app)/suppliers/page.tsx` so the name column
+cell wraps in `<Link href={`/suppliers/${s.id}`}>` with
+`hover:underline`. The edit / delete buttons still live in the
+actions column, so the row reads cleanly: name → detail (primary
+action), actions → edit/delete.
+
+The supplier-performance report (`/reports/suppliers`) already
+links to `/suppliers/${id}` from Sprint 12, so no change needed
+there — that's the whole point of Sprint 34: those links now
+resolve to a real page.
+
+### i18n (`src/lib/i18n/messages/en.ts`)
+
+NEW `t.suppliers.detail` sub-namespace under `t.suppliers`, ~50
+keys covering: `metaTitle`, `backToList`, action CTAs
+(`editCta`, `newPoCta`), identity card headings + empty states
+(`contactHeading`, `addressHeading`, `notesHeading`,
+`currencyLabel`, `websiteLabel`, `noContact`, `noAddress`,
+`noNotes`), activity section (`activityHeading`,
+`activitySubtitle`, `emptyActivityTitle`, `emptyActivityBody`),
+KPI labels + bodies (`kpiReceivedValueLabel`,
+`kpiReceivedValueBody`, `kpiTotalPosLabel`, `kpiTotalPosBody`,
+`kpiOnTimeRateLabel`, `kpiOnTimeRateBody`,
+`kpiAvgLeadTimeLabel`, `kpiAvgLeadTimeBody`, `kpiNotAvailable`,
+`daysSuffix`), recent POs table (`recentHeading`,
+`recentSubtitle`, `recentViewAllCta`, `colPoNumber`, `colStatus`,
+`colOrderedAt`, `colExpectedAt`, `colReceivedAt`, `colLines`,
+`colValue`, `lateBadge`, `earlyBadge`, `onTimeBadge`,
+`outstandingBadge`), top items card (`topItemsHeading`,
+`topItemsSubtitle`, `topItemsEmpty`, `colItem`, `colOrderedQty`,
+`colReceivedQty`), plus `mixedCurrencyCaveat`.
+
+Deliberate **not** to reuse `t.reports.supplierPerformance` keys
+even where copy overlaps (KPI labels). The detail page is an
+operational view with its own heading hierarchy, empty states,
+and action wording — keeping namespaces separate means future
+copy tweaks to one surface don't accidentally ripple into the
+other.
+
+### Design decisions
+
+- **Single server query with nested include** over a separate
+  per-supplier aggregate table. Scale concerns land after
+  "supplier with 5k historical POs", at which point we either
+  paginate the recent table and keep the KPI roll-up over a time
+  window, or add a nightly aggregate. Not worth the complexity
+  at MVP — a typical org has <50 active suppliers and <200 POs
+  per supplier.
+- **In-memory KPI roll-up** over SQL aggregation. The math is
+  trivial (one pass over the PO array), the rows are already in
+  RAM for the table, and keeping the math in TypeScript means
+  the supplier-performance report and this detail page can share
+  the exact same formulas (copy-pasted comments even mark the
+  parity) instead of maintaining two SQL variants.
+- **`findFirst` with explicit `organizationId`** over `findUnique`
+  by id alone. Defense-in-depth against a URL-parameter attack
+  even though `requireActiveMembership` already gates the route.
+- **No new `?supplierId=` prefill on `/purchase-orders/new`**.
+  That's a nice follow-up, but it needs a PO-form refactor to
+  accept a pre-selected supplier prop, and it's out of scope for
+  a single-sprint ship. The current CTA lands the user on the
+  generic new-PO page with an empty supplier select — one click
+  away from the goal.
+- **Deep-link from the list page's name column, not a separate
+  "View" button**. Primary-action-is-the-name matches the items
+  table, warehouses table, and categories table — app-wide
+  consistency. The edit/delete actions stay in the actions
+  column for destructive vs. navigation separation.
+- **No cross-currency FX conversion**. The caveat banner names
+  the region currency so the user knows what they're looking at;
+  implementing historical FX is a big enough story to deserve
+  its own ADR and probably a new `FxRateSnapshot` table. Same
+  deferral as the Sprint 12 report.
+- **Defense-in-depth `notFound()`** even though
+  `requireActiveMembership` gates upstream. Two gates, both
+  cheap, is the right default for a multi-tenant detail page.
+
+### Files touched
+
+- NEW `src/app/(app)/suppliers/[id]/page.tsx`
+- MODIFIED `src/app/(app)/suppliers/page.tsx`
+- MODIFIED `src/lib/i18n/messages/en.ts`
+
+### Verified clean
+
+- `tsc --noEmit` exit 0
+- `biome check src` clean (177 files — one new vs Sprint 33's
+  176: `suppliers/[id]/page.tsx`; `suppliers/page.tsx` +
+  `en.ts` modified in place)
+- `DATABASE_URL=... DIRECT_URL=... prisma validate` → green
+
+### What this does NOT cover (follow-ups)
+
+- `?supplierId=` prefill on `/purchase-orders/new` (so the New PO
+  CTA from the detail page lands with the supplier already
+  selected)
+- Historical FX conversion for multi-currency suppliers (needs
+  an `FxRateSnapshot` table + a rate source — shared with the
+  Sprint 12 deferral)
+- Pagination on the recent POs table (currently hard-capped at
+  10; a "View all" ghost button links back to the filtered PO
+  list, but the PO list doesn't yet filter by supplier via query
+  param — Sprint 15 added supplier filter as a `<select>` but
+  not `?supplierId=` support)
+- Lead-time trend sparkline / 90-day rolling window (needs the
+  same time-series foundation as the deferred Sprint 12
+  historical supplier-performance follow-up)
+- Contact-person drill-down (one supplier = one contact today;
+  moving to many-contacts-per-supplier is a schema change)
 
 ---
 

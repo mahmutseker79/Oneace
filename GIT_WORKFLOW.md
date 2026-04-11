@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 33.
+and iterating on it through Sprint 0 → Sprint 34.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 33.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 32 plus **Sprint 33** are already committed in a
+Sprint 0 through Sprint 33 plus **Sprint 34** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.33.0-sprint33.bundle
+oneace-next/oneace-next-port-v0.34.0-sprint34.bundle
 ```
 
 This bundle contains:
 
-- **74 commits** — 8 Sprint 0 + 1 docs + Sprints 1..33 (each = 1 feature
+- **76 commits** — 8 Sprint 0 + 1 docs + Sprints 1..34 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -59,9 +59,10 @@ This bundle contains:
   - `v0.31.0-sprint31` — Sprint 31 complete (PWA Sprint 8 — Dexie liveQuery subscriptions in the queue banner + review screen, Web Locks cross-tab drain guard in the runner)
   - `v0.32.0-sprint32` — Sprint 32 complete (organization ownership transfer — atomic OWNER → ADMIN hand-off with typed-slug confirmation, closes the multi-tenancy trio after Sprint 11 switcher + Sprint 21 delete)
   - `v0.33.0-sprint33` — Sprint 33 complete (invitation email delivery + post-login `?next=/invite/[token]` redirect bundle — Mailer adapter + ConsoleMailer/ResendMailer, rendered invitation-email template, inviteMemberAction wires delivery with soft-miss, login/register forms honour `?next=`, invitee register variant skips org creation)
+  - `v0.34.0-sprint34` — Sprint 34 complete (supplier drill-down detail page at `/suppliers/[id]` — identity header + 3-up contact/address/notes cards + 4 KPIs matching Sprint 12 math + recent POs table with timeliness badges + top items card; fixes the Sprint 12 leaderboard broken link)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.32.0-sprint32.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.33.0-sprint33.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -75,11 +76,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.33.0-sprint33.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.34.0-sprint34.bundle \
           next-port:next-port
 
-# Also pull all thirty-three sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.33.0-sprint33.bundle \
+# Also pull all thirty-four sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.34.0-sprint34.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -112,11 +113,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.33.0-sprint33.bun
           refs/tags/v0.30.0-sprint30:refs/tags/v0.30.0-sprint30 \
           refs/tags/v0.31.0-sprint31:refs/tags/v0.31.0-sprint31 \
           refs/tags/v0.32.0-sprint32:refs/tags/v0.32.0-sprint32 \
-          refs/tags/v0.33.0-sprint33:refs/tags/v0.33.0-sprint33
+          refs/tags/v0.33.0-sprint33:refs/tags/v0.33.0-sprint33 \
+          refs/tags/v0.34.0-sprint34:refs/tags/v0.34.0-sprint34
 
 # Verify
-git log --oneline next-port                # should show 74 commits
-git tag -l                                 # should include all thirty-three sprint tags
+git log --oneline next-port                # should show 76 commits
+git tag -l                                 # should include all thirty-four sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -129,8 +131,123 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
-               v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33
+               v0.31.0-sprint31 v0.32.0-sprint32 v0.33.0-sprint33 \
+               v0.34.0-sprint34
 ```
+
+### What Sprint 34 added (v0.34.0-sprint34)
+
+Supplier drill-down detail page at `/suppliers/[id]`. Fixes a real
+broken link from Sprint 12 — the supplier-performance leaderboard
+(`/reports/suppliers`) has rendered each row as a
+`<Link href={"/suppliers/${id}"}>` since it shipped, but until this
+sprint the only thing living under `/suppliers/[id]/` was `/edit`,
+so clicking through 404'd. No schema changes, no new runtime deps,
+no migrations.
+
+NEW `src/app/(app)/suppliers/[id]/page.tsx` (~540 lines) — server
+component with a single `supplier.findFirst({ id, organizationId })`
+query whose nested include pulls every PO + line + item in one
+round-trip. Defense-in-depth: the `organizationId` predicate on
+the supplier query is how a cross-tenant URL attack trips
+`notFound()` even though `requireActiveMembership` already gates
+the route upstream.
+
+Layout is four stacked sections:
+
+ 1. **Identity header** — Truck icon + name + mono code + Active
+    badge; action buttons row: Back, Edit, New PO (generic
+    `/purchase-orders/new` dead-end; a later sprint can add
+    `?supplierId=` prefill).
+
+ 2. **Three identity cards** (Contact / Address / Notes) — each
+    with its own empty state; Contact includes mailto link,
+    website external link, and the default-currency chip; Address
+    uses a filtered `addressParts` array so no empty lines ever
+    render; Notes uses `whitespace-pre-wrap` to preserve the edit
+    form's formatting.
+
+ 3. **Activity section** with four KPI cards — Received value,
+    Total POs (+ open count in body), On-time rate (fraction
+    shown in body), Avg lead time (sample size in body). Math
+    is **identical** to the Sprint 12 supplier-performance
+    report so numbers reconcile byte-for-byte between the two
+    surfaces (comment in the page file even flags the parity).
+    Mixed-currency caveat banner if `currencyMix.size > 1` or
+    any PO uses a non-region currency. Empty state
+    (CalendarClock icon + "No purchase orders yet") when
+    `totalPos === 0`.
+
+ 4. **Recent POs table** — newest-first, hard-capped at 10 rows.
+    Seven columns: PO number (mono, deep-links
+    `/purchase-orders/[id]`), Status + timeliness badge, Ordered,
+    Expected, Received, Lines count, Value. Per-row timeliness
+    badge on top of the status badge: RECEIVED + receivedAt +
+    expectedAt → compare timestamps and pick destructive "Late"
+    / secondary "Early" / default "On time"; SENT or
+    PARTIALLY_RECEIVED → outline "Outstanding"; DRAFT /
+    CANCELLED → no badge. The "View all purchase orders" ghost
+    button links back to `/purchase-orders`.
+
+ 5. **Top items card** — top 5 items by total ordered quantity
+    from this supplier, with both Ordered qty and Received qty
+    columns so the operator can spot chronic short-shipments.
+    Aggregation via an in-memory `Map<itemId, {name, sku,
+    ordered, received}>` accumulated during the same pass that
+    computes the KPIs — no second query, no race.
+
+MODIFIED `src/app/(app)/suppliers/page.tsx` — the name column
+cell now wraps in `<Link href={"/suppliers/${id}"}>` with
+`hover:underline`. Matches the items / warehouses / categories
+table convention: name is the primary navigation, edit/delete
+stay in the actions column.
+
+i18n (`src/lib/i18n/messages/en.ts`) — NEW `t.suppliers.detail`
+sub-namespace with ~50 keys: `metaTitle`, `backToList`, action
+CTAs (`editCta`, `newPoCta`), identity card headings +
+`noContact` / `noAddress` / `noNotes` / `currencyLabel` /
+`websiteLabel`, activity section (`activityHeading`,
+`activitySubtitle`, `emptyActivityTitle`, `emptyActivityBody`),
+KPI labels + bodies (`kpiReceivedValueLabel`,
+`kpiReceivedValueBody`, `kpiTotalPosLabel`, `kpiTotalPosBody`,
+`kpiOnTimeRateLabel`, `kpiOnTimeRateBody`, `kpiAvgLeadTimeLabel`,
+`kpiAvgLeadTimeBody`, `kpiNotAvailable`, `daysSuffix`), recent
+POs table (`recentHeading`, `recentSubtitle`, `recentViewAllCta`,
+seven column labels, four badges), top items card
+(`topItemsHeading`, `topItemsSubtitle`, `topItemsEmpty`, three
+column labels), plus `mixedCurrencyCaveat`. Deliberately **not**
+reusing `t.reports.supplierPerformance` keys even where copy
+overlaps — the detail page is an operational view with its own
+heading hierarchy, empty states, and action wording, and
+decoupled namespaces mean future copy tweaks don't accidentally
+ripple between surfaces. All copy routes through `en.ts` — no
+Turkish anywhere.
+
+**Design decisions** — single server query with nested include
+over a separate aggregate table (scale concerns land after ~5k
+POs/supplier, not worth the complexity at MVP); in-memory KPI
+roll-up over SQL aggregation (trivial math, rows already in RAM
+for the table, shared formulas with the Sprint 12 report);
+`findFirst` with explicit `organizationId` over `findUnique` by
+id alone (defense-in-depth); no new `?supplierId=` prefill on
+`/purchase-orders/new` (needs a PO-form refactor, out of scope);
+deep-link from the list page's name column not a separate "View"
+button (app-wide consistency with items/warehouses/categories);
+no cross-currency FX conversion (deferred with the Sprint 12
+historical FX story); defense-in-depth `notFound()` even though
+`requireActiveMembership` gates upstream (two cheap gates is the
+right default for a multi-tenant detail page).
+
+**No schema changes, no Prisma migration, no new runtime
+dependencies.** Triple-verified clean:
+
+- `tsc --noEmit` exit 0
+- `biome check src` clean (177 files — one new vs Sprint 33's
+  176: `suppliers/[id]/page.tsx`; `suppliers/page.tsx` +
+  `en.ts` modified in place)
+- `DATABASE_URL=... DIRECT_URL=... prisma validate` → green
+
+---
 
 ### What Sprint 33 added (v0.33.0-sprint33)
 
