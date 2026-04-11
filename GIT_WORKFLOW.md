@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 11.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 8 plus **Sprint 9** are already committed in a
+Sprint 0 through Sprint 9 plus **Sprint 10** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.9.0-sprint9.bundle
+oneace-next/oneace-next-port-v0.10.0-sprint10.bundle
 ```
 
 This bundle contains:
 
-- **26 commits** — 8 Sprint 0 + 1 docs + Sprints 1..9 (each = 1 feature
+- **28 commits** — 8 Sprint 0 + 1 docs + Sprints 1..10 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -35,9 +35,10 @@ This bundle contains:
   - `v0.7.0-sprint7` — Sprint 7 complete (settings + team management + Sprint 5 cleanup)
   - `v0.8.0-sprint8` — Sprint 8 complete (barcode scanner + item lookup)
   - `v0.9.0-sprint9` — Sprint 9 complete (CSV exports + stock-value report)
+  - `v0.10.0-sprint10` — Sprint 10 complete (global header search)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.8.0-sprint8.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.9.0-sprint9.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -51,11 +52,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.9.0-sprint9.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.10.0-sprint10.bundle \
           next-port:next-port
 
-# Also pull all nine sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.9.0-sprint9.bundle \
+# Also pull all ten sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.10.0-sprint10.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -64,18 +65,45 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.9.0-sprint9.bundl
           refs/tags/v0.6.0-sprint6:refs/tags/v0.6.0-sprint6 \
           refs/tags/v0.7.0-sprint7:refs/tags/v0.7.0-sprint7 \
           refs/tags/v0.8.0-sprint8:refs/tags/v0.8.0-sprint8 \
-          refs/tags/v0.9.0-sprint9:refs/tags/v0.9.0-sprint9
+          refs/tags/v0.9.0-sprint9:refs/tags/v0.9.0-sprint9 \
+          refs/tags/v0.10.0-sprint10:refs/tags/v0.10.0-sprint10
 
 # Verify
-git log --oneline next-port                # should show 26 commits
-git tag -l                                 # should include all nine sprint tags
+git log --oneline next-port                # should show 28 commits
+git tag -l                                 # should include all ten sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
-               v0.9.0-sprint9
+               v0.9.0-sprint9 v0.10.0-sprint10
 ```
+
+### What Sprint 10 added (v0.10.0-sprint10)
+
+- **`/search` server route** — new App Router page that reads `?q=` from
+  `searchParams`, runs three parallel Prisma `findMany` queries scoped to
+  the active organization (items, suppliers, warehouses), and renders the
+  results grouped into three cards with inline metadata (on-hand sum,
+  barcode, category for items; contact line for suppliers; code + city
+  for warehouses). Minimum query length is two characters, and each
+  section caps at 25 results with a truncation notice so nobody wonders
+  why their 40th match is missing.
+- **Header wiring** — `src/components/shell/header.tsx` is now an actual
+  search form instead of a decorative input. The field is controlled,
+  bound to the URL via `useSearchParams`, re-syncs on back/forward
+  navigation, URL-encodes the submitted query, and pushes to
+  `/search?q=…`. Empty / whitespace-only submits are ignored client-side.
+- **Match surface** — items match on `name`, `sku`, `barcode`, and
+  `description`; suppliers match on `name`, `code`, `contactName`, and
+  `email`; warehouses match on `name`, `code`, and `city` (archived
+  warehouses are filtered out). All matches are case-insensitive via
+  Prisma's `mode: "insensitive"`.
+- **i18n** — new `t.search` namespace in `en.ts` covering metadata,
+  heading, subtitle, both empty states (no query yet / no matches),
+  per-section headers, item/supplier/warehouse meta labels with
+  placeholder interpolation, truncation notice, and the warehouse
+  "Default" badge.
 
 ### What Sprint 9 added (v0.9.0-sprint9)
 

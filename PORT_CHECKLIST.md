@@ -336,6 +336,51 @@ every major list and report by default.
 - [ ] Export audit log (who downloaded what and when) — part of the
       broader audit-log scope still on the board
 
+## Sprint 10 — global header search (shipped 2026-04-11)
+
+Tagged `v0.10.0-sprint10`. Wires the previously-dead search input in the
+app header into a working unified search across items, suppliers, and
+warehouses. Picked for Sprint 10 because it's a user-visible win, needs
+zero schema changes, and kills a visible dead-UI element.
+
+- [x] `src/app/(app)/search/page.tsx` — server component reading `?q=`
+      from `searchParams`, three parallel Prisma OR-queries (items,
+      suppliers, warehouses) scoped to the active org
+- [x] Minimum query length of 2 characters; per-section cap of 25 with
+      truncation notice
+- [x] Items match on name, SKU, barcode, description; suppliers on
+      name, code, contactName, email; warehouses on name, code, city
+      (archived excluded); all case-insensitive via `mode: "insensitive"`
+- [x] Three result cards (Items / Suppliers / Warehouses) with inline
+      metadata (on-hand sum, barcode, category for items; contact line
+      for suppliers; code + city + Default badge for warehouses)
+- [x] Two empty states: "type to start searching" and "no matches for
+      <query>"
+- [x] Header search input (`src/components/shell/header.tsx`) converted
+      to a controlled form bound to `useSearchParams`; submit URL-encodes
+      the query and `router.push("/search?q=...")`; `useEffect` re-syncs
+      the field on back/forward navigation
+- [x] i18n: full `t.search` namespace in `en.ts` with placeholder
+      interpolation for query/count/limit/warehouse/supplier meta
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-10)
+
+- [ ] Purchase order search (PO number, supplier, status) — blocked
+      on a cheap way to index the ephemeral "draft/open/received"
+      state without duplicating the PO list page
+- [ ] Movement / stock count search — the append-only ledger is
+      unlikely to be looked up by free text; users will filter by
+      item or warehouse, which is already doable from those pages
+- [ ] Search-as-you-type with a debounced popover — server form
+      submit is fine for MVP and avoids a client bundle
+- [ ] Saved searches / recent searches (needs a per-user row in the
+      DB, deferred to the post-MVP personalization sweep)
+- [ ] Full-text ranking via Postgres `tsvector` + GIN indexes — the
+      current `contains` scan is fine at < 10k items per org, but at
+      100k the plan is to migrate to a generated `searchVector`
+      column populated on Item/Supplier/Warehouse write
+
 ---
 
 ## Parked Until Later
