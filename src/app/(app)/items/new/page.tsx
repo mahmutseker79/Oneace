@@ -9,14 +9,22 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { ItemForm, type ItemFormLabels } from "../item-form";
 
+type SearchParams = Promise<{ barcode?: string }>;
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
   return { title: `${t.items.newItem} — ${t.items.metaTitle}` };
 }
 
-export default async function NewItemPage() {
+export default async function NewItemPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+  const params = (await searchParams) ?? {};
+  const defaultBarcode = params.barcode?.trim();
 
   const [categories, suppliers] = await Promise.all([
     db.category.findMany({
@@ -61,7 +69,13 @@ export default async function NewItemPage() {
         <p className="text-muted-foreground">{t.items.newItemSubtitle}</p>
       </div>
 
-      <ItemForm labels={labels} categories={categories} suppliers={suppliers} mode="create" />
+      <ItemForm
+        labels={labels}
+        categories={categories}
+        suppliers={suppliers}
+        mode="create"
+        defaultBarcode={defaultBarcode || undefined}
+      />
     </div>
   );
 }

@@ -215,6 +215,12 @@ export default async function DashboardPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
+            <Link href="/scan">
+              <ScanLine className="h-4 w-4" />
+              {t.dashboard.actions.scan}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href="/stock-counts/new">
               <ClipboardCheck className="h-4 w-4" />
               {t.dashboard.actions.startCount}

@@ -89,9 +89,18 @@ type ItemFormProps = {
     costPrice: string | null;
     salePrice: string | null;
   };
+  /** Pre-fill the barcode field on a fresh create form (e.g. deep-link from /scan). */
+  defaultBarcode?: string;
 };
 
-export function ItemForm({ labels, categories, suppliers, mode, initial }: ItemFormProps) {
+export function ItemForm({
+  labels,
+  categories,
+  suppliers,
+  mode,
+  initial,
+  defaultBarcode,
+}: ItemFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -193,7 +202,7 @@ export function ItemForm({ labels, categories, suppliers, mode, initial }: ItemF
           <Input
             id="barcode"
             name="barcode"
-            defaultValue={initial?.barcode ?? ""}
+            defaultValue={initial?.barcode ?? defaultBarcode ?? ""}
             aria-invalid={!!fieldError("barcode")}
           />
           {fieldError("barcode") ? (

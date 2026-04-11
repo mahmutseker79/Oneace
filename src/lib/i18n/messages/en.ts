@@ -147,6 +147,7 @@ export const en = {
       receiveStock: "Receive stock",
       startCount: "Start stock count",
       lowStockReport: "Low stock report",
+      scan: "Scan",
     },
     lowStockCard: {
       title: "Low stock",
@@ -851,6 +852,57 @@ export const en = {
       totalItems: "{count} item(s)",
       totalSuppliers: "{count} supplier group(s)",
       backToReports: "Back to reports",
+    },
+  },
+
+  scan: {
+    metaTitle: "Scan",
+    heading: "Scan barcode",
+    subtitle:
+      "Point your camera at a barcode or enter a code manually to look up an item in your inventory.",
+    camera: {
+      heading: "Camera",
+      subtitle:
+        "Allow camera access, then hold a barcode in the green guide. Scanning happens locally on your device.",
+      start: "Start camera",
+      stop: "Stop camera",
+      scanningStatus: "Scanning…",
+      unsupported: "Camera scanning not supported",
+      unsupportedBody:
+        "Your browser does not support the BarcodeDetector API. Chrome, Edge, and Android browsers work best. You can still use manual entry below.",
+      denied: "Camera access denied",
+      deniedBody:
+        "OneAce needs camera permission to scan barcodes. Enable it in your browser's site settings and try again.",
+      error: "Could not start the camera. Try again or use manual entry.",
+    },
+    manual: {
+      heading: "Manual entry",
+      subtitle: "Type or paste a barcode or SKU — useful when the camera cannot read the code.",
+      label: "Barcode or SKU",
+      placeholder: "e.g. 0123456789012 or SKU-001",
+      submit: "Look up",
+    },
+    result: {
+      foundHeading: "Match found",
+      notFoundHeading: "No match",
+      notFoundBody:
+        "No item with this barcode or SKU exists in your organization yet. You can create one below.",
+      lookingUp: "Looking up…",
+      lookupError: "Lookup failed. Please try again.",
+      clear: "Clear",
+      viewItem: "Open item",
+      newItem: "Create item",
+      sku: "SKU",
+      barcode: "Barcode",
+      onHand: "On hand",
+      reserved: "Reserved",
+      reorderPoint: "Reorder point",
+      status: "Status",
+      levelsHeading: "Per-warehouse stock",
+      noLevels: "No stock recorded in any warehouse yet.",
+      columnWarehouse: "Warehouse",
+      columnQuantity: "Qty",
+      columnReserved: "Reserved",
     },
   },
 
