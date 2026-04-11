@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -184,6 +185,22 @@ export async function createStockCountAction(
       });
 
       return created;
+    });
+
+    await recordAudit({
+      organizationId: orgId,
+      actorId: session.user.id,
+      action: "stock_count.created",
+      entityType: "stock_count",
+      entityId: count.id,
+      metadata: {
+        name: data.name,
+        methodology: data.methodology,
+        warehouseId,
+        itemCount: itemIds.length,
+        warehouseCount: warehouses.length,
+        snapshotRows: snapshotRows.length,
+      },
     });
 
     revalidatePath("/stock-counts");
@@ -490,7 +507,7 @@ export async function submitCountEntryOpAction(
 export async function cancelStockCountAction(
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const parsed = cancelCountInputSchema.safeParse(input);
@@ -504,9 +521,11 @@ export async function cancelStockCountAction(
   const data = parsed.data;
   const orgId = membership.organizationId;
 
+  // Widened from `{ id, state }` to also pull `name` so the audit row
+  // carries a human-readable label without a second query.
   const count = await db.stockCount.findFirst({
     where: { id: data.countId, organizationId: orgId },
-    select: { id: true, state: true },
+    select: { id: true, state: true, name: true },
   });
   if (!count) return { ok: false, error: t.stockCounts.errors.notFound };
   if (!canCancel(count.state)) {
@@ -520,6 +539,18 @@ export async function cancelStockCountAction(
         state: "CANCELLED",
         cancelledAt: new Date(),
         cancelReason: data.reason,
+      },
+    });
+    await recordAudit({
+      organizationId: orgId,
+      actorId: session.user.id,
+      action: "stock_count.cancelled",
+      entityType: "stock_count",
+      entityId: count.id,
+      metadata: {
+        name: count.name,
+        previousState: count.state,
+        reason: data.reason,
       },
     });
     revalidateCount(count.id);
@@ -631,6 +662,26 @@ export async function completeStockCountAction(
         data: { state: "COMPLETED", completedAt: new Date() },
       });
       return { posted: postable.length };
+    });
+
+    // Audit AFTER the transaction closes, matching the
+    // `purchase_order.received` convention from Sprint 36: the real
+    // StockMovement rows already committed, so a log-write hiccup
+    // must not roll them back. The aggregate counts let a reviewer
+    // see "reconcile posted 14 adjustments" without joining the
+    // movement stream.
+    await recordAudit({
+      organizationId: orgId,
+      actorId: session.user.id,
+      action: "stock_count.completed",
+      entityType: "stock_count",
+      entityId: count.id,
+      metadata: {
+        name: count.name,
+        applyAdjustments: data.applyAdjustments,
+        postedMovements: result.posted,
+        varianceRows: variances.length,
+      },
     });
 
     revalidateCount(count.id);

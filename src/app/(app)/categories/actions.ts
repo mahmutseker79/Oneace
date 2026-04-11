@@ -3,6 +3,7 @@
 import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -33,7 +34,7 @@ async function uniqueSlug(
 }
 
 export async function createCategoryAction(formData: FormData): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const parsed = categoryInputSchema.safeParse(Object.fromEntries(formData));
@@ -61,6 +62,15 @@ export async function createCategoryAction(formData: FormData): Promise<ActionRe
       select: { id: true },
     });
 
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "category.created",
+      entityType: "category",
+      entityId: category.id,
+      metadata: { name: input.name, slug, parentId: input.parentId },
+    });
+
     revalidatePath("/categories");
     revalidatePath("/items");
     return { ok: true, id: category.id };
@@ -77,13 +87,30 @@ export async function createCategoryAction(formData: FormData): Promise<ActionRe
 }
 
 export async function deleteCategoryAction(id: string): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  // Read the name/slug BEFORE the delete so the audit row carries the
+  // human-readable fields. Same pattern as item/warehouse delete.
+  const snapshot = await db.category.findFirst({
+    where: { id, organizationId: membership.organizationId },
+    select: { name: true, slug: true },
+  });
 
   try {
     await db.category.delete({
       where: { id, organizationId: membership.organizationId },
     });
+    if (snapshot) {
+      await recordAudit({
+        organizationId: membership.organizationId,
+        actorId: session.user.id,
+        action: "category.deleted",
+        entityType: "category",
+        entityId: id,
+        metadata: { name: snapshot.name, slug: snapshot.slug },
+      });
+    }
     revalidatePath("/categories");
     revalidatePath("/items");
     return { ok: true, id };

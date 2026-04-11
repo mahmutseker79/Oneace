@@ -46,14 +46,48 @@ export type AuditAction =
   | "purchase_order.sent"
   | "purchase_order.cancelled"
   | "purchase_order.deleted"
-  | "purchase_order.received";
+  | "purchase_order.received"
+  // --- Catalog surfaces (Sprint 39) --------------------------------------
+  // Items, warehouses and categories are the three catalog tables whose
+  // writes Sprint 36 deliberately left out of the audit log to keep that
+  // sprint's scope bounded. Sprint 39 back-fills them so an OWNER can
+  // answer "who renamed SKU-123?" or "who archived Warehouse A?" from
+  // the /audit page without digging through git or the DB.
+  | "item.created"
+  | "item.updated"
+  | "item.imported"
+  | "item.deleted"
+  | "warehouse.created"
+  | "warehouse.updated"
+  | "warehouse.deleted"
+  | "category.created"
+  | "category.deleted"
+  // --- Stock count lifecycle (Sprint 39) ---------------------------------
+  // Only the state-transition endpoints are audited: created, cancelled,
+  // completed. Individual count entries are deliberately NOT logged —
+  // a single cycle-count session can emit hundreds of entries, which
+  // would flood the log without telling a reviewer anything the count's
+  // own detail page doesn't already show. The count-level events give
+  // the governance signal; the entry-level detail stays in-feature.
+  | "stock_count.created"
+  | "stock_count.cancelled"
+  | "stock_count.completed";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
  * cases but kept independent so an action like `organization.transferred`
  * can still target `entityType: "organization"` cleanly.
  */
-export type AuditEntityType = "organization" | "membership" | "invitation" | "purchase_order";
+export type AuditEntityType =
+  | "organization"
+  | "membership"
+  | "invitation"
+  | "purchase_order"
+  // Sprint 39 — catalog + stock-count coverage.
+  | "item"
+  | "warehouse"
+  | "category"
+  | "stock_count";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so

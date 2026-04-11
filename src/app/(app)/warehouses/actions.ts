@@ -3,6 +3,7 @@
 import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -21,7 +22,7 @@ function formToInput(formData: FormData) {
 }
 
 export async function createWarehouseAction(formData: FormData): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const parsed = warehouseInputSchema.safeParse(formToInput(formData));
@@ -57,6 +58,20 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
       });
     });
 
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "warehouse.created",
+      entityType: "warehouse",
+      entityId: warehouse.id,
+      metadata: {
+        name: input.name,
+        code: input.code,
+        city: input.city,
+        isDefault: input.isDefault,
+      },
+    });
+
     revalidatePath("/warehouses");
     return { ok: true, id: warehouse.id };
   } catch (error) {
@@ -72,7 +87,7 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
 }
 
 export async function updateWarehouseAction(id: string, formData: FormData): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const parsed = warehouseInputSchema.safeParse(formToInput(formData));
@@ -84,6 +99,19 @@ export async function updateWarehouseAction(id: string, formData: FormData): Pro
     };
   }
   const input = parsed.data;
+
+  // Snapshot the reviewer-relevant fields before the update so the
+  // audit row can carry a `changed` diff, matching the items convention.
+  const before = await db.warehouse.findFirst({
+    where: { id, organizationId: membership.organizationId },
+    select: {
+      name: true,
+      code: true,
+      city: true,
+      country: true,
+      isDefault: true,
+    },
+  });
 
   try {
     const updated = await db.$transaction(async (tx) => {
@@ -112,6 +140,32 @@ export async function updateWarehouseAction(id: string, formData: FormData): Pro
       });
     });
 
+    if (before) {
+      const after = {
+        name: input.name,
+        code: input.code,
+        city: input.city,
+        country: input.country,
+        isDefault: input.isDefault,
+      };
+      const changed: Record<string, { from: unknown; to: unknown }> = {};
+      for (const key of Object.keys(after) as (keyof typeof after)[]) {
+        if (before[key] !== after[key]) {
+          changed[key] = { from: before[key], to: after[key] };
+        }
+      }
+      if (Object.keys(changed).length > 0) {
+        await recordAudit({
+          organizationId: membership.organizationId,
+          actorId: session.user.id,
+          action: "warehouse.updated",
+          entityType: "warehouse",
+          entityId: updated.id,
+          metadata: { code: after.code, changed },
+        });
+      }
+    }
+
     revalidatePath("/warehouses");
     revalidatePath(`/warehouses/${id}`);
     return { ok: true, id: updated.id };
@@ -133,7 +187,7 @@ export async function updateWarehouseAction(id: string, formData: FormData): Pro
 }
 
 export async function deleteWarehouseAction(id: string): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   try {
@@ -144,9 +198,13 @@ export async function deleteWarehouseAction(id: string): Promise<ActionResult> {
       },
     });
 
+    // Widen the existing pre-check from `{ isDefault }` to include the
+    // human-readable fields we want to keep in the audit metadata. This
+    // is the same single query the old code ran — just two extra
+    // columns — so there's no extra DB round-trip.
     const target = await db.warehouse.findUnique({
       where: { id, organizationId: membership.organizationId },
-      select: { isDefault: true },
+      select: { isDefault: true, name: true, code: true },
     });
 
     if (!target) {
@@ -174,6 +232,19 @@ export async function deleteWarehouseAction(id: string): Promise<ActionResult> {
           });
         }
       }
+    });
+
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "warehouse.deleted",
+      entityType: "warehouse",
+      entityId: id,
+      metadata: {
+        name: target.name,
+        code: target.code,
+        wasDefault: target.isDefault,
+      },
     });
 
     revalidatePath("/warehouses");
