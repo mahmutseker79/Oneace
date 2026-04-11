@@ -2,6 +2,8 @@ import { Download, Eye, FileUp, Package, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ItemsCacheBanner } from "@/components/offline/items-cache-banner";
+import { ItemsCacheSync } from "@/components/offline/items-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
+import type { ItemSnapshotRow } from "@/lib/offline/items-cache";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
@@ -27,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ItemsPage() {
-  const { membership } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
 
@@ -40,6 +43,27 @@ export default async function ItemsPage() {
     orderBy: { createdAt: "desc" },
     take: 100,
   });
+
+  // Build the serializable snapshot the client passes to IndexedDB.
+  // We compute onHand once here (server-side) so the cache rendered
+  // offline matches what the user just saw.
+  const cacheScope = {
+    orgId: membership.organizationId,
+    userId: session.user.id,
+  };
+  const cacheRows: ItemSnapshotRow[] = items.map((item) => ({
+    id: item.id,
+    sku: item.sku,
+    barcode: item.barcode,
+    name: item.name,
+    unit: item.unit,
+    status: item.status,
+    categoryId: item.category?.id ?? null,
+    categoryName: item.category?.name ?? null,
+    salePrice: item.salePrice ? item.salePrice.toString() : null,
+    currency: item.currency,
+    onHand: item.stockLevels.reduce((sum, level) => sum + level.quantity, 0),
+  }));
 
   function statusBadge(status: "ACTIVE" | "ARCHIVED" | "DRAFT") {
     if (status === "ACTIVE") {
@@ -54,9 +78,20 @@ export default async function ItemsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold">{t.items.heading}</h1>
           <p className="text-muted-foreground">{t.items.subtitle}</p>
+          <ItemsCacheBanner
+            scope={cacheScope}
+            locale={region.numberLocale}
+            labels={{
+              onlineFresh: t.offline.cacheStatus.onlineFresh,
+              onlineStale: t.offline.cacheStatus.onlineStale,
+              offlineCached: t.offline.cacheStatus.offlineCached,
+              offlineEmpty: t.offline.cacheStatus.offlineEmpty,
+              neverSynced: t.offline.cacheStatus.neverSynced,
+            }}
+          />
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline">
@@ -170,6 +205,8 @@ export default async function ItemsPage() {
           </CardContent>
         </Card>
       )}
+
+      <ItemsCacheSync scope={cacheScope} rows={cacheRows} />
     </div>
   );
 }

@@ -1284,6 +1284,13 @@ export const en = {
       "OneAce needs a network connection to load fresh data. Reconnect and we'll pick up where you left off.",
     retryCta: "Try again",
     tip: "Tip: install OneAce to your home screen to keep the app shell available between sessions.",
+    cacheStatus: {
+      onlineFresh: "Offline catalog",
+      onlineStale: "Offline catalog (stale)",
+      offlineCached: "Offline · showing cached catalog",
+      offlineEmpty: "Offline · no cached catalog yet. Reconnect to sync.",
+      neverSynced: "Offline catalog not yet cached on this device.",
+    },
   },
 } as const;
 
