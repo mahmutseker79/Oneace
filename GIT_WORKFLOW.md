@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 20.
+and iterating on it through Sprint 0 → Sprint 21.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 20.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 19 plus **Sprint 20** are already committed in a
+Sprint 0 through Sprint 20 plus **Sprint 21** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.20.0-sprint20.bundle
+oneace-next/oneace-next-port-v0.21.0-sprint21.bundle
 ```
 
 This bundle contains:
 
-- **48 commits** — 8 Sprint 0 + 1 docs + Sprints 1..20 (each = 1 feature
+- **50 commits** — 8 Sprint 0 + 1 docs + Sprints 1..21 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -46,9 +46,10 @@ This bundle contains:
   - `v0.18.0-sprint18` — Sprint 18 complete (movements item-substring filter)
   - `v0.19.0-sprint19` — Sprint 19 complete (per-org default locale + region override)
   - `v0.20.0-sprint20` — Sprint 20 complete (invitation tokens + accept flow)
+  - `v0.21.0-sprint21` — Sprint 21 complete (organization delete / danger zone)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.19.0-sprint19.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.20.0-sprint20.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -62,11 +63,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.20.0-sprint20.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.21.0-sprint21.bundle \
           next-port:next-port
 
-# Also pull all twenty sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.20.0-sprint20.bundle \
+# Also pull all twenty-one sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.21.0-sprint21.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -86,11 +87,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.20.0-sprint20.bun
           refs/tags/v0.17.0-sprint17:refs/tags/v0.17.0-sprint17 \
           refs/tags/v0.18.0-sprint18:refs/tags/v0.18.0-sprint18 \
           refs/tags/v0.19.0-sprint19:refs/tags/v0.19.0-sprint19 \
-          refs/tags/v0.20.0-sprint20:refs/tags/v0.20.0-sprint20
+          refs/tags/v0.20.0-sprint20:refs/tags/v0.20.0-sprint20 \
+          refs/tags/v0.21.0-sprint21:refs/tags/v0.21.0-sprint21
 
 # Verify
-git log --oneline next-port                # should show 48 commits
-git tag -l                                 # should include all twenty sprint tags
+git log --oneline next-port                # should show 50 commits
+git tag -l                                 # should include all twenty-one sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -99,8 +101,79 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
-               v0.19.0-sprint19 v0.20.0-sprint20
+               v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21
 ```
+
+### What Sprint 21 added (v0.21.0-sprint21)
+
+- **`deleteOrganizationAction`** (`src/app/(app)/settings/actions.ts`).
+  OWNER-only — deliberately tighter than the OWNER/ADMIN guard used
+  everywhere else in the settings module, because deleting an org is
+  irreversible and destroys every user's data in the tenant. Never
+  takes the target org id from the client: the action only ever
+  deletes the **currently active** organization derived from
+  `requireActiveMembership`, which closes off a CSRF-style attack
+  where a crafted form could trick an OWNER into deleting a
+  different tenant they happen to own. Typed-confirmation guard:
+  the client must echo back the org's `slug` exactly (including
+  case). Slug, not display name, because it has no spaces or
+  diacritics — fewer ways to fat-finger the check on a phone.
+- **Cascade model (audited, not modified).** Every org-owned relation
+  on `Organization` — `Membership`, `Invitation`, `Warehouse`,
+  `Category`, `Item`, `StockLevel`, `StockMovement`, `StockCount`,
+  `CountSnapshot`, `CountEntry`, `Supplier`, `PurchaseOrder`,
+  `PurchaseOrderLine` — is already marked `onDelete: Cascade`, so
+  a single `db.organization.delete` call wipes the entire tenant
+  in one transaction. `Category.parent` is a self-reference with
+  `onDelete: SetNull` but that's safe because the children
+  themselves cascade from the org. Better-Auth tables (`User`,
+  `Session`, `Account`, `Verification`) are **not** org-owned and
+  survive — the deleting user stays signed in.
+- **Post-delete cookie management.** If the user has other
+  memberships, the `oneace-active-org` cookie is updated to the
+  oldest remaining one (matches `requireActiveMembership`'s
+  ascending-`createdAt` ordering) so the next render lands in a
+  valid tenant. If this was the user's only org, the cookie is
+  cleared. The action returns a `nextPath` the client navigates
+  to: `/` when another org is available (which resolves into that
+  tenant), or `/organizations/create` when none remain (bypasses
+  `/onboarding` so they can bootstrap a new tenant directly
+  without the welcome flow bouncing them around).
+- **`DangerZoneCard` client component**
+  (`src/app/(app)/settings/danger-zone-card.tsx`). Destructive
+  `Card` with `border-destructive/50`, `<AlertTriangle>` icon,
+  bulleted consequences list from
+  `t.settings.dangerZone.consequences` (5 items: data wipe,
+  POs/suppliers/counts, teammates lose access, invitations
+  invalidated, no undo). `AlertDialog`-guarded CTA with a
+  slug-echo `<Input>`; the confirm button is disabled until
+  `confirmation.trim() === organization.slug`. `handleOpenChange`
+  resets the confirmation string + error state every time the
+  dialog closes so reopening starts from a clean slate. On
+  success the component calls `setOpen(false)` + `router.push`
+  (not `replace`, so the back button can't land on a stale
+  `/settings` for a deleted org) and a `router.refresh()`.
+- **Settings page wiring.** `src/app/(app)/settings/page.tsx` now
+  reads a second permission const, `canDeleteOrg = membership.role
+  === "OWNER"`, alongside the existing `canEditOrg`, and renders
+  `<DangerZoneCard>` at the bottom of the grid gated on
+  `canDeleteOrg`. Non-OWNER members (including ADMIN) never see
+  the card, so there's no "this button is disabled" affordance
+  tempting them to poke at it.
+- **i18n.** 13 new keys under `t.settings.dangerZone.*`:
+  `heading`, `description`, `consequences` (5-string array),
+  `deleteCta`, `confirmTitle`, `confirmBody` (uses `{org}`
+  placeholder), `confirmInputLabel` and `confirmInputPlaceholder`
+  (both use `{slug}` placeholder), `confirmMismatch`, `confirmCta`,
+  `deleting`, and an `errors` subtree with `forbidden`,
+  `mismatch`, `deleteFailed`.
+- **No schema changes.** Pure app-layer work — the cascade
+  machinery already existed since Sprint 0 and has been quietly
+  waiting for a trigger. Clears the "organization delete /
+  danger zone" item from the post-Sprint-11 deferred list —
+  Sprint 11 half-shipped the multi-tenancy read path (header
+  switcher + active-org cookie) and explicitly deferred the
+  destructive half.
 
 ### What Sprint 20 added (v0.20.0-sprint20)
 

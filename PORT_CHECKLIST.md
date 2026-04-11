@@ -901,20 +901,118 @@ a first-class "Copy link" button so the workflow is not painful.
       to add the `Invitation` table and its indexes. No migration
       file because this project uses `db:push`.
 
-### Still to port (deferred post-Sprint-20)
+---
 
-- [ ] Danger zone / organization delete
+## Sprint 21 — organization delete / danger zone (shipped 2026-04-11)
+
+Tagged `v0.21.0-sprint21`. Closes the "organization delete / danger
+zone" item from the post-Sprint-11 deferred list — Sprint 11 shipped
+the multi-tenancy read path (header switcher + active-org cookie)
+and explicitly deferred the destructive half. No schema changes;
+pure app-layer work on top of the cascade machinery that has been
+quietly waiting for a trigger since Sprint 0.
+
+**Design decision — OWNER only, not ADMIN.** Every other gated
+settings action (`updateOrganizationProfileAction`,
+`updateOrgDefaultsAction`) uses the OWNER/ADMIN tuple. Deleting
+is different: irreversible, destroys every user's data in the
+tenant, and revokes access for every teammate. Scoping it one
+tier tighter keeps the operation away from the "I'm an admin,
+I can do anything" muscle memory.
+
+**Design decision — typed confirmation against the slug, not
+the display name.** Slug is ASCII-only and has no spaces, so the
+echo check is stable on mobile keyboards and across locales.
+Display names can contain diacritics, emoji, or punctuation
+that would break re-typing for a non-owner (even though only
+OWNER reaches the dialog).
+
+**Design decision — target org comes from `requireActiveMembership`,
+never from the client.** The action doesn't accept an org id
+parameter. The *currently active* organization from the server-
+side membership is what gets deleted, which closes a CSRF-style
+attack where a crafted form from a hostile page could trick a
+signed-in OWNER into deleting a different tenant they happen
+to own.
+
+**Design decision — post-delete redirect routes around
+`/onboarding`.** If the user still has memberships, navigate to
+`/` (which falls through to the next active org via the updated
+cookie). If this was their only org, navigate straight to
+`/organizations/create` — the onboarding welcome flow would be
+the wrong place to land on a fresh empty account after a delete.
+
+- [x] **Cascade audit (no schema changes).** Every org-owned
+      relation on `Organization` already declares
+      `onDelete: Cascade`: `Membership`, `Invitation`, `Warehouse`,
+      `Category`, `Item`, `StockLevel`, `StockMovement`,
+      `StockCount`, `CountSnapshot`, `CountEntry`, `Supplier`,
+      `PurchaseOrder`, `PurchaseOrderLine`. A single
+      `db.organization.delete` wipes everything in one
+      transaction. `Category.parent` is a self-reference with
+      `onDelete: SetNull` but the children themselves cascade
+      from the org, so it's safe. Better-Auth tables (`User`,
+      `Session`, `Account`, `Verification`) are not org-owned
+      and survive — the deleting user stays signed in.
+- [x] `src/app/(app)/settings/actions.ts` — new
+      `deleteOrganizationAction(confirmation: string)`. OWNER-only
+      guard. `confirmation.trim() !== membership.organization.slug`
+      returns `reason: "mismatch"`. Single
+      `db.organization.delete({ where: { id: targetOrgId } })`
+      inside try/catch. Post-delete, writes the next active-org
+      cookie (oldest remaining membership) or clears it when none
+      remain. Returns `{ ok: true, nextPath }` with the post-
+      delete landing path. Added `ACTIVE_ORG_COOKIE` import from
+      `@/lib/session`. Also appended a new `DeleteOrganizationResult`
+      type.
+- [x] `src/app/(app)/settings/danger-zone-card.tsx` — new client
+      component. `<Card className="border-destructive/50 lg:col-span-2">`,
+      `<AlertTriangle>` icon, consequences rendered as a bulleted
+      list from `labels.consequences`. `AlertDialog` opens on the
+      destructive CTA; slug-echo `<Input>` drives
+      `clientSideMatches = confirmation.trim() === organization.slug`
+      which gates the confirm button. `handleOpenChange` resets
+      `confirmation` + `error` on close. `handleConfirm` awaits
+      `deleteOrganizationAction(confirmation)` inside a
+      `useTransition`, sets `open: false`, then calls
+      `router.push(result.nextPath)` followed by `router.refresh()`.
+      Destructive confirm button uses
+      `bg-destructive text-destructive-foreground hover:bg-destructive/90`.
+- [x] `src/app/(app)/settings/page.tsx` — added `DangerZoneCard`
+      import. New `canDeleteOrg = membership.role === "OWNER"`
+      const with a comment explaining the OWNER-tighter-than-
+      ADMIN rationale. Rendered `<DangerZoneCard>` at the bottom
+      of the grid gated on `canDeleteOrg`, passing
+      `{ name, slug }` for the org and the full `labels` object
+      from `t.settings.dangerZone`.
+- [x] `src/lib/i18n/messages/en.ts` — new `t.settings.dangerZone.*`
+      block: `heading`, `description`, `consequences` (5-string
+      array), `deleteCta`, `confirmTitle`, `confirmBody` (uses
+      `{org}` placeholder), `confirmInputLabel` and
+      `confirmInputPlaceholder` (both use `{slug}` placeholder),
+      `confirmMismatch`, `confirmCta`, `deleting`, and an `errors`
+      subtree with `forbidden`, `mismatch`, `deleteFailed`.
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+- [x] **No schema changes, no `db:push` required.** Pure app-
+      layer work.
+
+### Still to port (deferred post-Sprint-21)
+
 - [ ] Audit log
 - [ ] Offline PWA shell + service worker
 - [ ] Email delivery for invitations (MVP: admin copies link)
 - [ ] `?next=/invite/[token]` redirect after sign-in so users
       don't have to revisit the URL manually
+- [ ] Organization transfer (change OWNER to another member)
+      — related to danger zone; deferred because an OWNER who
+      wants to leave the tenant without deleting it also needs
+      a path
 - [ ] Reports xlsx/pdf export variants (CSV only today)
 - [ ] Full-text ranking via Postgres `tsvector` (current
       `contains` scan is fine to ~10k items per org;
       migrate at 100k)
-- [ ] All items from post-Sprint-19 deferred list (unchanged
-      aside from the invitation tokens flow now being shipped)
+- [ ] All items from post-Sprint-20 deferred list (unchanged
+      aside from org delete now being shipped)
 
 ---
 
