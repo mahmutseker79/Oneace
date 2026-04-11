@@ -348,6 +348,16 @@ model StockMovement {
   direction        Int               @default(1)
   reference        String?
   note             String?
+  // Sprint 26 — PWA Sprint 4 Part B. Client-generated UUID that serves as
+  // the idempotency key for offline replay. Nullable because (a) online
+  // fast-path writes through the legacy FormData action don't need it,
+  // and (b) every movement inserted before Sprint 26 has `null` here. The
+  // compound unique index below guarantees that a replay from a queued
+  // op can never double-apply: the second insert violates the constraint
+  // and the action handler returns the existing row's id. Scoped by
+  // organizationId so a leaked key from one tenant can't collide with
+  // another tenant's key.
+  idempotencyKey   String?
   createdAt        DateTime          @default(now())
   createdByUserId  String?
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -356,6 +366,7 @@ model StockMovement {
   toWarehouse      Warehouse?        @relation("MovementToWarehouse", fields: [toWarehouseId], references: [id], onDelete: Cascade)
   createdBy        User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
 
+  @@unique([organizationId, idempotencyKey])
   @@index([organizationId, createdAt])
   @@index([organizationId, itemId])
   @@index([organizationId, warehouseId])

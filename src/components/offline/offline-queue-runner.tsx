@@ -1,7 +1,8 @@
 "use client";
 
 /*
- * OfflineQueueRunner — Sprint 25 (PWA Sprint 4 Part A).
+ * OfflineQueueRunner — Sprint 25 substrate, Sprint 26 wires the
+ * first concrete dispatcher.
  *
  * The replay runner. Mounted once per session from the `(app)`
  * layout, kept alive for the duration of the app shell. It owns a
@@ -11,18 +12,15 @@
  *
  * Design decisions:
  *
- *   1. Empty dispatcher registry for this sprint.
+ *   1. Dispatcher registry as a module-level const map.
  *
- *      Sprint 25 is the substrate sprint. No real ops are wired
- *      yet — the dispatcher map is intentionally empty so that
- *      (a) we exercise the full lifecycle (claim → dispatch →
- *      mark succeeded / failed) without coupling the runner to
- *      any server action, and (b) Sprint 26 can add the first
- *      real op by editing ONE import list instead of auditing the
- *      runner. The runner currently marks unknown opTypes as
- *      non-retryable failures ("no dispatcher registered") so
- *      they show up in the failed-ops UI the next sprint will
- *      build, instead of silently looping forever.
+ *      Sprint 25 shipped an empty `DISPATCHERS` registry as the
+ *      seam. Sprint 26 registers the first real handler
+ *      (`movement.create` → `dispatchMovementCreate`) by adding
+ *      ONE import + ONE map entry — no changes to the drain
+ *      loop itself. Every future op lands here the same way.
+ *      Unknown opTypes still get marked as non-retryable failures
+ *      so a typo never lives forever on the queue.
  *
  *   2. Triggers on `online` event + `visibilitychange` + a
  *      one-shot mount drain.
@@ -72,6 +70,10 @@ import { useCallback, useEffect, useRef } from "react";
 
 import type { CachedPendingOp } from "@/lib/offline/db";
 import {
+  MOVEMENT_CREATE_OP_TYPE,
+  dispatchMovementCreate,
+} from "@/lib/offline/dispatchers/movement-create";
+import {
   type PendingOpScope,
   clearSucceededOps,
   listOps,
@@ -106,10 +108,14 @@ export type OpDispatcher = (op: CachedPendingOp) => Promise<DispatcherResult>;
 
 /**
  * Dispatcher registry. Keys are opType strings, values are
- * handlers. **Kept intentionally empty for Sprint 25.** Sprint 26
- * will add the first real dispatcher here.
+ * handlers. Sprint 25 shipped this empty as the Sprint 26 seam;
+ * Sprint 26 registers `movement.create` as the first concrete op.
+ * Every future opType is added here alongside its dispatcher
+ * module — no other changes to the runner are needed.
  */
-const DISPATCHERS: Record<string, OpDispatcher> = {};
+const DISPATCHERS: Record<string, OpDispatcher> = {
+  [MOVEMENT_CREATE_OP_TYPE]: dispatchMovementCreate,
+};
 
 export interface OfflineQueueRunnerProps {
   orgId: string;

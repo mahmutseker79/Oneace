@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { CloudOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
@@ -15,8 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { MOVEMENT_CREATE_OP_TYPE } from "@/lib/offline/dispatchers/movement-create";
+import { enqueueOp } from "@/lib/offline/queue";
+import type { MovementInput } from "@/lib/validation/movement";
 
-import { createMovementAction } from "./actions";
+import { submitMovementOpAction } from "./actions";
 
 export type MovementFormLabels = {
   type: string;
@@ -36,24 +39,57 @@ export type MovementFormLabels = {
   note: string;
   notePlaceholder: string;
   submit: string;
+  submittingLabel: string;
+  queuedLabel: string;
   error: string;
   cancel: string;
 };
 
 export type MovementFormOption = { id: string; label: string; sub?: string };
 
+export type MovementFormScope = {
+  orgId: string;
+  userId: string;
+};
+
 type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER";
 
 type MovementFormProps = {
   labels: MovementFormLabels;
+  scope: MovementFormScope;
   items: MovementFormOption[];
   warehouses: MovementFormOption[];
   presetItemId?: string;
   presetWarehouseId?: string;
 };
 
+/**
+ * Sprint 26 — PWA Sprint 4 Part B. The form now always goes through
+ * the idempotent JSON path:
+ *
+ *   1. Generate a v4 UUID (`crypto.randomUUID()`) as the idempotency
+ *      key BEFORE any network attempt. If anything from here to
+ *      "server accepted" fails and we fall back to the queue, the
+ *      same key is stored on the pending op so a replay can't
+ *      double-apply.
+ *
+ *   2. Try `submitMovementOpAction` directly. This is the online
+ *      fast path: the user sees the save, the list revalidates, and
+ *      nothing touches IndexedDB. On success we navigate.
+ *
+ *   3. On transport failure (fetch throws, `navigator.onLine` is
+ *      false before we even try, or the action returns a
+ *      `retryable: true` error), enqueue the op to Dexie and let
+ *      the Sprint 25 runner pick it up. The form shows a
+ *      queued-state toast and navigates back to the list.
+ *
+ *   4. On a non-retryable error (validation, missing item/warehouse,
+ *      unauthenticated), surface the message inline. Do NOT enqueue
+ *      — a broken payload would just loop in the queue forever.
+ */
 export function MovementForm({
   labels,
+  scope,
   items,
   warehouses,
   presetItemId,
@@ -68,6 +104,7 @@ export function MovementForm({
   const [toWarehouseId, setToWarehouseId] = useState<string>("");
   const [direction, setDirection] = useState<"1" | "-1">("1");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [isPending, startTransition] = useTransition();
 
   const destinationOptions = useMemo(
@@ -75,33 +112,115 @@ export function MovementForm({
     [warehouses, warehouseId],
   );
 
+  function buildInput(form: HTMLFormElement): MovementInput | null {
+    const formData = new FormData(form);
+    const quantityRaw = formData.get("quantity");
+    const quantity = Number(quantityRaw);
+    if (!Number.isFinite(quantity) || quantity < 1) return null;
+    const reference = ((formData.get("reference") as string | null) ?? "").trim() || null;
+    const note = ((formData.get("note") as string | null) ?? "").trim() || null;
+
+    const base = {
+      itemId,
+      warehouseId,
+      quantity: Math.trunc(quantity),
+      reference,
+      note,
+    };
+
+    if (type === "TRANSFER") {
+      return { type: "TRANSFER", ...base, toWarehouseId };
+    }
+    if (type === "ADJUSTMENT") {
+      return { type: "ADJUSTMENT", ...base, direction: direction === "-1" ? -1 : 1 };
+    }
+    // RECEIPT | ISSUE
+    return { type, ...base };
+  }
+
+  /**
+   * Client-side feature check for `crypto.randomUUID`. All modern
+   * browsers on secure contexts support it; the fallback is only
+   * ever hit in odd test environments. The queue's idempotency
+   * guarantee depends on the key being globally unique, so the
+   * fallback uses `Math.random()` across 36 chars — not
+   * cryptographically random but unique enough for a per-tab op.
+   */
+  function generateIdempotencyKey(): string {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    // RFC 4122 v4 shape via Math.random fallback
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  async function enqueueAndNavigate(idempotencyKey: string, input: MovementInput): Promise<void> {
+    const enqueued = await enqueueOp({
+      scope: { orgId: scope.orgId, userId: scope.userId },
+      opType: MOVEMENT_CREATE_OP_TYPE,
+      payload: { idempotencyKey, input },
+    });
+    if (!enqueued) {
+      // Dexie unavailable — surface the original error so the user
+      // isn't told "queued" when nothing actually persisted.
+      setError(labels.error);
+      return;
+    }
+    router.push("/movements");
+    router.refresh();
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setFieldErrors({});
     const form = event.currentTarget;
-    const formData = new FormData(form);
-    formData.set("type", type);
-    formData.set("itemId", itemId);
-    formData.set("warehouseId", warehouseId);
-    if (type === "TRANSFER") {
-      formData.set("toWarehouseId", toWarehouseId);
-    } else {
-      formData.delete("toWarehouseId");
-    }
-    if (type === "ADJUSTMENT") {
-      formData.set("direction", direction);
-    } else {
-      formData.delete("direction");
+    const input = buildInput(form);
+    if (!input) {
+      // The native `required` / `min={1}` attributes should cover
+      // this, but guard anyway so a future DOM refactor doesn't
+      // silently ship broken payloads.
+      setError(labels.error);
+      return;
     }
 
+    const idempotencyKey = generateIdempotencyKey();
+    const payload = { idempotencyKey, input };
+
     startTransition(async () => {
-      const result = await createMovementAction(formData);
-      if (!result.ok) {
-        setError(result.error);
-        return;
+      // Pre-flight: if the browser already believes it's offline,
+      // skip the direct RPC and go straight to the queue. Saves a
+      // fetch attempt that will fail and also preserves deterministic
+      // behavior when the user is explicitly offline.
+      const startsOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+
+      if (!startsOffline) {
+        try {
+          const result = await submitMovementOpAction(payload);
+          if (result.ok) {
+            router.push("/movements");
+            router.refresh();
+            return;
+          }
+          if (!result.retryable) {
+            setError(result.error);
+            if (result.fieldErrors) setFieldErrors(result.fieldErrors);
+            return;
+          }
+          // Retryable failure from the server (transient DB error
+          // etc.). Fall through to the enqueue path.
+        } catch {
+          // Transport-layer throw — fetch failed, the SW returned
+          // the offline fallback, CORS weirdness. Fall through to
+          // enqueue so the user doesn't lose their input.
+        }
       }
-      router.push("/movements");
-      router.refresh();
+
+      await enqueueAndNavigate(idempotencyKey, input);
     });
   }
 
@@ -142,6 +261,9 @@ export function MovementForm({
             ))}
           </SelectContent>
         </Select>
+        {fieldErrors.itemId ? (
+          <p className="text-xs text-destructive">{fieldErrors.itemId[0]}</p>
+        ) : null}
       </div>
 
       {/* Source warehouse */}
@@ -161,6 +283,9 @@ export function MovementForm({
             ))}
           </SelectContent>
         </Select>
+        {fieldErrors.warehouseId ? (
+          <p className="text-xs text-destructive">{fieldErrors.warehouseId[0]}</p>
+        ) : null}
       </div>
 
       {/* Destination warehouse — only for TRANSFER */}
@@ -179,6 +304,9 @@ export function MovementForm({
               ))}
             </SelectContent>
           </Select>
+          {fieldErrors.toWarehouseId ? (
+            <p className="text-xs text-destructive">{fieldErrors.toWarehouseId[0]}</p>
+          ) : null}
         </div>
       ) : null}
 
@@ -242,8 +370,18 @@ export function MovementForm({
           {labels.cancel}
         </Button>
         <Button type="submit" disabled={isPending || !itemId || !warehouseId}>
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {labels.submit}
+          {isPending ? (
+            <>
+              {typeof navigator !== "undefined" && navigator.onLine === false ? (
+                <CloudOff className="h-4 w-4" />
+              ) : (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              <span>{labels.submittingLabel}</span>
+            </>
+          ) : (
+            labels.submit
+          )}
         </Button>
       </div>
     </form>

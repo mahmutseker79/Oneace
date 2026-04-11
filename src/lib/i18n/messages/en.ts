@@ -446,6 +446,12 @@ export const en = {
       noSecondWarehouse: "Transfers need at least two warehouses.",
     },
     created: "Movement recorded.",
+    // Sprint 26 — PWA Sprint 4 Part B. Copy for the offline-queue
+    // fallback path when the direct submit fails or the tab is
+    // offline. The "queued" branch is what the form shows when the
+    // write has been handed off to the queue runner for replay.
+    offlineQueued: "Movement queued — will sync when you're back online.",
+    offlineSubmitting: "Saving…",
     directionIn: "+",
     directionOut: "−",
     transferLabel: "→",

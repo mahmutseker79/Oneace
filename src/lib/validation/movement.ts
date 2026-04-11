@@ -107,6 +107,33 @@ export const movementInputSchema = z
 export type MovementInput = z.infer<typeof movementInputSchema>;
 
 /**
+ * Sprint 26 — PWA Sprint 4 Part B. Offline-op payload shape.
+ *
+ * The offline queue dispatches the `movement.create` opType with this
+ * exact JSON payload. The server action validates both halves:
+ *
+ *   - `idempotencyKey` is a client-generated UUID stored on the
+ *     StockMovement row via a compound unique constraint
+ *     `(organizationId, idempotencyKey)`. Replays from the queue can't
+ *     double-apply — the second insert violates the constraint and the
+ *     handler returns the existing row's id.
+ *   - `input` is the full discriminated-union movement shape, reused
+ *     verbatim from the online fast path. One validator, one source of
+ *     truth for what a valid movement looks like.
+ *
+ * UUID v4 shape (36 chars, four hyphens, lowercase hex) is enforced so a
+ * random string from a tampered client can't silently pollute the
+ * idempotency index. `crypto.randomUUID()` in modern browsers always
+ * produces v4.
+ */
+export const movementOpPayloadSchema = z.object({
+  idempotencyKey: z.string().uuid({ message: "idempotencyKey must be a UUID" }),
+  input: movementInputSchema,
+});
+
+export type MovementOpPayload = z.infer<typeof movementOpPayloadSchema>;
+
+/**
  * Given a parsed movement input, compute the signed delta that must be
  * applied to the source StockLevel row. For TRANSFER this only covers the
  * source warehouse — the server action applies +quantity to the

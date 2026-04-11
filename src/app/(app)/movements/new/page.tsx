@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NewMovementPage({ searchParams }: PageProps) {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
   const sp = (await searchParams) ?? {};
 
@@ -66,6 +66,8 @@ export default async function NewMovementPage({ searchParams }: PageProps) {
     note: t.movements.fields.note,
     notePlaceholder: t.movements.fields.notePlaceholder,
     submit: t.common.save,
+    submittingLabel: t.movements.offlineSubmitting,
+    queuedLabel: t.movements.offlineQueued,
     error: t.movements.errors.createFailed,
     cancel: t.common.cancel,
   };
@@ -141,6 +143,7 @@ export default async function NewMovementPage({ searchParams }: PageProps) {
         <CardContent className="pt-6">
           <MovementForm
             labels={labels}
+            scope={{ orgId: membership.organizationId, userId: session.user.id }}
             items={itemOptions}
             warehouses={warehouseOptions}
             presetItemId={sp.itemId}
