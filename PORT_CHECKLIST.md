@@ -2366,6 +2366,231 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 32 — Organization ownership transfer (shipped 2026-04-11)
+
+Goal: close the multi-tenancy story. Sprint 11 shipped the org
+switcher (pick which tenant to act in). Sprint 21 shipped org
+delete (permanently destroy a tenant). The missing leg was
+ownership hand-off — until this sprint, the only way an OWNER
+could transfer the role was to manually promote a teammate to
+OWNER via the users-table role dropdown and then manually demote
+themselves, leaving the org in a two-OWNER intermediate state
+that no audit log or export would represent honestly. Sprint 32
+ships a dedicated **atomic** transfer flow.
+
+### Server action: `transferOrganizationAction(targetMembershipId, confirmation)`
+
+Lives in `src/app/(app)/settings/actions.ts`. Envelope:
+
+- **OWNER only.** ADMIN cannot initiate, even though ADMIN can
+  already set other members' roles via `updateMemberRoleAction`.
+  Handing over the org-delete capability is a tighter scope.
+- **Active-org is the only anchor.** Like `deleteOrganizationAction`
+  (Sprint 21), this action never takes an `organizationId`
+  parameter. Every lookup is pinned to
+  `membership.organizationId` from `requireActiveMembership`.
+  A crafted form cannot trick an OWNER into reassigning a
+  different tenant they happen to own.
+- **Self-target block.** `targetMembershipId === membership.id`
+  short-circuits with `reason: "selfTarget"`. Without this the
+  atomic transaction would be a no-op on target and a demotion
+  on caller — surface the intent explicitly instead.
+- **Typed-confirmation guard.** The caller must echo back the
+  org's slug verbatim, same UX fat-finger protection the
+  danger-zone card uses. Slug is used (not display name) because
+  it has no spaces or diacritics, which makes it clean on phones.
+- **Target must exist and be in the same org.** Defensive
+  `findUnique` + `organizationId` check. A stale id from a
+  member who was removed between render and submit returns
+  `reason: "notFound"`.
+- **Atomic `db.$transaction([…])`.** Target's role → OWNER and
+  caller's role → ADMIN in one tx. There is no request-visible
+  window where the org has zero OWNERS (bad — would brick
+  delete) or where two requests could race the demotion of the
+  only OWNER. If target was already OWNER (a step-down scenario
+  where multiple OWNERs already existed and the caller is
+  stepping back), the target `update` is effectively a no-op
+  and the caller demote still lands cleanly — no special case
+  needed.
+- **Caller stays in the org as ADMIN.** Deliberately NOT
+  demoting the caller all the way to MEMBER — most hand-offs
+  (e.g. a founder handing to a new CEO) want the previous
+  OWNER to retain operational access. A later "leave
+  organization" flow can cover the clean-exit path.
+- **Cookie untouched.** `ACTIVE_ORG_COOKIE` still points at the
+  same org — the caller is still a member, just as ADMIN now.
+  `requireActiveMembership` picks up the new role on the next
+  navigation because the `cache()` wrapper is invalidated by
+  `revalidatePath("/", "layout")`.
+- **Revalidates both `/settings` and `/users`.** The transfer
+  card unmounts from the caller's settings (they're no longer
+  OWNER), and the members table on `/users` refreshes its role
+  badges immediately. Layout revalidate ensures any future
+  OWNER-gated header chip or sidebar item picks up the new role
+  on the next click.
+- **Return shape** `{ ok: true; targetName: string } | { ok:
+  false; error; reason }`. Five reasons: `forbidden`,
+  `selfTarget`, `notFound`, `mismatch`, `transferFailed`.
+  `targetName` lets the client show a toast without a second
+  lookup.
+
+### UI: `TransferOwnershipCard`
+
+NEW `src/app/(app)/settings/transfer-ownership-card.tsx`
+(~240 lines). Sits on the settings page ABOVE the danger zone,
+OWNER-only gate. Visual language is "advisory destructive" —
+`KeyRound` icon instead of `AlertTriangle`, amber outline
+instead of destructive red — because unlike delete-org, transfer
+does not destroy data, but it is still irreversible without the
+new owner's help. Layout mirrors `DangerZoneCard` so an OWNER
+familiar with the delete flow reads the transfer flow
+immediately.
+
+- **Member picker** via `Select` from `@/components/ui/select`.
+  Server-side filtered to exclude the caller
+  (`NOT: { userId: session.user.id }`) so the list only shows
+  viable candidates. Each row renders the display name (or
+  email fallback) with a secondary `email · roleLabel` line so
+  two "Alex" teammates remain distinguishable.
+- **No-candidates path.** If the caller is the only member of
+  the org, the card shows a muted explainer ("Invite a teammate
+  before transferring ownership") instead of rendering a dead
+  dropdown. The button is not rendered.
+- **Confirmation `AlertDialog`.** Title + body (with
+  `{name}` / `{org}` interpolation) + slug-echo input. Dialog
+  body is reset to an empty slug on close so reopening starts
+  fresh and a stale mismatch error never lingers.
+- **Button is disabled** until a target is selected and the
+  slug matches exactly. `isPending` locks all controls during
+  the server action round-trip.
+- **`<output aria-live="polite">` success announcement.**
+  Screen readers hear "Ownership transferred to Alice. You are
+  now an Admin." before `router.refresh()` re-renders the
+  server tree and drops the card entirely (the caller is no
+  longer OWNER).
+- **Destructive variant not used on the CTA.** Amber outline
+  matches the "advisory" framing — destructive red is reserved
+  for delete-org which actually destroys data.
+
+### Settings page wiring
+
+`src/app/(app)/settings/page.tsx` now:
+
+- Computes `canTransferOwnership = membership.role === "OWNER"`.
+- Loads `transferCandidates` only when the gate passes — a
+  single `membership.findMany` with `NOT: { userId }` filter,
+  `include: user`, `orderBy: createdAt asc`, mapped to
+  `TransferCandidate { id, name, email, roleLabel }`. The
+  non-OWNER branch short-circuits to an empty array and skips
+  the DB round-trip entirely.
+- Renders `<TransferOwnershipCard>` above the existing
+  `<DangerZoneCard>` so the less destructive operation is
+  visually adjacent but distinct, and reading the page top to
+  bottom takes the OWNER through their escalation path: edit
+  profile → org defaults → hand over the keys → burn it down.
+
+### i18n (added under `t.settings.transferOwnership`)
+
+NEW namespace with 13 top-level keys + a 4-entry `consequences`
+tuple + a 5-entry `errors` sub-block. All copy routes through
+`src/lib/i18n/messages/en.ts` (no Turkish anywhere — same rule
+every sprint has honoured). Placeholder conventions match the
+danger-zone card so translators working on a single locale
+file have identical contracts across both flows: `{slug}`,
+`{name}`, `{org}`.
+
+Keys:
+- `heading`, `description`, `targetLabel`, `targetPlaceholder`,
+  `noCandidates`, `consequences` (readonly tuple of 4),
+  `confirmBody` (with `{name}` + `{org}`), `confirmInputLabel`
+  (with `{slug}`), `confirmInputPlaceholder`, `confirmMismatch`,
+  `transferCta`, `transferring`, `success` (with `{name}`),
+  `errors.{forbidden, selfTarget, notFound, mismatch,
+  transferFailed}`
+
+### Design decisions
+
+- **Dedicated action over `updateMemberRoleAction` reuse.**
+  Promoting a member to OWNER is already possible via the
+  users-table role dropdown (Sprint 7, reinforced in Sprint 20).
+  We could have documented a two-step "promote then self-demote"
+  workflow. But that leaves an intermediate two-OWNER state
+  visible to any concurrent request, every audit log or CSV
+  export, and the future billing-per-seat counter. An atomic
+  single-click transfer is the honest shape.
+- **OWNER gate, not ADMIN.** Mirrors delete-org. ADMIN can
+  manage members via the existing role dropdown; OWNER is the
+  single-point-of-authority for "who controls the org itself".
+- **Slug-echo not name-echo.** Display names have spaces,
+  diacritics, and case-sensitivity quirks on phones. Slugs are
+  `[a-z0-9-]` by the slugify rule and identical across
+  devices, so the typed confirmation is robust.
+- **Caller demotes to ADMIN, not MEMBER.** ADMIN retains
+  invite-management and org-profile editing. A founder handing
+  over the OWNER role usually still wants to run day-to-day
+  operations — the clean "leave the org entirely" flow is a
+  separate story.
+- **Select disabled when `isPending`.** Otherwise a user could
+  change the target mid-transaction and cause the success
+  toast to name the wrong person. Locking the whole card
+  during the tx is the simplest correct answer.
+- **Amber outline, not destructive.** The action is reversible
+  (the new OWNER can promote you back) — just not by you
+  alone. Visual language should reflect that asymmetry rather
+  than triggering the same danger instinct as delete-org.
+- **Live region inside the card, not a global toast.** The
+  card unmounts as part of the post-transfer re-render, so a
+  toast library tied to a component-level state would be
+  announced then immediately torn down. Using the
+  `<output aria-live="polite">` pattern the rest of the PWA
+  surfaces already ship means the screen reader gets the
+  announcement before `router.refresh()` completes.
+
+### Files touched
+
+- Modified `src/app/(app)/settings/actions.ts` — adds
+  `TransferOrganizationResult` type and
+  `transferOrganizationAction` (~160 lines of new code,
+  including the full doc comment).
+- NEW `src/app/(app)/settings/transfer-ownership-card.tsx`
+  (~240 lines). Exports `TransferOwnershipCard`,
+  `TransferOwnershipLabels`, `TransferCandidate`.
+- Modified `src/app/(app)/settings/page.tsx` — imports the
+  new card + type, adds `canTransferOwnership` gate,
+  `transferCandidates` loader, and renders the card above
+  the danger zone with full label wiring.
+- Modified `src/lib/i18n/messages/en.ts` — adds
+  `t.settings.transferOwnership` namespace (13 + 4 + 5 keys).
+- **No schema changes, no Prisma migration, no new runtime
+  dependencies.**
+
+### Verified clean
+
+- `tsc --noEmit` exit 0
+- `biome check src` clean (170 files — one new vs Sprint 31's
+  169: `transfer-ownership-card.tsx`)
+- `DATABASE_URL=... DIRECT_URL=... prisma validate` → green
+
+### What this does NOT cover
+
+- **No "leave organization" flow** for former OWNERs who want
+  to exit completely. The caller is demoted to ADMIN and
+  stays in the org. A clean self-removal flow is still in
+  the deferred list.
+- **No notification to the new OWNER.** Email delivery for
+  org events is blocked on the same SMTP decision that gates
+  Sprint-20 invitation emails. For now the previous OWNER has
+  to tell the new one out-of-band that they've been handed
+  the keys.
+- **No audit log entry.** The generic audit-log story is
+  still deferred; when it lands, transfer events will be one
+  of the first event types to emit.
+- **No transferring across orgs.** Transfer is strictly
+  within-tenant. Moving data between orgs is a separate
+  story (probably never).
+
+---
+
 ## Sprint 31 — PWA Sprint 8: Dexie live-query + Web Locks cross-tab guard (shipped 2026-04-11)
 
 Goal: two long-standing TODOs from the PWA backlog both land
@@ -2548,13 +2773,14 @@ together because they share the same "who owns the write" story.
       drain guard in the runner (`ifAvailable: true` so a
       second tab bails instead of scanning the table in
       parallel). **Shipped as Sprint 31** — see below.
+- [x] Organization transfer (change OWNER to another member)
+      — still the missing third leg of the multi-tenancy story
+      after Sprint 11 (switcher) and Sprint 21 (delete).
+      **Shipped as Sprint 32** — see below.
 - [ ] Audit log
 - [ ] Email delivery for invitations (MVP: admin copies link)
 - [ ] `?next=/invite/[token]` redirect after sign-in so users
       don't have to revisit the URL manually
-- [ ] Organization transfer (change OWNER to another member)
-      — still the missing third leg of the multi-tenancy story
-      after Sprint 11 (switcher) and Sprint 21 (delete)
 - [ ] Reports xlsx/pdf export variants (CSV only today)
 - [ ] Full-text ranking via Postgres `tsvector` (current
       `contains` scan is fine to ~10k items per org;

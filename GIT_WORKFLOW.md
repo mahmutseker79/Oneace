@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 31.
+and iterating on it through Sprint 0 → Sprint 32.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 31.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 30 plus **Sprint 31** are already committed in a
+Sprint 0 through Sprint 31 plus **Sprint 32** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.31.0-sprint31.bundle
+oneace-next/oneace-next-port-v0.32.0-sprint32.bundle
 ```
 
 This bundle contains:
 
-- **70 commits** — 8 Sprint 0 + 1 docs + Sprints 1..31 (each = 1 feature
+- **72 commits** — 8 Sprint 0 + 1 docs + Sprints 1..32 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -57,9 +57,10 @@ This bundle contains:
   - `v0.29.0-sprint29` — Sprint 29 complete (PWA Sprint 6 — offline stock-counts viewer: cache-on-detail-visit + /offline/stock-counts list + detail)
   - `v0.30.0-sprint30` — Sprint 30 complete (PWA Sprint 7 — failed-ops review UI at /offline/queue: retry / discard / clear-all for queued ops)
   - `v0.31.0-sprint31` — Sprint 31 complete (PWA Sprint 8 — Dexie liveQuery subscriptions in the queue banner + review screen, Web Locks cross-tab drain guard in the runner)
+  - `v0.32.0-sprint32` — Sprint 32 complete (organization ownership transfer — atomic OWNER → ADMIN hand-off with typed-slug confirmation, closes the multi-tenancy trio after Sprint 11 switcher + Sprint 21 delete)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.30.0-sprint30.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.31.0-sprint31.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -73,11 +74,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.31.0-sprint31.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.32.0-sprint32.bundle \
           next-port:next-port
 
-# Also pull all thirty-one sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.31.0-sprint31.bundle \
+# Also pull all thirty-two sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.32.0-sprint32.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -108,11 +109,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.31.0-sprint31.bun
           refs/tags/v0.28.0-sprint28:refs/tags/v0.28.0-sprint28 \
           refs/tags/v0.29.0-sprint29:refs/tags/v0.29.0-sprint29 \
           refs/tags/v0.30.0-sprint30:refs/tags/v0.30.0-sprint30 \
-          refs/tags/v0.31.0-sprint31:refs/tags/v0.31.0-sprint31
+          refs/tags/v0.31.0-sprint31:refs/tags/v0.31.0-sprint31 \
+          refs/tags/v0.32.0-sprint32:refs/tags/v0.32.0-sprint32
 
 # Verify
-git log --oneline next-port                # should show 70 commits
-git tag -l                                 # should include all thirty-one sprint tags
+git log --oneline next-port                # should show 72 commits
+git tag -l                                 # should include all thirty-two sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -125,8 +127,118 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
                v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
-               v0.31.0-sprint31
+               v0.31.0-sprint31 v0.32.0-sprint32
 ```
+
+### What Sprint 32 added (v0.32.0-sprint32)
+
+Organization ownership transfer — the missing third leg of the
+multi-tenancy trio after Sprint 11 (switcher) and Sprint 21
+(delete). Until this sprint, the only way an OWNER could hand
+the keys to another member was to manually promote a teammate
+to OWNER via the users-table role dropdown and then manually
+self-demote, leaving the org in a visible two-OWNER intermediate
+state. Sprint 32 ships a dedicated atomic transfer flow on the
+settings page.
+
+Server action `transferOrganizationAction(targetMembershipId,
+confirmation)` in `src/app/(app)/settings/actions.ts`:
+
+- OWNER-only gate. ADMIN can already change other members' roles
+  via `updateMemberRoleAction`, but handing over the org-delete
+  capability is tighter.
+- Active-org is the only anchor — never takes an
+  `organizationId` parameter, every lookup is pinned to
+  `membership.organizationId` from `requireActiveMembership`.
+  Prevents CSRF-style attacks reassigning a different tenant
+  the OWNER happens to own.
+- Self-target block short-circuits with `reason: "selfTarget"`.
+- Typed-confirmation guard — caller must echo the org's slug
+  verbatim, same UX pattern `deleteOrganizationAction` uses.
+- Target membership must exist and belong to the same org.
+- Atomic `db.$transaction([…])` — target role → OWNER, caller
+  role → ADMIN in one round-trip. No window with zero OWNERs
+  (would brick delete) or two requests racing the only-OWNER
+  demotion. If target was already OWNER (step-down scenario),
+  the target update is a no-op and the caller demote still
+  lands cleanly.
+- Caller stays in the org as ADMIN, not MEMBER. Most hand-offs
+  want the previous OWNER to retain operational access; a
+  clean "leave organization" flow is still in the deferred list.
+- Cookie untouched. Caller is still a member, just as ADMIN now;
+  `requireActiveMembership` picks up the new role on the next
+  navigation thanks to the layout revalidate.
+- `revalidatePath("/settings")` drops the transfer card from
+  the caller's view, `revalidatePath("/users")` refreshes the
+  members-table role badges immediately, `revalidatePath("/",
+  "layout")` ensures any future OWNER-gated header chip picks
+  up the new role.
+- Return shape `{ ok: true; targetName } | { ok: false;
+  error; reason }` with five reasons: `forbidden`, `selfTarget`,
+  `notFound`, `mismatch`, `transferFailed`.
+
+NEW `src/app/(app)/settings/transfer-ownership-card.tsx`
+(~240 lines). Visual language is "advisory destructive" —
+`KeyRound` icon instead of `AlertTriangle`, amber outline
+instead of destructive red — because unlike delete-org,
+transfer does not destroy data, but it IS irreversible without
+the new OWNER's help. Layout mirrors `DangerZoneCard` so an
+OWNER familiar with the delete flow reads the transfer flow
+immediately:
+
+- Member picker `<Select>` server-side filtered to exclude the
+  caller. Each row renders name (or email fallback) + secondary
+  `email · roleLabel` line so two "Alex" teammates remain
+  distinguishable.
+- No-candidates fallback — if the caller is the only member,
+  the card shows a muted "invite a teammate before
+  transferring" explainer instead of rendering a dead dropdown.
+- Confirmation `AlertDialog` with `{name}` / `{org}`
+  interpolation + slug-echo input. Reset on close so reopening
+  never inherits a stale mismatch error.
+- CTA locked until a target is selected AND the slug matches
+  exactly. `isPending` locks every control during the tx.
+- `<output aria-live="polite">` success announcement inside
+  the card so screen readers hear "Ownership transferred to
+  Alice. You are now an Admin." before `router.refresh()`
+  re-renders the server tree and drops the card entirely.
+
+`src/app/(app)/settings/page.tsx` gains `canTransferOwnership`
+gate, loads `transferCandidates` with one `membership.findMany`
+(excluded self, ordered by `createdAt asc`) mapped to
+`{ id, name, email, roleLabel }`, and renders the card ABOVE
+the existing `<DangerZoneCard>` so the less destructive
+operation is visually adjacent but distinct.
+
+i18n (added under `t.settings.transferOwnership` in
+`src/lib/i18n/messages/en.ts`): 13 top-level keys + a 4-entry
+`consequences` tuple + a 5-entry `errors` sub-block. All copy
+routes through `en.ts` — no Turkish anywhere, same rule every
+sprint has honoured.
+
+**Design decisions** — dedicated action over
+`updateMemberRoleAction` reuse (atomic avoids intermediate
+two-OWNER state visible to audit logs, CSV exports, or a
+future billing-per-seat counter); OWNER gate not ADMIN
+(mirrors delete-org); slug-echo not name-echo (robust across
+devices); caller demotes to ADMIN not MEMBER (preserves
+operational access); Select disabled during `isPending` (can't
+mid-flight change the target and cause the success toast to
+name the wrong person); amber outline not destructive (action
+is reversible by the new OWNER — visual language should
+reflect that asymmetry); live region inside the card not a
+global toast (card unmounts on re-render, so component-level
+toast state would be torn down before announcement).
+
+**No schema changes, no Prisma migration, no new runtime
+dependencies.** Triple-verified clean:
+
+- `tsc --noEmit` exit 0
+- `biome check src` clean (170 files — one new vs Sprint 31's
+  169: `transfer-ownership-card.tsx`)
+- `DATABASE_URL=... DIRECT_URL=... prisma validate` → green
+
+---
 
 ### What Sprint 31 added (v0.31.0-sprint31)
 
