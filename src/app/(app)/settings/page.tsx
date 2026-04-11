@@ -6,6 +6,7 @@ import { getLocale, getMessages, getRegion } from "@/lib/i18n";
 import { SUPPORTED_LOCALES, SUPPORTED_REGIONS } from "@/lib/i18n/config";
 import { requireActiveMembership } from "@/lib/session";
 
+import { DangerZoneCard } from "./danger-zone-card";
 import { LocalePicker } from "./locale-picker";
 import { OrgDefaultsForm } from "./org-defaults-form";
 import { OrgProfileForm } from "./org-profile-form";
@@ -41,6 +42,10 @@ export default async function SettingsPage() {
   }
 
   const canEditOrg = membership.role === "OWNER" || membership.role === "ADMIN";
+  // Sprint 21: OWNER is a strictly smaller set than ADMIN — deleting
+  // an org is irreversible and destroys every user's data in the
+  // tenant, so it's scoped tighter than the other edit operations.
+  const canDeleteOrg = membership.role === "OWNER";
 
   const localeOptions = SUPPORTED_LOCALES.map((code) => ({
     code,
@@ -149,6 +154,28 @@ export default async function SettingsPage() {
             />
           </CardContent>
         </Card>
+
+        {canDeleteOrg ? (
+          <DangerZoneCard
+            organization={{ name: organization.name, slug: organization.slug }}
+            canDelete={canDeleteOrg}
+            labels={{
+              heading: t.settings.dangerZone.heading,
+              description: t.settings.dangerZone.description,
+              consequences: t.settings.dangerZone.consequences,
+              deleteCta: t.settings.dangerZone.deleteCta,
+              confirmTitle: t.settings.dangerZone.confirmTitle,
+              confirmBody: t.settings.dangerZone.confirmBody,
+              confirmInputLabel: t.settings.dangerZone.confirmInputLabel,
+              confirmInputPlaceholder: t.settings.dangerZone.confirmInputPlaceholder,
+              confirmMismatch: t.settings.dangerZone.confirmMismatch,
+              confirmCta: t.settings.dangerZone.confirmCta,
+              cancel: t.common.cancel,
+              deleting: t.settings.dangerZone.deleting,
+              forbidden: t.settings.dangerZone.errors.forbidden,
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

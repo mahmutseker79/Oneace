@@ -1059,6 +1059,32 @@ export const en = {
         updateFailed: "Could not save organization defaults.",
       },
     },
+    dangerZone: {
+      heading: "Danger zone",
+      description:
+        "Irreversible actions. Only the organization owner can run these, and only after typing the slug to confirm.",
+      consequences: [
+        "All items, categories, warehouses, stock levels, and stock movements in this organization will be deleted.",
+        "All purchase orders, suppliers, and stock-count sessions will be deleted.",
+        "All teammates will lose access immediately. Their user accounts survive, but they will no longer belong to this organization.",
+        "All pending invitations will be invalidated.",
+        "This cannot be undone. There is no soft-delete and no recovery window.",
+      ],
+      deleteCta: "Delete this organization",
+      confirmTitle: "Delete organization?",
+      confirmBody:
+        "You are about to permanently delete {org}. Every teammate, every item, and every record will be wiped. This action cannot be undone.",
+      confirmInputLabel: "Type the slug {slug} to confirm",
+      confirmInputPlaceholder: "{slug}",
+      confirmMismatch: "The text must match the slug exactly.",
+      confirmCta: "Yes, delete forever",
+      deleting: "Deleting…",
+      errors: {
+        forbidden: "Only the organization owner can delete this organization.",
+        mismatch: "The confirmation text did not match the organization slug.",
+        deleteFailed: "Could not delete the organization. Please try again.",
+      },
+    },
   },
 
   users: {
