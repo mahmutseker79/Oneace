@@ -725,6 +725,66 @@ export const en = {
     updated: "Supplier updated.",
     deleted: "Supplier deleted.",
     backToList: "Back to suppliers",
+    // Sprint 34 — supplier drill-down detail page at /suppliers/[id].
+    // Supplies labels for the header card, the four KPI cards, the
+    // recent-POs table, the top-items card, and the empty/no-activity
+    // states. Separate namespace from t.reports.supplierPerformance
+    // because the detail page is an operational view (linked from
+    // the list and from a PO), not a report — it has its own heading
+    // hierarchy, different empty states, and reuses only the KPI
+    // math, not the copy.
+    detail: {
+      metaTitle: "Supplier",
+      backToList: "Back to suppliers",
+      editCta: "Edit supplier",
+      newPoCta: "New purchase order",
+      contactHeading: "Contact",
+      addressHeading: "Address",
+      notesHeading: "Notes",
+      currencyLabel: "Default currency",
+      websiteLabel: "Website",
+      noContact: "No contact details on file",
+      noAddress: "No address on file",
+      noNotes: "No notes",
+      activityHeading: "Activity",
+      activitySubtitle:
+        "Roll-up of every purchase order this supplier has received from your team.",
+      kpiReceivedValueLabel: "Received value",
+      kpiReceivedValueBody: "Goods shipped so far across every PO line",
+      kpiTotalPosLabel: "Total POs",
+      kpiTotalPosBody: "{open} open right now",
+      kpiOnTimeRateLabel: "On-time rate",
+      kpiOnTimeRateBody: "{sample} of {eligible} received on or before the expected date",
+      kpiAvgLeadTimeLabel: "Avg lead time",
+      kpiAvgLeadTimeBody: "Across {count} received PO(s)",
+      kpiNotAvailable: "N/A",
+      daysSuffix: "{days} days",
+      recentHeading: "Recent purchase orders",
+      recentSubtitle: "Newest first, up to the last 10 orders.",
+      recentViewAllCta: "View all purchase orders",
+      colPoNumber: "PO number",
+      colStatus: "Status",
+      colOrderedAt: "Ordered",
+      colExpectedAt: "Expected",
+      colReceivedAt: "Received",
+      colLines: "Lines",
+      colValue: "Value",
+      lateBadge: "Late",
+      earlyBadge: "Early",
+      onTimeBadge: "On time",
+      outstandingBadge: "Outstanding",
+      topItemsHeading: "Top items ordered",
+      topItemsSubtitle: "Most-ordered items from this supplier by quantity.",
+      topItemsEmpty: "This supplier has no ordered lines yet.",
+      colItem: "Item",
+      colOrderedQty: "Ordered qty",
+      colReceivedQty: "Received qty",
+      emptyActivityTitle: "No purchase orders yet",
+      emptyActivityBody:
+        "Raise your first PO against this supplier to start collecting performance data.",
+      mixedCurrencyCaveat:
+        "This supplier has POs in more than one currency. Totals are converted to {currency} at a 1:1 rate for display — hook up a historical FX source for precise roll-ups.",
+    },
   },
 
   purchaseOrders: {

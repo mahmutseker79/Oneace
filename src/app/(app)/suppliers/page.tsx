@@ -84,7 +84,11 @@ export default async function SuppliersPage() {
               <TableBody>
                 {suppliers.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/suppliers/${s.id}`} className="hover:underline">
+                        {s.name}
+                      </Link>
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{s.code ?? t.common.none}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {s.contactName ?? s.email ?? t.common.none}
