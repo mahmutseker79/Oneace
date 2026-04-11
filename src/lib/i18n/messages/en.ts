@@ -1183,6 +1183,36 @@ export const en = {
         transferFailed: "Could not transfer ownership. Please try again.",
       },
     },
+    notifications: {
+      metaTitle: "Notification preferences",
+      heading: "Notifications",
+      subtitle:
+        "Choose which emails OneAce sends you for this organization. Your choices are per-organization: each workspace you belong to has its own settings.",
+      manageCta: "Manage notification preferences",
+      emailHeading: "Email digests",
+      emailDescription:
+        "Daily and weekly summaries are sent by the scheduler. Pick the cadence that fits your review rhythm.",
+      frequencyAria: "Notification frequency",
+      saved: "Saved",
+      saving: "Saving…",
+      frequencies: {
+        NEVER: "Never",
+        IMMEDIATE: "As it happens",
+        DAILY: "Daily",
+        WEEKLY: "Weekly",
+      },
+      types: {
+        LOW_STOCK_DIGEST: {
+          title: "Low-stock digest",
+          description:
+            "Emails a grouped-by-supplier summary of every item at or below its reorder point. Daily cadence sends once per day; weekly cadence sends once per week. Set to Never to opt out.",
+        },
+      },
+      errors: {
+        invalid: "That frequency is not valid.",
+        updateFailed: "Could not save your preference. Please try again.",
+      },
+    },
     dangerZone: {
       heading: "Danger zone",
       description:
@@ -1644,6 +1674,36 @@ export const en = {
       "stock_count.cancelled": "Cancelled stock count",
       "stock_count.completed": "Completed stock count",
       "audit.pruned": "Pruned audit log",
+      "notification.sent": "Sent notification digest",
+    },
+  },
+
+  // Sprint 41: outbound email template copy. Placeholders are
+  // documented next to each string — `{org}`, `{count}`, `{suppliers}`,
+  // and `{supplier}` are substituted at render time by the template
+  // helpers in `src/lib/mail/templates/*`.
+  emails: {
+    lowStockDigest: {
+      subjectDaily: "{org}: {count} items below reorder point today",
+      subjectWeekly: "{org}: {count} items below reorder point this week",
+      preheader: "{count} items across {suppliers} suppliers need attention.",
+      headingDaily: "Daily low-stock digest for {org}",
+      headingWeekly: "Weekly low-stock digest for {org}",
+      bodyIntro:
+        "These items are at or below their reorder point. Grouped by preferred supplier so you can decide who to follow up with first.",
+      supplierHeading: "Supplier: {supplier}",
+      noSupplierHeading: "No preferred supplier assigned",
+      columnItem: "Item",
+      columnSku: "SKU",
+      columnOnHand: "On hand",
+      columnReorderPoint: "Reorder point",
+      columnShortfall: "Shortfall",
+      cta: "Open low-stock report",
+      moreItemsNote: "+ {count} more items not shown — open the full report to see them all.",
+      footer:
+        "You are receiving this because your OneAce notification preferences include the low-stock digest. Manage your preferences at /settings/notifications.",
+      fallbackLabel: "If the button doesn't work, paste this URL into your browser:",
+      emptyBody: "Nothing is below reorder point right now. Nice and steady.",
     },
   },
 } as const;

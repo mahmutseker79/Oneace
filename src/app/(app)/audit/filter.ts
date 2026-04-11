@@ -134,6 +134,7 @@ const AUDIT_ACTIONS = [
   "stock_count.cancelled",
   "stock_count.completed",
   "audit.pruned",
+  "notification.sent",
 ] as const satisfies readonly AuditAction[];
 
 // Exhaustiveness trap: Record<AuditAction, true> forces every union

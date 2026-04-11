@@ -82,7 +82,17 @@ export type AuditAction =
   // "the log is short because nothing happened" from "the log is
   // short because someone ran prune last week" — missing this row
   // is its own alarm signal during audit review.
-  | "audit.pruned";
+  | "audit.pruned"
+  // --- Notifications (Sprint 41) -----------------------------------------
+  // The cron-triggered notifications route emits exactly one aggregate
+  // row per (org, cadence) after a successful fan-out with
+  // `{ cadence, type, recipients, dryRun }` metadata. Actor is null
+  // (system-initiated), entityType is "organization" (the tenant whose
+  // members were notified), and entityId is the org id. We deliberately
+  // log once-per-org rather than once-per-user: a daily 200-member org
+  // would otherwise flood the audit log with near-identical rows that
+  // tell the reviewer nothing new.
+  | "notification.sent";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most

@@ -117,6 +117,24 @@ const schema = z.object({
     .int("AUDIT_RETENTION_DAYS must be a whole number of days")
     .min(1, "AUDIT_RETENTION_DAYS must be at least 1 day")
     .default(365),
+
+  // --- Cron auth (Sprint 41) -------------------------------------------
+  // Shared secret used to authenticate cron-triggered API routes such as
+  // `/api/cron/notifications/[frequency]`. The route rejects any call
+  // whose `Authorization: Bearer <value>` header doesn't match, or — if
+  // `CRON_SECRET` is unset — returns 503 so a forgotten config can't
+  // accidentally fan out emails from an open endpoint. Optional at the
+  // schema level because notifications are opt-in: a fresh dev clone
+  // without cron configured should still boot.
+  //
+  // A 16-char minimum keeps us away from trivially-guessable
+  // placeholders while staying compatible with common vault formats
+  // (GitHub Actions secret, Vercel env var, Doppler token).
+  CRON_SECRET: z
+    .string()
+    .min(16, "CRON_SECRET must be at least 16 characters — use a strong random string")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 // Require the mail pair to be all-or-nothing: having `RESEND_API_KEY`
