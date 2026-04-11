@@ -996,23 +996,131 @@ the wrong place to land on a fresh empty account after a delete.
 - [x] **No schema changes, no `db:push` required.** Pure app-
       layer work.
 
-### Still to port (deferred post-Sprint-21)
+---
 
+## Sprint 22 — PWA foundation (shipped 2026-04-11)
+
+Tagged `v0.22.0-sprint22`. Starts chipping at the MVP-blocker
+offline story. Deliberately narrow scope: this sprint makes
+OneAce **installable** and ships a **friendly offline fallback
+page**. It does NOT cache business data or implement offline
+writes — both are deferred to later PWA sprints with proper
+conflict-resolution design.
+
+**Design decision — hand-written service worker, no Workbox.**
+Workbox would drag a bundler-plugin config change AND hide
+lifecycle details (install / activate / skipWaiting / claim)
+that I'd rather have visible while the offline data story is
+still being designed. `public/sw.js` is ~180 lines with three
+explicit fetch strategies and no magic. When we're ready to
+layer on IndexedDB sync + background queue, knowing exactly
+where and how the SW handles each request class is worth the
+extra lines. Migrating to Workbox is a one-sprint swap later
+if we decide to; the reverse direction is much harder.
+
+**Design decision — three-tier fetch strategy, no business
+data caching.** Navigation requests go network-first → fall
+back to `/offline`. `/_next/static/*` hashed assets are
+cache-first (safe, effectively immutable). Everything else
+is stale-while-revalidate. **Everything under `/api/*`,
+`/_next/data/*`, and all non-GET requests is bypassed
+entirely** — the SW never interposes on auth or data writes.
+Caching RSC payloads or API responses without a proper sync
+layer would leak auth state between sessions and create
+impossible-to-reason-about stale data. That work belongs in
+its own sprint(s).
+
+**Design decision — SW mounted only from `(app)` layout.**
+The `(auth)` layout (login, register, invite accept) does NOT
+register the SW. Auth flows must always hit the network fresh;
+an offline fallback during sign-in would be worse than useless
+(the user would see a cached form with no way to actually
+authenticate). Restricting the mount point to the post-auth
+shell guarantees the SW only activates for users who have
+already signed in successfully at least once.
+
+**Design decision — capture `beforeinstallprompt` on mount
+even though no UI uses it yet.** Chrome fires that event once
+per page load and then silently swallows it if nobody calls
+`preventDefault()` in time. Parking the deferred prompt on
+`window.__oneaceInstallPrompt` on mount preserves the ability
+to wire a first-party "Install app" button in a later sprint
+without forcing a reload.
+
+**Design decision — offline page is a build-time static
+route.** `src/app/offline/page.tsx` uses
+`export const dynamic = "force-static"`, calls no DB helpers,
+reads no cookies, uses `getMessages()` with its graceful
+no-request-context fallback. Rendered to plain HTML at
+`next build`, safe for the SW to precache, renders identically
+whether the user has ever been signed in or not.
+
+- [x] `public/manifest.webmanifest` — name/short_name/description
+      pulled from brand constants, `display: "standalone"`,
+      `id`/`start_url`/`scope` all `/`, `theme_color: "#0f172a"`
+      + `background_color: "#fdfcfb"` aligned with the existing
+      CSS variables, portrait orientation hint, business +
+      productivity categories, full icon set (SVG any + 192/512
+      PNG any + 512 PNG maskable).
+- [x] `public/icon.svg` — simple brand mark (dark slate card,
+      triangle + base block) generated from the brand tokens.
+- [x] `public/icon-192.png`, `icon-512.png`,
+      `icon-maskable-512.png`, `apple-touch-icon.png` — PNG
+      rasters generated from the same design via PIL, sized
+      for Android adaptive icons and iOS home-screen pinning.
+- [x] `public/sw.js` — hand-written service worker. Three fetch
+      strategies (network-first navigation, cache-first
+      `/_next/static/*`, stale-while-revalidate everything else).
+      Bypasses `/api/*`, `/_next/data/*`, non-GET, cross-origin.
+      `CACHE_VERSION` gates eviction on `activate()`. `message`
+      listener accepts `{ type: "SKIP_WAITING" }`. Precache list
+      covers `/offline`, manifest, and icon assets.
+- [x] `src/components/pwa/sw-register.tsx` — `"use client"`
+      registrar. Production-only, SW-capability-gated, deferred
+      to `requestIdleCallback` (with a 1200ms setTimeout fallback)
+      so registration never competes with first-paint. Captures
+      `beforeinstallprompt` + parks it on the window for a
+      future install-button UX.
+- [x] Mounted `<SwRegister />` from `src/app/(app)/layout.tsx`
+      (post-auth shell only). `(auth)` layout deliberately
+      untouched.
+- [x] `src/app/offline/page.tsx` — server component,
+      `force-static`, no DB helpers, no cookie reads. Wi-Fi-off
+      icon + localized copy + retry CTA pointing at `/` +
+      install tip. Precached by the SW.
+- [x] `src/app/layout.tsx` — added `metadata.manifest`,
+      `appleWebApp` (capable + title + default status bar style),
+      and the icons bundle (SVG + 192/512 PNG + apple-touch-icon).
+      Left the existing `viewport.themeColor` light/dark pair
+      alone; it already matches the manifest background color.
+- [x] i18n — new `t.offline.*` block: `metaTitle`, `iconLabel`,
+      `title`, `description`, `retryCta`, `tip`.
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+- [x] **No schema changes, no new npm dependencies.**
+
+### Still to port (deferred post-Sprint-22)
+
+- [ ] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
+      cache + Dexie wrapper). Still network-write; no conflict
+      resolution yet.
+- [ ] PWA Sprint 3 — offline stock counts (write queue, replay
+      on reconnect, optimistic-UI markers). This is where the
+      Flutter moat actually lives.
+- [ ] PWA Sprint 4 — background sync + update-prompt UX
+      (surface the "new version available" state, wire the
+      parked `beforeinstallprompt` to a first-party Install
+      button).
 - [ ] Audit log
-- [ ] Offline PWA shell + service worker
 - [ ] Email delivery for invitations (MVP: admin copies link)
 - [ ] `?next=/invite/[token]` redirect after sign-in so users
       don't have to revisit the URL manually
 - [ ] Organization transfer (change OWNER to another member)
-      — related to danger zone; deferred because an OWNER who
-      wants to leave the tenant without deleting it also needs
-      a path
+      — still the missing third leg of the multi-tenancy story
+      after Sprint 11 (switcher) and Sprint 21 (delete)
 - [ ] Reports xlsx/pdf export variants (CSV only today)
 - [ ] Full-text ranking via Postgres `tsvector` (current
       `contains` scan is fine to ~10k items per org;
       migrate at 100k)
-- [ ] All items from post-Sprint-20 deferred list (unchanged
-      aside from org delete now being shipped)
 
 ---
 

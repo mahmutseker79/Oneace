@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 21.
+and iterating on it through Sprint 0 → Sprint 22.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 21.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 20 plus **Sprint 21** are already committed in a
+Sprint 0 through Sprint 21 plus **Sprint 22** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.21.0-sprint21.bundle
+oneace-next/oneace-next-port-v0.22.0-sprint22.bundle
 ```
 
 This bundle contains:
 
-- **50 commits** — 8 Sprint 0 + 1 docs + Sprints 1..21 (each = 1 feature
+- **52 commits** — 8 Sprint 0 + 1 docs + Sprints 1..22 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -47,9 +47,10 @@ This bundle contains:
   - `v0.19.0-sprint19` — Sprint 19 complete (per-org default locale + region override)
   - `v0.20.0-sprint20` — Sprint 20 complete (invitation tokens + accept flow)
   - `v0.21.0-sprint21` — Sprint 21 complete (organization delete / danger zone)
+  - `v0.22.0-sprint22` — Sprint 22 complete (PWA foundation — manifest + service worker)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.20.0-sprint20.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.21.0-sprint21.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -63,11 +64,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.21.0-sprint21.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.22.0-sprint22.bundle \
           next-port:next-port
 
-# Also pull all twenty-one sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.21.0-sprint21.bundle \
+# Also pull all twenty-two sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.22.0-sprint22.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -88,11 +89,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.21.0-sprint21.bun
           refs/tags/v0.18.0-sprint18:refs/tags/v0.18.0-sprint18 \
           refs/tags/v0.19.0-sprint19:refs/tags/v0.19.0-sprint19 \
           refs/tags/v0.20.0-sprint20:refs/tags/v0.20.0-sprint20 \
-          refs/tags/v0.21.0-sprint21:refs/tags/v0.21.0-sprint21
+          refs/tags/v0.21.0-sprint21:refs/tags/v0.21.0-sprint21 \
+          refs/tags/v0.22.0-sprint22:refs/tags/v0.22.0-sprint22
 
 # Verify
-git log --oneline next-port                # should show 50 commits
-git tag -l                                 # should include all twenty-one sprint tags
+git log --oneline next-port                # should show 52 commits
+git tag -l                                 # should include all twenty-two sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -101,8 +103,91 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
                v0.13.0-sprint13 v0.14.0-sprint14 v0.15.0-sprint15 \
                v0.16.0-sprint16 v0.17.0-sprint17 v0.18.0-sprint18 \
-               v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21
+               v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
+               v0.22.0-sprint22
 ```
+
+### What Sprint 22 added (v0.22.0-sprint22)
+
+- **`public/manifest.webmanifest`** — first-party PWA manifest.
+  `display: "standalone"`, `id`/`start_url`/`scope` all pinned
+  to `/`, brand `theme_color` (`#0f172a`) + `background_color`
+  (`#fdfcfb`) aligned with the existing CSS variables, icon set
+  listing the SVG + 192/512 PNG + a maskable-512 PNG so Android
+  adaptive-icon masking has something to chew on. No install
+  promotions, no shortcuts — those are future sprint concerns.
+- **`public/icon.svg` + `icon-192.png` + `icon-512.png` +
+  `icon-maskable-512.png` + `apple-touch-icon.png`** — a simple
+  brand mark (dark slate card, triangle + base block) generated
+  from the brand tokens. Deliberately lightweight: the app
+  already has a design language from the existing shell, and
+  dropping in a more elaborate mark is a one-file swap later.
+- **`public/sw.js`** — hand-written service worker. No Workbox,
+  no build-time config, no webpack plugin. That's deliberate:
+  Workbox would drag a bundler plumbing change AND hide lifecycle
+  details I'd rather have visible while the offline story is
+  still being designed. Three fetch strategies:
+  1. **Navigation requests** (top-level page loads): network-
+     first, fall back to the precached `/offline` page on
+     network failure. Deliberately **not** cached — auth state
+     would leak between sessions, and stale HTML would fight
+     with the App Router's RSC boundary.
+  2. **`/_next/static/*`** immutable hashed assets: cache-first
+     with network-on-miss. The filename hash makes each entry
+     effectively permanent until a deploy replaces it.
+  3. **Everything else** (images, fonts, etc.): stale-while-
+     revalidate against the same static cache. Fast first
+     paint, eventually-fresh assets.
+  Bypasses everything under `/api/*`, `/_next/data/*`, and all
+  non-GET requests — the SW never interposes on auth or data
+  writes, full stop. A `CACHE_VERSION` string gates eviction so
+  `activate()` can atomically drop the old caches when a new
+  worker takes over. A `message` listener accepts
+  `{ type: "SKIP_WAITING" }` so a future update-prompt UX can
+  tell the waiting worker to activate without a hard reload.
+- **`src/components/pwa/sw-register.tsx`** — `"use client"`
+  component that registers `/sw.js` only in production, only
+  when `serviceWorker` is in `navigator`, and only after
+  `requestIdleCallback` (or a 1200ms `setTimeout` fallback) so
+  registration never competes with first-paint critical work.
+  Also captures the `beforeinstallprompt` event on mount and
+  parks the deferred prompt on `window.__oneaceInstallPrompt`
+  — Chrome only fires that event once per page load, so the
+  capture has to be synchronous-on-mount even though no UI
+  triggers it yet. A later sprint will wire a first-party
+  "Install app" button to the parked prompt.
+- **Mount point deliberately restricted to the `(app)` layout
+  only.** The `(auth)` layout intentionally does NOT load the
+  SW so login / register / invite pages always hit the network
+  fresh. An offline fallback during auth would be worse than
+  useless: users would see a cached "sign in" page that has no
+  way to actually authenticate.
+- **`src/app/offline/page.tsx`** — server component with
+  `export const dynamic = "force-static"` so it renders to
+  plain HTML at build time and is safe to precache. Calls
+  `getMessages()` (which has a graceful no-request-context
+  fallback), doesn't touch `requireSession` or any DB helper,
+  doesn't read a cookie. Renders a Wi-Fi-off icon + localized
+  title/description/retry button/install tip. Precached by the
+  SW so it survives a cold start while offline.
+- **`src/app/layout.tsx` metadata** — added `metadata.manifest`
+  pointing at the new manifest, an `appleWebApp` block
+  (capable + default status-bar-style so iOS doesn't paint a
+  broken status bar in standalone mode), and an `icons` bundle
+  listing the SVG + 192/512 PNG + `apple-touch-icon`. Kept the
+  existing `viewport.themeColor` light/dark pair — that already
+  matches the manifest's `background_color` for each scheme.
+- **i18n** — single new `t.offline.*` block: `metaTitle`,
+  `iconLabel`, `title`, `description`, `retryCta`, `tip`. No
+  existing keys touched.
+- **Non-goals this sprint (deliberate, each deferred to its
+  own future sprint):** `/api/*` response caching, RSC
+  payload caching, IndexedDB / Dexie offline writes, background
+  sync, push notifications, the first-party install button UI.
+  Scoping the sprint to "installable + friendly offline page"
+  keeps it a one-day ship without committing prematurely to
+  any offline-data architecture.
+- **No schema changes, no new npm dependencies.**
 
 ### What Sprint 21 added (v0.21.0-sprint21)
 
