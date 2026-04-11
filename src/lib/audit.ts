@@ -71,7 +71,18 @@ export type AuditAction =
   // the governance signal; the entry-level detail stays in-feature.
   | "stock_count.created"
   | "stock_count.cancelled"
-  | "stock_count.completed";
+  | "stock_count.completed"
+  // --- Audit housekeeping (Sprint 40) ------------------------------------
+  // The retention script (`npm run audit:prune`) emits exactly one
+  // aggregate row after a successful prune run with
+  // `{ cutoffDate, deletedCount, retentionDays }` metadata. The
+  // actor is null (system-initiated), entityType is "organization"
+  // (the tenant whose rows were pruned), and entityId is the org id.
+  // Recording the prune itself is the only way a reviewer can tell
+  // "the log is short because nothing happened" from "the log is
+  // short because someone ran prune last week" — missing this row
+  // is its own alarm signal during audit review.
+  | "audit.pruned";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most

@@ -15,6 +15,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
+    "audit:prune": "node scripts/run-ts.mjs src/scripts/prune-audit.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

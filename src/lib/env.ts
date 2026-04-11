@@ -93,6 +93,30 @@ const schema = z.object({
   // the logger module, not here, so the default stays tied to the
   // runtime selector above rather than duplicated).
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
+
+  // --- Audit retention (Sprint 40) -------------------------------------
+  // Number of days to retain `AuditEvent` rows. Consumed by the
+  // `src/scripts/prune-audit.ts` housekeeping script (`npm run
+  // audit:prune`) which deletes older rows in batches and logs a
+  // single aggregate `audit.pruned` row back to the audit log.
+  //
+  // Default 365 because one year is the minimum retention window
+  // most compliance regimes (SOX / HIPAA / GDPR Article 30) tolerate
+  // without a specific exemption — shorter windows should be an
+  // explicit, reviewed decision rather than an accidental default.
+  // The minimum allowed is 1 day to prevent a zero-or-negative
+  // value from wiping the whole log in one run.
+  //
+  // Parsed as a string + coerced because `process.env` values are
+  // always strings; the coerce lets deployment platforms (Vercel,
+  // Render, bare .env files) supply the value as a plain number
+  // literal without quoting. A nonsensical value (e.g. "banana")
+  // fails the schema at boot, same as any other required variable.
+  AUDIT_RETENTION_DAYS: z.coerce
+    .number()
+    .int("AUDIT_RETENTION_DAYS must be a whole number of days")
+    .min(1, "AUDIT_RETENTION_DAYS must be at least 1 day")
+    .default(365),
 });
 
 // Require the mail pair to be all-or-nothing: having `RESEND_API_KEY`
