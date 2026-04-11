@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 12.
+and iterating on it through Sprint 0 → Sprint 13.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 12.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 11 plus **Sprint 12** are already committed in a
+Sprint 0 through Sprint 12 plus **Sprint 13** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.12.0-sprint12.bundle
+oneace-next/oneace-next-port-v0.13.0-sprint13.bundle
 ```
 
 This bundle contains:
 
-- **32 commits** — 8 Sprint 0 + 1 docs + Sprints 1..12 (each = 1 feature
+- **34 commits** — 8 Sprint 0 + 1 docs + Sprints 1..13 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -38,9 +38,10 @@ This bundle contains:
   - `v0.10.0-sprint10` — Sprint 10 complete (global header search)
   - `v0.11.0-sprint11` — Sprint 11 complete (header org switcher + active-org cookie)
   - `v0.12.0-sprint12` — Sprint 12 complete (supplier performance report + CSV)
+  - `v0.13.0-sprint13` — Sprint 13 complete (create-another-organization flow)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.11.0-sprint11.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.12.0-sprint12.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -54,11 +55,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.12.0-sprint12.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.13.0-sprint13.bundle \
           next-port:next-port
 
-# Also pull all twelve sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.12.0-sprint12.bundle \
+# Also pull all thirteen sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.13.0-sprint13.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -70,18 +71,69 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.12.0-sprint12.bun
           refs/tags/v0.9.0-sprint9:refs/tags/v0.9.0-sprint9 \
           refs/tags/v0.10.0-sprint10:refs/tags/v0.10.0-sprint10 \
           refs/tags/v0.11.0-sprint11:refs/tags/v0.11.0-sprint11 \
-          refs/tags/v0.12.0-sprint12:refs/tags/v0.12.0-sprint12
+          refs/tags/v0.12.0-sprint12:refs/tags/v0.12.0-sprint12 \
+          refs/tags/v0.13.0-sprint13:refs/tags/v0.13.0-sprint13
 
 # Verify
-git log --oneline next-port                # should show 32 commits
-git tag -l                                 # should include all twelve sprint tags
+git log --oneline next-port                # should show 34 commits
+git tag -l                                 # should include all thirteen sprint tags
 
 # Push to GitHub
 git push -u origin next-port
 git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.5.0-sprint5 v0.6.0-sprint6 v0.7.0-sprint7 v0.8.0-sprint8 \
-               v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12
+               v0.9.0-sprint9 v0.10.0-sprint10 v0.11.0-sprint11 v0.12.0-sprint12 \
+               v0.13.0-sprint13
 ```
+
+### What Sprint 13 added (v0.13.0-sprint13)
+
+- **`createOrganizationAction` server action** in
+  `src/app/(app)/organizations/actions.ts` — validates name length
+  (2..80), slugifies with up-to-5-random-suffix retry on collision,
+  creates the Organization with a nested Membership write (role
+  `OWNER`, current user) so there's no intermediate state where the
+  org exists without a membership for its creator, flips the
+  `oneace-active-org` cookie to the new id inside the same request
+  that wrote it, and `revalidatePath("/", "layout")` so every
+  server component re-reads on next navigation. Mirrors the logic
+  in the first-org signup route at
+  `src/app/api/onboarding/organization/route.ts` but as a server
+  action so the client form can await it inside `useTransition`.
+- **`/organizations/new` page + form** — dedicated route
+  (`src/app/(app)/organizations/new/page.tsx` +
+  `create-org-form.tsx`) with a Card-wrapped single-input form that
+  calls the server action and on success does
+  `router.push("/dashboard")` + `router.refresh()`. The route still
+  goes through `requireActiveMembership()` so a user with zero
+  memberships still bounces to `/onboarding` — this page is only
+  for creating an *additional* org, not the first one.
+- **OrgSwitcher refactor** — dropped the read-only-badge branch for
+  single-org users. The switcher now always renders a `<Select>` so
+  the "Create new organization…" action is visible from day one,
+  not only after the user belongs to 2+ orgs. A
+  `CREATE_SENTINEL = "__create__"` `SelectItem` appears at the
+  bottom behind a `SelectSeparator`; on change to the sentinel we
+  revert the controlled value (so the trigger keeps showing the
+  active org) and `router.push("/organizations/new")`. We
+  deliberately do NOT flip the cookie on the sentinel click — the
+  cookie flip happens inside `createOrganizationAction` once the
+  org actually exists.
+- **Header + layout plumbing** — `HeaderLabels` gains
+  `organizationCreate`, the layout passes it from
+  `t.organizations.switcherCreateLabel`, and the Header forwards
+  it to `<OrgSwitcher createLabel={...} />`.
+- **i18n** — 9 new keys on `t.organizations.*`:
+  `switcherCreateLabel`, `errors.{nameTooShort, nameTooLong,
+  createFailed}`, and `create.{metaTitle, heading, subtitle,
+  nameLabel, namePlaceholder, nameHelper, submit, cancel,
+  creating}`.
+
+Why a dedicated page and not an inline dialog: a page-level URL
+lets users bookmark/share the flow, avoids a modal-inside-layout
+context where the submitting form lives inside the very header
+that renders the switcher that opened it, and mirrors the
+`/onboarding` flow users already know from first-org signup.
 
 ### What Sprint 12 added (v0.12.0-sprint12)
 

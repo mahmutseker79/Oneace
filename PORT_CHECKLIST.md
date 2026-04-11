@@ -479,6 +479,43 @@ PO model shipped in Sprint 5.
 
 ---
 
+## Sprint 13 — create-another-organization flow (shipped 2026-04-11)
+
+Tagged `v0.13.0-sprint13`. Closes out the multi-tenancy story
+Sprint 11 half-shipped: users can now create additional orgs from
+the header switcher, not only via the first-org `/onboarding` route.
+
+- [x] `createOrganizationAction` in
+      `src/app/(app)/organizations/actions.ts` — name validation
+      (2..80), slugify + 5-retry, nested membership write
+      (`role: OWNER`), cookie flip in the same request, layout
+      revalidate
+- [x] `/organizations/new` page + `CreateOrgForm` client component
+      (Card-wrapped single-input form, `useTransition`, error
+      surface, `router.push("/dashboard") + router.refresh()` on
+      success)
+- [x] `OrgSwitcher` refactor — always renders a Select now (dropped
+      the read-only badge for single-org users), `CREATE_SENTINEL`
+      item at the bottom behind a `SelectSeparator`, on sentinel
+      select reverts value + `router.push("/organizations/new")`
+- [x] `HeaderLabels.organizationCreate` plumbed from
+      `t.organizations.switcherCreateLabel` through the app layout
+- [x] 9 new i18n keys on `t.organizations.*` (switcher create label,
+      three new errors, nine create-flow strings)
+- [x] Verified clean: `prisma validate` + `tsc --noEmit` + `biome check .`
+
+### Still to port (deferred post-Sprint-13)
+
+- [ ] Per-org default locale / region override (still browser-level)
+- [ ] Danger zone / organization delete (cascade surface still wide)
+- [ ] Audit log (compliance)
+- [ ] Offline PWA shell + service worker (Moat 1)
+- [ ] Invitation tokens + email flow (Sprint 7 team management
+      still needs target users to already exist)
+- [ ] All items from post-Sprint-12 deferred list (unchanged)
+
+---
+
 ## Parked Until Later
 
 - `ScannerView` → **Sprint 8 (shipped 2026-04-11)**
