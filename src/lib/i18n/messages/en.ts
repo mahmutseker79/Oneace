@@ -1076,6 +1076,22 @@ export const en = {
     errors: {
       invalidId: "Invalid organization id.",
       notAMember: "You are not a member of this organization.",
+      nameTooShort: "Organization name must be at least 2 characters.",
+      nameTooLong: "Organization name must be 80 characters or fewer.",
+      createFailed: "Could not create the organization. Try again in a moment.",
+    },
+    switcherCreateLabel: "Create new organization…",
+    create: {
+      metaTitle: "Create organization",
+      heading: "Create a new organization",
+      subtitle:
+        "Each organization gets its own items, warehouses, suppliers, and team. You can switch between the organizations you belong to from the header.",
+      nameLabel: "Organization name",
+      namePlaceholder: "Acme Widgets Ltd.",
+      nameHelper: "2–80 characters. You can rename it later from Settings.",
+      submit: "Create organization",
+      cancel: "Cancel",
+      creating: "Creating…",
     },
   },
 

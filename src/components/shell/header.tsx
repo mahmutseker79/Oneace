@@ -16,6 +16,7 @@ export type HeaderLabels = {
   notifications: string;
   openMenu: string;
   organization: string;
+  organizationCreate: string;
   signOut: string;
 };
 
@@ -83,6 +84,7 @@ export function Header({ userName, organizations, activeOrganizationId, labels }
           options={organizations}
           activeId={activeOrganizationId}
           label={labels.organization}
+          createLabel={labels.organizationCreate}
         />
 
         <Button variant="ghost" size="icon" aria-label={labels.notifications}>

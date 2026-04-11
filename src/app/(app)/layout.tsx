@@ -33,6 +33,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             notifications: t.header.notifications,
             openMenu: t.header.openMenu,
             organization: t.common.organization,
+            organizationCreate: t.organizations.switcherCreateLabel,
             signOut: t.header.signOut,
           }}
         />
