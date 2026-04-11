@@ -10,28 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  type BarcodeDetectorLike,
+  type DetectorEngine,
+  createDetector,
+} from "@/lib/scanner/detector";
 
 import { type ScanLookupResult, lookupItemByCodeAction } from "./actions";
-
-// Feature-detect BarcodeDetector. It's a Web API with wide support on
-// Chrome/Edge/Android but missing on Safari and Firefox; we fall back to
-// manual entry in those browsers.
-type BarcodeDetectorLike = {
-  detect: (source: CanvasImageSource) => Promise<Array<{ rawValue: string }>>;
-};
-
-type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => BarcodeDetectorLike;
-
-const SUPPORTED_FORMATS = [
-  "ean_13",
-  "ean_8",
-  "upc_a",
-  "upc_e",
-  "code_128",
-  "code_39",
-  "qr_code",
-  "itf",
-];
 
 export type ScannerLabels = {
   cameraHeading: string;
@@ -44,6 +29,9 @@ export type ScannerLabels = {
   cameraDeniedBody: string;
   cameraError: string;
   scanningStatus: string;
+  engineNative: string;
+  engineZxing: string;
+  engineLoading: string;
   manualHeading: string;
   manualSubtitle: string;
   manualLabel: string;
@@ -87,6 +75,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
   const lastTickRef = useRef<number>(0);
 
   const [cameraState, setCameraState] = useState<CameraState>("idle");
+  const [engine, setEngine] = useState<DetectorEngine | null>(null);
   const [manualValue, setManualValue] = useState(initialQuery ?? "");
   const [result, setResult] = useState<ScanLookupResult | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -158,29 +147,23 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
 
   const startCamera = useCallback(async () => {
     setLookupError(null);
-    const globalObj = globalThis as unknown as { BarcodeDetector?: BarcodeDetectorCtor };
-    const Ctor = globalObj.BarcodeDetector;
-    if (!Ctor) {
-      setCameraState("unsupported");
-      return;
-    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraState("unsupported");
       return;
     }
 
     setCameraState("starting");
-    try {
-      detectorRef.current = new Ctor({ formats: SUPPORTED_FORMATS });
-    } catch {
-      // Some browsers advertise BarcodeDetector but reject the formats list.
-      try {
-        detectorRef.current = new Ctor();
-      } catch {
-        setCameraState("unsupported");
-        return;
-      }
+
+    // createDetector prefers the native BarcodeDetector API and falls back
+    // to a lazy-loaded @zxing/browser reader when it's missing. Safari and
+    // Firefox take the fallback path; everything Chromium stays on native.
+    const created = await createDetector();
+    if (!created) {
+      setCameraState("unsupported");
+      return;
     }
+    detectorRef.current = created.detector;
+    setEngine(created.engine);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -238,10 +221,26 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
       <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="h-5 w-5" />
-              {labels.cameraHeading}
-            </CardTitle>
+            <div className="flex items-start justify-between gap-2">
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                {labels.cameraHeading}
+              </CardTitle>
+              {cameraState === "starting" ? (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {labels.engineLoading}
+                </Badge>
+              ) : engine === "native" ? (
+                <Badge variant="secondary" className="text-xs">
+                  {labels.engineNative}
+                </Badge>
+              ) : engine === "zxing" ? (
+                <Badge variant="outline" className="text-xs">
+                  {labels.engineZxing}
+                </Badge>
+              ) : null}
+            </div>
             <p className="text-sm text-muted-foreground">{labels.cameraSubtitle}</p>
           </CardHeader>
           <CardContent className="space-y-3">

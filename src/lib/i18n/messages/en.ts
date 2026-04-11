@@ -1026,9 +1026,12 @@ export const en = {
       start: "Start camera",
       stop: "Stop camera",
       scanningStatus: "Scanning…",
+      engineNative: "Native engine",
+      engineZxing: "ZXing fallback",
+      engineLoading: "Loading engine…",
       unsupported: "Camera scanning not supported",
       unsupportedBody:
-        "Your browser does not support the BarcodeDetector API. Chrome, Edge, and Android browsers work best. You can still use manual entry below.",
+        "Your browser does not expose a camera API, so live scanning can't start. You can still use manual entry below.",
       denied: "Camera access denied",
       deniedBody:
         "OneAce needs camera permission to scan barcodes. Enable it in your browser's site settings and try again.",
