@@ -107,6 +107,8 @@ export const en = {
       privacyLink: "Privacy Policy",
       termsSuffix: ".",
       metaTitle: "Sign up",
+      inviteeNotice:
+        "You're signing up to accept a team invitation — we'll add you to the inviting organization instead of creating a new one.",
     },
     onboarding: {
       title: "One last step",
@@ -1148,7 +1150,10 @@ export const en = {
       emailPlaceholder: "teammate@company.com",
       roleLabel: "Role",
       submit: "Create invitation",
-      success: "Invitation created. Copy the link below and send it to the invitee.",
+      successEmailSent:
+        "Invitation sent. We've emailed the invitee; you can also copy the link below as a backup.",
+      successLinkOnly:
+        "Invitation created. Copy the link below and send it to the invitee through your own channel.",
       linkHeading: "Invitation link",
       linkHelp: "Copy this link and send it to {email}. The invitation expires on {expires}.",
       copy: "Copy link",
@@ -1259,6 +1264,24 @@ export const en = {
       expired: "This invitation has expired. Ask the administrator to send a new one.",
       wrongEmail: "You must be signed in with the invited email address to accept.",
       acceptFailed: "Could not accept the invitation. Please try again.",
+    },
+  },
+
+  mail: {
+    invitation: {
+      subject: "{inviter} invited you to join {org} on OneAce",
+      preheader: "Accept your invitation to {org} on OneAce.",
+      heading: "You're invited to join {org}",
+      bodyIntro:
+        "{inviter} has invited you to join {org} on OneAce as a {role}. Click the button below to accept the invitation and start collaborating.",
+      orgLabel: "Organization",
+      inviterLabel: "Invited by",
+      roleLabel: "Role",
+      cta: "Accept invitation",
+      expiryNotice: "This invitation expires on {expires}.",
+      fallbackLabel: "If the button doesn't work, copy and paste this link into your browser:",
+      footer:
+        "You received this email because someone invited you to join their team on OneAce. If you weren't expecting this, you can safely ignore it.",
     },
   },
 

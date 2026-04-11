@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
+import { resolveSafeRedirect } from "@/lib/redirects";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type RegisterFormLabels = {
@@ -25,6 +26,10 @@ type RegisterFormLabels = {
   and: string;
   privacyLink: string;
   termsSuffix: string;
+  /** Shown under the name field when the user is registering in
+   * response to an invitation — they will join the inviter's org
+   * instead of creating their own. */
+  inviteeNotice: string;
 };
 
 type RegisterFormProps = {
@@ -33,6 +38,17 @@ type RegisterFormProps = {
 
 export function RegisterForm({ labels }: RegisterFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Sprint 33: honor `?next=` on register the same way login does.
+  // When the next target is an invite URL, we know the user is
+  // joining an existing org — so we hide the org-name input and
+  // skip the onboarding POST. Post-signup we push them to the
+  // invite page, which will see them authenticated and enable the
+  // accept button.
+  const nextParam = searchParams.get("next") ?? searchParams.get("redirect");
+  const redirectTo = resolveSafeRedirect(nextParam, "/dashboard");
+  const isInviteFlow = redirectTo.startsWith("/invite/");
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,8 +71,10 @@ export function RegisterForm({ labels }: RegisterFormProps) {
         return;
       }
 
-      // User created → call backend to create the organization.
-      if (data?.user) {
+      // Sprint 33: only create a new org for the non-invite flow.
+      // Invitees hand off to the invite page, which will create the
+      // membership via `acceptInvitationAction`.
+      if (data?.user && !isInviteFlow) {
         const res = await fetch("/api/onboarding/organization", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -69,7 +87,7 @@ export function RegisterForm({ labels }: RegisterFormProps) {
         }
       }
 
-      router.push("/dashboard");
+      router.push(redirectTo);
       router.refresh();
     });
   }
@@ -88,17 +106,26 @@ export function RegisterForm({ labels }: RegisterFormProps) {
           onChange={(e) => setName(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="organization">{labels.organization}</Label>
-        <Input
-          id="organization"
-          type="text"
-          placeholder={labels.organizationPlaceholder}
-          required
-          value={organizationName}
-          onChange={(e) => setOrganizationName(e.target.value)}
-        />
-      </div>
+      {isInviteFlow ? (
+        <p
+          className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+          role="note"
+        >
+          {labels.inviteeNotice}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor="organization">{labels.organization}</Label>
+          <Input
+            id="organization"
+            type="text"
+            placeholder={labels.organizationPlaceholder}
+            required
+            value={organizationName}
+            onChange={(e) => setOrganizationName(e.target.value)}
+          />
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="email">{labels.email}</Label>
         <Input

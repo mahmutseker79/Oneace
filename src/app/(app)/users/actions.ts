@@ -4,13 +4,15 @@ import { Role } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { getMessages } from "@/lib/i18n";
+import { getMessages, getRegion } from "@/lib/i18n";
 import {
   buildInvitationUrl,
   classifyInvitation,
   defaultInvitationExpiry,
   generateInvitationToken,
 } from "@/lib/invitations";
+import { getMailer } from "@/lib/mail";
+import { buildInvitationEmail } from "@/lib/mail/templates/invitation-email";
 import { requireActiveMembership, requireSession } from "@/lib/session";
 import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation/membership";
 
@@ -19,13 +21,26 @@ export type UsersActionResult =
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 /**
- * Sprint 20: successful `inviteMemberAction` now returns the invitation
- * URL so the admin can copy it. Email delivery is deferred to post-MVP,
- * so the admin literally copies/pastes the link into whatever
- * communication channel they already use.
+ * Sprint 20: successful `inviteMemberAction` returns the invitation URL
+ * so the admin can copy it.
+ *
+ * Sprint 33: the action now also attempts email delivery via the
+ * configured `Mailer` (Resend in prod, ConsoleMailer in dev). The
+ * result carries an `emailDelivered` flag so the UI can surface
+ * either "Email sent to x" (happy path) or "Email not configured —
+ * copy the link below" (dev / Resend failure). Delivery failure is
+ * deliberately a soft miss: the invite row is still valid, the
+ * admin can still copy the link, so we don't want a DNS blip to
+ * block team onboarding.
  */
 export type InviteMemberResult =
-  | { ok: true; invitationId: string; inviteUrl: string; expiresAt: Date }
+  | {
+      ok: true;
+      invitationId: string;
+      inviteUrl: string;
+      expiresAt: Date;
+      emailDelivered: boolean;
+    }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export type AcceptInvitationResult =
@@ -137,8 +152,9 @@ export async function inviteMemberAction(formData: FormData): Promise<InviteMemb
   const token = generateInvitationToken();
   const expiresAt = defaultInvitationExpiry();
 
+  let created: { id: string };
   try {
-    const created = await db.invitation.create({
+    created = await db.invitation.create({
       data: {
         organizationId: membership.organizationId,
         email,
@@ -149,15 +165,90 @@ export async function inviteMemberAction(formData: FormData): Promise<InviteMemb
       },
       select: { id: true },
     });
-    revalidatePath("/users");
-    return {
-      ok: true,
-      invitationId: created.id,
-      inviteUrl: buildInvitationUrl(token),
-      expiresAt,
-    };
   } catch {
     return { ok: false, error: t.users.invite.errors.createFailed };
+  }
+
+  const inviteUrl = buildInvitationUrl(token);
+
+  // Sprint 33: fire the invitation email. Any failure here is a soft
+  // miss — the invite row is live, the admin gets the copyable URL
+  // back, and the UI shows the "not delivered" variant so the admin
+  // knows to ping the invitee through another channel.
+  const emailDelivered = await sendInvitationEmailSafely({
+    to: email,
+    organizationName: membership.organization.name,
+    inviterName: session.user.name ?? session.user.email,
+    role,
+    inviteUrl,
+    expiresAt,
+  });
+
+  revalidatePath("/users");
+  return {
+    ok: true,
+    invitationId: created.id,
+    inviteUrl,
+    expiresAt,
+    emailDelivered,
+  };
+}
+
+/**
+ * Sprint 33 helper. Renders the invitation email template and ships it
+ * to whichever mailer is configured. Returns `true` only on a
+ * confirmed provider success; logs + swallows any other outcome.
+ *
+ * Kept as a sibling function rather than inlined so the happy path in
+ * `inviteMemberAction` stays readable, and so we can swap in a stub
+ * during tests without touching the action body.
+ */
+async function sendInvitationEmailSafely(params: {
+  to: string;
+  organizationName: string;
+  inviterName: string;
+  role: Role;
+  inviteUrl: string;
+  expiresAt: Date;
+}): Promise<boolean> {
+  try {
+    const t = await getMessages();
+    const region = await getRegion();
+    const dateFmt = new Intl.DateTimeFormat(region.numberLocale, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+    const roleLabel = t.users.roles[params.role];
+
+    const rendered = buildInvitationEmail({
+      to: params.to,
+      organizationName: params.organizationName,
+      inviterName: params.inviterName,
+      role: params.role,
+      inviteUrl: params.inviteUrl,
+      expiresAt: params.expiresAt,
+      labels: t.mail.invitation,
+      dateFmt,
+      roleLabel,
+    });
+
+    const result = await getMailer().send({
+      to: params.to,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+    });
+
+    if (!result.ok) {
+      // eslint-disable-next-line no-console
+      console.warn(`[invite] mail delivery failed: ${result.error}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn(`[invite] mail delivery threw: ${err instanceof Error ? err.message : "unknown"}`);
+    return false;
   }
 }
 

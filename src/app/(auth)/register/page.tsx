@@ -36,6 +36,7 @@ export default async function RegisterPage() {
           and: t.auth.register.and,
           privacyLink: t.auth.register.privacyLink,
           termsSuffix: t.auth.register.termsSuffix,
+          inviteeNotice: t.auth.register.inviteeNotice,
         }}
       />
 

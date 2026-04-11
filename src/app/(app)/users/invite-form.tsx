@@ -21,7 +21,10 @@ export type InviteFormLabels = {
   emailPlaceholder: string;
   roleLabel: string;
   submit: string;
-  success: string;
+  /** Shown when the invitation row was created AND the email was delivered. */
+  successEmailSent: string;
+  /** Shown when the row was created but email delivery failed or is disabled. */
+  successLinkOnly: string;
   linkHeading: string;
   /** Uses `{email}` and `{expires}` placeholders. */
   linkHelp: string;
@@ -41,6 +44,7 @@ type InviteCreated = {
   email: string;
   url: string;
   expiresAt: Date;
+  emailDelivered: boolean;
 };
 
 export function InviteForm({ labels, defaultRole, dateFmt }: InviteFormProps) {
@@ -73,6 +77,7 @@ export function InviteForm({ labels, defaultRole, dateFmt }: InviteFormProps) {
         email: submittedEmail,
         url: result.inviteUrl,
         expiresAt: result.expiresAt,
+        emailDelivered: result.emailDelivered,
       });
       setEmail("");
       setRole(defaultRole);
@@ -136,7 +141,7 @@ export function InviteForm({ labels, defaultRole, dateFmt }: InviteFormProps) {
       {created ? (
         <div className="space-y-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/30">
           <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
-            {labels.success}
+            {created.emailDelivered ? labels.successEmailSent : labels.successLinkOnly}
           </p>
           <p className="text-xs text-emerald-800 dark:text-emerald-200">
             {labels.linkHelp

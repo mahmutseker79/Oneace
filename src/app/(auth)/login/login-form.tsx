@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
+import { resolveSafeRedirect } from "@/lib/redirects";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -25,7 +26,12 @@ type LoginFormProps = {
 export function LoginForm({ labels }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") ?? "/dashboard";
+  // Sprint 33: accept `?next=` primarily (new canonical name) and
+  // fall back to `?redirect=` for the pre-Sprint-33 callers. Both
+  // are validated via `resolveSafeRedirect` to block open-redirect
+  // attacks like `?next=https://evil.example`.
+  const nextParam = searchParams.get("next") ?? searchParams.get("redirect");
+  const redirectTo = resolveSafeRedirect(nextParam, "/dashboard");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

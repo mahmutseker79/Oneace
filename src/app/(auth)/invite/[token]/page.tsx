@@ -123,11 +123,20 @@ export default async function InviteAcceptPage({ params }: PageProps) {
           {t.invitePage.signInRequired.replace("{email}", invite.email)}
         </div>
         <div className="flex flex-col gap-2">
+          {/* Sprint 33: pass `?next=/invite/{token}` through so the
+              user lands back here after sign-in or sign-up. The
+              register form also detects the `/invite/` prefix and
+              skips its org-creation step, since invitees join an
+              existing org. */}
           <Button asChild>
-            <Link href="/login">{t.invitePage.signInCta}</Link>
+            <Link href={`/login?next=/invite/${encodeURIComponent(token)}`}>
+              {t.invitePage.signInCta}
+            </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/register">{t.invitePage.createAccountCta}</Link>
+            <Link href={`/register?next=/invite/${encodeURIComponent(token)}`}>
+              {t.invitePage.createAccountCta}
+            </Link>
           </Button>
         </div>
       </InviteShell>
