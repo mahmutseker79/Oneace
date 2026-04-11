@@ -2366,6 +2366,151 @@ replace both the banner's poll and this one.
 
 ---
 
+## Sprint 31 — PWA Sprint 8: Dexie live-query + Web Locks cross-tab guard (shipped 2026-04-11)
+
+Goal: two long-standing TODOs from the PWA backlog both land
+together because they share the same "who owns the write" story.
+
+1. **Dexie live-query subscription** — replace the 3-second poll
+   that the offline queue banner (Sprint 25) and the offline queue
+   review screen (Sprint 30) used with a real `Dexie.liveQuery()`
+   Observable. A write that lands in `pendingOps` (from the
+   runner, from this tab, or — via Dexie's BroadcastChannel
+   transport — from another tab on the same origin) now re-fires
+   every subscribed component in the same tick. No more "click
+   Retry, wait 3 seconds, see the row move". No more
+   `refresh()`-in-finally dance the Sprint 30 action handlers had
+   to run. The 3-second `setInterval` / `setTimeout` polling
+   pattern is completely gone from these two surfaces.
+2. **Web Locks cross-tab drain guard** — wrap the queue runner's
+   `drain()` function in a new `withQueueDrainLock` helper that
+   uses `navigator.locks.request(..., { ifAvailable: true }, …)`.
+   Two tabs on the same origin still both receive the trigger
+   events (`online`, `visibilitychange`, Background Sync relay) —
+   but only one of them acquires the `oneace-queue-drain` lock
+   and actually scans `pendingOps`. The others bail immediately
+   with `{ acquired: false }`. Correctness was already guaranteed
+   by Dexie row claiming (`markOpInFlight`'s transactional
+   `pending → in_flight` transition); this sprint is a cost
+   optimization that makes that guarantee explicit.
+
+### Design decisions
+
+- **Custom `useLiveQuery` hook, not `dexie-react-hooks`.**
+  The useful bit of the official package is ~20 lines of
+  `useState + useEffect + liveQuery().subscribe()`. Inlining it
+  saves a runtime dep, a version to track, and a ~4 KB chunk in
+  the offline bundle. The hook lives at
+  `src/lib/offline/use-live-query.ts` and mirrors the `useEffect`
+  shape (caller-provided dep array) every React developer already
+  understands.
+- **Caller-provided deps with a single-line biome suppression.**
+  The hook deliberately doesn't include `querier` in its effect's
+  dep array — a fresh closure every render would tear down and
+  re-open the subscription on every parent re-render. Biome's
+  `useExhaustiveDependencies` correctly flags this pattern, so
+  the hook carries one `biome-ignore` line above the `useEffect`
+  explaining the contract. Callers pass the stable scope values
+  they'd otherwise pass to a `useEffect` themselves.
+- **`ifAvailable: true`, not blocking.** The default Web Locks
+  mode is exclusive-blocking: a busy lock queues behind the
+  current holder. That's wrong for this workload — the second
+  tab should bail, not sit on a promise waiting for the first
+  tab's drain to finish (which may take seconds if the queue is
+  long). `ifAvailable: true` hands us `null` immediately when
+  the lock is busy, and the losing tab's trigger was already
+  processed by the winner.
+- **Feature detection with no-op fallback.** Web Locks ships in
+  Chrome 69+, Edge 79+, Firefox 96+, Safari 15.4+, which covers
+  every browser in our target matrix. Still, `getLockManager()`
+  in `queue-lock.ts` returns `null` when `navigator.locks` is
+  missing or when `locks.request` is not a function (Safari in
+  private mode has historically gated this behind a permission
+  prompt). A `null` lock manager means `withQueueDrainLock`
+  runs the callback inline with `acquired: true` — **exactly**
+  how the pre-Sprint-31 runner behaved, which shipped reliably
+  for weeks. Zero regression surface.
+- **Dedicated lock name, no sharing.** `"oneace-queue-drain"`
+  is opaque and not used for anything else. Contention is
+  visible in DevTools' Application panel without a legend.
+- **Banner `pollIntervalMs` prop kept as a dead knob.** The
+  `OfflineQueueBanner` Sprint 25 interface accepted an optional
+  `pollIntervalMs` so storybook could override the 3-second
+  default. Sprint 31 replaces the poll but keeps the prop so
+  any older caller still compiles; the value is simply ignored.
+  A follow-up cleanup sprint can remove it once no callers are
+  found.
+- **`EMPTY_BUCKETS` / `EMPTY_COUNTS` module-level constants.**
+  `useLiveQuery`'s `initialValue` must be stable across renders
+  or React warns about derived-state identity churn. Inlining
+  `{ pending: [], inFlight: [], failed: [] }` would create a
+  fresh reference on every render, so both the banner and the
+  queue-view pin a frozen module-level constant and fall back
+  to it again inside the render (`?? EMPTY_BUCKETS`) to keep
+  the downstream `.length` reads ergonomic.
+- **Only the `pendingOps` table is subscribed.** The other
+  offline views (`offline-items-view`, `offline-stockcounts-view`)
+  already rely on cache-on-detail-visit writes, not live
+  updates; they don't poll and didn't need migration. Sprint 31
+  is surgically scoped to the two surfaces that actually had a
+  polling footprint.
+
+### Files touched
+
+- NEW `src/lib/offline/use-live-query.ts` (~100 lines).
+  Exports `useLiveQuery<T>(querier, deps, initialValue?)`.
+- NEW `src/lib/offline/queue-lock.ts` (~135 lines).
+  Exports `withQueueDrainLock` + `isWebLocksSupported`.
+  Self-contained feature detection via internal
+  `getLockManager()` helper.
+- Modified `src/components/offline/offline-queue-runner.tsx` —
+  adds one import (`withQueueDrainLock`), wraps the entire
+  `drain()` body in `await withQueueDrainLock(async () => { … })`,
+  expands the header comment block to document the Sprint 31
+  cross-tab guard story.
+- Modified `src/components/offline/offline-queue-view.tsx` —
+  removes the `refresh` callback + `setInterval` + three
+  `useState` arrays, replaces with one `useLiveQuery` call
+  returning `QueueRowBuckets`, drops the `refresh()` calls
+  from all three action handlers' `finally` blocks.
+  `EMPTY_BUCKETS` module-level constant pinned.
+- Modified `src/components/offline/offline-queue-banner.tsx` —
+  removes the refresh callback + `setInterval`, replaces with
+  `useLiveQuery` returning `QueueCounts`. `useEffect` still
+  subscribes to `window` `online`/`offline` events for the
+  amber-vs-muted styling decision. `EMPTY_COUNTS` constant
+  pinned. `pollIntervalMs` prop kept as a dead knob for
+  back-compat with older callers.
+- **No i18n changes** — Sprint 31 is pure plumbing.
+- **No schema changes, no Prisma migration, no Dexie version
+  bump, no new runtime dependencies.**
+
+### Verified clean
+
+- `tsc --noEmit` exit 0
+- `biome check src` clean (169 files — two new vs Sprint 30's
+  167: `use-live-query.ts` + `queue-lock.ts`)
+- `DATABASE_URL=... DIRECT_URL=... prisma validate` → green
+
+### What this does NOT cover
+
+- **Not a live update for `/offline/items` or
+  `/offline/stock-counts`.** Those surfaces read cached catalog
+  data that's only ever written on detail-page visits, so a
+  live query wouldn't fire more often than a navigate anyway.
+  Deferred indefinitely unless a user need appears.
+- **Not a real toast library.** The queue-view still uses a
+  single `<output aria-live="polite">` ephemeral status row and
+  `window.confirm` for destructive actions. A proper toast
+  library + a custom confirm modal are tracked under the PWA
+  Sprint 9+ backlog.
+- **No user-visible "cross-tab guard active" indicator.** The
+  `isWebLocksSupported` helper is exported but not consumed
+  yet. Surfacing it would be a UX decision that deserves its
+  own sprint.
+
+---
+
 ### Still to port (deferred post-Sprint-22)
 
 - [x] PWA Sprint 2 — offline-ready item catalog (IndexedDB read
@@ -2396,6 +2541,13 @@ replace both the banner's poll and this one.
       runner couldn't dispatch; banner failed count becomes
       a clickable review link). **Shipped as Sprint 30** —
       see below.
+- [x] PWA Sprint 8 — Dexie live-query subscription in the
+      queue banner and review screen (replaces the 3-second
+      poll with an Observable that re-fires on every
+      `pendingOps` write from any tab) + Web Locks cross-tab
+      drain guard in the runner (`ifAvailable: true` so a
+      second tab bails instead of scanning the table in
+      parallel). **Shipped as Sprint 31** — see below.
 - [ ] Audit log
 - [ ] Email delivery for invitations (MVP: admin copies link)
 - [ ] `?next=/invite/[token]` redirect after sign-in so users

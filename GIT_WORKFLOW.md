@@ -2,7 +2,7 @@
 
 This document is the exact runbook for getting the `oneace-next/` scaffold onto
 GitHub as a long-lived `next-port` branch, opening a draft PR against `main`,
-and iterating on it through Sprint 0 → Sprint 30.
+and iterating on it through Sprint 0 → Sprint 31.
 
 > **Why this lives in a markdown file and not a git commit:** the port was
 > scaffolded inside a sandboxed environment that cannot finalize `git` writes.
@@ -13,16 +13,16 @@ and iterating on it through Sprint 0 → Sprint 30.
 
 ## 0. Fast path — use the pre-built bundle (RECOMMENDED, updated 2026-04-11)
 
-Sprint 0 through Sprint 29 plus **Sprint 30** are already committed in a
+Sprint 0 through Sprint 30 plus **Sprint 31** are already committed in a
 portable git bundle at:
 
 ```
-oneace-next/oneace-next-port-v0.30.0-sprint30.bundle
+oneace-next/oneace-next-port-v0.31.0-sprint31.bundle
 ```
 
 This bundle contains:
 
-- **68 commits** — 8 Sprint 0 + 1 docs + Sprints 1..30 (each = 1 feature
+- **70 commits** — 8 Sprint 0 + 1 docs + Sprints 1..31 (each = 1 feature
   commit + 1 runbook commit)
 - **Branch:** `next-port`
 - **Tags (annotated):**
@@ -56,9 +56,10 @@ This bundle contains:
   - `v0.28.0-sprint28` — Sprint 28 complete (PWA Sprint 5 — Background Sync API + new-version prompt + first-party Install button)
   - `v0.29.0-sprint29` — Sprint 29 complete (PWA Sprint 6 — offline stock-counts viewer: cache-on-detail-visit + /offline/stock-counts list + detail)
   - `v0.30.0-sprint30` — Sprint 30 complete (PWA Sprint 7 — failed-ops review UI at /offline/queue: retry / discard / clear-all for queued ops)
+  - `v0.31.0-sprint31` — Sprint 31 complete (PWA Sprint 8 — Dexie liveQuery subscriptions in the queue banner + review screen, Web Locks cross-tab drain guard in the runner)
 
 Older bundles (`oneace-next-port.bundle`,
-`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.29.0-sprint29.bundle`)
+`oneace-next-port-v0.1.0-sprint1.bundle` ... `oneace-next-port-v0.30.0-sprint30.bundle`)
 are kept around only because the sandbox cannot delete files from the mount
 — always use the latest versioned one.
 
@@ -72,11 +73,11 @@ git clone https://github.com/mahmutseker79/oneace.git oneace-port-workspace
 cd oneace-port-workspace
 
 # Pull in the bundle (path wherever you synced the sandbox folder to)
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.30.0-sprint30.bundle \
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.31.0-sprint31.bundle \
           next-port:next-port
 
-# Also pull all thirty sprint tags
-git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.30.0-sprint30.bundle \
+# Also pull all thirty-one sprint tags
+git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.31.0-sprint31.bundle \
           refs/tags/v0.1.0-sprint1:refs/tags/v0.1.0-sprint1 \
           refs/tags/v0.2.0-sprint2:refs/tags/v0.2.0-sprint2 \
           refs/tags/v0.3.0-sprint3:refs/tags/v0.3.0-sprint3 \
@@ -106,11 +107,12 @@ git fetch /path/to/SimplyCount/oneace-next/oneace-next-port-v0.30.0-sprint30.bun
           refs/tags/v0.27.0-sprint27:refs/tags/v0.27.0-sprint27 \
           refs/tags/v0.28.0-sprint28:refs/tags/v0.28.0-sprint28 \
           refs/tags/v0.29.0-sprint29:refs/tags/v0.29.0-sprint29 \
-          refs/tags/v0.30.0-sprint30:refs/tags/v0.30.0-sprint30
+          refs/tags/v0.30.0-sprint30:refs/tags/v0.30.0-sprint30 \
+          refs/tags/v0.31.0-sprint31:refs/tags/v0.31.0-sprint31
 
 # Verify
-git log --oneline next-port                # should show 68 commits
-git tag -l                                 # should include all thirty sprint tags
+git log --oneline next-port                # should show 70 commits
+git tag -l                                 # should include all thirty-one sprint tags
 
 # Push to GitHub
 git push -u origin next-port
@@ -122,8 +124,96 @@ git push origin v0.1.0-sprint1 v0.2.0-sprint2 v0.3.0-sprint3 v0.4.0-sprint4 \
                v0.19.0-sprint19 v0.20.0-sprint20 v0.21.0-sprint21 \
                v0.22.0-sprint22 v0.23.0-sprint23 v0.24.0-sprint24 \
                v0.25.0-sprint25 v0.26.0-sprint26 v0.27.0-sprint27 \
-               v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30
+               v0.28.0-sprint28 v0.29.0-sprint29 v0.30.0-sprint30 \
+               v0.31.0-sprint31
 ```
+
+### What Sprint 31 added (v0.31.0-sprint31)
+
+PWA Sprint 8: two long-standing TODOs from the PWA backlog land
+together. First, the Sprint 25/30 3-second poll in the offline
+queue banner and review screen is replaced with a real
+`Dexie.liveQuery()` Observable subscription — writes that land in
+`pendingOps` (from the runner, from this tab, or from another tab
+via Dexie's BroadcastChannel transport) now re-fire every
+subscribed component in the same tick. Second, the queue runner's
+`drain()` function is wrapped in a new Web Locks helper so only
+one tab at a time scans the table; the other tabs bail
+immediately instead of paying the Dexie read cost.
+
+- NEW **`src/lib/offline/use-live-query.ts`** — a ~100-line
+  custom React hook wrapping `Dexie.liveQuery()`. Callers pass a
+  querier function, a dependency array, and an optional initial
+  value; the hook opens a subscription on mount, re-opens it on
+  every dep change, and tears it down on unmount. A single
+  `biome-ignore lint/correctness/useExhaustiveDependencies`
+  suppression sits above the `useEffect` documenting the
+  deliberate contract (caller deps drive re-subscription; the
+  querier closure is NOT a dep because that would churn on every
+  parent render). This replaces a potential `dexie-react-hooks`
+  dependency — the useful bit is small enough that inlining
+  saves a runtime dep, a version to track, and ~4 KB of the
+  offline bundle.
+- NEW **`src/lib/offline/queue-lock.ts`** — a ~135-line
+  browser-API wrapper around the Web Locks API. Exports
+  `withQueueDrainLock<T>(fn)` which runs `fn` under the
+  `oneace-queue-drain` lock with `ifAvailable: true` (so a busy
+  lock returns `null` immediately instead of queueing). Returns
+  `{ acquired: true, value }` on success or
+  `{ acquired: false, value: null }` when another tab holds the
+  lock. Also exports `isWebLocksSupported()` for future UX that
+  wants to surface "cross-tab guard active". An internal
+  `getLockManager()` helper does the feature detection: returns
+  `null` when `navigator.locks` is missing or when
+  `locks.request` is not a function (Safari private mode
+  historically gated this). A `null` lock manager means the
+  helper runs the callback inline with `acquired: true` —
+  exactly how the pre-Sprint-31 runner behaved, so zero
+  regression risk on older browsers.
+- Modified **`src/components/offline/offline-queue-runner.tsx`**
+  — adds `withQueueDrainLock` import and wraps the entire
+  `drain()` body in
+  `await withQueueDrainLock(async () => { … })`. The outer
+  `drainingRef` single-flight guard stays in place as a second
+  layer (a single tab still shouldn't fire N parallel drain
+  calls even if the lock is free). Header comment block is
+  expanded to document the Sprint 31 cross-tab guard story
+  next to the Sprint 25 Dexie row-claiming story.
+- Modified **`src/components/offline/offline-queue-view.tsx`**
+  — the three `useState<CachedPendingOp[]>` arrays and the
+  `refresh` callback + `setInterval(3000)` are replaced with
+  one `useLiveQuery<QueueRowBuckets>` call that returns
+  `{ pending, inFlight, failed }` in a single tick. The three
+  action handlers (`handleRetry`, `handleDiscard`,
+  `handleClearAllFailed`) drop their `await refresh()` calls
+  from the `finally` blocks — the live query picks up the row
+  transition as soon as the mutating transaction commits. A
+  frozen module-level `EMPTY_BUCKETS` constant is pinned as the
+  `useLiveQuery` initial value + render-time fallback so the
+  identity stays stable across renders. Header comment block
+  explains the Sprint 31 live-query transition.
+- Modified **`src/components/offline/offline-queue-banner.tsx`**
+  — the `refresh` callback + `setInterval` + `counts` state
+  are replaced with `useLiveQuery<QueueCounts>` returning
+  `{ pending, failed }`. The remaining `useEffect` only
+  subscribes to `window` `online`/`offline` events to drive the
+  amber-vs-muted styling decision. Frozen `EMPTY_COUNTS`
+  constant pinned. The `pollIntervalMs` prop is kept as a
+  dead knob for back-compat with older callers that passed a
+  custom interval; a follow-up cleanup sprint can remove it.
+- **No i18n changes.** Sprint 31 is pure plumbing.
+- **No schema changes, no Prisma migration, no Dexie version
+  bump, no new runtime dependencies.** The sprint is additive:
+  every existing row in `pendingOps` keeps working exactly the
+  same, the runner's dispatcher registry is untouched, and
+  every Sprint 30 action handler semantically does the same
+  thing — the difference is the UI reflects it in the same
+  tick instead of up to 3 seconds later.
+
+Triple-verified clean: `tsc --noEmit` exit 0, `biome check src`
+clean (169 files — two new vs Sprint 30's 167: `use-live-query.ts`
+and `queue-lock.ts`), `prisma validate` green (with dummy
+`DATABASE_URL` / `DIRECT_URL` env vars).
 
 ### What Sprint 30 added (v0.30.0-sprint30)
 
