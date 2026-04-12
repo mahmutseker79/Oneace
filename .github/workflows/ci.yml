@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   check:
-    name: Typecheck · Biome · Prisma validate
+    name: Typecheck · Biome · Prisma validate · Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -45,6 +45,9 @@ jobs:
 
       - name: Validate Prisma schema
         run: pnpm prisma validate
+
+      - name: Test
+        run: pnpm test
 
   build:
     name: Next build (smoke)
