@@ -47,6 +47,15 @@ import type { DispatcherResult, OpDispatcher } from "@/components/offline/offlin
 import type { CachedPendingOp } from "@/lib/offline/db";
 import { type MovementOpPayload, movementOpPayloadSchema } from "@/lib/validation/movement";
 
+// Three-place contract for any new op type (load-bearing — nothing
+// enforces this at the type level):
+//   1. Payload schema in `src/lib/validation/*.ts` (the single source
+//      of truth — BOTH the enqueuer and the dispatcher parse it).
+//   2. A `submit*OpAction` server action that re-validates the same
+//      payload and returns a `{ ok, retryable? }`-shaped result.
+//   3. Registration in `src/components/offline/offline-queue-runner.tsx`
+//      so the runner can look up this dispatcher by opType.
+// A new opType that skips any of the three will never drain.
 export const MOVEMENT_CREATE_OP_TYPE = "movement.create" as const;
 
 /**

@@ -19,6 +19,7 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { deleteCategoryAction } from "./actions";
 import { CategoryCreateForm, type CategoryCreateFormLabels } from "./category-create-form";
+import { CategoryRenameDialog, type CategoryRenameDialogLabels } from "./category-rename-dialog";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -62,6 +63,15 @@ export default async function CategoriesPage() {
     error: t.categories.errors.createFailed,
   };
 
+  const renameLabels: CategoryRenameDialogLabels = {
+    trigger: t.categories.rename.trigger,
+    title: t.categories.rename.title,
+    body: t.categories.rename.body,
+    nameLabel: t.categories.rename.nameLabel,
+    cancel: t.categories.rename.cancel,
+    submit: t.categories.rename.submit,
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -97,7 +107,7 @@ export default async function CategoriesPage() {
                   <TableHead>{t.categories.columnName}</TableHead>
                   <TableHead>{t.categories.columnParent}</TableHead>
                   <TableHead className="text-right">{t.categories.columnItems}</TableHead>
-                  <TableHead className="w-24 text-right">{t.categories.columnActions}</TableHead>
+                  <TableHead className="w-32 text-right">{t.categories.columnActions}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -109,17 +119,24 @@ export default async function CategoriesPage() {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{c._count.items}</TableCell>
                     <TableCell className="text-right">
-                      <DeleteButton
-                        labels={{
-                          trigger: t.common.delete,
-                          title: t.categories.deleteConfirmTitle,
-                          body: t.categories.deleteConfirmBody,
-                          cancel: t.common.cancel,
-                          confirm: t.common.delete,
-                        }}
-                        action={deleteCategoryAction.bind(null, c.id)}
-                        iconOnly
-                      />
+                      <div className="flex items-center justify-end gap-1">
+                        <CategoryRenameDialog
+                          categoryId={c.id}
+                          currentName={c.name}
+                          labels={renameLabels}
+                        />
+                        <DeleteButton
+                          labels={{
+                            trigger: t.common.delete,
+                            title: t.categories.deleteConfirmTitle,
+                            body: t.categories.deleteConfirmBody,
+                            cancel: t.common.cancel,
+                            confirm: t.common.delete,
+                          }}
+                          action={deleteCategoryAction.bind(null, c.id)}
+                          iconOnly
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

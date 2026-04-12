@@ -18,7 +18,9 @@
  *   matches the items viewer pattern. The cache predates any logout
  *   so a future user won't see data that wasn't there when the tab
  *   was last online. Shared-browser edge cases are deferred to the
- *   login-aware offline auth story (PWA Sprint 9+).
+ *   login-aware offline auth story (PWA Sprint 9+). Keep this rule
+ *   in lockstep with `offline-items-view.tsx` — both viewers share
+ *   the same trade-off and should be revisited together.
  *
  * The detail view is intentionally simple:
  *   - Blind / double-blind counts hide the expected column, same

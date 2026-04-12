@@ -55,6 +55,15 @@ export async function requireSession() {
  * render its dropdown without issuing a second query. Wrapped in React
  * `cache` — the app layout and the page both call this, and we'd rather
  * hit the DB once per request.
+ *
+ * Tenancy rule (load-bearing): the Prisma client returned by `db` is
+ * NOT tenant-scoped. Every server-side read of an entity that will be
+ * mutated must therefore scope explicitly by
+ * `{ id, organizationId: membership.organizationId }` via
+ * `findFirst` / `findUnique` / `update` / `delete`. A bare
+ * `findUnique({ where: { id } })` would leak across orgs. The action
+ * files under `src/app/(app)/*\/actions.ts` are the enforced pattern
+ * — new actions must match them.
  */
 export const requireActiveMembership = cache(async () => {
   const session = await requireSession();

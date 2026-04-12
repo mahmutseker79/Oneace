@@ -36,6 +36,12 @@ export const en = {
     confirm: "Confirm",
     confirmDelete: "This action cannot be undone. Are you sure?",
     exportCsv: "Export CSV",
+    // Phase 6A / P2 — shared rate-limit copy for the four hotspots
+    // protected by `src/lib/rate-limit.ts`. Each hotspot decides
+    // whether to pass a `retryAfterSeconds` placeholder by appending
+    // it at the call site; the base string stays short and
+    // translator-friendly.
+    rateLimited: "You're doing that too fast. Please wait a moment and try again.",
   },
 
   nav: {
@@ -232,6 +238,13 @@ export const en = {
     deleted: "Item deleted.",
     backToList: "Back to items",
     importCta: "Import CSV",
+    filter: {
+      label: "Status",
+      all: "All",
+      active: "Active",
+      archived: "Archived",
+      draft: "Draft",
+    },
   },
 
   itemsImport: {
@@ -356,6 +369,30 @@ export const en = {
     updated: "Warehouse updated.",
     deleted: "Warehouse deleted.",
     backToList: "Back to warehouses",
+    detail: {
+      metaTitle: "Warehouse detail",
+      defaultBadge: "Default",
+      archivedBadge: "Archived",
+      metaHeading: "Location",
+      metaAddress: "Address",
+      metaCity: "City",
+      metaRegion: "Region",
+      metaCountry: "Country",
+      metaCode: "Code",
+      stockHeading: "Stock in this warehouse",
+      stockEmpty: "No stock is currently tracked in this warehouse.",
+      stockColumnSku: "SKU",
+      stockColumnItem: "Item",
+      stockColumnOnHand: "On hand",
+      stockColumnReserved: "Reserved",
+      movementsHeading: "Recent movements",
+      movementsEmpty: "No movements yet in this warehouse.",
+      movementsColumnDate: "Date",
+      movementsColumnType: "Type",
+      movementsColumnItem: "Item",
+      movementsColumnQty: "Change",
+      edit: "Edit warehouse",
+    },
   },
 
   categories: {
@@ -388,6 +425,14 @@ export const en = {
     updated: "Category updated.",
     deleted: "Category deleted.",
     columnActions: "Actions",
+    rename: {
+      trigger: "Rename",
+      title: "Rename category",
+      body: "Change the display name for this category. Items remain assigned.",
+      nameLabel: "Name",
+      cancel: "Cancel",
+      submit: "Save changes",
+    },
   },
 
   movements: {
@@ -482,6 +527,24 @@ export const en = {
       emptyFilteredBody:
         "Try widening the date range, clearing the type or warehouse filter, or removing the item search.",
       invalidRange: "The start date must be on or before the end date.",
+    },
+    detail: {
+      metaTitle: "Movement detail",
+      backToList: "Back to movements",
+      notFoundHeading: "Movement not found",
+      notFoundBody: "This movement does not exist or belongs to another organization.",
+      summaryHeading: "Movement summary",
+      metaWhen: "Recorded",
+      metaType: "Type",
+      metaQuantity: "Change",
+      metaReference: "Reference",
+      metaNote: "Note",
+      metaUser: "By",
+      itemHeading: "Item",
+      warehouseHeading: "Warehouse",
+      sourceWarehouse: "Source",
+      destinationWarehouse: "Destination",
+      viewItem: "Open item",
     },
   },
 
@@ -1064,6 +1127,7 @@ export const en = {
       clear: "Clear",
       viewItem: "Open item",
       newItem: "Create item",
+      recordMovement: "Record movement",
       sku: "SKU",
       barcode: "Barcode",
       onHand: "On hand",
@@ -1673,6 +1737,7 @@ export const en = {
       "stock_count.created": "Started stock count",
       "stock_count.cancelled": "Cancelled stock count",
       "stock_count.completed": "Completed stock count",
+      "stock_movement.created": "Recorded stock movement",
       "audit.pruned": "Pruned audit log",
       "notification.sent": "Sent notification digest",
     },

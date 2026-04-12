@@ -6,14 +6,31 @@
  *
  * This component is rendered at the bottom of the items list server
  * component and receives an already-serialized snapshot as props.
- * On mount (and whenever the snapshot identity changes) it writes
+ * On mount (and whenever the snapshot signature changes) it writes
  * the snapshot into IndexedDB. The component renders nothing — all
  * user-facing state lives in `<ItemsCacheBanner />`.
  *
- * We deliberately take the snapshot as a prop rather than fetching
- * again from the client: this keeps the cache in sync with whatever
- * the user just *saw* on the server-rendered page, and avoids a
- * second round-trip on every navigation.
+ * Cache contract (Phase 2 S6 + Phase 3B):
+ *   - The rows prop is ALWAYS the **unfiltered** inventory snapshot
+ *     (`cacheItems` in `src/app/(app)/items/page.tsx`), NOT the
+ *     rendered list. When the user is on `/items?status=archived`,
+ *     the page runs a second unfiltered query so switching filters
+ *     never shrinks what the offline viewer holds.
+ *   - Therefore the cached snapshot is intentionally decoupled from
+ *     whatever the user is *looking at*: they can see a filtered
+ *     subset on screen while Dexie holds the full catalog behind it.
+ *     The banner next to the filter chips reflects cache state, not
+ *     visible-row count — that decoupling is load-bearing for the
+ *     offline viewer's correctness.
+ *   - `snapshotSignature` below is intentionally length-only: the
+ *     unfiltered cache slice is capped at 100 rows, so `rows.length`
+ *     changes only when real items are added or removed org-wide,
+ *     not on filter navigation. A length collision across two
+ *     renders is acceptable because the server always computes
+ *     `cacheRows` fresh and the write is a replace-on-write.
+ *
+ * We take the snapshot as a prop rather than re-fetching from the
+ * client to avoid a second round-trip on every navigation.
  */
 
 import { useEffect, useRef } from "react";
@@ -55,6 +72,13 @@ export function ItemsCacheSync({ scope, rows }: ItemsCacheSyncProps) {
     // analyzer sees it as a real dependency and the idle callback
     // closes over the stable tag used for the last-written check.
     const signature = snapshotSignature;
+    if (lastWrittenRef.current === signature) {
+      // A parent re-render produced the same signature we already
+      // wrote. React's Strict Mode double-invokes effects in dev,
+      // so without this guard we'd hit Dexie twice per navigation.
+      // Mirrors `stock-count-cache-sync.tsx`.
+      return;
+    }
     // Defer the write to idle time so it never competes with
     // hydration work. requestIdleCallback isn't available in
     // Safari, so we fall back to a short setTimeout — both are

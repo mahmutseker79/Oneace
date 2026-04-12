@@ -12,8 +12,13 @@ import {
   defaultInvitationExpiry,
   generateInvitationToken,
 } from "@/lib/invitations";
+import { logger } from "@/lib/logger";
 import { getMailer } from "@/lib/mail";
 import { buildInvitationEmail } from "@/lib/mail/templates/invitation-email";
+// Phase 6A / P2 — narrow rate-limit surface. See
+// `src/lib/rate-limit.ts` for the design note on why this is
+// explicitly fail-open.
+import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership, requireSession } from "@/lib/session";
 import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation/membership";
 
@@ -92,6 +97,27 @@ export async function inviteMemberAction(formData: FormData): Promise<InviteMemb
 
   if (!canManageTeam(membership.role)) {
     return { ok: false, error: t.users.invite.errors.forbidden };
+  }
+
+  // Phase 6A / P2 — rate limit on BOTH dimensions: a single admin
+  // minting many invites and the org as a whole minting many
+  // invites (which is what a compromised admin cookie would look
+  // like). Surfaces as a soft-error returned through the existing
+  // `{ ok: false, error }` union so the UI's form-error path shows
+  // the translated copy without any new rendering code.
+  const userRate = await rateLimit(`invite:send:user:${session.user.id}`, {
+    max: 5,
+    windowSeconds: 60,
+  });
+  if (!userRate.ok) {
+    return { ok: false, error: t.common.rateLimited };
+  }
+  const orgRate = await rateLimit(`invite:send:org:${membership.organizationId}`, {
+    max: 20,
+    windowSeconds: 3600,
+  });
+  if (!orgRate.ok) {
+    return { ok: false, error: t.common.rateLimited };
   }
 
   const parsed = inviteMemberSchema.safeParse({
@@ -250,14 +276,18 @@ async function sendInvitationEmailSafely(params: {
     });
 
     if (!result.ok) {
-      // eslint-disable-next-line no-console
-      console.warn(`[invite] mail delivery failed: ${result.error}`);
+      logger.warn("invite: mail delivery failed", {
+        tag: "invite.mail",
+        reason: result.error,
+      });
       return false;
     }
     return true;
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn(`[invite] mail delivery threw: ${err instanceof Error ? err.message : "unknown"}`);
+    logger.warn("invite: mail delivery threw", {
+      tag: "invite.mail",
+      err,
+    });
     return false;
   }
 }
@@ -326,6 +356,21 @@ export async function revokeInvitationAction(invitationId: string): Promise<User
 export async function acceptInvitationAction(token: string): Promise<AcceptInvitationResult> {
   const session = await requireSession();
   const t = await getMessages();
+
+  // Phase 6A / P2 — accept is rate-limited per-user to blunt token
+  // guessing against the `Invitation.token` column. The token is 256
+  // bits of entropy so guessing is already infeasible, but we'd
+  // rather not let an attacker with a stolen session run a brute
+  // probe at line-rate. 20 attempts / minute per session user is
+  // generous enough to absorb a legitimate user fat-fingering a URL
+  // a few times.
+  const acceptRate = await rateLimit(`invite:accept:user:${session.user.id}`, {
+    max: 20,
+    windowSeconds: 60,
+  });
+  if (!acceptRate.ok) {
+    return { ok: false, error: t.common.rateLimited, reason: "other" };
+  }
 
   const invite = await db.invitation.findUnique({
     where: { token },

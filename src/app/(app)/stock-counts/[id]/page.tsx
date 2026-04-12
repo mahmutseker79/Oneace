@@ -68,6 +68,18 @@ export default async function StockCountDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  // Variance + the offline cache payload MUST see every entry on this
+  // count, not just the 100 newest rows rendered in the entry log. The
+  // `count.entries` include above is capped for render, so we issue a
+  // separate unbounded fetch that returns only the columns variance
+  // math needs. This keeps the live preview and the offline snapshot
+  // byte-for-byte identical with what `completeStockCountAction` will
+  // post on reconcile.
+  const fullEntries = await db.countEntry.findMany({
+    where: { countId: count.id, organizationId: membership.organizationId },
+    select: { itemId: true, warehouseId: true, countedQuantity: true },
+  });
+
   // Resolve item and warehouse labels for snapshots + entries in a pair
   // of bulk fetches — cheaper than includes per row and keeps the page
   // query plan predictable.
@@ -125,18 +137,16 @@ export default async function StockCountDetailPage({ params }: PageProps) {
 
   // Variance rows are computed via the SAME pure function the server
   // reconcile action uses, so what the user sees here is exactly what
-  // will be posted to the ledger on complete.
+  // will be posted to the ledger on complete. We feed `fullEntries`
+  // (unbounded) — not `count.entries` (capped at 100 for the entry
+  // log) — so the preview agrees with the canonical server reconcile.
   const varianceRows = calculateVariances(
     count.snapshots.map((s) => ({
       itemId: s.itemId,
       warehouseId: s.warehouseId,
       expectedQuantity: s.expectedQuantity,
     })),
-    count.entries.map((e) => ({
-      itemId: e.itemId,
-      warehouseId: e.warehouseId,
-      countedQuantity: e.countedQuantity,
-    })),
+    fullEntries,
   );
 
   const scopeRows: ScopeOption[] = count.snapshots.map((snapshot) => {
@@ -167,7 +177,12 @@ export default async function StockCountDetailPage({ params }: PageProps) {
     warehouseName: count.warehouse?.name ?? null,
     createdAt: count.createdAt.toISOString(),
     startedAt: count.startedAt ? count.startedAt.toISOString() : null,
-    entryCount: count.entries.length,
+    // `entryCount` is load-bearing for the cache-sync signature in
+    // `stock-count-cache-sync.tsx` — a change here flips the
+    // snapshotSignature and triggers a rewrite. Keep it sourced from
+    // `fullEntries.length` (unbounded) so reconcile progress in a
+    // sibling tab invalidates the cache on the next render.
+    entryCount: fullEntries.length,
   };
   // Sum entries per (itemId, warehouseId) so each snapshot row
   // carries its current counted quantity. Uses the same variance
@@ -386,8 +401,24 @@ export default async function StockCountDetailPage({ params }: PageProps) {
                   const warehouse = warehouseById.get(snapshot.warehouseId);
                   return (
                     <TableRow key={snapshot.id}>
-                      <TableCell className="font-mono text-xs">{item?.sku ?? "—"}</TableCell>
-                      <TableCell>{item?.name ?? snapshot.itemId}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {item ? (
+                          <Link href={`/items/${snapshot.itemId}`} className="hover:underline">
+                            {item.sku}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {item ? (
+                          <Link href={`/items/${snapshot.itemId}`} className="hover:underline">
+                            {item.name}
+                          </Link>
+                        ) : (
+                          snapshot.itemId
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {warehouse?.name ?? snapshot.warehouseId}
                       </TableCell>
@@ -463,12 +494,12 @@ export default async function StockCountDetailPage({ params }: PageProps) {
                       </TableCell>
                       <TableCell className="text-sm">
                         {item ? (
-                          <>
+                          <Link href={`/items/${entry.itemId}`} className="hover:underline">
                             <span className="font-mono text-xs text-muted-foreground">
                               {item.sku}
                             </span>{" "}
                             {item.name}
-                          </>
+                          </Link>
                         ) : (
                           entry.itemId
                         )}

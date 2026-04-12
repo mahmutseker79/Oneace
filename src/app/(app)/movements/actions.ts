@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
+import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type MovementInput,
   type MovementOpPayload,
@@ -15,9 +17,7 @@ import {
   signedSourceDelta,
 } from "@/lib/validation/movement";
 
-export type ActionResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+export type { ActionResult };
 
 /**
  * Sprint 26 — PWA Sprint 4 Part B. Result shape for the JSON /
@@ -234,11 +234,26 @@ async function writeMovement(args: WriteMovementArgs): Promise<WriteMovementOutc
   }
 }
 
-function revalidateMovementSurfaces(itemId: string) {
+function revalidateMovementSurfaces(
+  itemId: string,
+  warehouseId: string,
+  toWarehouseId: string | null,
+) {
   revalidatePath("/movements");
   revalidatePath("/items");
   revalidatePath(`/items/${itemId}`);
   revalidatePath("/dashboard");
+  // S1 introduced warehouse detail pages (`/warehouses/[id]`) and a
+  // warehouse list backed by stock-level aggregates. A movement
+  // mutates at least one warehouse's stock levels, so both the list
+  // and the touched detail page(s) need to be busted — otherwise the
+  // warehouse surfaces show stale on-hand totals until the next
+  // navigation triggers a fresh render.
+  revalidatePath("/warehouses");
+  revalidatePath(`/warehouses/${warehouseId}`);
+  if (toWarehouseId) {
+    revalidatePath(`/warehouses/${toWarehouseId}`);
+  }
 }
 
 /**
@@ -253,18 +268,10 @@ export async function createMovementAction(formData: FormData): Promise<ActionRe
 
   const parsed = movementInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
-    // Discriminated union fieldErrors contain `string[] | undefined` values
-    // because any key might be missing from a narrowed variant. Strip
-    // undefined entries so the ActionResult shape stays clean for clients.
-    const rawFieldErrors = parsed.error.flatten().fieldErrors;
-    const fieldErrors: Record<string, string[]> = {};
-    for (const [key, value] of Object.entries(rawFieldErrors)) {
-      if (value && value.length > 0) fieldErrors[key] = value;
-    }
     return {
       ok: false,
       error: t.movements.errors.createFailed,
-      fieldErrors,
+      fieldErrors: cleanFieldErrors(parsed.error.flatten().fieldErrors),
     };
   }
 
@@ -276,12 +283,36 @@ export async function createMovementAction(formData: FormData): Promise<ActionRe
 
   switch (outcome.kind) {
     case "ok":
-      revalidateMovementSurfaces(parsed.data.itemId);
+      revalidateMovementSurfaces(
+        parsed.data.itemId,
+        parsed.data.warehouseId,
+        parsed.data.type === "TRANSFER" ? parsed.data.toWarehouseId : null,
+      );
+      await recordAudit({
+        organizationId: membership.organizationId,
+        actorId: session.user.id,
+        action: "stock_movement.created",
+        entityType: "stock_movement",
+        entityId: outcome.id,
+        metadata: {
+          type: parsed.data.type,
+          itemId: parsed.data.itemId,
+          warehouseId: parsed.data.warehouseId,
+          toWarehouseId: parsed.data.type === "TRANSFER" ? parsed.data.toWarehouseId : null,
+          quantity: parsed.data.quantity,
+          reference: parsed.data.reference ?? null,
+        },
+      });
       return { ok: true, id: outcome.id };
     case "alreadyExists":
       // Should never happen on the legacy path — no idempotency key is
-      // passed. Included for exhaustiveness.
-      revalidateMovementSurfaces(parsed.data.itemId);
+      // passed. Included for exhaustiveness. No audit: replays never
+      // emit `stock_movement.created` (see audit vocabulary comment).
+      revalidateMovementSurfaces(
+        parsed.data.itemId,
+        parsed.data.warehouseId,
+        parsed.data.type === "TRANSFER" ? parsed.data.toWarehouseId : null,
+      );
       return { ok: true, id: outcome.id };
     case "itemNotFound":
       return {
@@ -369,16 +400,11 @@ export async function submitMovementOpAction(
 
   const parsed = movementOpPayloadSchema.safeParse(payload);
   if (!parsed.success) {
-    const rawFieldErrors = parsed.error.flatten().fieldErrors;
-    const fieldErrors: Record<string, string[]> = {};
-    for (const [key, value] of Object.entries(rawFieldErrors)) {
-      if (value && value.length > 0) fieldErrors[key] = value;
-    }
     return {
       ok: false,
       retryable: false,
       error: t.movements.errors.createFailed,
-      fieldErrors,
+      fieldErrors: cleanFieldErrors(parsed.error.flatten().fieldErrors),
     };
   }
 
@@ -393,12 +419,34 @@ export async function submitMovementOpAction(
 
   switch (outcome.kind) {
     case "ok":
-      revalidateMovementSurfaces(input.itemId);
+      revalidateMovementSurfaces(
+        input.itemId,
+        input.warehouseId,
+        input.type === "TRANSFER" ? input.toWarehouseId : null,
+      );
+      await recordAudit({
+        organizationId: membership.organizationId,
+        actorId: session.user.id,
+        action: "stock_movement.created",
+        entityType: "stock_movement",
+        entityId: outcome.id,
+        metadata: {
+          type: input.type,
+          itemId: input.itemId,
+          warehouseId: input.warehouseId,
+          toWarehouseId: input.type === "TRANSFER" ? input.toWarehouseId : null,
+          quantity: input.quantity,
+          reference: input.reference ?? null,
+          idempotent: true,
+        },
+      });
       return { ok: true, id: outcome.id, replayed: false };
     case "alreadyExists":
       // Do NOT revalidate on a replay — the row already existed, the
-      // caches are already aware of it, and emitting
-      // revalidatePath on every queue drain is wasteful.
+      // caches are already aware of it, and emitting revalidatePath on
+      // every queue drain is wasteful. Do NOT emit audit either: the
+      // original write already emitted `stock_movement.created` and
+      // re-auditing would double-count.
       return { ok: true, id: outcome.id, replayed: true };
     case "itemNotFound":
       return {

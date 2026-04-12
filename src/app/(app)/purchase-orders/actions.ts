@@ -6,16 +6,17 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
+import { deriveReceiveIdempotencyKey } from "@/lib/purchase-orders/idempotency";
 import { requireActiveMembership } from "@/lib/session";
+import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type PurchaseOrderOutput,
   purchaseOrderInputSchema,
   receivePurchaseOrderSchema,
 } from "@/lib/validation/purchase-order";
 
-export type ActionResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+export type { ActionResult };
 
 export type ReceiveResult =
   | { ok: true; id: string; receivedLineCount: number; fullyReceived: boolean }
@@ -24,9 +25,15 @@ export type ReceiveResult =
 const PO_NUMBER_PAD = 6;
 
 async function nextPoNumber(orgId: string, tx: Prisma.TransactionClient): Promise<string> {
-  // Simple monotonic counter — count existing PO rows + 1, zero-padded.
-  // Good enough for single-writer inboxes; the caller retries on P2002 so a
-  // rare race between two concurrent creates is self-healing.
+  // Race-safety invariant (load-bearing — do not relax):
+  //   count+1 is only safe because `createPurchaseOrderAction` wraps
+  //   the transaction in a MAX_RETRIES=3 loop AND only continues that
+  //   loop on P2002 when `input.poNumber === null` (i.e. auto-gen).
+  //   A user-supplied poNumber short-circuits the retry — that's
+  //   intentional: the user's explicit value cannot be "the next one".
+  //   Two concurrent auto-gen creators will collide on P2002, and the
+  //   retry will re-count and take the next slot. Single-writer
+  //   inboxes only; concurrent PO creation at scale is Post-MVP.
   const count = await tx.purchaseOrder.count({
     where: { organizationId: orgId },
   });
@@ -123,12 +130,11 @@ export async function createPurchaseOrderAction(formData: FormData): Promise<Act
 
   const parsed = purchaseOrderInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
-    const rawFieldErrors = parsed.error.flatten().fieldErrors;
-    const fieldErrors: Record<string, string[]> = {};
-    for (const [key, value] of Object.entries(rawFieldErrors)) {
-      if (value && value.length > 0) fieldErrors[key] = value;
-    }
-    return { ok: false, error: t.purchaseOrders.errors.createFailed, fieldErrors };
+    return {
+      ok: false,
+      error: t.purchaseOrders.errors.createFailed,
+      fieldErrors: cleanFieldErrors(parsed.error.flatten().fieldErrors),
+    };
   }
 
   const input = parsed.data;
@@ -217,12 +223,11 @@ export async function updatePurchaseOrderAction(
 
   const parsed = purchaseOrderInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
-    const rawFieldErrors = parsed.error.flatten().fieldErrors;
-    const fieldErrors: Record<string, string[]> = {};
-    for (const [key, value] of Object.entries(rawFieldErrors)) {
-      if (value && value.length > 0) fieldErrors[key] = value;
-    }
-    return { ok: false, error: t.purchaseOrders.errors.updateFailed, fieldErrors };
+    return {
+      ok: false,
+      error: t.purchaseOrders.errors.updateFailed,
+      fieldErrors: cleanFieldErrors(parsed.error.flatten().fieldErrors),
+    };
   }
   const input = parsed.data;
   const orgId = membership.organizationId;
@@ -410,6 +415,27 @@ export async function deletePurchaseOrderAction(id: string): Promise<ActionResul
  *      c. Increment PurchaseOrderLine.receivedQty
  *   4. Recompute PO status — RECEIVED if every line is fully received,
  *      PARTIALLY_RECEIVED if at least one has > 0 received, DRAFT otherwise.
+ *
+ * Phase 6C — replay protection:
+ *   The receive form mints a stable per-mount `submissionNonce`
+ *   (`crypto.randomUUID()`) and resubmits it on every retry. We
+ *   derive a per-line idempotency key as
+ *   `po-receive:<nonce>:<lineId>` and stamp each inserted
+ *   `StockMovement` row with it. The compound
+ *   `@@unique([organizationId, idempotencyKey])` index
+ *   (already present in the schema) then guarantees that a replay
+ *   cannot create duplicate movements.
+ *
+ *   Before opening the transaction, we pre-check the first derived
+ *   key. If it's present, we short-circuit with a side-effect-free
+ *   replay response: NO second transaction, NO second audit record,
+ *   NO second revalidate. This is the whole point of the phase.
+ *
+ *   Replay protection is ONLY defended against retries from the
+ *   SAME form mount. Two tabs open on the same PO mint DIFFERENT
+ *   nonces and can still over-receive — that's the pre-existing
+ *   multi-writer concurrency bug tracked below (single-writer
+ *   receive inboxes only) and is explicitly out of Phase 6C scope.
  */
 export async function receivePurchaseOrderAction(formData: FormData): Promise<ReceiveResult> {
   const { session, membership } = await requireActiveMembership();
@@ -430,12 +456,26 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
     purchaseOrderId: formData.get("purchaseOrderId") ?? "",
     receipts,
     notes: formData.get("notes") ?? "",
+    submissionNonce: formData.get("submissionNonce") ?? "",
   });
   if (!parsed.success) {
     return { ok: false, error: t.purchaseOrders.errors.receiveFailed };
   }
   const input = parsed.data;
   const orgId = membership.organizationId;
+  const submissionNonce = input.submissionNonce;
+
+  // Phase 6C — missing nonce is a graceful degradation case: an
+  // older client or a non-form caller that hasn't learned the new
+  // contract. We keep the legacy (unprotected) path alive so
+  // nothing breaks, but log once per request so ops can spot the
+  // drift if it starts happening in production.
+  if (!submissionNonce) {
+    logger.warn(
+      "po.receive: submission nonce missing — replay protection disabled for this request",
+      { tag: "po.receive.nonce-missing" },
+    );
+  }
 
   // Map of lineId → incoming quantity. Filter out zero rows so the UI can
   // submit the whole table without us creating no-op movements.
@@ -466,6 +506,40 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
   });
 
   if (!existing) return { ok: false, error: t.purchaseOrders.errors.notFound };
+
+  // Phase 6C — replay pre-check. If this submission nonce has
+  // already been persisted, the whole batch ran (`db.$transaction`
+  // below is atomic: either every movement row in the batch got
+  // stamped with its derived key or none did). We short-circuit
+  // here WITHOUT entering the transaction, WITHOUT re-auditing,
+  // and WITHOUT re-revalidating. Deliberately we also skip the
+  // status gate below on the replay branch — if the original
+  // submission fully received the PO and flipped its status to
+  // RECEIVED, a retry from the same form mount should still
+  // report success, not "not receivable".
+  const orderedLineIds = Array.from(deltaByLine.keys());
+  const firstLineId = orderedLineIds[0];
+  if (submissionNonce && firstLineId) {
+    const sentinelKey = deriveReceiveIdempotencyKey(submissionNonce, firstLineId);
+    const alreadyApplied = await db.stockMovement.findUnique({
+      where: {
+        organizationId_idempotencyKey: {
+          organizationId: orgId,
+          idempotencyKey: sentinelKey,
+        },
+      },
+      select: { id: true },
+    });
+    if (alreadyApplied) {
+      return {
+        ok: true,
+        id: existing.id,
+        receivedLineCount: deltaByLine.size,
+        fullyReceived: existing.status === "RECEIVED",
+      };
+    }
+  }
+
   if (
     existing.status !== "SENT" &&
     existing.status !== "PARTIALLY_RECEIVED" &&
@@ -475,6 +549,15 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
   }
 
   // Validate every incoming line belongs to this PO and doesn't overflow.
+  //
+  // Pre-check note: this runs BEFORE the transaction opens. Moving it
+  // inside would not make it race-safe — two concurrent receivers
+  // could still both pass an inner SELECT before either UPDATE lands
+  // — and would cost an extra round-trip per line. The accepted
+  // posture today is single-writer receive inboxes. Concurrent
+  // receive against the same PO line is Post-MVP; the fix then is
+  // `SELECT ... FOR UPDATE` on the PO lines at tx open, not this
+  // pre-check.
   const lineMap = new Map(existing.lines.map((line) => [line.id, line]));
   for (const [lineId, delta] of deltaByLine) {
     const line = lineMap.get(lineId);
@@ -505,6 +588,20 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
             reference: existing.poNumber,
             note: input.notes,
             createdByUserId: session.user.id,
+            // Phase 5A — source-document backref. Lets the ledger join
+            // back to the originating PO line without parsing
+            // `reference`. Historical rows (pre-Phase-5A) remain null.
+            purchaseOrderLineId: lineId,
+            // Phase 6C — replay protection. Derived from the
+            // client-minted per-form-mount nonce and the line id so
+            // the compound unique index
+            // `@@unique([organizationId, idempotencyKey])` rejects
+            // duplicate rows from a retry of the same form mount.
+            // Legacy callers without a nonce get `null`, which the
+            // partial-unique semantics intentionally allow.
+            idempotencyKey: submissionNonce
+              ? deriveReceiveIdempotencyKey(submissionNonce, lineId)
+              : null,
           },
         });
 
@@ -577,7 +674,54 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
     revalidatePath("/dashboard");
 
     return { ok: true, id: existing.id, receivedLineCount, fullyReceived };
-  } catch {
+  } catch (error) {
+    // Phase 6C — P2002 on the compound idempotency index means a
+    // concurrent in-flight request with the SAME nonce won the race
+    // and already persisted its batch (atomic: either all N rows
+    // stamped or none). Treat it as a replay: re-run the sentinel
+    // lookup and, if present, return the replay success shape —
+    // WITHOUT re-auditing, WITHOUT re-revalidating. Any other
+    // failure falls through to the generic error.
+    if (
+      submissionNonce &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const firstLineId = Array.from(deltaByLine.keys())[0];
+      if (firstLineId) {
+        const sentinelKey = deriveReceiveIdempotencyKey(submissionNonce, firstLineId);
+        const alreadyApplied = await db.stockMovement.findUnique({
+          where: {
+            organizationId_idempotencyKey: {
+              organizationId: orgId,
+              idempotencyKey: sentinelKey,
+            },
+          },
+          select: { id: true },
+        });
+        if (alreadyApplied) {
+          // Re-read status once so the replay shape matches what
+          // the winner actually wrote (the winner may have flipped
+          // the PO to RECEIVED). We deliberately do NOT mutate,
+          // audit, or revalidate on this branch.
+          const winnerStatus = await db.purchaseOrder.findUnique({
+            where: { id: existing.id },
+            select: { status: true },
+          });
+          return {
+            ok: true,
+            id: existing.id,
+            receivedLineCount: deltaByLine.size,
+            fullyReceived: winnerStatus?.status === "RECEIVED",
+          };
+        }
+      }
+    }
+    logger.error("po.receive: transaction failed", {
+      tag: "po.receive.tx-failed",
+      err: error,
+      purchaseOrderId: existing.id,
+    });
     return { ok: false, error: t.purchaseOrders.errors.receiveFailed };
   }
 }

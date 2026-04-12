@@ -72,6 +72,12 @@ export type AuditAction =
   | "stock_count.created"
   | "stock_count.cancelled"
   | "stock_count.completed"
+  // --- Stock movement lifecycle (Phase 4A) -------------------------------
+  // One verb: the `type` (RECEIPT / ISSUE / TRANSFER / ADJUSTMENT) is
+  // carried in metadata. Only fresh writes emit; replays from the
+  // offline queue's `alreadyExists` branch do NOT (dedupe already
+  // happened, re-auditing would double-count).
+  | "stock_movement.created"
   // --- Audit housekeeping (Sprint 40) ------------------------------------
   // The retention script (`npm run audit:prune`) emits exactly one
   // aggregate row after a successful prune run with
@@ -108,7 +114,9 @@ export type AuditEntityType =
   | "item"
   | "warehouse"
   | "category"
-  | "stock_count";
+  | "stock_count"
+  // Phase 4A — stock movement entity type.
+  | "stock_movement";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so

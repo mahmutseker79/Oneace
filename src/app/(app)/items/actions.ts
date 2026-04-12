@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
+// Phase 6A / P2 — narrow rate-limit surface for bulk import. See
+// `src/lib/rate-limit.ts` for the design note on fail-open behavior.
+import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
 import { itemInputSchema } from "@/lib/validation/item";
 import {
@@ -65,6 +69,14 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
     });
 
     revalidatePath("/items");
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "item.created",
+      entityType: "item",
+      entityId: item.id,
+      metadata: { sku: input.sku, name: input.name, status: input.status },
+    });
     return { ok: true, id: item.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -173,6 +185,14 @@ export async function updateItemAction(id: string, formData: FormData): Promise<
 
     revalidatePath("/items");
     revalidatePath(`/items/${id}`);
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "item.updated",
+      entityType: "item",
+      entityId: updated.id,
+      metadata: { sku: input.sku, name: input.name, status: input.status },
+    });
     return { ok: true, id: updated.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -219,6 +239,20 @@ export async function importItemsAction(input: {
 }): Promise<ImportItemsResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  // Phase 6A / P2 — bulk import is cheap per row but expensive at
+  // scale because every call spins up the validate-then-insert path
+  // against up to IMPORT_ROW_HARD_CAP rows. Cap at 3 imports per
+  // user per 5 minutes, which is enough for a human running 2–3
+  // spreadsheet passes in a row to fix column mappings but nothing
+  // close to an automated abuse loop.
+  const rate = await rateLimit(`items:import:user:${session.user.id}`, {
+    max: 3,
+    windowSeconds: 300,
+  });
+  if (!rate.ok) {
+    return { ok: false, error: t.common.rateLimited };
+  }
 
   if (!Array.isArray(input.rows) || input.rows.length === 0) {
     return { ok: false, error: t.itemsImport.errors.noRows };
@@ -314,6 +348,7 @@ export async function importItemsAction(input: {
         inserted: result.count,
         skippedInvalid: validation.invalid.length,
         skippedConflicts: conflictSkus.length + raced,
+        totalRows: input.rows.length,
       },
     });
 
@@ -326,7 +361,10 @@ export async function importItemsAction(input: {
       conflictSkus,
     };
   } catch (error) {
-    console.error("[importItemsAction] createMany failed", error);
+    logger.error("items: import createMany failed", {
+      tag: "items.import",
+      err: error,
+    });
     return { ok: false, error: t.itemsImport.errors.commitFailed };
   }
 }
@@ -366,6 +404,18 @@ export async function deleteItemAction(id: string): Promise<ActionResult> {
       });
     }
     revalidatePath("/items");
+    // entityId intentionally omitted — the Item row is gone. The id
+    // we were given is still useful for cross-referencing audit logs
+    // to other tables (e.g. stockMovement.itemId in older rows) so
+    // we park it in metadata rather than dropping it.
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "item.deleted",
+      entityType: "item",
+      entityId: null,
+      metadata: { itemId: id },
+    });
     return { ok: true, id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {

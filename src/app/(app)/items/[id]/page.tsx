@@ -230,7 +230,9 @@ export default async function ItemDetailPage({ params }: PageProps) {
                 {item.stockLevels.map((lvl) => (
                   <TableRow key={lvl.id}>
                     <TableCell>
-                      {lvl.warehouse.name}
+                      <Link href={`/warehouses/${lvl.warehouse.id}`} className="hover:underline">
+                        {lvl.warehouse.name}
+                      </Link>
                       <div className="font-mono text-xs text-muted-foreground">
                         {lvl.warehouse.code}
                       </div>
@@ -291,17 +293,38 @@ export default async function ItemDetailPage({ params }: PageProps) {
                   const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
                   const absQty = Math.abs(signedQty);
                   const prefix = signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
-                  const warehouseCell =
-                    m.type === "TRANSFER" && m.toWarehouse
-                      ? `${m.warehouse.name} ${t.movements.transferLabel} ${m.toWarehouse.name}`
-                      : m.warehouse.name;
+                  const isTransfer = m.type === "TRANSFER" && m.toWarehouse;
                   return (
                     <TableRow key={m.id}>
                       <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                        {dateFormatter.format(m.createdAt)}
+                        <Link href={`/movements/${m.id}`} className="hover:underline">
+                          {dateFormatter.format(m.createdAt)}
+                        </Link>
                       </TableCell>
                       <TableCell>{typeBadge(m.type as MovementType)}</TableCell>
-                      <TableCell className="text-sm">{warehouseCell}</TableCell>
+                      <TableCell className="text-sm">
+                        {isTransfer && m.toWarehouse ? (
+                          <>
+                            <Link
+                              href={`/warehouses/${m.warehouse.id}`}
+                              className="hover:underline"
+                            >
+                              {m.warehouse.name}
+                            </Link>{" "}
+                            {t.movements.transferLabel}{" "}
+                            <Link
+                              href={`/warehouses/${m.toWarehouse.id}`}
+                              className="hover:underline"
+                            >
+                              {m.toWarehouse.name}
+                            </Link>
+                          </>
+                        ) : (
+                          <Link href={`/warehouses/${m.warehouse.id}`} className="hover:underline">
+                            {m.warehouse.name}
+                          </Link>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
                         <span className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}>
                           {prefix}

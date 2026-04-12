@@ -60,9 +60,14 @@ export function StockCountCacheSync({ scope, header, rows }: StockCountCacheSync
   //   - a state transition (OPEN → IN_PROGRESS → COMPLETED → ...)
   //   - row count change (a scope row added or removed)
   //   - entry count change (reconcile progress)
+  //   - warehouse reassignment (header.warehouseId) — surfaced in the
+  //     offline viewer's location byline
+  //   - rename (header.name) — surfaced in the offline viewer header
   // These are the only things the offline viewer renders, so
-  // re-writing on any other change would be wasted work.
-  const snapshotSignature = `${scope.orgId}:${scope.userId}:${header.id}:${header.state}:${rows.length}:${header.entryCount}`;
+  // re-writing on any other change would be wasted work. warehouseId
+  // and name are included directly (not a length fingerprint) so a
+  // rename or warehouse swap is detected unambiguously.
+  const snapshotSignature = `${scope.orgId}:${scope.userId}:${header.id}:${header.state}:${rows.length}:${header.entryCount}:${header.warehouseId ?? ""}:${header.name ?? ""}`;
 
   useEffect(() => {
     let cancelled = false;

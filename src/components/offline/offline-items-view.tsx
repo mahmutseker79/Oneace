@@ -28,6 +28,9 @@
  *   user who hasn't logged in yet. A login-aware version is
  *   PWA Sprint 4+ territory once we have a proper offline auth
  *   story.
+ *
+ *   `offline-stockcounts-view.tsx` relies on the same rule — keep
+ *   the two viewers in lockstep when revisiting this trade-off.
  */
 
 import { CloudOff, Database, Package } from "lucide-react";

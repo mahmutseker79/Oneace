@@ -1,6 +1,16 @@
 "use client";
 
-import { AlertTriangle, Camera, CameraOff, Check, Loader2, Package, Search, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  Camera,
+  CameraOff,
+  Check,
+  Loader2,
+  Package,
+  Search,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
@@ -43,6 +53,7 @@ export type ScannerLabels = {
   resultClear: string;
   resultViewItem: string;
   resultNewItem: string;
+  resultRecordMovement: string;
   resultSku: string;
   resultBarcode: string;
   resultOnHand: string;
@@ -431,11 +442,17 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
                 )}
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-2">
                 <Button asChild>
                   <Link href={`/items/${result.item.id}`}>
                     <Package className="h-4 w-4" />
                     {labels.resultViewItem}
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/movements/new?itemId=${result.item.id}`}>
+                    <ArrowLeftRight className="h-4 w-4" />
+                    {labels.resultRecordMovement}
                   </Link>
                 </Button>
               </div>

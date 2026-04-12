@@ -24,18 +24,40 @@ import { formatCurrency } from "@/lib/utils";
 
 import { deleteItemAction } from "./actions";
 
+type SearchParams = Promise<{ status?: string }>;
+
+type ItemStatus = "ACTIVE" | "ARCHIVED" | "DRAFT";
+type StatusFilter = "all" | ItemStatus;
+
+function parseStatusFilter(raw: string | undefined): StatusFilter {
+  if (raw === "active") return "ACTIVE";
+  if (raw === "archived") return "ARCHIVED";
+  if (raw === "draft") return "DRAFT";
+  return "all";
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
   return { title: t.items.metaTitle };
 }
 
-export default async function ItemsPage() {
+export default async function ItemsPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
 
+  const params = (await searchParams) ?? {};
+  const statusFilter = parseStatusFilter(params.status);
+
   const items = await db.item.findMany({
-    where: { organizationId: membership.organizationId },
+    where: {
+      organizationId: membership.organizationId,
+      ...(statusFilter === "all" ? {} : { status: statusFilter }),
+    },
     include: {
       category: { select: { id: true, name: true } },
       stockLevels: { select: { quantity: true } },
@@ -44,6 +66,27 @@ export default async function ItemsPage() {
     take: 100,
   });
 
+  // Offline cache must reflect the default, unfiltered inventory list so
+  // switching to /items?status=archived doesn't silently shrink the
+  // snapshot stored in IndexedDB. When no filter is active we reuse the
+  // already-fetched rows; otherwise we run a second query with the same
+  // shape and limits as the prior pre-filter snapshot behavior. See the
+  // cache-contract comment in `src/components/offline/items-cache-sync.tsx`
+  // — `cacheItems` is the unfiltered snapshot and is decoupled from the
+  // rendered `items` variable on purpose.
+  const cacheItems =
+    statusFilter === "all"
+      ? items
+      : await db.item.findMany({
+          where: { organizationId: membership.organizationId },
+          include: {
+            category: { select: { id: true, name: true } },
+            stockLevels: { select: { quantity: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 100,
+        });
+
   // Build the serializable snapshot the client passes to IndexedDB.
   // We compute onHand once here (server-side) so the cache rendered
   // offline matches what the user just saw.
@@ -51,7 +94,7 @@ export default async function ItemsPage() {
     orgId: membership.organizationId,
     userId: session.user.id,
   };
-  const cacheRows: ItemSnapshotRow[] = items.map((item) => ({
+  const cacheRows: ItemSnapshotRow[] = cacheItems.map((item) => ({
     id: item.id,
     sku: item.sku,
     barcode: item.barcode,
@@ -113,6 +156,29 @@ export default async function ItemsPage() {
             </Link>
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t.items.filter.label}:
+        </span>
+        {(
+          [
+            { key: "all", label: t.items.filter.all, href: "/items" },
+            { key: "ACTIVE", label: t.items.filter.active, href: "/items?status=active" },
+            { key: "ARCHIVED", label: t.items.filter.archived, href: "/items?status=archived" },
+            { key: "DRAFT", label: t.items.filter.draft, href: "/items?status=draft" },
+          ] as const
+        ).map((opt) => (
+          <Button
+            key={opt.key}
+            size="sm"
+            variant={statusFilter === opt.key ? "default" : "outline"}
+            asChild
+          >
+            <Link href={opt.href}>{opt.label}</Link>
+          </Button>
+        ))}
       </div>
 
       {items.length === 0 ? (

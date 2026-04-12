@@ -151,6 +151,17 @@ export const receivePurchaseOrderSchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v === "" || v === undefined || v === null ? null : v)),
+  // Phase 6C — stable per-form-mount nonce from the client. The
+  // server action derives per-line idempotency keys from this and
+  // short-circuits the transaction on replay. Optional so legacy
+  // clients / automated callers keep working on the fallback path.
+  submissionNonce: z
+    .string()
+    .trim()
+    .max(128)
+    .optional()
+    .nullable()
+    .transform((v) => (v === "" || v === undefined || v === null ? null : v)),
 });
 
 export type ReceivePurchaseOrderInput = z.input<typeof receivePurchaseOrderSchema>;

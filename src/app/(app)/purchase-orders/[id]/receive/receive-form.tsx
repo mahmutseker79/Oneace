@@ -78,6 +78,16 @@ export function ReceiveForm({
     for (const line of lines) initial[line.id] = "";
     return initial;
   });
+  // Phase 6C — replay protection nonce. Minted once per form mount
+  // and resubmitted on every retry, so the server action can derive
+  // the same per-line idempotency keys on a replay and short-circuit
+  // the transaction. A fresh navigation to this page mints a new
+  // nonce (correct — a new human decision is a new receive). Two
+  // tabs open on the same PO will mint DIFFERENT nonces and can
+  // still over-receive; that is the existing multi-writer
+  // concurrency bug tracked at `actions.ts:482-489` and is
+  // explicitly out of Phase 6C scope.
+  const [submissionNonce] = useState(() => crypto.randomUUID());
 
   const openByLine = useMemo(() => {
     const map = new Map<string, number>();
@@ -137,6 +147,7 @@ export function ReceiveForm({
     formData.set("purchaseOrderId", purchaseOrderId);
     formData.set("receipts", JSON.stringify(receipts));
     formData.set("notes", notes);
+    formData.set("submissionNonce", submissionNonce);
 
     startTransition(async () => {
       const result = await receivePurchaseOrderAction(formData);

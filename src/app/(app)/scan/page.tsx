@@ -59,6 +59,7 @@ export default async function ScanPage({
           resultClear: t.scan.result.clear,
           resultViewItem: t.scan.result.viewItem,
           resultNewItem: t.scan.result.newItem,
+          resultRecordMovement: t.scan.result.recordMovement,
           resultSku: t.scan.result.sku,
           resultBarcode: t.scan.result.barcode,
           resultOnHand: t.scan.result.onHand,
