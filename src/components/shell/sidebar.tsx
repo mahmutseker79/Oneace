@@ -30,6 +30,7 @@ export type SidebarLabels = {
     users: string;
     audit: string;
     settings: string;
+    activity: string;
     analytics: string;
     admin: string;
   };
@@ -57,12 +58,19 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
 
   const groups: NavGroup[] = [
     {
-      // Core — no heading, always visible
+      // Core — no heading, always visible. The primary first-run flow:
+      // Items → Locations → Stock Counts.
       items: [
         { label: labels.nav.items, href: "/items", icon: Package },
         { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
-        { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
         { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
+      ],
+    },
+    {
+      // P3.5 — Movements are operational history, not a setup step.
+      heading: labels.nav.activity,
+      items: [
+        { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
       ],
     },
     {

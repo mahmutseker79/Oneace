@@ -1,8 +1,10 @@
 "use client";
 
-import { Loader2, Search } from "lucide-react";
+import { ChevronDown, Loader2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,6 +41,7 @@ export type NewCountFormLabels = {
   itemsSelectAll: string;
   itemsEmpty: string;
   itemsHint: string;
+  advancedOptions: string;
   submit: string;
   cancel: string;
   genericError: string;
@@ -59,7 +62,10 @@ const ALL_WAREHOUSES = "__all__";
 export function NewCountForm({ labels, items, warehouses }: NewCountFormProps) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [methodology, setMethodology] = useState<MethodologyKey>("CYCLE");
+  // P3.6 — Default to FULL for first-run clarity. Advanced users can expand
+  // the options section to switch methodology.
+  const [methodology, setMethodology] = useState<MethodologyKey>("FULL");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [warehouseId, setWarehouseId] = useState<string>(ALL_WAREHOUSES);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -145,22 +151,39 @@ export function NewCountForm({ labels, items, warehouses }: NewCountFormProps) {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="count-methodology">{labels.methodology}</Label>
-        <Select value={methodology} onValueChange={(v) => setMethodology(v as MethodologyKey)}>
-          <SelectTrigger id="count-methodology">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="CYCLE">{labels.methodologyOptions.CYCLE}</SelectItem>
-            <SelectItem value="FULL">{labels.methodologyOptions.FULL}</SelectItem>
-            <SelectItem value="SPOT">{labels.methodologyOptions.SPOT}</SelectItem>
-            <SelectItem value="BLIND">{labels.methodologyOptions.BLIND}</SelectItem>
-            <SelectItem value="DOUBLE_BLIND">{labels.methodologyOptions.DOUBLE_BLIND}</SelectItem>
-            <SelectItem value="DIRECTED">{labels.methodologyOptions.DIRECTED}</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">{labels.methodologyHelp[methodology]}</p>
+      {/* P3.6 — Methodology wrapped in collapsible "Advanced options" */}
+      <div className="rounded-md border">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium hover:bg-accent/50 transition-colors"
+        >
+          <span>{labels.advancedOptions}</span>
+          <ChevronDown
+            className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-180")}
+          />
+        </button>
+        {advancedOpen ? (
+          <div className="space-y-4 border-t px-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="count-methodology">{labels.methodology}</Label>
+              <Select value={methodology} onValueChange={(v) => setMethodology(v as MethodologyKey)}>
+                <SelectTrigger id="count-methodology">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FULL">{labels.methodologyOptions.FULL}</SelectItem>
+                  <SelectItem value="CYCLE">{labels.methodologyOptions.CYCLE}</SelectItem>
+                  <SelectItem value="SPOT">{labels.methodologyOptions.SPOT}</SelectItem>
+                  <SelectItem value="BLIND">{labels.methodologyOptions.BLIND}</SelectItem>
+                  <SelectItem value="DOUBLE_BLIND">{labels.methodologyOptions.DOUBLE_BLIND}</SelectItem>
+                  <SelectItem value="DIRECTED">{labels.methodologyOptions.DIRECTED}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{labels.methodologyHelp[methodology]}</p>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="space-y-2">

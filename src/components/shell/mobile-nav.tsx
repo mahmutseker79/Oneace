@@ -44,8 +44,12 @@ export function MobileNav({
   const coreItems: NavItem[] = [
     { label: labels.nav.items, href: "/items", icon: Package },
     { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
-    { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
     { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
+  ];
+
+  // P3.5 — Movements are operational history, separated from the core setup flow.
+  const activityItems: NavItem[] = [
+    { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
   ];
 
   const analyticsItems: NavItem[] = [
@@ -92,6 +96,14 @@ export function MobileNav({
         <nav className="flex-1 overflow-y-auto p-4">
           {/* Core */}
           <div className="space-y-1">{coreItems.map(renderItem)}</div>
+
+          {/* Activity — P3.5 */}
+          <div className="mt-4 border-t pt-4">
+            <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {labels.nav.activity}
+            </p>
+            <div className="space-y-1">{activityItems.map(renderItem)}</div>
+          </div>
 
           {/* Analytics */}
           <div className="mt-4 border-t pt-4">

@@ -1,10 +1,21 @@
-import { ArrowRight, Download, Eye, FileUp, Package, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Circle,
+  Download,
+  Eye,
+  FileUp,
+  Info,
+  Package,
+  Plus,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ItemsCacheBanner } from "@/components/offline/items-cache-banner";
 import { ItemsCacheSync } from "@/components/offline/items-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +76,25 @@ export default async function ItemsPage({
     orderBy: { createdAt: "desc" },
     take: 100,
   });
+
+  // ── P3.3 / P3.4 — setup progress queries ─────────────────────────────
+  // Lightweight counts to drive the stateful setup checklist and forward
+  // guidance banners. These run in parallel with the main item fetch above.
+  const [warehouseCount, completedCountCount] = await Promise.all([
+    db.warehouse.count({
+      where: { organizationId: membership.organizationId, isArchived: false },
+    }),
+    db.stockCount.count({
+      where: { organizationId: membership.organizationId, state: "COMPLETED" },
+    }),
+  ]);
+
+  const hasItems = items.length > 0;
+  const hasLocation = warehouseCount > 0;
+  const hasCompletedCount = completedCountCount > 0;
+  const setupComplete = hasItems && hasLocation && hasCompletedCount;
+
+  // ── P3.3 / P3.4 end ────────────────────────────────────────────────
 
   // Offline cache must reflect the default, unfiltered inventory list so
   // switching to /items?status=archived doesn't silently shrink the
@@ -207,31 +237,95 @@ export default async function ItemsPage({
           </CardContent>
         </Card>
 
-        {/* First-run activation tips */}
+        {/* P3.3 — Stateful setup progress */}
         <div className="mx-auto max-w-md space-y-3">
           <p className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t.items.activationHeading}
+            {t.setup.heading}
           </p>
           {[
-            { step: "1", text: t.items.activationStep1, href: "/items/new" },
-            { step: "2", text: t.items.activationStep2, href: "/items/import" },
-            { step: "3", text: t.items.activationStep3, href: "/warehouses" },
-          ].map((tip) => (
+            {
+              done: false, // we're in the empty-items branch
+              label: t.setup.step1,
+              doneLabel: t.setup.step1Done,
+              href: "/items/new",
+            },
+            {
+              done: hasLocation,
+              label: t.setup.step2,
+              doneLabel: t.setup.step2Done,
+              href: "/warehouses",
+              sublabel: hasLocation ? t.setup.step2Auto : undefined,
+            },
+            {
+              done: hasCompletedCount,
+              label: t.setup.step3,
+              doneLabel: t.setup.step3Done,
+              href: "/stock-counts/new",
+            },
+          ].map((step, i) => (
             <Link
-              key={tip.step}
-              href={tip.href}
+              key={i}
+              href={step.href}
               className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm transition-colors hover:bg-accent/50"
             >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                {tip.step}
+              {step.done ? (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              ) : (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/40">
+                  <Circle className="h-2.5 w-2.5 text-muted-foreground/40" />
+                </span>
+              )}
+              <span className="flex-1">
+                <span className={step.done ? "text-muted-foreground line-through" : ""}>
+                  {step.done ? step.doneLabel : step.label}
+                </span>
+                {step.sublabel ? (
+                  <span className="block text-xs text-muted-foreground">{step.sublabel}</span>
+                ) : null}
               </span>
-              <span className="flex-1">{tip.text}</span>
-              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              {!step.done ? <ArrowRight className="h-4 w-4 text-muted-foreground" /> : null}
             </Link>
           ))}
         </div>
         </>
       ) : (
+        <>
+        {/* P3.4 — Forward guidance banners */}
+        {!setupComplete ? (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>
+              {!hasLocation
+                ? t.setup.bannerAddLocation
+                : hasCompletedCount
+                  ? t.setup.bannerComplete
+                  : t.setup.bannerReadyToCount}
+            </AlertTitle>
+            <AlertDescription>
+              <Button variant="link" className="h-auto p-0" asChild>
+                <Link
+                  href={
+                    !hasLocation
+                      ? "/warehouses/new"
+                      : hasCompletedCount
+                        ? "/reports"
+                        : "/stock-counts/new"
+                  }
+                >
+                  {!hasLocation
+                    ? t.setup.bannerAddLocationCta
+                    : hasCompletedCount
+                      ? t.setup.bannerCompleteCta
+                      : t.setup.bannerReadyToCountCta}
+                  <ArrowRight className="ml-1 inline h-3 w-3" />
+                </Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -302,6 +396,7 @@ export default async function ItemsPage({
             </Table>
           </CardContent>
         </Card>
+        </>
       )}
 
       <ItemsCacheSync scope={cacheScope} rows={cacheRows} />

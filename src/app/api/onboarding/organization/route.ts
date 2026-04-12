@@ -1,3 +1,4 @@
+import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 // Phase 6A / P2 — narrow rate-limit surface for org create. See
@@ -61,6 +62,8 @@ export async function POST(request: Request) {
     slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
   }
 
+  // P3.2 — Create org with an OWNER membership and a default location
+  // in a single nested write so the user never lands on an empty dashboard.
   const org = await db.organization.create({
     data: {
       name: parsed.data.name,
@@ -71,8 +74,36 @@ export async function POST(request: Request) {
           role: "OWNER",
         },
       },
+      warehouses: {
+        create: {
+          name: "Main Location",
+          code: "MAIN",
+          isDefault: true,
+        },
+      },
+    },
+    include: {
+      warehouses: { select: { id: true }, take: 1 },
     },
   });
+
+  // Audit the auto-created default location (fire-and-forget pattern).
+  const defaultWarehouse = org.warehouses[0];
+  if (defaultWarehouse) {
+    await recordAudit({
+      organizationId: org.id,
+      actorId: session.user.id,
+      action: "warehouse.created",
+      entityType: "warehouse",
+      entityId: defaultWarehouse.id,
+      metadata: {
+        name: "Main Location",
+        code: "MAIN",
+        isDefault: true,
+        source: "onboarding",
+      },
+    });
+  }
 
   return NextResponse.json({ organization: org }, { status: 201 });
 }

@@ -117,6 +117,7 @@ export default async function NewStockCountPage() {
     itemsSelectAll: t.stockCounts.fields.itemsSelectAll,
     itemsEmpty: t.stockCounts.fields.itemsEmpty,
     itemsHint: t.stockCounts.fields.itemsHint,
+    advancedOptions: t.stockCounts.fields.advancedOptions,
     submit: t.common.create,
     cancel: t.common.cancel,
     genericError: t.stockCounts.errors.createFailed,

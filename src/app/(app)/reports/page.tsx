@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -12,8 +13,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ReportsPage() {
-  await requireActiveMembership();
+  const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  // P3.7 — Only show the Supplier Performance card if the org has
+  // suppliers or purchase orders. For a first-run user this keeps the
+  // reports page focused on the two core reports.
+  const supplierCount = await db.supplier.count({
+    where: { organizationId: membership.organizationId },
+  });
+  const hasSuppliers = supplierCount > 0;
 
   const reports = [
     {
@@ -28,12 +37,16 @@ export default async function ReportsPage() {
       title: t.reports.stockValue.heading,
       description: t.reports.stockValue.subtitle,
     },
-    {
-      href: "/reports/suppliers",
-      icon: Truck,
-      title: t.reports.supplierPerformance.heading,
-      description: t.reports.supplierPerformance.subtitle,
-    },
+    ...(hasSuppliers
+      ? [
+          {
+            href: "/reports/suppliers",
+            icon: Truck,
+            title: t.reports.supplierPerformance.heading,
+            description: t.reports.supplierPerformance.subtitle,
+          },
+        ]
+      : []),
   ];
 
   return (
