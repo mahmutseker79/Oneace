@@ -1710,6 +1710,7 @@ export const en = {
       warehouse: "Warehouse",
       category: "Category",
       stock_count: "Stock count",
+      stock_movement: "Stock movement",
     },
     actions: {
       "organization.updated": "Updated organization profile",

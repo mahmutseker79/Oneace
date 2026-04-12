@@ -14,6 +14,7 @@ type LoginFormLabels = {
   emailPlaceholder: string;
   password: string;
   passwordPlaceholder: string;
+  forgot: string;
   submit: string;
   error: string;
 };
@@ -70,7 +71,12 @@ export function LoginForm({ labels }: LoginFormProps) {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">{labels.password}</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">{labels.password}</Label>
+          <a href="/forgot-password" className="text-xs text-muted-foreground hover:underline">
+            {labels.forgot}
+          </a>
+        </div>
         <Input
           id="password"
           type="password"

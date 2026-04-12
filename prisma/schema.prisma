@@ -25,35 +25,35 @@ datasource db {
 // =========================
 
 model Organization {
-  id             String          @id @default(cuid())
-  name           String
-  slug           String          @unique
-  plan           Plan            @default(FREE)
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String              @unique
+  plan               Plan                @default(FREE)
   // Sprint 19: per-org fallback for interface language + region.
   // `null` means "no org-level override; fall through to the
   // Accept-Language header / platform default". Validated at the
   // server-action layer against SUPPORTED_LOCALES / SUPPORTED_REGIONS
   // so a rogue admin-CLI write can't poison the i18n resolver.
-  defaultLocale  String?
-  defaultRegion  String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  memberships      Membership[]
-  warehouses       Warehouse[]
-  categories       Category[]
-  items            Item[]
-  stockLevels      StockLevel[]
-  stockMovements   StockMovement[]
-  stockCounts      StockCount[]
-  countSnapshots   CountSnapshot[]
-  countEntries     CountEntry[]
-  suppliers        Supplier[]
-  purchaseOrders   PurchaseOrder[]
+  defaultLocale      String?
+  defaultRegion      String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  memberships        Membership[]
+  warehouses         Warehouse[]
+  categories         Category[]
+  items              Item[]
+  stockLevels        StockLevel[]
+  stockMovements     StockMovement[]
+  stockCounts        StockCount[]
+  countSnapshots     CountSnapshot[]
+  countEntries       CountEntry[]
+  suppliers          Supplier[]
+  purchaseOrders     PurchaseOrder[]
   purchaseOrderLines PurchaseOrderLine[]
   // Sprint 20: outstanding / historical invitations for this org.
-  invitations      Invitation[]
+  invitations        Invitation[]
   // Sprint 36: append-only audit trail scoped to this org.
-  auditEvents      AuditEvent[]
+  auditEvents        AuditEvent[]
   // Sprint 41: per-user notification prefs (per-org-scoped so a user
   // with memberships in multiple orgs can opt in per-workspace).
   notificationPreferences NotificationPreference[]
@@ -67,6 +67,14 @@ model Membership {
   organizationId String
   role           Role         @default(MEMBER)
   createdAt      DateTime     @default(now())
+  // Phase 5A — additive nullable column. NOT wired into any read or
+  // write path yet; reserving the namespace so a future "soft-disable
+  // teammate" feature does not need another migration against a
+  // larger table. Historical rows are `null` (active). When the
+  // feature ships, every `requireActiveMembership` / membership-list
+  // query will need an explicit `deactivatedAt: null` filter — the
+  // column on its own changes nothing today.
+  deactivatedAt  DateTime?
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -100,17 +108,17 @@ model Membership {
 // fine. The server-action layer enforces "no two *pending* invites
 // for the same email in the same org" manually.
 model Invitation {
-  id             String       @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   email          String
   role           Role
-  token          String       @unique
+  token          String    @unique
   invitedById    String
   expiresAt      DateTime
   acceptedAt     DateTime?
   acceptedById   String?
   revokedAt      DateTime?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime  @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invitedBy    User         @relation("InvitationsSent", fields: [invitedById], references: [id], onDelete: Cascade)
@@ -140,23 +148,23 @@ enum Role {
 // =========================
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  name           String?
-  emailVerified  Boolean         @default(false)
-  image          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  sessions       Session[]
-  accounts       Account[]
-  memberships    Membership[]
-  stockMovements StockMovement[]
-  stockCounts    StockCount[]
-  countEntries   CountEntry[]
-  purchaseOrders PurchaseOrder[]
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  name                String?
+  emailVerified       Boolean         @default(false)
+  image               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  sessions            Session[]
+  accounts            Account[]
+  memberships         Membership[]
+  stockMovements      StockMovement[]
+  stockCounts         StockCount[]
+  countEntries        CountEntry[]
+  purchaseOrders      PurchaseOrder[]
   // Sprint 20: invitations this user has sent / accepted.
-  invitationsSent     Invitation[] @relation("InvitationsSent")
-  invitationsAccepted Invitation[] @relation("InvitationsAccepted")
+  invitationsSent     Invitation[]    @relation("InvitationsSent")
+  invitationsAccepted Invitation[]    @relation("InvitationsAccepted")
   // Sprint 36: audit events authored by this user (nullable actor on the
   // other side so system-generated events can persist after the user row
   // is deleted).
@@ -265,32 +273,32 @@ model Category {
 }
 
 model Item {
-  id                 String       @id @default(cuid())
-  organizationId     String
-  categoryId         String?
+  id                  String              @id @default(cuid())
+  organizationId      String
+  categoryId          String?
   preferredSupplierId String?
-  sku                String
-  barcode            String?
-  name               String
-  description        String?
-  unit               String       @default("each")
-  costPrice          Decimal?     @db.Decimal(12, 2)
-  salePrice          Decimal?     @db.Decimal(12, 2)
-  currency           String       @default("USD")
-  reorderPoint       Int          @default(0)
-  reorderQty         Int          @default(0)
-  status             ItemStatus   @default(ACTIVE)
-  imageUrl           String?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  organization       Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  category           Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  preferredSupplier  Supplier?       @relation("ItemPreferredSupplier", fields: [preferredSupplierId], references: [id], onDelete: SetNull)
-  stockLevels        StockLevel[]
-  movements          StockMovement[]
-  countSnapshots     CountSnapshot[]
-  countEntries       CountEntry[]
-  purchaseOrderLines PurchaseOrderLine[]
+  sku                 String
+  barcode             String?
+  name                String
+  description         String?
+  unit                String              @default("each")
+  costPrice           Decimal?            @db.Decimal(12, 2)
+  salePrice           Decimal?            @db.Decimal(12, 2)
+  currency            String              @default("USD")
+  reorderPoint        Int                 @default(0)
+  reorderQty          Int                 @default(0)
+  status              ItemStatus          @default(ACTIVE)
+  imageUrl            String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category            Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  preferredSupplier   Supplier?           @relation("ItemPreferredSupplier", fields: [preferredSupplierId], references: [id], onDelete: SetNull)
+  stockLevels         StockLevel[]
+  movements           StockMovement[]
+  countSnapshots      CountSnapshot[]
+  countEntries        CountEntry[]
+  purchaseOrderLines  PurchaseOrderLine[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -347,20 +355,20 @@ model StockLevel {
 // All stock level updates happen inside a prisma $transaction alongside
 // the movement insert, so the ledger and the snapshot can never diverge.
 model StockMovement {
-  id               String            @id @default(cuid())
-  organizationId   String
-  itemId           String
-  warehouseId      String
-  toWarehouseId    String?
-  type             StockMovementType
+  id                  String             @id @default(cuid())
+  organizationId      String
+  itemId              String
+  warehouseId         String
+  toWarehouseId       String?
+  type                StockMovementType
   // Always positive. Direction derived from `type` + `direction`.
-  quantity         Int
+  quantity            Int
   // +1 or -1. Only meaningful for ADJUSTMENT; other types imply their own
   // sign (RECEIPT → +1, ISSUE → -1, TRANSFER → +1 for destination / -1
   // for source).
-  direction        Int               @default(1)
-  reference        String?
-  note             String?
+  direction           Int                @default(1)
+  reference           String?
+  note                String?
   // Sprint 26 — PWA Sprint 4 Part B. Client-generated UUID that serves as
   // the idempotency key for offline replay. Nullable because (a) online
   // fast-path writes through the legacy FormData action don't need it,
@@ -370,20 +378,43 @@ model StockMovement {
   // and the action handler returns the existing row's id. Scoped by
   // organizationId so a leaked key from one tenant can't collide with
   // another tenant's key.
-  idempotencyKey   String?
-  createdAt        DateTime          @default(now())
-  createdByUserId  String?
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  item             Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse        Warehouse         @relation("MovementFromWarehouse", fields: [warehouseId], references: [id], onDelete: Cascade)
-  toWarehouse      Warehouse?        @relation("MovementToWarehouse", fields: [toWarehouseId], references: [id], onDelete: Cascade)
-  createdBy        User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  idempotencyKey      String?
+  // Phase 5A — source-document backrefs. Both are additive and
+  // nullable. Historical rows (pre-Phase-5A) have `null` for both
+  // and are NOT backfilled — any report that filters on one of these
+  // only sees movements written on or after the Phase 5A migration.
+  //
+  //   purchaseOrderLineId — set by `receivePurchaseOrderAction` on the
+  //     RECEIPT movements it creates. Lets the ledger join back to the
+  //     originating PO line without parsing `reference`.
+  //   stockCountId — set by `completeStockCountAction` on the
+  //     ADJUSTMENT movements it creates. Count-generated movements keep
+  //     `type = ADJUSTMENT` (not COUNT) for backwards compatibility;
+  //     this column is the discriminator a reader uses to tell a
+  //     manual adjustment from a reconcile-generated one.
+  purchaseOrderLineId String?
+  stockCountId        String?
+  createdAt           DateTime           @default(now())
+  createdByUserId     String?
+  organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item                Item               @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse           Warehouse          @relation("MovementFromWarehouse", fields: [warehouseId], references: [id], onDelete: Cascade)
+  toWarehouse         Warehouse?         @relation("MovementToWarehouse", fields: [toWarehouseId], references: [id], onDelete: Cascade)
+  createdBy           User?              @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  // SetNull on both: the ledger is append-only and must survive the
+  // deletion of the originating document. A PO line or stock count
+  // being deleted later does not invalidate the stock movement it
+  // produced — the stock change already happened.
+  purchaseOrderLine   PurchaseOrderLine? @relation(fields: [purchaseOrderLineId], references: [id], onDelete: SetNull)
+  stockCount          StockCount?        @relation(fields: [stockCountId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, createdAt])
   @@index([organizationId, itemId])
   @@index([organizationId, warehouseId])
   @@index([organizationId, type])
+  @@index([organizationId, purchaseOrderLineId])
+  @@index([organizationId, stockCountId])
 }
 
 enum StockMovementType {
@@ -416,24 +447,27 @@ enum StockMovementType {
 // not a data rule.
 
 model StockCount {
-  id              String             @id @default(cuid())
+  id              String           @id @default(cuid())
   organizationId  String
   warehouseId     String?
   name            String
-  state           StockCountState    @default(OPEN)
-  methodology     CountMethodology   @default(CYCLE)
+  state           StockCountState  @default(OPEN)
+  methodology     CountMethodology @default(CYCLE)
   startedAt       DateTime?
   completedAt     DateTime?
   cancelledAt     DateTime?
   cancelReason    String?
   createdByUserId String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  warehouse       Warehouse?         @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
-  createdBy       User?              @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  warehouse       Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  createdBy       User?            @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   snapshots       CountSnapshot[]
   entries         CountEntry[]
+  // Phase 5A — back-relation for the `stockCountId` FK on StockMovement.
+  // Populated only from `completeStockCountAction` reconcile path.
+  movements       StockMovement[]
 
   @@index([organizationId, state])
   @@index([organizationId, createdAt])
@@ -455,6 +489,12 @@ model CountSnapshot {
   count            StockCount   @relation(fields: [countId], references: [id], onDelete: Cascade)
   item             Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
   warehouse        Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  // Phase 5A — back-relation for the composite FK on CountEntry.
+  // Codifies the invariant the action layer already enforces
+  // (`writeCountEntry` refuses to create an entry when no matching
+  // snapshot exists). With this FK in place a stray write — a future
+  // import path, a manual SQL insert — cannot bypass it.
+  entries          CountEntry[] @relation("CountEntrySnapshot")
 
   @@unique([countId, itemId, warehouseId])
   @@index([countId])
@@ -466,26 +506,34 @@ model CountSnapshot {
 // lets a counter scan the same SKU several times across a shift
 // without deleting anything.
 model CountEntry {
-  id               String       @id @default(cuid())
-  organizationId   String
-  countId          String
-  itemId           String
-  warehouseId      String
-  countedQuantity  Int
-  counterTag       String?
-  note             String?
-  countedAt        DateTime     @default(now())
-  countedByUserId  String?
+  id              String        @id @default(cuid())
+  organizationId  String
+  countId         String
+  itemId          String
+  warehouseId     String
+  countedQuantity Int
+  counterTag      String?
+  note            String?
+  countedAt       DateTime      @default(now())
+  countedByUserId String?
   // Sprint 27 (PWA Sprint 4 follow-on): client-generated UUID v4 used as a
   // cross-tenant-unique idempotency key so offline replays of the same
   // addCountEntry op don't create duplicates. Nullable for backfill safety;
   // compound unique with organizationId for race-free pre-check + P2002 replay.
-  idempotencyKey   String?
-  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  count            StockCount   @relation(fields: [countId], references: [id], onDelete: Cascade)
-  item             Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse        Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  countedBy        User?        @relation(fields: [countedByUserId], references: [id], onDelete: SetNull)
+  idempotencyKey  String?
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  count           StockCount    @relation(fields: [countId], references: [id], onDelete: Cascade)
+  item            Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse       Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  countedBy       User?         @relation(fields: [countedByUserId], references: [id], onDelete: SetNull)
+  // Phase 5A — composite FK to the owning CountSnapshot row. This is
+  // a SECOND FK over the same three scalar fields (Postgres happily
+  // supports multiple FKs on the same column), using the
+  // `@@unique([countId, itemId, warehouseId])` on CountSnapshot as
+  // its target. Cascade on delete matches the row-level cascade from
+  // `count` above — if the snapshot goes because the count was
+  // deleted, its entries go with it.
+  snapshot        CountSnapshot @relation("CountEntrySnapshot", fields: [countId, itemId, warehouseId], references: [countId, itemId, warehouseId], onDelete: Cascade)
 
   @@unique([organizationId, idempotencyKey])
   @@index([countId, countedAt])
@@ -533,28 +581,28 @@ enum CountMethodology {
 // or manually cancelled.
 
 model Supplier {
-  id              String        @id @default(cuid())
-  organizationId  String
-  name            String
-  code            String?       // optional short code (e.g. "ACME")
-  contactName     String?
-  email           String?
-  phone           String?
-  addressLine1    String?
-  addressLine2    String?
-  city            String?
-  region          String?
-  postalCode      String?
-  country         String?
-  website         String?
-  notes           String?
-  currency        String        @default("USD")
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  items           Item[]        @relation("ItemPreferredSupplier")
-  purchaseOrders  PurchaseOrder[]
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  code           String? // optional short code (e.g. "ACME")
+  contactName    String?
+  email          String?
+  phone          String?
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  region         String?
+  postalCode     String?
+  country        String?
+  website        String?
+  notes          String?
+  currency       String          @default("USD")
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items          Item[]          @relation("ItemPreferredSupplier")
+  purchaseOrders PurchaseOrder[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -566,13 +614,13 @@ model PurchaseOrder {
   id              String              @id @default(cuid())
   organizationId  String
   supplierId      String
-  warehouseId     String              // destination warehouse
-  poNumber        String              // human-readable, unique per org
+  warehouseId     String // destination warehouse
+  poNumber        String // human-readable, unique per org
   status          PurchaseOrderStatus @default(DRAFT)
   currency        String              @default("USD")
   orderedAt       DateTime            @default(now())
   expectedAt      DateTime?
-  receivedAt      DateTime?           // set when status hits RECEIVED
+  receivedAt      DateTime? // set when status hits RECEIVED
   cancelledAt     DateTime?
   cancelReason    String?
   notes           String?
@@ -594,19 +642,23 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  id              String        @id @default(cuid())
+  id              String          @id @default(cuid())
   organizationId  String
   purchaseOrderId String
   itemId          String
   orderedQty      Int
-  receivedQty     Int           @default(0)
-  unitCost        Decimal       @db.Decimal(12, 2)
+  receivedQty     Int             @default(0)
+  unitCost        Decimal         @db.Decimal(12, 2)
   note            String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  item            Item          @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  item            Item            @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  // Phase 5A — back-relation for the `purchaseOrderLineId` FK on
+  // StockMovement. Populated only from `receivePurchaseOrderAction`.
+  // A single PO line can have many receive events (partial receipts).
+  movements       StockMovement[]
 
   @@index([purchaseOrderId])
   @@index([organizationId])
@@ -614,11 +666,11 @@ model PurchaseOrderLine {
 }
 
 enum PurchaseOrderStatus {
-  DRAFT              // being edited, no stock impact
-  SENT               // sent to supplier, awaiting delivery
+  DRAFT // being edited, no stock impact
+  SENT // sent to supplier, awaiting delivery
   PARTIALLY_RECEIVED // some lines received
-  RECEIVED           // all lines received, terminal
-  CANCELLED          // cancelled, terminal
+  RECEIVED // all lines received, terminal
+  CANCELLED // cancelled, terminal
 }
 
 // =========================
@@ -643,9 +695,26 @@ enum PurchaseOrderStatus {
 //    "purchase_order.received"); we don't use an enum so new actions can
 //    be added without a migration. The `/audit` UI groups/filters by
 //    prefix (everything before the dot).
+//
+//    Vocabulary sync contract (load-bearing — Phase 5A):
+//      The canonical list of valid `action` / `entityType` strings is
+//      the `AuditAction` / `AuditEntityType` TypeScript union in
+//      `src/lib/audit.ts`. Every value in that union MUST also have a
+//      label key in `src/lib/i18n/messages/en.ts` under
+//      `audit.actions.<value>`, because the `/audit` and
+//      `/purchase-orders/[id]` pages type their label catalog as
+//      `Record<AuditAction, string>` — a missing key is a tsc failure.
+//      Adding a new audit event is therefore a three-place change:
+//      (a) extend the union in audit.ts, (b) add the catalog entry in
+//      en.ts, (c) call `recordAudit({ action: "...", entityType: "..." })`
+//      at the emission site. Phase 4A extended the vocabulary; Phase 5A
+//      codifies this contract at the schema level so the next extender
+//      sees it before the type-checker does.
 // 4. `entityType` + `entityId` identify the subject row. `entityId` is
 //    optional so we can also record org-wide events that don't map to a
-//    single row (e.g. "organization.transferred").
+//    single row (e.g. "organization.transferred"). Multi-entity events
+//    (transfer, receive, reconcile) record their "other" subjects in
+//    `metadata` today; a structured multi-subject model is Post-MVP.
 // 5. `metadata Json?` carries the before/after diff, invoked parameters,
 //    or any contextual details the action chose to record. Keep it small —
 //    this is a log, not a data warehouse.
@@ -654,17 +723,17 @@ enum PurchaseOrderStatus {
 //    `(entityType, entityId)` index lets a future per-entity drill-down
 //    filter cheaply.
 model AuditEvent {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   organizationId String
   actorId        String?
   action         String
   entityType     String
   entityId       String?
   metadata       Json?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  actor          User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor        User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, createdAt])
   @@index([entityType, entityId])
