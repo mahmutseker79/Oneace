@@ -46,7 +46,7 @@ export function RegisterForm({ labels }: RegisterFormProps) {
   // invite page, which will see them authenticated and enable the
   // accept button.
   const nextParam = searchParams.get("next") ?? searchParams.get("redirect");
-  const redirectTo = resolveSafeRedirect(nextParam, "/dashboard");
+  const redirectTo = resolveSafeRedirect(nextParam, "/items");
   const isInviteFlow = redirectTo.startsWith("/invite/");
 
   const [name, setName] = useState("");

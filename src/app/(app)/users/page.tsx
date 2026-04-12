@@ -105,7 +105,7 @@ export default async function UsersPage() {
           <CardContent>
             <InviteForm
               defaultRole={Role.MEMBER}
-              dateFmt={dateTimeFmt}
+              locale={region.numberLocale}
               labels={{
                 emailLabel: t.users.invite.emailLabel,
                 emailPlaceholder: t.users.invite.emailPlaceholder,

@@ -2,6 +2,7 @@ import { Download, Plus, ShoppingCart } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,6 +104,8 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
   if (suppliers.length === 0) {
     return (
       <div className="space-y-6">
+        <AdvancedFeatureBanner labels={t.advancedFeature} />
+
         <div>
           <h1 className="text-2xl font-semibold">{t.purchaseOrders.heading}</h1>
           <p className="text-muted-foreground">{t.purchaseOrders.subtitle}</p>
@@ -143,6 +146,8 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
 
   return (
     <div className="space-y-6">
+      <AdvancedFeatureBanner labels={t.advancedFeature} />
+
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t.purchaseOrders.heading}</h1>

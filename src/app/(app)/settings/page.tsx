@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
@@ -178,21 +177,6 @@ export default async function SettingsPage() {
                 forbidden: t.settings.orgDefaults.errors.forbidden,
               }}
             />
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t.settings.notifications.heading}</CardTitle>
-            <CardDescription>{t.settings.notifications.subtitle}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/settings/notifications"
-              className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-            >
-              {t.settings.notifications.manageCta}
-            </Link>
           </CardContent>
         </Card>
 

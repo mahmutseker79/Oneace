@@ -25,7 +25,6 @@ export default async function LoginPage() {
           emailPlaceholder: t.auth.login.emailPlaceholder,
           password: t.auth.login.password,
           passwordPlaceholder: t.auth.login.passwordPlaceholder,
-          forgot: t.auth.login.forgot,
           submit: t.auth.login.submit,
           error: t.auth.login.error,
         }}

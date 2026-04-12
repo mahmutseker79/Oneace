@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,10 @@ async function loadDashboardData(orgId: string) {
 // =========================
 
 export default async function DashboardPage() {
+  // P1.3: Dashboard is no longer the primary entry point.
+  // Soft-redirect to /items so bookmarks and old links still work.
+  redirect("/items");
+
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();

@@ -12,11 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { db } from "@/lib/db";
 import { format, getMessages } from "@/lib/i18n";
-// Sprint 41: the query + grouping logic moved to `src/lib/reports/low-stock.ts`
-// so the page, the CSV export, and the daily/weekly email digest all render
-// from the same shape. Any filter or sort change happens once, in one place.
-import { getLowStockItems, groupBySupplier } from "@/lib/reports/low-stock";
 import { requireActiveMembership } from "@/lib/session";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,6 +21,48 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${t.reports.lowStock.metaTitle} — ${t.reports.metaTitle}`,
   };
+}
+
+type LowStockItem = {
+  id: string;
+  sku: string;
+  name: string;
+  onHand: number;
+  reorderPoint: number;
+  reorderQty: number;
+  preferredSupplier: { id: string; name: string } | null;
+};
+
+type SupplierGroup = {
+  supplier: { id: string; name: string } | null;
+  items: LowStockItem[];
+};
+
+function groupBySupplier(items: LowStockItem[]): SupplierGroup[] {
+  const bySupplier = new Map<string, SupplierGroup>();
+  // Use a sentinel key for "no supplier"
+  const NO_SUPPLIER = "__no_supplier__";
+
+  for (const item of items) {
+    const key = item.preferredSupplier?.id ?? NO_SUPPLIER;
+    let group = bySupplier.get(key);
+    if (!group) {
+      group = {
+        supplier: item.preferredSupplier,
+        items: [],
+      };
+      bySupplier.set(key, group);
+    }
+    group.items.push(item);
+  }
+
+  // Groups with a supplier first, alphabetical. "No supplier" last.
+  return Array.from(bySupplier.values()).sort((a, b) => {
+    if (!a.supplier && !b.supplier) return 0;
+    if (!a.supplier) return 1;
+    if (!b.supplier) return -1;
+    return a.supplier.name.localeCompare(b.supplier.name);
+  });
 }
 
 function buildCreatePoHref(supplierId: string, itemIds: string[]): string {
@@ -37,7 +76,34 @@ export default async function LowStockReportPage() {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  const lowStockItems = await getLowStockItems(membership.organizationId);
+  const items = await db.item.findMany({
+    where: { organizationId: membership.organizationId, status: "ACTIVE" },
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+      reorderPoint: true,
+      reorderQty: true,
+      preferredSupplier: { select: { id: true, name: true } },
+      stockLevels: { select: { quantity: true } },
+    },
+  });
+
+  const lowStockItems: LowStockItem[] = items
+    .map((item) => {
+      const onHand = item.stockLevels.reduce((acc, l) => acc + l.quantity, 0);
+      const { stockLevels: _stockLevels, ...rest } = item;
+      void _stockLevels;
+      return { ...rest, onHand };
+    })
+    .filter((item) => item.reorderPoint > 0 && item.onHand <= item.reorderPoint)
+    .sort((a, b) => {
+      // Most urgent first: largest shortfall
+      const shortA = a.reorderPoint - a.onHand;
+      const shortB = b.reorderPoint - b.onHand;
+      return shortB - shortA;
+    });
+
   const groups = groupBySupplier(lowStockItems);
   const supplierGroups = groups.filter((g) => g.supplier !== null);
 

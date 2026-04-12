@@ -25,9 +25,10 @@ type HeaderProps = {
   organizations: OrgSwitcherOption[];
   activeOrganizationId: string;
   labels: HeaderLabels;
+  onMenuClick?: () => void;
 };
 
-export function Header({ userName, organizations, activeOrganizationId, labels }: HeaderProps) {
+export function Header({ userName, organizations, activeOrganizationId, labels, onMenuClick }: HeaderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("q") ?? "";
@@ -62,7 +63,13 @@ export function Header({ userName, organizations, activeOrganizationId, labels }
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur lg:px-6">
-      <Button variant="ghost" size="icon" className="lg:hidden" aria-label={labels.openMenu}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden"
+        aria-label={labels.openMenu}
+        onClick={onMenuClick}
+      >
         <Menu className="h-5 w-5" />
       </Button>
 

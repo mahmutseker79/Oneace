@@ -46,6 +46,7 @@ coverage
 # port workflow — git bundle exports produced by the Flutter→Next
 # port tagging workflow. Never commit these.
 *.bundle
+*.bundle.old
 
 # sandbox temp files — pnpm writes `_tmp_*` probe files in the
 # project root when resolving the store path. These are zero-byte

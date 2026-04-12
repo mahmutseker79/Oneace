@@ -9,16 +9,15 @@
     "start": "next start",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
-    "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
-    "audit:prune": "node scripts/run-ts.mjs src/scripts/prune-audit.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

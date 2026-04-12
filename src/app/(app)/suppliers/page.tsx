@@ -2,6 +2,7 @@ import { Plus, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ export default async function SuppliersPage() {
 
   return (
     <div className="space-y-6">
+      <AdvancedFeatureBanner labels={t.advancedFeature} />
+
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t.suppliers.heading}</h1>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -27,6 +28,8 @@ export default async function ScanPage({
 
   return (
     <div className="space-y-6">
+      <AdvancedFeatureBanner labels={t.advancedFeature} />
+
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">{t.scan.heading}</h1>
         <p className="text-muted-foreground">{t.scan.subtitle}</p>

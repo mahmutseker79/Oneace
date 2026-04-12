@@ -47,58 +47,25 @@ export type AuditAction =
   | "purchase_order.cancelled"
   | "purchase_order.deleted"
   | "purchase_order.received"
-  // --- Catalog surfaces (Sprint 39) --------------------------------------
-  // Items, warehouses and categories are the three catalog tables whose
-  // writes Sprint 36 deliberately left out of the audit log to keep that
-  // sprint's scope bounded. Sprint 39 back-fills them so an OWNER can
-  // answer "who renamed SKU-123?" or "who archived Warehouse A?" from
-  // the /audit page without digging through git or the DB.
+  // --- Item lifecycle (Phase 4A) -----------------------------------------
   | "item.created"
   | "item.updated"
-  | "item.imported"
   | "item.deleted"
+  | "item.imported"
+  // --- Warehouse lifecycle (Phase 4A) ------------------------------------
   | "warehouse.created"
   | "warehouse.updated"
   | "warehouse.deleted"
-  | "category.created"
-  | "category.deleted"
-  // --- Stock count lifecycle (Sprint 39) ---------------------------------
-  // Only the state-transition endpoints are audited: created, cancelled,
-  // completed. Individual count entries are deliberately NOT logged —
-  // a single cycle-count session can emit hundreds of entries, which
-  // would flood the log without telling a reviewer anything the count's
-  // own detail page doesn't already show. The count-level events give
-  // the governance signal; the entry-level detail stays in-feature.
+  // --- Stock count lifecycle (Phase 4A) ----------------------------------
   | "stock_count.created"
-  | "stock_count.cancelled"
   | "stock_count.completed"
+  | "stock_count.cancelled"
   // --- Stock movement lifecycle (Phase 4A) -------------------------------
   // One verb: the `type` (RECEIPT / ISSUE / TRANSFER / ADJUSTMENT) is
   // carried in metadata. Only fresh writes emit; replays from the
   // offline queue's `alreadyExists` branch do NOT (dedupe already
   // happened, re-auditing would double-count).
-  | "stock_movement.created"
-  // --- Audit housekeeping (Sprint 40) ------------------------------------
-  // The retention script (`npm run audit:prune`) emits exactly one
-  // aggregate row after a successful prune run with
-  // `{ cutoffDate, deletedCount, retentionDays }` metadata. The
-  // actor is null (system-initiated), entityType is "organization"
-  // (the tenant whose rows were pruned), and entityId is the org id.
-  // Recording the prune itself is the only way a reviewer can tell
-  // "the log is short because nothing happened" from "the log is
-  // short because someone ran prune last week" — missing this row
-  // is its own alarm signal during audit review.
-  | "audit.pruned"
-  // --- Notifications (Sprint 41) -----------------------------------------
-  // The cron-triggered notifications route emits exactly one aggregate
-  // row per (org, cadence) after a successful fan-out with
-  // `{ cadence, type, recipients, dryRun }` metadata. Actor is null
-  // (system-initiated), entityType is "organization" (the tenant whose
-  // members were notified), and entityId is the org id. We deliberately
-  // log once-per-org rather than once-per-user: a daily 200-member org
-  // would otherwise flood the audit log with near-identical rows that
-  // tell the reviewer nothing new.
-  | "notification.sent";
+  | "stock_movement.created";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
@@ -110,12 +77,10 @@ export type AuditEntityType =
   | "membership"
   | "invitation"
   | "purchase_order"
-  // Sprint 39 — catalog + stock-count coverage.
+  // Phase 4A extensions — one entity type per new action prefix.
   | "item"
   | "warehouse"
-  | "category"
   | "stock_count"
-  // Phase 4A — stock movement entity type.
   | "stock_movement";
 
 /**

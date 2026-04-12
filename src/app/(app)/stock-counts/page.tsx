@@ -1,10 +1,17 @@
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Package, Plus, Warehouse } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -132,14 +139,31 @@ export default async function StockCountsPage() {
             <CardTitle>{t.stockCounts.emptyTitle}</CardTitle>
             <CardDescription>{t.stockCounts.emptyBody}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
+          <CardContent className="flex flex-col items-center gap-2">
             <Button asChild>
               <Link href="/stock-counts/new">
                 <Plus className="h-4 w-4" />
                 {t.stockCounts.emptyCta}
               </Link>
             </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/items">
+                  <Package className="h-4 w-4" />
+                  {t.stockCounts.emptyItemsCta}
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/warehouses">
+                  <Warehouse className="h-4 w-4" />
+                  {t.stockCounts.emptyLocationsCta}
+                </Link>
+              </Button>
+            </div>
           </CardContent>
+          <CardFooter className="justify-center border-t px-6 py-3">
+            <p className="text-xs text-muted-foreground">{t.stockCounts.emptyPrereq}</p>
+          </CardFooter>
         </Card>
       ) : (
         <div className="space-y-6">

@@ -59,15 +59,6 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
       select: { id: true },
     });
 
-    await recordAudit({
-      organizationId: membership.organizationId,
-      actorId: session.user.id,
-      action: "item.created",
-      entityType: "item",
-      entityId: item.id,
-      metadata: { sku: input.sku, name: input.name, status: input.status },
-    });
-
     revalidatePath("/items");
     await recordAudit({
       organizationId: membership.organizationId,
@@ -104,25 +95,6 @@ export async function updateItemAction(id: string, formData: FormData): Promise<
   }
   const input = parsed.data;
 
-  // Snapshot the before-values so the audit row can carry a minimal
-  // diff of the fields a reviewer is most likely to care about. We
-  // deliberately skip wide columns (description, imageUrl) and the
-  // decimal money fields — the latter would need Prisma.Decimal
-  // equality handling for an honest diff, and the audit log isn't the
-  // right place for price-change history anyway.
-  const before = await db.item.findFirst({
-    where: { id, organizationId: membership.organizationId },
-    select: {
-      sku: true,
-      name: true,
-      barcode: true,
-      status: true,
-      categoryId: true,
-      reorderPoint: true,
-      reorderQty: true,
-    },
-  });
-
   try {
     const updated = await db.item.update({
       where: {
@@ -147,41 +119,6 @@ export async function updateItemAction(id: string, formData: FormData): Promise<
       },
       select: { id: true },
     });
-
-    // If `before` is null the update would have already thrown P2025,
-    // so in practice we always have a snapshot to diff against here.
-    if (before) {
-      const after = {
-        sku: input.sku,
-        name: input.name,
-        barcode: input.barcode,
-        status: input.status,
-        categoryId: input.categoryId,
-        reorderPoint: input.reorderPoint,
-        reorderQty: input.reorderQty,
-      };
-      // Build a minimal changed-keys list so the reviewer sees at a
-      // glance what moved, not 7 unchanged fields per row.
-      const changed: Record<string, { from: unknown; to: unknown }> = {};
-      for (const key of Object.keys(after) as (keyof typeof after)[]) {
-        if (before[key] !== after[key]) {
-          changed[key] = { from: before[key], to: after[key] };
-        }
-      }
-      // Skip the write entirely on a no-op resubmit — same-page double
-      // submit shouldn't spam the log. Matches the users.role_changed
-      // early return from Sprint 36.
-      if (Object.keys(changed).length > 0) {
-        await recordAudit({
-          organizationId: membership.organizationId,
-          actorId: session.user.id,
-          action: "item.updated",
-          entityType: "item",
-          entityId: updated.id,
-          metadata: { sku: after.sku, changed },
-        });
-      }
-    }
 
     revalidatePath("/items");
     revalidatePath(`/items/${id}`);
@@ -333,11 +270,6 @@ export async function importItemsAction(input: {
     // because the information is no longer actionable (they exist now).
     const raced = Math.max(0, toInsert.length - result.count);
 
-    // One audit row per bulk import — not per row. A 5 000-row CSV
-    // should not generate 5 000 audit events. The metadata carries
-    // the aggregate counts so a reviewer can reconstruct the batch.
-    // `entityId` is null because an import spans many items; the PO
-    // delete helper's "metadata over entityId" convention applies.
     await recordAudit({
       organizationId: membership.organizationId,
       actorId: session.user.id,
@@ -375,17 +307,6 @@ export async function deleteItemAction(id: string): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  // Read the sku/name BEFORE the delete so the audit row can carry
-  // them as metadata. The entityId survives on the row but — as the
-  // PO `deleted` convention from Sprint 36 notes — a deleted row's id
-  // is useless for future lookups, so the human-readable fields go in
-  // metadata instead. If the select comes back empty we let the
-  // delete itself throw P2025 and short-circuit the audit write.
-  const snapshot = await db.item.findFirst({
-    where: { id, organizationId: membership.organizationId },
-    select: { sku: true, name: true },
-  });
-
   try {
     await db.item.delete({
       where: {
@@ -393,16 +314,6 @@ export async function deleteItemAction(id: string): Promise<ActionResult> {
         organizationId: membership.organizationId,
       },
     });
-    if (snapshot) {
-      await recordAudit({
-        organizationId: membership.organizationId,
-        actorId: session.user.id,
-        action: "item.deleted",
-        entityType: "item",
-        entityId: id,
-        metadata: { sku: snapshot.sku, name: snapshot.name },
-      });
-    }
     revalidatePath("/items");
     // entityId intentionally omitted — the Item row is gone. The id
     // we were given is still useful for cross-referencing audit logs

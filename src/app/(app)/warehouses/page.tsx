@@ -1,4 +1,4 @@
-import { Plus, Warehouse as WarehouseIcon } from "lucide-react";
+import { Package, Plus, Warehouse as WarehouseIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -6,7 +6,14 @@ import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -82,14 +89,23 @@ export default async function WarehousesPage() {
             <CardTitle>{t.warehouses.emptyTitle}</CardTitle>
             <CardDescription>{t.warehouses.emptyBody}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
+          <CardContent className="flex flex-col items-center gap-2">
             <Button asChild>
               <Link href="/warehouses/new">
                 <Plus className="h-4 w-4" />
                 {t.warehouses.emptyCta}
               </Link>
             </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/items">
+                <Package className="h-4 w-4" />
+                {t.warehouses.emptyItemsCta}
+              </Link>
+            </Button>
           </CardContent>
+          <CardFooter className="justify-center border-t px-6 py-3">
+            <p className="text-xs text-muted-foreground">{t.warehouses.emptyHint}</p>
+          </CardFooter>
         </Card>
       ) : (
         <Card>

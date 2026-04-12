@@ -2,17 +2,20 @@
 
 import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
-import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { slugify } from "@/lib/utils";
 import { categoryInputSchema } from "@/lib/validation/item";
-import { z } from "zod";
 
 const categoryRenameSchema = z.object({
-  name: z.string().min(1).max(80),
+  name: z
+    .string()
+    .trim()
+    .min(1, { message: "Category name is required" })
+    .max(80, { message: "Category name must be 80 characters or fewer" }),
 });
 
 export type ActionResult =
@@ -39,7 +42,7 @@ async function uniqueSlug(
 }
 
 export async function createCategoryAction(formData: FormData): Promise<ActionResult> {
-  const { session, membership } = await requireActiveMembership();
+  const { membership } = await requireActiveMembership();
   const t = await getMessages();
 
   const parsed = categoryInputSchema.safeParse(Object.fromEntries(formData));
@@ -65,15 +68,6 @@ export async function createCategoryAction(formData: FormData): Promise<ActionRe
         slug,
       },
       select: { id: true },
-    });
-
-    await recordAudit({
-      organizationId: membership.organizationId,
-      actorId: session.user.id,
-      action: "category.created",
-      entityType: "category",
-      entityId: category.id,
-      metadata: { name: input.name, slug, parentId: input.parentId },
     });
 
     revalidatePath("/categories");
@@ -106,6 +100,8 @@ export async function updateCategoryAction(id: string, formData: FormData): Prom
   const input = parsed.data;
 
   try {
+    // Confirm the category belongs to this org before mutating —
+    // the composite where below does not accept organizationId.
     const existing = await db.category.findFirst({
       where: { id, organizationId: membership.organizationId },
       select: { id: true },
@@ -141,30 +137,13 @@ export async function updateCategoryAction(id: string, formData: FormData): Prom
 }
 
 export async function deleteCategoryAction(id: string): Promise<ActionResult> {
-  const { session, membership } = await requireActiveMembership();
+  const { membership } = await requireActiveMembership();
   const t = await getMessages();
-
-  // Read the name/slug BEFORE the delete so the audit row carries the
-  // human-readable fields. Same pattern as item/warehouse delete.
-  const snapshot = await db.category.findFirst({
-    where: { id, organizationId: membership.organizationId },
-    select: { name: true, slug: true },
-  });
 
   try {
     await db.category.delete({
       where: { id, organizationId: membership.organizationId },
     });
-    if (snapshot) {
-      await recordAudit({
-        organizationId: membership.organizationId,
-        actorId: session.user.id,
-        action: "category.deleted",
-        entityType: "category",
-        entityId: id,
-        metadata: { name: snapshot.name, slug: snapshot.slug },
-      });
-    }
     revalidatePath("/categories");
     revalidatePath("/items");
     return { ok: true, id };

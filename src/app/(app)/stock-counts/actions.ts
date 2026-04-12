@@ -9,6 +9,7 @@ import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { canAddEntry, canCancel, canReconcile } from "@/lib/stockcount/machine";
 import { calculateVariances } from "@/lib/stockcount/variance";
+import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type AddEntryInput,
   type CountEntryOpPayload,
@@ -19,9 +20,7 @@ import {
   createCountInputSchema,
 } from "@/lib/validation/stockcount";
 
-export type ActionResult<T extends object = { id: string }> =
-  | ({ ok: true } & T)
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+export type { ActionResult };
 
 /**
  * Sprint 27 — PWA Sprint 4 follow-on. Result shape for the JSON /
@@ -38,14 +37,6 @@ export type CountEntryOpResult =
       error: string;
       fieldErrors?: Record<string, string[]>;
     };
-
-function cleanFieldErrors(raw: Record<string, string[] | undefined>): Record<string, string[]> {
-  const fieldErrors: Record<string, string[]> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    if (value && value.length > 0) fieldErrors[key] = value;
-  }
-  return fieldErrors;
-}
 
 function revalidateCount(id: string) {
   revalidatePath("/stock-counts");
@@ -187,6 +178,7 @@ export async function createStockCountAction(
       return created;
     });
 
+    revalidatePath("/stock-counts");
     await recordAudit({
       organizationId: orgId,
       actorId: session.user.id,
@@ -198,12 +190,9 @@ export async function createStockCountAction(
         methodology: data.methodology,
         warehouseId,
         itemCount: itemIds.length,
-        warehouseCount: warehouses.length,
-        snapshotRows: snapshotRows.length,
+        snapshotRowCount: snapshotRows.length,
       },
     });
-
-    revalidatePath("/stock-counts");
     return { ok: true, id: count.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -521,8 +510,6 @@ export async function cancelStockCountAction(
   const data = parsed.data;
   const orgId = membership.organizationId;
 
-  // Widened from `{ id, state }` to also pull `name` so the audit row
-  // carries a human-readable label without a second query.
   const count = await db.stockCount.findFirst({
     where: { id: data.countId, organizationId: orgId },
     select: { id: true, state: true, name: true },
@@ -541,6 +528,7 @@ export async function cancelStockCountAction(
         cancelReason: data.reason,
       },
     });
+    revalidateCount(count.id);
     await recordAudit({
       organizationId: orgId,
       actorId: session.user.id,
@@ -549,11 +537,10 @@ export async function cancelStockCountAction(
       entityId: count.id,
       metadata: {
         name: count.name,
-        previousState: count.state,
-        reason: data.reason,
+        fromState: count.state,
+        hasReason: Boolean(data.reason),
       },
     });
-    revalidateCount(count.id);
     return { ok: true, id: count.id };
   } catch {
     return { ok: false, error: t.stockCounts.errors.cancelFailed };
@@ -618,6 +605,13 @@ export async function completeStockCountAction(
     return { ok: false, error: t.stockCounts.errors.notReconcilable };
   }
 
+  // Stale-read note: count.snapshots / count.entries were read in the
+  // findFirst above, OUTSIDE the transaction that posts adjustments
+  // below. The `canReconcile` state gate is what makes this safe — a
+  // sibling tab that adds an entry between here and the tx open would
+  // need the count to still be IN_PROGRESS, and the final state
+  // update below serialises on the row. Do not move the variance calc
+  // inside the tx without also tightening (or removing) that gate.
   const variances = calculateVariances(count.snapshots, count.entries);
   const postable = data.applyAdjustments ? variances.filter((row) => row.variance !== 0) : [];
 
@@ -637,6 +631,12 @@ export async function completeStockCountAction(
             reference: `count-${count.id}`,
             note: `Stock count reconcile: ${count.name}`,
             createdByUserId: session.user.id,
+            // Phase 5A — source-document backref. Count-generated
+            // movements keep `type = ADJUSTMENT` for backwards compat;
+            // this column is the discriminator a reader uses to tell
+            // a manual adjustment from a reconcile-generated one.
+            // Historical rows (pre-Phase-5A) remain null.
+            stockCountId: count.id,
           },
         });
         await tx.stockLevel.upsert({
@@ -664,12 +664,21 @@ export async function completeStockCountAction(
       return { posted: postable.length };
     });
 
-    // Audit AFTER the transaction closes, matching the
-    // `purchase_order.received` convention from Sprint 36: the real
-    // StockMovement rows already committed, so a log-write hiccup
-    // must not roll them back. The aggregate counts let a reviewer
-    // see "reconcile posted 14 adjustments" without joining the
-    // movement stream.
+    revalidateCount(count.id);
+    revalidatePath("/movements");
+    revalidatePath("/items");
+    revalidatePath("/dashboard");
+    // Reconcile posts ADJUSTMENT movements that mutate per-warehouse
+    // stock levels, so the warehouse list + any touched detail page
+    // must be busted in lockstep with /items and /movements. Without
+    // this, `/warehouses` and `/warehouses/[id]` would show stale
+    // on-hand totals until the next navigation forces a re-render.
+    revalidatePath("/warehouses");
+    const touchedWarehouseIds = new Set(postable.map((row) => row.warehouseId));
+    for (const warehouseId of touchedWarehouseIds) {
+      revalidatePath(`/warehouses/${warehouseId}`);
+    }
+
     await recordAudit({
       organizationId: orgId,
       actorId: session.user.id,
@@ -678,16 +687,11 @@ export async function completeStockCountAction(
       entityId: count.id,
       metadata: {
         name: count.name,
-        applyAdjustments: data.applyAdjustments,
+        appliedAdjustments: data.applyAdjustments,
         postedMovements: result.posted,
-        varianceRows: variances.length,
+        touchedWarehouses: touchedWarehouseIds.size,
       },
     });
-
-    revalidateCount(count.id);
-    revalidatePath("/movements");
-    revalidatePath("/items");
-    revalidatePath("/dashboard");
 
     return { ok: true, id: count.id, postedMovements: result.posted };
   } catch {

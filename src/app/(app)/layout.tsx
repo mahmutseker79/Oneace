@@ -3,7 +3,7 @@ import { OfflineQueueRunner } from "@/components/offline/offline-queue-runner";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
 import { SwRegister } from "@/components/pwa/sw-register";
 import { UpdatePrompt } from "@/components/pwa/update-prompt";
-import { Header } from "@/components/shell/header";
+import { AppShellClient } from "@/components/shell/app-shell-client";
 import { Sidebar } from "@/components/shell/sidebar";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -42,11 +42,11 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             dismissCta: t.pwa.update.dismissCta,
           }}
         />
-        <Header
+        <AppShellClient
           userName={session.user.name}
           organizations={orgOptions}
           activeOrganizationId={membership.organizationId}
-          labels={{
+          headerLabels={{
             searchPlaceholder: t.header.searchPlaceholder,
             searchLabel: t.header.searchLabel,
             notifications: t.header.notifications,
@@ -54,6 +54,12 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             organization: t.common.organization,
             organizationCreate: t.organizations.switcherCreateLabel,
             signOut: t.header.signOut,
+          }}
+          sidebarLabels={{
+            brand: t.app.name,
+            versionLine: `${t.app.name} · v0.1.0`,
+            statusLine: "Sprint 0 scaffold",
+            nav: t.nav,
           }}
         />
         <OfflineQueueBanner

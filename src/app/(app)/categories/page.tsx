@@ -2,6 +2,7 @@ import { FolderTree } from "lucide-react";
 import type { Metadata } from "next";
 
 import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
+import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -74,6 +75,8 @@ export default async function CategoriesPage() {
 
   return (
     <div className="space-y-6">
+      <AdvancedFeatureBanner labels={t.advancedFeature} />
+
       <div>
         <h1 className="text-2xl font-semibold">{t.categories.heading}</h1>
         <p className="text-muted-foreground">{t.categories.subtitle}</p>

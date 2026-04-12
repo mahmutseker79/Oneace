@@ -38,7 +38,7 @@ export function OnboardingForm({ labels }: { labels: OnboardingFormLabels }) {
         return;
       }
 
-      router.push("/dashboard");
+      router.push("/items");
       router.refresh();
     });
   }

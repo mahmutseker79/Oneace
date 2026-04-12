@@ -36,8 +36,8 @@ export type InviteFormLabels = {
 type InviteFormProps = {
   labels: InviteFormLabels;
   defaultRole: string;
-  /** Locale-aware formatter used to render the expiresAt timestamp. */
-  dateFmt: Intl.DateTimeFormat;
+  /** Locale string used to format the expiresAt timestamp on the client. */
+  locale: string;
 };
 
 type InviteCreated = {
@@ -47,7 +47,7 @@ type InviteCreated = {
   emailDelivered: boolean;
 };
 
-export function InviteForm({ labels, defaultRole, dateFmt }: InviteFormProps) {
+export function InviteForm({ labels, defaultRole, locale }: InviteFormProps) {
   const [isPending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>(defaultRole);
@@ -146,7 +146,7 @@ export function InviteForm({ labels, defaultRole, dateFmt }: InviteFormProps) {
           <p className="text-xs text-emerald-800 dark:text-emerald-200">
             {labels.linkHelp
               .replace("{email}", created.email)
-              .replace("{expires}", dateFmt.format(created.expiresAt))}
+              .replace("{expires}", new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(created.expiresAt))}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="invite-url" className="sr-only">

@@ -58,6 +58,7 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
       });
     });
 
+    revalidatePath("/warehouses");
     await recordAudit({
       organizationId: membership.organizationId,
       actorId: session.user.id,
@@ -67,12 +68,9 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
       metadata: {
         name: input.name,
         code: input.code,
-        city: input.city,
         isDefault: input.isDefault,
       },
     });
-
-    revalidatePath("/warehouses");
     return { ok: true, id: warehouse.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -99,19 +97,6 @@ export async function updateWarehouseAction(id: string, formData: FormData): Pro
     };
   }
   const input = parsed.data;
-
-  // Snapshot the reviewer-relevant fields before the update so the
-  // audit row can carry a `changed` diff, matching the items convention.
-  const before = await db.warehouse.findFirst({
-    where: { id, organizationId: membership.organizationId },
-    select: {
-      name: true,
-      code: true,
-      city: true,
-      country: true,
-      isDefault: true,
-    },
-  });
 
   try {
     const updated = await db.$transaction(async (tx) => {
@@ -140,34 +125,20 @@ export async function updateWarehouseAction(id: string, formData: FormData): Pro
       });
     });
 
-    if (before) {
-      const after = {
-        name: input.name,
-        code: input.code,
-        city: input.city,
-        country: input.country,
-        isDefault: input.isDefault,
-      };
-      const changed: Record<string, { from: unknown; to: unknown }> = {};
-      for (const key of Object.keys(after) as (keyof typeof after)[]) {
-        if (before[key] !== after[key]) {
-          changed[key] = { from: before[key], to: after[key] };
-        }
-      }
-      if (Object.keys(changed).length > 0) {
-        await recordAudit({
-          organizationId: membership.organizationId,
-          actorId: session.user.id,
-          action: "warehouse.updated",
-          entityType: "warehouse",
-          entityId: updated.id,
-          metadata: { code: after.code, changed },
-        });
-      }
-    }
-
     revalidatePath("/warehouses");
     revalidatePath(`/warehouses/${id}`);
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "warehouse.updated",
+      entityType: "warehouse",
+      entityId: updated.id,
+      metadata: {
+        name: input.name,
+        code: input.code,
+        isDefault: input.isDefault,
+      },
+    });
     return { ok: true, id: updated.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -198,10 +169,6 @@ export async function deleteWarehouseAction(id: string): Promise<ActionResult> {
       },
     });
 
-    // Widen the existing pre-check from `{ isDefault }` to include the
-    // human-readable fields we want to keep in the audit metadata. This
-    // is the same single query the old code ran — just two extra
-    // columns — so there's no extra DB round-trip.
     const target = await db.warehouse.findUnique({
       where: { id, organizationId: membership.organizationId },
       select: { isDefault: true, name: true, code: true },
@@ -234,20 +201,23 @@ export async function deleteWarehouseAction(id: string): Promise<ActionResult> {
       }
     });
 
+    revalidatePath("/warehouses");
+    // entityId intentionally omitted — the Warehouse row is gone.
+    // Metadata preserves the durable identifiers (code + name) for
+    // the /audit reader.
     await recordAudit({
       organizationId: membership.organizationId,
       actorId: session.user.id,
       action: "warehouse.deleted",
       entityType: "warehouse",
-      entityId: id,
+      entityId: null,
       metadata: {
-        name: target.name,
+        warehouseId: id,
         code: target.code,
+        name: target.name,
         wasDefault: target.isDefault,
       },
     });
-
-    revalidatePath("/warehouses");
     return { ok: true, id };
   } catch {
     return { ok: false, error: t.warehouses.errors.deleteFailed };

@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   check:
-    name: Typecheck · Biome · Prisma validate · Test
+    name: Typecheck · Biome · Prisma validate
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -46,7 +46,31 @@ jobs:
       - name: Validate Prisma schema
         run: pnpm prisma validate
 
-      - name: Test
+  test:
+    name: Vitest (pure-function tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: check
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
         run: pnpm test
 
   build:

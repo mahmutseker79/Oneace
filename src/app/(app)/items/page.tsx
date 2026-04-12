@@ -1,4 +1,4 @@
-import { Download, Eye, FileUp, Package, Plus } from "lucide-react";
+import { ArrowRight, Download, Eye, FileUp, Package, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -182,6 +182,7 @@ export default async function ItemsPage({
       </div>
 
       {items.length === 0 ? (
+        <>
         <Card>
           <CardHeader className="items-center text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -190,15 +191,46 @@ export default async function ItemsPage({
             <CardTitle>{t.items.emptyTitle}</CardTitle>
             <CardDescription>{t.items.emptyBody}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
+          <CardContent className="flex flex-col items-center gap-2">
             <Button asChild>
               <Link href="/items/new">
                 <Plus className="h-4 w-4" />
                 {t.items.emptyCta}
               </Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href="/items/import">
+                <FileUp className="h-4 w-4" />
+                {t.items.emptyImportCta}
+              </Link>
+            </Button>
           </CardContent>
         </Card>
+
+        {/* First-run activation tips */}
+        <div className="mx-auto max-w-md space-y-3">
+          <p className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t.items.activationHeading}
+          </p>
+          {[
+            { step: "1", text: t.items.activationStep1, href: "/items/new" },
+            { step: "2", text: t.items.activationStep2, href: "/items/import" },
+            { step: "3", text: t.items.activationStep3, href: "/warehouses" },
+          ].map((tip) => (
+            <Link
+              key={tip.step}
+              href={tip.href}
+              className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm transition-colors hover:bg-accent/50"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {tip.step}
+              </span>
+              <span className="flex-1">{tip.text}</span>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          ))}
+        </div>
+        </>
       ) : (
         <Card>
           <CardContent className="p-0">
