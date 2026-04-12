@@ -94,6 +94,31 @@ const schema = z.object({
   // runtime selector above rather than duplicated).
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
 
+  // --- Registration gate (optional, Phase 7C) --------------------------
+  // When `false`, the `/register` page redirects to `/login` and the
+  // Better Auth sign-up endpoint returns 403. Defaults to `true` so
+  // local dev and fresh clones boot without an extra env var. The
+  // intended launch sequence is: deploy with `true` → create the
+  // owner account → flip to `false` → all subsequent users join via
+  // invitation only.
+  REGISTRATION_ENABLED: z
+    .enum(["true", "false", "1", "0"])
+    .default("true")
+    .transform((v) => v === "true" || v === "1"),
+
+  // --- Rate limiting (optional, Phase 6A / P2) -------------------------
+  // Upstash Redis REST credentials. When both are set, the
+  // `src/lib/rate-limit.ts` helper switches to a Redis-backed sliding
+  // window; otherwise it falls back to an in-process Map that is
+  // best-effort only and explicitly NOT safe for multi-instance
+  // deployments (see the warning emitted at startup in that module).
+  // Both keys must be set together — the superRefine below enforces
+  // the pairing with the same all-or-nothing rule used for the mail
+  // pair, so a half-configured environment fails fast instead of
+  // silently falling back.
+  UPSTASH_REDIS_REST_URL: optionalUrl,
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+
   // --- Audit retention (Sprint 40) -------------------------------------
   // Number of days to retain `AuditEvent` rows. Consumed by the
   // `src/scripts/prune-audit.ts` housekeeping script (`npm run
@@ -155,8 +180,32 @@ const schemaWithRefinements = schema.superRefine((values, ctx) => {
 
   // In production, NEXT_PUBLIC_APP_URL should be set — otherwise
   // invitation emails link to localhost. We don't fail the schema
-  // (deploys without an app URL are still bootable), but the app's
-  // startup check in `ensureEnv()` will emit a warning.
+  // (deploys without an app URL are still bootable), but we log a
+  // single startup warning here so ops can spot the drift. This is
+  // the only `console.warn` in this module on purpose: the logger
+  // module imports from this file, so using `logger.warn` here
+  // would create a circular import at boot.
+  if (values.NODE_ENV === "production" && !values.NEXT_PUBLIC_APP_URL) {
+    console.warn(
+      "[env] NEXT_PUBLIC_APP_URL is unset in production. Invitation emails and absolute URLs will point at localhost.",
+    );
+  }
+
+  // Phase 6A / P2 — Upstash Redis REST credentials must be set
+  // together. Having only one half of the pair is a silent
+  // misconfiguration (the rate limiter would fall back to in-memory
+  // and a second instance would silently disagree), so we surface it
+  // as a schema failure.
+  const hasRedisUrl = Boolean(values.UPSTASH_REDIS_REST_URL);
+  const hasRedisToken = Boolean(values.UPSTASH_REDIS_REST_TOKEN);
+  if (hasRedisUrl !== hasRedisToken) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["UPSTASH_REDIS_REST_TOKEN"],
+      message:
+        "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set together. Set both to enable distributed rate limiting, or leave both unset to fall back to in-process limits (dev only — NOT safe for multi-instance deployments).",
+    });
+  }
 });
 
 /**

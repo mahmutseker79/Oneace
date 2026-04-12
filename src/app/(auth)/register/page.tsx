@@ -1,6 +1,8 @@
+import { env } from "@/lib/env";
 import { getMessages } from "@/lib/i18n";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { RegisterForm } from "./register-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -9,6 +11,22 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RegisterPage() {
+  // Phase 7C: when registration is disabled, send the user to /login.
+  // This is a server-side redirect so the register page never renders
+  // at all — no flash, no client JS needed. The invitation flow is
+  // unaffected because invite links go through /invite/[token], not
+  // /register directly (Sprint 33's `?next=` param on /register is
+  // still reachable via the invite page's "Create account" CTA, but
+  // that CTA is only shown when the user is unauthenticated AND has
+  // a valid invite — which implies the owner already exists and
+  // registration was ON when the owner was created). When registration
+  // is off and a new invitee needs to create an account, the invite
+  // page should direct them to login instead — see the complementary
+  // gate on the API route handler.
+  if (!env.REGISTRATION_ENABLED) {
+    redirect("/login");
+  }
+
   const t = await getMessages();
 
   return (

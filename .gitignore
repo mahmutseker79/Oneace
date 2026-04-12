@@ -42,3 +42,22 @@ coverage
 
 # vercel
 .vercel
+
+# port workflow — git bundle exports produced by the Flutter→Next
+# port tagging workflow. Never commit these.
+*.bundle
+
+# sandbox temp files — pnpm writes `_tmp_*` probe files in the
+# project root when resolving the store path. These are zero-byte
+# and should never be committed.
+_tmp_*
+
+# sandbox tsconfig — local FUSE-mount workaround remapping
+# @/generated/prisma to an out-of-mount client. Dev ergonomics
+# only; not part of the canonical build.
+tsconfig.sandbox.json
+
+# historical TypeScript incremental build info backups from prior
+# port sprints. The active `*.tsbuildinfo` pattern above doesn't
+# catch these because the extension is `.old`, `.old2`, `.old10b`, ...
+tsconfig.tsbuildinfo.old*

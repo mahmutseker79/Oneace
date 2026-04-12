@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { classifyInvitation } from "@/lib/invitations";
 import { getCurrentSession } from "@/lib/session";
@@ -133,11 +134,18 @@ export default async function InviteAcceptPage({ params }: PageProps) {
               {t.invitePage.signInCta}
             </Link>
           </Button>
-          <Button asChild variant="outline">
-            <Link href={`/register?next=/invite/${encodeURIComponent(token)}`}>
-              {t.invitePage.createAccountCta}
-            </Link>
-          </Button>
+          {/* Phase 7C: hide "Create account" when registration is
+              closed. Invitees who don't have an account yet must ask
+              the org owner to re-enable registration or create them
+              an account directly. Showing a CTA that redirects to
+              /login without explanation is worse than hiding it. */}
+          {env.REGISTRATION_ENABLED ? (
+            <Button asChild variant="outline">
+              <Link href={`/register?next=/invite/${encodeURIComponent(token)}`}>
+                {t.invitePage.createAccountCta}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </InviteShell>
     );

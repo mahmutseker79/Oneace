@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 import { getMessages } from "@/lib/i18n";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -30,12 +31,18 @@ export default async function LoginPage() {
         }}
       />
 
-      <div className="text-center text-sm text-muted-foreground">
-        {t.auth.login.noAccount}{" "}
-        <Link href="/register" className="font-medium text-primary hover:underline">
-          {t.auth.login.register}
-        </Link>
-      </div>
+      {/* Phase 7C: hide the register link when registration is closed.
+          When the gate is off, the only way in is via invitation. Showing
+          a dead link that redirects back to /login is confusing; hiding
+          it is the right UX. */}
+      {env.REGISTRATION_ENABLED ? (
+        <div className="text-center text-sm text-muted-foreground">
+          {t.auth.login.noAccount}{" "}
+          <Link href="/register" className="font-medium text-primary hover:underline">
+            {t.auth.login.register}
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
