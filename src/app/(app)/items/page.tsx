@@ -1,5 +1,8 @@
 import {
+  AlertTriangle,
+  ArrowLeftRight,
   ArrowRight,
+  BarChart3,
   Check,
   Circle,
   Download,
@@ -8,6 +11,7 @@ import {
   Info,
   Package,
   Plus,
+  Users,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -211,8 +215,8 @@ export default async function ItemsPage({
         ))}
       </div>
 
+      {/* ── CASE A: No items yet — empty card ─────────────────────────── */}
       {items.length === 0 ? (
-        <>
         <Card>
           <CardHeader className="items-center text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -236,89 +240,25 @@ export default async function ItemsPage({
             </Button>
           </CardContent>
         </Card>
-
-        {/* P3.3 — Stateful setup progress */}
-        <div className="mx-auto max-w-md space-y-3">
-          <p className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t.setup.heading}
-          </p>
-          {[
-            {
-              done: false, // we're in the empty-items branch
-              label: t.setup.step1,
-              doneLabel: t.setup.step1Done,
-              href: "/items/new",
-            },
-            {
-              done: hasLocation,
-              label: t.setup.step2,
-              doneLabel: t.setup.step2Done,
-              href: "/warehouses",
-              sublabel: hasLocation ? t.setup.step2Auto : undefined,
-            },
-            {
-              done: hasCompletedCount,
-              label: t.setup.step3,
-              doneLabel: t.setup.step3Done,
-              href: "/stock-counts/new",
-            },
-          ].map((step, i) => (
-            <Link
-              key={i}
-              href={step.href}
-              className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm transition-colors hover:bg-accent/50"
-            >
-              {step.done ? (
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
-                  <Check className="h-3.5 w-3.5" />
-                </span>
-              ) : (
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/40">
-                  <Circle className="h-2.5 w-2.5 text-muted-foreground/40" />
-                </span>
-              )}
-              <span className="flex-1">
-                <span className={step.done ? "text-muted-foreground line-through" : ""}>
-                  {step.done ? step.doneLabel : step.label}
-                </span>
-                {step.sublabel ? (
-                  <span className="block text-xs text-muted-foreground">{step.sublabel}</span>
-                ) : null}
-              </span>
-              {!step.done ? <ArrowRight className="h-4 w-4 text-muted-foreground" /> : null}
-            </Link>
-          ))}
-        </div>
-        </>
       ) : (
         <>
-        {/* P3.4 — Forward guidance banners */}
+        {/* ── CASE B: Items exist, setup incomplete — banner ───────────── */}
         {!setupComplete ? (
           <Alert>
             <Info className="h-4 w-4" />
             <AlertTitle>
               {!hasLocation
                 ? t.setup.bannerAddLocation
-                : hasCompletedCount
-                  ? t.setup.bannerComplete
-                  : t.setup.bannerReadyToCount}
+                : t.setup.bannerReadyToCount}
             </AlertTitle>
             <AlertDescription>
               <Button variant="link" className="h-auto p-0" asChild>
                 <Link
-                  href={
-                    !hasLocation
-                      ? "/warehouses/new"
-                      : hasCompletedCount
-                        ? "/reports"
-                        : "/stock-counts/new"
-                  }
+                  href={!hasLocation ? "/warehouses/new" : "/stock-counts/new"}
                 >
                   {!hasLocation
                     ? t.setup.bannerAddLocationCta
-                    : hasCompletedCount
-                      ? t.setup.bannerCompleteCta
-                      : t.setup.bannerReadyToCountCta}
+                    : t.setup.bannerReadyToCountCta}
                   <ArrowRight className="ml-1 inline h-3 w-3" />
                 </Link>
               </Button>
@@ -326,6 +266,76 @@ export default async function ItemsPage({
           </Alert>
         ) : null}
 
+        {/* ── CASE C: Setup complete — post-setup operational bridge ──── */}
+        {setupComplete ? (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">{t.setup.bridgeHeading}</h2>
+              <p className="text-sm text-muted-foreground">
+                {t.setup.bridgeSubtitle}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  icon: AlertTriangle,
+                  title: t.setup.bridgeReorderTitle,
+                  body: t.setup.bridgeReorderBody,
+                  cta: t.setup.bridgeReorderCta,
+                  href: "/items",
+                },
+                {
+                  icon: ArrowLeftRight,
+                  title: t.setup.bridgeMovementTitle,
+                  body: t.setup.bridgeMovementBody,
+                  cta: t.setup.bridgeMovementCta,
+                  href: "/movements",
+                },
+                {
+                  icon: BarChart3,
+                  title: t.setup.bridgeReportsTitle,
+                  body: t.setup.bridgeReportsBody,
+                  cta: t.setup.bridgeReportsCta,
+                  href: "/reports",
+                },
+                {
+                  icon: Users,
+                  title: t.setup.bridgeTeamTitle,
+                  body: t.setup.bridgeTeamBody,
+                  cta: t.setup.bridgeTeamCta,
+                  href: "/users",
+                },
+              ].map((card) => (
+                <Card key={card.href} className="flex flex-col">
+                  <CardHeader className="flex-1 space-y-1.5 pb-3">
+                    <card.icon className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {card.body}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      asChild
+                    >
+                      <Link href={card.href}>
+                        {card.cta}
+                        <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* ── Items table ─────────────────────────────────────────────── */}
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -398,6 +408,61 @@ export default async function ItemsPage({
         </Card>
         </>
       )}
+
+      {/* ── P5.2: Persistent setup checklist (visible until setupComplete) ── */}
+      {!setupComplete ? (
+        <div className="mx-auto max-w-md space-y-3">
+          <p className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t.setup.heading}
+          </p>
+          {[
+            {
+              done: hasItems,
+              label: t.setup.step1,
+              doneLabel: t.setup.step1Done,
+              href: "/items/new",
+            },
+            {
+              done: hasLocation,
+              label: t.setup.step2,
+              doneLabel: t.setup.step2Done,
+              href: "/warehouses",
+              sublabel: hasLocation ? t.setup.step2Auto : undefined,
+            },
+            {
+              done: hasCompletedCount,
+              label: t.setup.step3,
+              doneLabel: t.setup.step3Done,
+              href: "/stock-counts/new",
+            },
+          ].map((step, i) => (
+            <Link
+              key={i}
+              href={step.href}
+              className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm transition-colors hover:bg-accent/50"
+            >
+              {step.done ? (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              ) : (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/40">
+                  <Circle className="h-2.5 w-2.5 text-muted-foreground/40" />
+                </span>
+              )}
+              <span className="flex-1">
+                <span className={step.done ? "text-muted-foreground line-through" : ""}>
+                  {step.done ? step.doneLabel : step.label}
+                </span>
+                {step.sublabel ? (
+                  <span className="block text-xs text-muted-foreground">{step.sublabel}</span>
+                ) : null}
+              </span>
+              {!step.done ? <ArrowRight className="h-4 w-4 text-muted-foreground" /> : null}
+            </Link>
+          ))}
+        </div>
+      ) : null}
 
       <ItemsCacheSync scope={cacheScope} rows={cacheRows} />
     </div>

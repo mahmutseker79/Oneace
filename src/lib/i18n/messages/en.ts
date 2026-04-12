@@ -210,6 +210,27 @@ export const en = {
     bannerAddLocationCta: "Add location",
     bannerComplete: "Setup complete! View your operational reports.",
     bannerCompleteCta: "View reports",
+
+    // P5.1 — Post-setup operational bridge
+    bridgeHeading: "You're set up — here's what to do next",
+    bridgeSubtitle:
+      "Start building your day-to-day workflow with these next steps.",
+    bridgeReorderTitle: "Set reorder points",
+    bridgeReorderBody:
+      "Define minimum stock levels so you know when to reorder before running out.",
+    bridgeReorderCta: "Configure alerts",
+    bridgeMovementTitle: "Record a stock movement",
+    bridgeMovementBody:
+      "Log incoming shipments, transfers, or adjustments to keep quantities accurate.",
+    bridgeMovementCta: "New movement",
+    bridgeReportsTitle: "Review reports",
+    bridgeReportsBody:
+      "See valuation, turnover, and stock-level summaries across your locations.",
+    bridgeReportsCta: "View reports",
+    bridgeTeamTitle: "Invite your team",
+    bridgeTeamBody:
+      "Add colleagues so they can count stock and manage inventory with you.",
+    bridgeTeamCta: "Manage team",
   },
 
   items: {
