@@ -34,6 +34,10 @@ export type SidebarLabels = {
     analytics: string;
     admin: string;
   };
+  // P8.2 — optional badge counts passed from the layout
+  badges?: {
+    items?: string;
+  };
 };
 
 type NavItem = {
@@ -61,7 +65,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       // Core — no heading, always visible. The primary first-run flow:
       // Items → Locations → Stock Counts.
       items: [
-        { label: labels.nav.items, href: "/items", icon: Package },
+        { label: labels.nav.items, href: "/items", icon: Package, badge: labels.badges?.items },
         { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
         { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
       ],

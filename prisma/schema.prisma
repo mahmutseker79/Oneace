@@ -72,6 +72,11 @@ model Membership {
   // query will need an explicit `deactivatedAt: null` filter — the
   // column on its own changes nothing today.
   deactivatedAt  DateTime?
+  // P7.2 — Per-member UI state (bridge visits, dismissed flags, etc.)
+  // Additive nullable Json column. Existing rows are `null` (no UI
+  // state recorded). Parsed as `{ bridgeVisits?: number;
+  // bridgeDismissed?: boolean }` in application code.
+  uiState        Json?
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 

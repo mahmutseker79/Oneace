@@ -211,14 +211,44 @@ export const en = {
     bannerComplete: "Setup complete! View your operational reports.",
     bannerCompleteCta: "View reports",
 
+    // P7.5 — Import-aware setup step 1
+    step1Import: "or import from CSV",
+
+    // P7.4 — Setup completion success moment
+    completeBody:
+      "Your items, location, and first stock count are in place. The sections below will help you build your day-to-day workflow.",
+
     // P5.1 — Post-setup operational bridge
     bridgeHeading: "You're set up — here's what to do next",
     bridgeSubtitle:
       "Start building your day-to-day workflow with these next steps.",
+
+    // P7.1 — Context-aware reorder card states
     bridgeReorderTitle: "Set reorder points",
     bridgeReorderBody:
       "Define minimum stock levels so you know when to reorder before running out.",
     bridgeReorderCta: "Configure alerts",
+    bridgeReorderBodyNone:
+      "Open any item and set a minimum stock level. You'll see low-stock alerts once levels drop.",
+    // bridgeReorderCtaEdit removed in P8.3 — replaced by bridgeReorderCtaBatch
+    bridgeReorderTitlePartial: "Finish reorder setup",
+    bridgeReorderBodyPartial:
+      "{remaining} of {total} items still need a reorder point.",
+    bridgeReorderCtaReport: "Low-stock report",
+    bridgeReorderTitleDone: "Low-stock alerts active",
+    bridgeReorderBodyDone:
+      "All items have reorder points. Check for items that need reordering.",
+
+    // P8.1 — Low-stock alert banner
+    lowStockBannerTitle: "{count} items below reorder point",
+    lowStockBannerCta: "Review low-stock report",
+    // P8.4 — Direct PO shortcut
+    lowStockBannerCtaDirect: "Create purchase order for {supplier}",
+
+    // P8.3 — Batch reorder editor bridge CTAs
+    bridgeReorderCtaBatch: "Configure reorder points",
+    bridgeReorderCtaFinish: "Finish reorder setup",
+
     bridgeMovementTitle: "Record a stock movement",
     bridgeMovementBody:
       "Log incoming shipments, transfers, or adjustments to keep quantities accurate.",
@@ -231,6 +261,17 @@ export const en = {
     bridgeTeamBody:
       "Add colleagues so they can count stock and manage inventory with you.",
     bridgeTeamCta: "Manage team",
+
+    // P7.2 — Compact bridge
+    bridgeCompactLabel: "Next steps:",
+    bridgeDismissLabel: "Dismiss",
+
+    // P7.7 — Operational trust cues
+    trustSummary: "{items} items · {locations} location(s)",
+    trustLastCounted: "last counted",
+    trustLastCountLabel: "Last count:",
+    trustLastMovementLabel: "Last movement:",
+    trustEntries: "entries",
   },
 
   items: {
@@ -300,6 +341,24 @@ export const en = {
       active: "Active",
       archived: "Archived",
       draft: "Draft",
+    },
+    // P8.3 — Batch reorder-point editor
+    reorderConfig: {
+      metaTitle: "Configure Reorder Points",
+      backToItems: "Items",
+      heading: "Configure Reorder Points",
+      subtitle:
+        "Set reorder points and quantities for all your items. When stock drops to or below the reorder point, it will appear on the low-stock report.",
+      columnName: "Item",
+      columnSku: "SKU",
+      columnOnHand: "On Hand",
+      columnReorderPoint: "Reorder Point",
+      columnReorderQty: "Reorder Qty",
+      saveCta: "Save all changes",
+      saving: "Saving…",
+      noChanges: "No changes to save",
+      changedCount: "{count} items changed",
+      successToast: "Updated reorder points for {count} items",
     },
   },
 
@@ -773,7 +832,8 @@ export const en = {
     reconcile: {
       metaTitle: "Reconcile count",
       heading: "Reconcile count",
-      subtitle: "Review variances and choose whether to post ledger adjustments.",
+      subtitle:
+        "Review differences between expected and counted quantities, then decide whether to update stock levels.",
       backToDetail: "Back to count",
       tileTotal: "Total items",
       tileMatched: "Matched",
@@ -781,16 +841,21 @@ export const en = {
       tileOver: "Over",
       tileUnder: "Under",
       tileNet: "Net unit variance",
-      applyLabel: "Apply ledger adjustments automatically",
+      // P7.3 — Trust messaging: pre-completion context banner
+      consequenceTitle: "What happens when you complete this count",
+      consequenceBody:
+        "When you click Complete count with updates enabled, your on-hand stock quantities will change to match what was physically counted. This is permanent — previous quantities become history and all reports will reflect the new numbers going forward.",
+      applyLabel: "Update stock levels to match counted quantities",
       applyHelp:
-        "Posts an adjustment movement for every non-zero variance in the same transaction as completing the count.",
+        "For every item where your count differs from the current quantity, an adjustment will be recorded and on-hand stock will change.",
       applyWarning:
-        "With adjustments turned off the count will be marked completed but your ledger will stay out of sync until you post them manually.",
+        "Your count will be saved, but stock levels will NOT update. You will need to record adjustments manually later to correct differences.",
       submit: "Complete count",
       successTitle: "Count completed",
       successBody:
-        "{posted} adjustment movement(s) posted to the ledger. Your stock levels are up to date.",
-      successBodyNone: "No adjustments were posted. The count was saved with state completed.",
+        "{posted} stock adjustment(s) applied — your on-hand quantities now match what was counted.",
+      successBodyNone:
+        "Count recorded. All counted quantities matched — no adjustments needed.",
       viewCount: "View count",
       viewAll: "Back to all counts",
       cannotReconcile:

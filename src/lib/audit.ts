@@ -65,7 +65,13 @@ export type AuditAction =
   // carried in metadata. Only fresh writes emit; replays from the
   // offline queue's `alreadyExists` branch do NOT (dedupe already
   // happened, re-auditing would double-count).
-  | "stock_movement.created";
+  | "stock_movement.created"
+  // --- UI interaction tracking (Phase 8) -----------------------------------
+  // Lightweight bridge analytics. Fire-and-forget from client wrappers.
+  | "ui.bridge_card_click"
+  | "ui.bridge_dismiss"
+  | "ui.low_stock_banner_click"
+  | "ui.reorder_config_save";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
@@ -81,7 +87,9 @@ export type AuditEntityType =
   | "item"
   | "warehouse"
   | "stock_count"
-  | "stock_movement";
+  | "stock_movement"
+  // Phase 8 — UI interaction tracking
+  | "ui_interaction";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so

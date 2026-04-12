@@ -98,6 +98,8 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
   const summary = summarizeVariances(varianceRows);
 
   const reconcileLabels: ReconcileFormLabels = {
+    consequenceTitle: t.stockCounts.reconcile.consequenceTitle,
+    consequenceBody: t.stockCounts.reconcile.consequenceBody,
     applyLabel: t.stockCounts.reconcile.applyLabel,
     applyHelp: t.stockCounts.reconcile.applyHelp,
     applyWarning: t.stockCounts.reconcile.applyWarning,

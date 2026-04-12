@@ -24,6 +24,7 @@ type NavItem = {
   label: string;
   href: `/${string}`;
   icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
 };
 
 export function MobileNav({
@@ -42,7 +43,7 @@ export function MobileNav({
   const [adminOpen, setAdminOpen] = useState(isOnAdminPage);
 
   const coreItems: NavItem[] = [
-    { label: labels.nav.items, href: "/items", icon: Package },
+    { label: labels.nav.items, href: "/items", icon: Package, badge: labels.badges?.items },
     { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
     { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
   ];
@@ -77,6 +78,11 @@ export function MobileNav({
       >
         <Icon className="h-4 w-4" />
         <span>{item.label}</span>
+        {item.badge ? (
+          <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+            {item.badge}
+          </span>
+        ) : null}
       </Link>
     );
   }

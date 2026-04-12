@@ -1,10 +1,11 @@
 "use client";
 
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -12,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { completeStockCountAction } from "../../actions";
 
 export type ReconcileFormLabels = {
+  consequenceTitle: string;
+  consequenceBody: string;
   applyLabel: string;
   applyHelp: string;
   applyWarning: string;
@@ -83,7 +86,17 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
+      {/* P7.3 — Pre-completion trust messaging */}
+      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+        <Info className="h-4 w-4" />
+        <AlertTitle className="text-sm">{labels.consequenceTitle}</AlertTitle>
+        <AlertDescription className="text-xs">
+          {labels.consequenceBody}
+        </AlertDescription>
+      </Alert>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-start gap-3 rounded-md border p-4">
         <Checkbox
           id="apply-adjustments"
@@ -116,6 +129,7 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
           {labels.submit}
         </Button>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }

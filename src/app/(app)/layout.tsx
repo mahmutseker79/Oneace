@@ -5,6 +5,7 @@ import { SwRegister } from "@/components/pwa/sw-register";
 import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { AppShellClient } from "@/components/shell/app-shell-client";
 import { Sidebar } from "@/components/shell/sidebar";
+import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -22,6 +23,28 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     userId: session.user.id,
   };
 
+  // ── P8.2 — Low-stock badge for sidebar ────────────────────────────
+  // Lean query: only items with reorderPoint configured (typically small
+  // subset). Indexed by organizationId. Cost: ~1-3ms on warm DB.
+  const lowStockBadge = await (async () => {
+    const itemsWithReorder = await db.item.findMany({
+      where: {
+        organizationId: membership.organizationId,
+        status: "ACTIVE",
+        reorderPoint: { gt: 0 },
+      },
+      select: {
+        reorderPoint: true,
+        stockLevels: { select: { quantity: true } },
+      },
+    });
+    const count = itemsWithReorder.filter((item) => {
+      const onHand = item.stockLevels.reduce((sum, l) => sum + l.quantity, 0);
+      return onHand <= item.reorderPoint;
+    }).length;
+    return count > 0 ? String(count) : undefined;
+  })();
+
   return (
     <div className="min-h-screen">
       <SwRegister />
@@ -32,6 +55,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           versionLine: `${t.app.name} · v0.1.0`,
           statusLine: "Sprint 0 scaffold",
           nav: t.nav,
+          badges: { items: lowStockBadge },
         }}
       />
       <div className="lg:pl-64">
@@ -60,6 +84,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             versionLine: `${t.app.name} · v0.1.0`,
             statusLine: "Sprint 0 scaffold",
             nav: t.nav,
+            badges: { items: lowStockBadge },
           }}
         />
         <OfflineQueueBanner
