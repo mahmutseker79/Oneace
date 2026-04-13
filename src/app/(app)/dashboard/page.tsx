@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +26,8 @@ import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
+
+import { LazyTrendChart } from "./lazy-trend-chart";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -104,6 +105,37 @@ async function loadDashboardData(orgId: string) {
     .filter((item) => item.reorderPoint > 0 && item.onHand <= item.reorderPoint)
     .sort((a, b) => a.onHand - b.onHand - (a.reorderPoint - b.reorderPoint));
 
+  // Movement volume per day (last 14 days) for the trend chart.
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  const movementsForTrend = await db.stockMovement.findMany({
+    where: {
+      organizationId: orgId,
+      createdAt: { gte: fourteenDaysAgo },
+    },
+    select: { createdAt: true, type: true, quantity: true },
+  });
+
+  // Group by day
+  const dayMap = new Map<string, { receipts: number; issues: number; other: number }>();
+  for (const m of movementsForTrend) {
+    const day = m.createdAt.toISOString().slice(0, 10);
+    const bucket = dayMap.get(day) ?? { receipts: 0, issues: 0, other: 0 };
+    if (m.type === "RECEIPT") bucket.receipts += m.quantity;
+    else if (m.type === "ISSUE") bucket.issues += m.quantity;
+    else bucket.other += m.quantity;
+    dayMap.set(day, bucket);
+  }
+  // Fill missing days
+  const trendData: Array<{ day: string; receipts: number; issues: number; other: number }> = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const day = d.toISOString().slice(0, 10);
+    const bucket = dayMap.get(day) ?? { receipts: 0, issues: 0, other: 0 };
+    trendData.push({ day, ...bucket });
+  }
+
   return {
     activeItemCount,
     archivedItemCount,
@@ -113,6 +145,7 @@ async function loadDashboardData(orgId: string) {
     openCountCount,
     inProgressCountCount,
     recentMovements,
+    trendData,
   };
 }
 
@@ -121,10 +154,6 @@ async function loadDashboardData(orgId: string) {
 // =========================
 
 export default async function DashboardPage() {
-  // P1.3: Dashboard is no longer the primary entry point.
-  // Soft-redirect to /items so bookmarks and old links still work.
-  redirect("/items");
-
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
@@ -268,6 +297,24 @@ export default async function DashboardPage() {
           );
         })}
       </div>
+
+      {/* Movement trend chart — last 14 days */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t.dashboard.trendChart.title}</CardTitle>
+          <CardDescription>{t.dashboard.trendChart.subtitle}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LazyTrendChart
+            data={data.trendData}
+            labels={{
+              receipts: t.movements.types.RECEIPT,
+              issues: t.movements.types.ISSUE,
+              other: t.dashboard.trendChart.otherLabel,
+            }}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Low stock card */}

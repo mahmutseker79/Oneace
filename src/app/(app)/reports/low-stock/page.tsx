@@ -124,12 +124,20 @@ export default async function LowStockReportPage() {
               <p className="text-muted-foreground">{t.reports.lowStock.subtitle}</p>
             </div>
           </div>
-          <Button asChild variant="outline">
-            <Link href="/reports/low-stock/export">
-              <Download className="h-4 w-4" />
-              {t.common.exportCsv}
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/reports/low-stock/export-xlsx">
+                <Download className="h-4 w-4" />
+                {t.common.exportExcel}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/reports/low-stock/export">
+                <Download className="h-4 w-4" />
+                {t.common.exportCsv}
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 

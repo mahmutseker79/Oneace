@@ -158,12 +158,20 @@ export default async function StockValueReportPage() {
               <p className="text-muted-foreground">{t.reports.stockValue.subtitle}</p>
             </div>
           </div>
-          <Button asChild variant="outline">
-            <Link href="/reports/stock-value/export">
-              <Download className="h-4 w-4" />
-              {t.common.exportCsv}
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/reports/stock-value/export-xlsx">
+                <Download className="h-4 w-4" />
+                {t.common.exportExcel}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/reports/stock-value/export">
+                <Download className="h-4 w-4" />
+                {t.common.exportCsv}
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
