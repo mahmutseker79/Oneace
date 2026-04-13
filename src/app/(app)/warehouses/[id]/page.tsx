@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Warehouse as WarehouseIcon } from "lucide-react";
+import { ArrowLeft, Grid3X3, Pencil, Warehouse as WarehouseIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -18,7 +18,7 @@ import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
-type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "COUNT";
+type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "BIN_TRANSFER" | "COUNT";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -51,6 +51,7 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
       where: { warehouseId: id, organizationId: membership.organizationId },
       include: {
         item: { select: { id: true, sku: true, name: true, unit: true } },
+        bin: { select: { id: true, code: true, label: true } },
       },
       orderBy: { item: { name: "asc" } },
       take: 200,
@@ -67,6 +68,8 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
       take: 50,
     }),
   ]);
+
+  const hasBins = stockLevels.some((lvl) => lvl.bin != null);
 
   const dateFormatter = new Intl.DateTimeFormat(region.numberLocale, {
     dateStyle: "medium",
@@ -106,7 +109,13 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
           </div>
           <p className="font-mono text-sm text-muted-foreground">{warehouse.code}</p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/warehouses/${warehouse.id}/bins`}>
+              <Grid3X3 className="h-4 w-4" />
+              {t.bins.heading}
+            </Link>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link href={`/warehouses/${warehouse.id}/edit`}>
               <Pencil className="h-4 w-4" />
@@ -159,6 +168,7 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
                 <TableRow>
                   <TableHead>{t.warehouses.detail.stockColumnSku}</TableHead>
                   <TableHead>{t.warehouses.detail.stockColumnItem}</TableHead>
+                  {hasBins ? <TableHead>{t.bins.heading}</TableHead> : null}
                   <TableHead className="text-right">
                     {t.warehouses.detail.stockColumnOnHand}
                   </TableHead>
@@ -180,6 +190,11 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
                         {lvl.item.name}
                       </Link>
                     </TableCell>
+                    {hasBins ? (
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {lvl.bin ? lvl.bin.code : "—"}
+                      </TableCell>
+                    ) : null}
                     <TableCell className="text-right tabular-nums">
                       {lvl.quantity} {lvl.item.unit}
                     </TableCell>

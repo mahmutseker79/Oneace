@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
+import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type MovementInput,
@@ -117,6 +118,25 @@ async function writeMovement(args: WriteMovementArgs): Promise<WriteMovementOutc
     toWarehouseId = toWarehouse.id;
   }
 
+  // BIN_TRANSFER: validate that both bins exist within the warehouse
+  let binId: string | null = null;
+  let toBinId: string | null = null;
+  if (input.type === "BIN_TRANSFER") {
+    const [fromBin, toBin] = await Promise.all([
+      db.bin.findFirst({
+        where: { id: input.binId, warehouseId: input.warehouseId },
+        select: { id: true },
+      }),
+      db.bin.findFirst({
+        where: { id: input.toBinId, warehouseId: input.warehouseId },
+        select: { id: true },
+      }),
+    ]);
+    if (!fromBin || !toBin) return { kind: "constraintError" };
+    binId = fromBin.id;
+    toBinId = toBin.id;
+  }
+
   const sourceDelta = signedSourceDelta(input);
   const direction = movementDirection(input);
 
@@ -147,6 +167,8 @@ async function writeMovement(args: WriteMovementArgs): Promise<WriteMovementOutc
           itemId: input.itemId,
           warehouseId: input.warehouseId,
           toWarehouseId,
+          binId,
+          toBinId,
           type: input.type,
           quantity: input.quantity,
           direction,
@@ -158,44 +180,40 @@ async function writeMovement(args: WriteMovementArgs): Promise<WriteMovementOutc
         select: { id: true },
       });
 
-      // Upsert source warehouse stock level
-      await tx.stockLevel.upsert({
-        where: {
-          itemId_warehouseId: {
-            itemId: input.itemId,
-            warehouseId: input.warehouseId,
-          },
-        },
-        create: {
+      // BIN_TRANSFER: move stock between bins in the same warehouse
+      if (input.type === "BIN_TRANSFER" && binId && toBinId) {
+        await upsertStockLevel(tx, {
           organizationId: orgId,
           itemId: input.itemId,
           warehouseId: input.warehouseId,
-          quantity: sourceDelta,
-        },
-        update: {
-          quantity: { increment: sourceDelta },
-        },
-      });
+          binId,
+          quantityDelta: -input.quantity,
+        });
+        await upsertStockLevel(tx, {
+          organizationId: orgId,
+          itemId: input.itemId,
+          warehouseId: input.warehouseId,
+          binId: toBinId,
+          quantityDelta: input.quantity,
+        });
+      } else {
+        // Upsert source warehouse stock level
+        await upsertStockLevel(tx, {
+          organizationId: orgId,
+          itemId: input.itemId,
+          warehouseId: input.warehouseId,
+          quantityDelta: sourceDelta,
+        });
 
-      // TRANSFER additionally applies +quantity to the destination
-      if (input.type === "TRANSFER" && toWarehouseId) {
-        await tx.stockLevel.upsert({
-          where: {
-            itemId_warehouseId: {
-              itemId: input.itemId,
-              warehouseId: toWarehouseId,
-            },
-          },
-          create: {
+        // TRANSFER additionally applies +quantity to the destination
+        if (input.type === "TRANSFER" && toWarehouseId) {
+          await upsertStockLevel(tx, {
             organizationId: orgId,
             itemId: input.itemId,
             warehouseId: toWarehouseId,
-            quantity: input.quantity,
-          },
-          update: {
-            quantity: { increment: input.quantity },
-          },
-        });
+            quantityDelta: input.quantity,
+          });
+        }
       }
 
       return created;

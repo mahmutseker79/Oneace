@@ -10,7 +10,7 @@ import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
-type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "COUNT";
+type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "BIN_TRANSFER" | "COUNT";
 
 type PageProps = {
   params: Promise<{ id: string }>;

@@ -155,6 +155,7 @@ export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
       countId,
       itemId,
       warehouseId,
+      binId: null,
       countedQuantity: Math.trunc(quantity),
       counterTag: null,
       note: note.trim() === "" ? null : note.trim(),

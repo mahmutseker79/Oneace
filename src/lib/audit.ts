@@ -66,6 +66,10 @@ export type AuditAction =
   // offline queue's `alreadyExists` branch do NOT (dedupe already
   // happened, re-auditing would double-count).
   | "stock_movement.created"
+  // --- Bin lifecycle (P9.2) ------------------------------------------------
+  | "bin.created"
+  | "bin.updated"
+  | "bin.deleted"
   // --- UI interaction tracking (Phase 8) -----------------------------------
   // Lightweight bridge analytics. Fire-and-forget from client wrappers.
   | "ui.bridge_card_click"
@@ -88,6 +92,8 @@ export type AuditEntityType =
   | "warehouse"
   | "stock_count"
   | "stock_movement"
+  // P9.2 — bin sub-locations
+  | "bin"
   // Phase 8 — UI interaction tracking
   | "ui_interaction";
 

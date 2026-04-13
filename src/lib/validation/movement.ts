@@ -14,7 +14,13 @@ import { z } from "zod";
  * src/app/(app)/movements/actions.ts.
  */
 
-export const movementTypeEnum = z.enum(["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER"]);
+export const movementTypeEnum = z.enum([
+  "RECEIPT",
+  "ISSUE",
+  "ADJUSTMENT",
+  "TRANSFER",
+  "BIN_TRANSFER",
+]);
 export type MovementTypeInput = z.infer<typeof movementTypeEnum>;
 
 const optionalString = (max = 500) =>
@@ -93,6 +99,12 @@ export const movementInputSchema = z
       ...baseShape,
       toWarehouseId: requiredId("Destination warehouse is required"),
     }),
+    z.object({
+      type: z.literal("BIN_TRANSFER"),
+      ...baseShape,
+      binId: requiredId("Source bin is required"),
+      toBinId: requiredId("Destination bin is required"),
+    }),
   ])
   .superRefine((data, ctx) => {
     if (data.type === "TRANSFER" && data.toWarehouseId === data.warehouseId) {
@@ -100,6 +112,13 @@ export const movementInputSchema = z
         code: z.ZodIssueCode.custom,
         path: ["toWarehouseId"],
         message: "Destination must be different from the source warehouse",
+      });
+    }
+    if (data.type === "BIN_TRANSFER" && data.binId === data.toBinId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["toBinId"],
+        message: "Destination bin must be different from the source bin",
       });
     }
   });
@@ -143,6 +162,7 @@ export function signedSourceDelta(input: MovementInput): number {
   if (input.type === "RECEIPT") return input.quantity;
   if (input.type === "ISSUE") return -input.quantity;
   if (input.type === "ADJUSTMENT") return input.direction * input.quantity;
+  if (input.type === "BIN_TRANSFER") return -input.quantity;
   // TRANSFER (discriminated union exhaustive)
   return -input.quantity;
 }

@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
+import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { canAddEntry, canCancel, canReconcile } from "@/lib/stockcount/machine";
 import { calculateVariances } from "@/lib/stockcount/variance";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
@@ -280,6 +281,7 @@ async function writeCountEntry(args: WriteCountEntryArgs): Promise<WriteCountEnt
           countId: input.countId,
           itemId: input.itemId,
           warehouseId: input.warehouseId,
+          binId: input.binId ?? null,
           countedQuantity: input.countedQuantity,
           counterTag: input.counterTag,
           note: input.note,
@@ -639,22 +641,11 @@ export async function completeStockCountAction(
             stockCountId: count.id,
           },
         });
-        await tx.stockLevel.upsert({
-          where: {
-            itemId_warehouseId: {
-              itemId: row.itemId,
-              warehouseId: row.warehouseId,
-            },
-          },
-          create: {
-            organizationId: orgId,
-            itemId: row.itemId,
-            warehouseId: row.warehouseId,
-            quantity: direction * quantity,
-          },
-          update: {
-            quantity: { increment: direction * quantity },
-          },
+        await upsertStockLevel(tx, {
+          organizationId: orgId,
+          itemId: row.itemId,
+          warehouseId: row.warehouseId,
+          quantityDelta: direction * quantity,
         });
       }
       await tx.stockCount.update({

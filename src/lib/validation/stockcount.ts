@@ -90,6 +90,7 @@ export const addEntryInputSchema = z.object({
   countId: requiredId(),
   itemId: requiredId("Select an item"),
   warehouseId: requiredId("Select a warehouse"),
+  binId: optionalId,
   countedQuantity: nonNegativeInt,
   counterTag: optionalCounterTag,
   note: optionalNote,

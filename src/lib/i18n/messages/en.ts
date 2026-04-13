@@ -36,6 +36,7 @@ export const en = {
     confirm: "Confirm",
     confirmDelete: "This action cannot be undone. Are you sure?",
     exportCsv: "Export CSV",
+    exportExcel: "Export Excel",
     // Phase 6A / P2 — shared rate-limit copy for the four hotspots
     // protected by `src/lib/rate-limit.ts`. Each hotspot decides
     // whether to pass a `retryAfterSeconds` placeholder by appending
@@ -190,6 +191,11 @@ export const en = {
       columnWarehouse: "Location",
       columnQuantity: "Qty",
       columnWhen: "When",
+    },
+    trendChart: {
+      title: "Movement volume (14 days)",
+      subtitle: "Daily totals of receipts, issues, and other movements.",
+      otherLabel: "Other",
     },
   },
 
@@ -515,6 +521,49 @@ export const en = {
     },
   },
 
+  bins: {
+    metaTitle: "Bins",
+    heading: "Bins",
+    subtitle: "Sub-locations within this warehouse (shelves, racks, aisles).",
+    newBin: "New bin",
+    emptyTitle: "No bins yet",
+    emptyBody: "Add bins to track stock at specific shelves or locations within this warehouse.",
+    emptyCta: "Add your first bin",
+    columnCode: "Code",
+    columnLabel: "Label",
+    columnActions: "Actions",
+    fields: {
+      code: "Bin code",
+      codeHelp: "A short code like A-01-03 or RACK-B2.",
+      label: "Label",
+      labelHelp: "A human-readable name for this bin (optional).",
+      description: "Description",
+    },
+    errors: {
+      createFailed: "Could not create bin.",
+      updateFailed: "Could not update bin.",
+      deleteFailed: "Could not delete bin.",
+      codeExists: "A bin with this code already exists in this location.",
+      notFound: "Bin not found.",
+    },
+    created: "Bin created.",
+    updated: "Bin updated.",
+    deleted: "Bin deleted.",
+    deleteConfirmTitle: "Delete this bin?",
+    deleteConfirmBody: "Stock tracked in this bin will revert to warehouse-level tracking.",
+    printLabels: "Print labels",
+    printLabelsDescription: "Generate printable barcode labels for your bins.",
+    transfer: {
+      title: "Bin transfer",
+      trigger: "Transfer between bins",
+      item: "Item",
+      fromBin: "From bin",
+      toBin: "To bin",
+      quantity: "Quantity",
+      submit: "Transfer",
+    },
+  },
+
   categories: {
     metaTitle: "Categories",
     heading: "Categories",
@@ -578,6 +627,7 @@ export const en = {
       ISSUE: "Issue",
       ADJUSTMENT: "Adjustment",
       TRANSFER: "Transfer",
+      BIN_TRANSFER: "Bin transfer",
       COUNT: "Count",
     },
     typeHelp: {
@@ -585,6 +635,7 @@ export const en = {
       ISSUE: "Goods going out to a customer or external destination.",
       ADJUSTMENT: "Manual correction — damage, loss, found stock.",
       TRANSFER: "Move stock from one location to another.",
+      BIN_TRANSFER: "Move stock between bins within the same warehouse.",
     },
     fields: {
       type: "Movement type",
@@ -601,6 +652,9 @@ export const en = {
       referencePlaceholder: "PO-1234, INV-7788, …",
       note: "Note",
       notePlaceholder: "Optional context",
+      fromBin: "Source bin",
+      toBin: "Destination bin",
+      binPlaceholder: "Select a bin…",
     },
     errors: {
       createFailed: "Could not record this movement.",
@@ -1270,6 +1324,28 @@ export const en = {
       columnQuantity: "Qty",
       columnReserved: "Reserved",
     },
+    // P9.1 — Barcode UX Moat
+    continuousMode: "Continuous",
+    scanCount: "Scans",
+    mute: "Mute",
+    unmute: "Unmute",
+    history: "Scan history",
+    clearHistory: "Clear history",
+    noHistory: "No scans recorded yet.",
+    fullscreen: "Full screen",
+    exitFullscreen: "Exit full screen",
+    quickAdd: {
+      title: "Quick-add item",
+      description: "This barcode is not in your inventory yet. Create a new item with minimal details.",
+      barcodeLabel: "Barcode",
+      nameLabel: "Item name",
+      namePlaceholder: "e.g. Widget A",
+      createButton: "Create item",
+      creating: "Creating…",
+      errorGeneric: "Could not create item. Please try again.",
+      nameRequired: "Name is required.",
+      barcodeRequired: "Barcode is required.",
+    },
   },
 
   settings: {
@@ -1810,6 +1886,9 @@ export const en = {
       "stock_count.completed": "Completed stock count",
       "stock_count.cancelled": "Cancelled stock count",
       "stock_movement.created": "Recorded stock movement",
+      "bin.created": "Created bin",
+      "bin.updated": "Updated bin",
+      "bin.deleted": "Deleted bin",
       "ui.bridge_card_click": "Clicked bridge card",
       "ui.bridge_dismiss": "Dismissed bridge",
       "ui.low_stock_banner_click": "Clicked low-stock banner",

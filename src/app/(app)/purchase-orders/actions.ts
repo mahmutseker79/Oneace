@@ -9,6 +9,7 @@ import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { deriveReceiveIdempotencyKey } from "@/lib/purchase-orders/idempotency";
 import { requireActiveMembership } from "@/lib/session";
+import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type PurchaseOrderOutput,
@@ -605,20 +606,11 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
           },
         });
 
-        await tx.stockLevel.upsert({
-          where: {
-            itemId_warehouseId: {
-              itemId: line.itemId,
-              warehouseId: existing.warehouseId,
-            },
-          },
-          create: {
-            organizationId: orgId,
-            itemId: line.itemId,
-            warehouseId: existing.warehouseId,
-            quantity: delta,
-          },
-          update: { quantity: { increment: delta } },
+        await upsertStockLevel(tx, {
+          organizationId: orgId,
+          itemId: line.itemId,
+          warehouseId: existing.warehouseId,
+          quantityDelta: delta,
         });
 
         await tx.purchaseOrderLine.update({

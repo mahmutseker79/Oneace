@@ -25,7 +25,7 @@ import {
 } from "./filter";
 import { MovementsFilterBar } from "./movements-filter-bar";
 
-type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "COUNT";
+type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "BIN_TRANSFER" | "COUNT";
 
 // Result cap. Unfiltered view shows the most recent 200 (unchanged
 // from Sprint 2); filtered view raises to 500 so a date range can
