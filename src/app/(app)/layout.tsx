@@ -47,6 +47,12 @@ export default async function AppLayout({ children }: Readonly<{ children: React
 
   return (
     <div className="min-h-screen">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <SwRegister />
       <OfflineQueueRunner orgId={queueScope.orgId} userId={queueScope.userId} />
       <Sidebar
@@ -99,7 +105,9 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         <div className="flex justify-end px-4 pt-2 lg:px-6">
           <InstallAppButton labels={{ install: t.pwa.install.cta }} />
         </div>
-        <main className="p-4 lg:p-6">{children}</main>
+        <main id="main-content" className="p-4 lg:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
