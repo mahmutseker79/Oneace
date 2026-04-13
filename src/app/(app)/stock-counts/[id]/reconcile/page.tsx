@@ -50,6 +50,7 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
         select: {
           itemId: true,
           warehouseId: true,
+          binId: true,
           countedQuantity: true,
         },
       },

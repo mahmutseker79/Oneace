@@ -26,7 +26,7 @@ import { canAddEntry, canCancel, canReconcile } from "@/lib/stockcount/machine";
 import { type VarianceStatus, calculateVariances } from "@/lib/stockcount/variance";
 
 import { CancelDialog, type CancelDialogLabels } from "./cancel-dialog";
-import { EntryForm, type EntryFormLabels, type ScopeOption } from "./entry-form";
+import { type BinOption, EntryForm, type EntryFormLabels, type ScopeOption } from "./entry-form";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -77,7 +77,7 @@ export default async function StockCountDetailPage({ params }: PageProps) {
   // post on reconcile.
   const fullEntries = await db.countEntry.findMany({
     where: { countId: count.id, organizationId: membership.organizationId },
-    select: { itemId: true, warehouseId: true, countedQuantity: true },
+    select: { itemId: true, warehouseId: true, binId: true, countedQuantity: true },
   });
 
   // Resolve item and warehouse labels for snapshots + entries in a pair
@@ -100,7 +100,7 @@ export default async function StockCountDetailPage({ params }: PageProps) {
     ),
   );
 
-  const [items, warehouses, users] = await Promise.all([
+  const [items, warehouses, users, binsRaw] = await Promise.all([
     itemIds.length > 0
       ? db.item.findMany({
           where: { id: { in: itemIds }, organizationId: membership.organizationId },
@@ -119,11 +119,31 @@ export default async function StockCountDetailPage({ params }: PageProps) {
           select: { id: true, name: true, email: true },
         })
       : Promise.resolve([]),
+    // Fetch bins for all warehouses in scope so the entry form can
+    // offer a bin selector when the chosen warehouse has bins.
+    warehouseIds.length > 0
+      ? db.bin.findMany({
+          where: {
+            warehouseId: { in: warehouseIds },
+            isArchived: false,
+          },
+          select: { id: true, warehouseId: true, code: true, label: true },
+          orderBy: { code: "asc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   const itemById = new Map(items.map((item) => [item.id, item]));
   const warehouseById = new Map(warehouses.map((w) => [w.id, w]));
   const userById = new Map(users.map((u) => [u.id, u]));
+  const binById = new Map(binsRaw.map((b) => [b.id, b]));
+
+  // Bin options for the entry form selector.
+  const binOptions: BinOption[] = binsRaw.map((b) => ({
+    id: b.id,
+    warehouseId: b.warehouseId,
+    label: b.label ? `${b.code} — ${b.label}` : b.code,
+  }));
 
   const dateFormatter = new Intl.DateTimeFormat(region.numberLocale, {
     dateStyle: "medium",
@@ -213,6 +233,9 @@ export default async function StockCountDetailPage({ params }: PageProps) {
     itemPlaceholder: t.stockCounts.detail.addEntryItemPlaceholder,
     warehouse: t.stockCounts.detail.addEntryWarehouse,
     warehousePlaceholder: t.stockCounts.detail.addEntryWarehousePlaceholder,
+    bin: t.stockCounts.detail.addEntryBin,
+    binPlaceholder: t.stockCounts.detail.addEntryBinPlaceholder,
+    binNone: t.stockCounts.detail.addEntryBinNone,
     quantity: t.stockCounts.detail.addEntryQuantity,
     note: t.stockCounts.detail.addEntryNote,
     notePlaceholder: t.stockCounts.detail.addEntryNotePlaceholder,
@@ -355,6 +378,7 @@ export default async function StockCountDetailPage({ params }: PageProps) {
               countId={count.id}
               scope={{ orgId: membership.organizationId, userId: session.user.id }}
               rows={scopeRows}
+              bins={binOptions}
               labels={entryFormLabels}
             />
           </CardContent>
@@ -475,6 +499,7 @@ export default async function StockCountDetailPage({ params }: PageProps) {
                   <TableHead>{t.stockCounts.detail.entriesColumnWhen}</TableHead>
                   <TableHead>{t.stockCounts.detail.entriesColumnItem}</TableHead>
                   <TableHead>{t.stockCounts.detail.entriesColumnWarehouse}</TableHead>
+                  <TableHead>{t.stockCounts.detail.entriesColumnBin}</TableHead>
                   <TableHead className="text-right">
                     {t.stockCounts.detail.entriesColumnQty}
                   </TableHead>
@@ -506,6 +531,9 @@ export default async function StockCountDetailPage({ params }: PageProps) {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {warehouse?.name ?? entry.warehouseId}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {entry.binId ? (binById.get(entry.binId)?.code ?? entry.binId) : "—"}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {entry.countedQuantity}

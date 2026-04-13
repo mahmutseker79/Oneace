@@ -597,6 +597,7 @@ export async function completeStockCountAction(
         select: {
           itemId: true,
           warehouseId: true,
+          binId: true,
           countedQuantity: true,
         },
       },
@@ -622,6 +623,13 @@ export async function completeStockCountAction(
       for (const row of postable) {
         const quantity = Math.abs(row.variance);
         const direction = row.variance > 0 ? 1 : -1;
+        // P9.2 note: Adjustment movements are posted at WAREHOUSE level
+        // (binId = null) because snapshots and variances are computed at
+        // the (item, warehouse) grain. Entries carry binId for
+        // operational tracking (which bin the counter was at), but the
+        // variance delta applies to the warehouse-level StockLevel.
+        // Bin-level stock tracking is handled by RECEIPT, ISSUE, and
+        // BIN_TRANSFER movements — not by count adjustments.
         await tx.stockMovement.create({
           data: {
             organizationId: orgId,

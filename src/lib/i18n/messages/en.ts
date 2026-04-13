@@ -209,8 +209,7 @@ export const en = {
     step3: "Complete your first stock count",
     step3Done: "First count completed",
     complete: "Setup complete — your inventory is tracked.",
-    bannerReadyToCount:
-      "Items and locations are ready — time for your first stock count!",
+    bannerReadyToCount: "Items and locations are ready — time for your first stock count!",
     bannerReadyToCountCta: "Start stock count",
     bannerAddLocation: "Add a location so you can start counting stock.",
     bannerAddLocationCta: "Add location",
@@ -226,8 +225,7 @@ export const en = {
 
     // P5.1 — Post-setup operational bridge
     bridgeHeading: "You're set up — here's what to do next",
-    bridgeSubtitle:
-      "Start building your day-to-day workflow with these next steps.",
+    bridgeSubtitle: "Start building your day-to-day workflow with these next steps.",
 
     // P7.1 — Context-aware reorder card states
     bridgeReorderTitle: "Set reorder points",
@@ -238,12 +236,10 @@ export const en = {
       "Open any item and set a minimum stock level. You'll see low-stock alerts once levels drop.",
     // bridgeReorderCtaEdit removed in P8.3 — replaced by bridgeReorderCtaBatch
     bridgeReorderTitlePartial: "Finish reorder setup",
-    bridgeReorderBodyPartial:
-      "{remaining} of {total} items still need a reorder point.",
+    bridgeReorderBodyPartial: "{remaining} of {total} items still need a reorder point.",
     bridgeReorderCtaReport: "Low-stock report",
     bridgeReorderTitleDone: "Low-stock alerts active",
-    bridgeReorderBodyDone:
-      "All items have reorder points. Check for items that need reordering.",
+    bridgeReorderBodyDone: "All items have reorder points. Check for items that need reordering.",
 
     // P8.1 — Low-stock alert banner
     lowStockBannerTitle: "{count} items below reorder point",
@@ -260,12 +256,10 @@ export const en = {
       "Log incoming shipments, transfers, or adjustments to keep quantities accurate.",
     bridgeMovementCta: "New movement",
     bridgeReportsTitle: "Review reports",
-    bridgeReportsBody:
-      "See valuation, turnover, and stock-level summaries across your locations.",
+    bridgeReportsBody: "See valuation, turnover, and stock-level summaries across your locations.",
     bridgeReportsCta: "View reports",
     bridgeTeamTitle: "Invite your team",
-    bridgeTeamBody:
-      "Add colleagues so they can count stock and manage inventory with you.",
+    bridgeTeamBody: "Add colleagues so they can count stock and manage inventory with you.",
     bridgeTeamCta: "Manage team",
 
     // P7.2 — Compact bridge
@@ -847,6 +841,9 @@ export const en = {
       addEntryItemPlaceholder: "Select an item…",
       addEntryWarehouse: "Location",
       addEntryWarehousePlaceholder: "Select a location…",
+      addEntryBin: "Bin",
+      addEntryBinPlaceholder: "Select a bin…",
+      addEntryBinNone: "No bin (warehouse level)",
       addEntryQuantity: "Counted quantity",
       addEntryNote: "Note",
       addEntryNotePlaceholder: "Optional context",
@@ -865,6 +862,7 @@ export const en = {
       entriesColumnWhen: "When",
       entriesColumnItem: "Item",
       entriesColumnWarehouse: "Location",
+      entriesColumnBin: "Bin",
       entriesColumnQty: "Qty",
       entriesColumnNote: "Note",
       entriesColumnBy: "By",
@@ -908,8 +906,7 @@ export const en = {
       successTitle: "Count completed",
       successBody:
         "{posted} stock adjustment(s) applied — your on-hand quantities now match what was counted.",
-      successBodyNone:
-        "Count recorded. All counted quantities matched — no adjustments needed.",
+      successBodyNone: "Count recorded. All counted quantities matched — no adjustments needed.",
       viewCount: "View count",
       viewAll: "Back to all counts",
       cannotReconcile:
@@ -1336,7 +1333,8 @@ export const en = {
     exitFullscreen: "Exit full screen",
     quickAdd: {
       title: "Quick-add item",
-      description: "This barcode is not in your inventory yet. Create a new item with minimal details.",
+      description:
+        "This barcode is not in your inventory yet. Create a new item with minimal details.",
       barcodeLabel: "Barcode",
       nameLabel: "Item name",
       namePlaceholder: "e.g. Widget A",

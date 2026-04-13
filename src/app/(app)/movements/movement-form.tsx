@@ -52,6 +52,18 @@ export type MovementFormScope = {
   userId: string;
 };
 
+/**
+ * P9.2 architectural boundary: BIN_TRANSFER is intentionally excluded
+ * from this generic movement form. Bin-to-bin transfers live on the
+ * warehouse bins page (`/warehouses/[id]/bins`) where the user already
+ * has warehouse + bin context. The backend schema and validation layer
+ * accept BIN_TRANSFER, but the UI entry point is scoped to the bins
+ * page only. This avoids adding a complex cascading bin selector to
+ * the generic form that most users don't need.
+ *
+ * @see src/app/(app)/warehouses/[id]/bins/bin-transfer-dialog.tsx
+ * @see src/app/(app)/warehouses/[id]/bins/bin-transfer-action.ts
+ */
 type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER";
 
 type MovementFormProps = {

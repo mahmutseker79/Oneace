@@ -167,7 +167,10 @@ export function NewCountForm({ labels, items, warehouses }: NewCountFormProps) {
           <div className="space-y-4 border-t px-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="count-methodology">{labels.methodology}</Label>
-              <Select value={methodology} onValueChange={(v) => setMethodology(v as MethodologyKey)}>
+              <Select
+                value={methodology}
+                onValueChange={(v) => setMethodology(v as MethodologyKey)}
+              >
                 <SelectTrigger id="count-methodology">
                   <SelectValue />
                 </SelectTrigger>
@@ -176,7 +179,9 @@ export function NewCountForm({ labels, items, warehouses }: NewCountFormProps) {
                   <SelectItem value="CYCLE">{labels.methodologyOptions.CYCLE}</SelectItem>
                   <SelectItem value="SPOT">{labels.methodologyOptions.SPOT}</SelectItem>
                   <SelectItem value="BLIND">{labels.methodologyOptions.BLIND}</SelectItem>
-                  <SelectItem value="DOUBLE_BLIND">{labels.methodologyOptions.DOUBLE_BLIND}</SelectItem>
+                  <SelectItem value="DOUBLE_BLIND">
+                    {labels.methodologyOptions.DOUBLE_BLIND}
+                  </SelectItem>
                   <SelectItem value="DIRECTED">{labels.methodologyOptions.DIRECTED}</SelectItem>
                 </SelectContent>
               </Select>

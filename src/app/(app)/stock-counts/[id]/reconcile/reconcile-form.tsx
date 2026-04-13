@@ -91,44 +91,42 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
       <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
         <Info className="h-4 w-4" />
         <AlertTitle className="text-sm">{labels.consequenceTitle}</AlertTitle>
-        <AlertDescription className="text-xs">
-          {labels.consequenceBody}
-        </AlertDescription>
+        <AlertDescription className="text-xs">{labels.consequenceBody}</AlertDescription>
       </Alert>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-start gap-3 rounded-md border p-4">
-        <Checkbox
-          id="apply-adjustments"
-          checked={applyAdjustments}
-          onCheckedChange={(value) => setApplyAdjustments(value === true)}
-        />
-        <div className="space-y-1">
-          <Label htmlFor="apply-adjustments" className="cursor-pointer">
-            {labels.applyLabel}
-          </Label>
-          <p className="text-xs text-muted-foreground">{labels.applyHelp}</p>
-          {!applyAdjustments ? (
-            <p className="text-xs text-amber-600">{labels.applyWarning}</p>
-          ) : null}
+        <div className="flex items-start gap-3 rounded-md border p-4">
+          <Checkbox
+            id="apply-adjustments"
+            checked={applyAdjustments}
+            onCheckedChange={(value) => setApplyAdjustments(value === true)}
+          />
+          <div className="space-y-1">
+            <Label htmlFor="apply-adjustments" className="cursor-pointer">
+              {labels.applyLabel}
+            </Label>
+            <p className="text-xs text-muted-foreground">{labels.applyHelp}</p>
+            {!applyAdjustments ? (
+              <p className="text-xs text-amber-600">{labels.applyWarning}</p>
+            ) : null}
+          </div>
         </div>
-      </div>
 
-      {error ? (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {error}
+          </div>
+        ) : null}
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {labels.submit}
+          </Button>
         </div>
-      ) : null}
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {labels.submit}
-        </Button>
-      </div>
       </form>
     </div>
   );

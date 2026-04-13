@@ -28,12 +28,21 @@ export type ScopeOption = {
   warehouseLabel: string;
 };
 
+export type BinOption = {
+  id: string;
+  warehouseId: string;
+  label: string; // code + optional description
+};
+
 export type EntryFormLabels = {
   heading: string;
   item: string;
   itemPlaceholder: string;
   warehouse: string;
   warehousePlaceholder: string;
+  bin: string;
+  binPlaceholder: string;
+  binNone: string;
   quantity: string;
   note: string;
   notePlaceholder: string;
@@ -52,6 +61,7 @@ type EntryFormProps = {
   countId: string;
   scope: EntryFormScope;
   rows: ScopeOption[];
+  bins: BinOption[];
   labels: EntryFormLabels;
 };
 
@@ -85,10 +95,11 @@ type EntryFormProps = {
  * selected item stays so the same SKU can be hammered across
  * multiple bin locations without clicking the dropdown again.
  */
-export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
+export function EntryForm({ countId, scope, rows, bins, labels }: EntryFormProps) {
   const router = useRouter();
   const [itemId, setItemId] = useState<string>("");
   const [warehouseId, setWarehouseId] = useState<string>("");
+  const [binId, setBinId] = useState<string>("");
   const [countedQuantity, setCountedQuantity] = useState<string>("");
   const [note, setNote] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +107,9 @@ export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
 
   const itemOptions = Array.from(new Map(rows.map((row) => [row.itemId, row.itemLabel])).entries());
   const warehouseOptions = rows.filter((row) => row.itemId === itemId);
+  // Bins for the currently selected warehouse (empty when warehouse has no bins).
+  const binOptions = bins.filter((b) => b.warehouseId === warehouseId);
+  const hasBins = binOptions.length > 0;
 
   /**
    * Client-side feature check for `crypto.randomUUID`. All modern
@@ -117,7 +131,10 @@ export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
   function resetAfterSave() {
     setCountedQuantity("");
     setNote("");
-    // Keep itemId so the counter can hammer the same SKU across bins.
+    // Keep itemId + warehouseId so the counter can hammer the same
+    // SKU at the same location. binId resets so the counter picks
+    // the next bin.
+    setBinId("");
   }
 
   async function enqueueAndReset(idempotencyKey: string, input: AddEntryInput): Promise<void> {
@@ -151,11 +168,14 @@ export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
       return;
     }
 
+    // Resolve binId: "" or "__none__" → null (warehouse-level entry).
+    const resolvedBinId = binId !== "" && binId !== "__none__" ? binId : null;
+
     const input: AddEntryInput = {
       countId,
       itemId,
       warehouseId,
-      binId: null,
+      binId: resolvedBinId,
       countedQuantity: Math.trunc(quantity),
       counterTag: null,
       note: note.trim() === "" ? null : note.trim(),
@@ -205,6 +225,7 @@ export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
             onValueChange={(v) => {
               setItemId(v);
               setWarehouseId("");
+              setBinId("");
             }}
           >
             <SelectTrigger id="entry-item">
@@ -221,7 +242,14 @@ export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="entry-warehouse">{labels.warehouse}</Label>
-          <Select value={warehouseId} onValueChange={setWarehouseId} disabled={itemId === ""}>
+          <Select
+            value={warehouseId}
+            onValueChange={(v) => {
+              setWarehouseId(v);
+              setBinId("");
+            }}
+            disabled={itemId === ""}
+          >
             <SelectTrigger id="entry-warehouse">
               <SelectValue placeholder={labels.warehousePlaceholder} />
             </SelectTrigger>
@@ -235,6 +263,26 @@ export function EntryForm({ countId, scope, rows, labels }: EntryFormProps) {
           </Select>
         </div>
       </div>
+
+      {/* Bin selector — only shown when the selected warehouse has bins */}
+      {hasBins ? (
+        <div className="space-y-2">
+          <Label htmlFor="entry-bin">{labels.bin}</Label>
+          <Select value={binId} onValueChange={setBinId} disabled={warehouseId === ""}>
+            <SelectTrigger id="entry-bin">
+              <SelectValue placeholder={labels.binPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">{labels.binNone}</SelectItem>
+              {binOptions.map((bin) => (
+                <SelectItem key={bin.id} value={bin.id}>
+                  {bin.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
