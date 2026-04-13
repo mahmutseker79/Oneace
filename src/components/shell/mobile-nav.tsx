@@ -119,20 +119,22 @@ export function MobileNav({
             <div className="space-y-1">{analyticsItems.map(renderItem)}</div>
           </div>
 
-          {/* Admin — collapsible */}
-          <div className="mt-4 border-t pt-4">
-            <button
-              type="button"
-              onClick={() => setAdminOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>{labels.nav.admin}</span>
-              <ChevronDown
-                className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")}
-              />
-            </button>
-            {adminOpen ? <div className="mt-1 space-y-1">{adminItems.map(renderItem)}</div> : null}
-          </div>
+          {/* Admin — collapsible (P10.1: hidden for non-admin roles) */}
+          {labels.showAdmin !== false ? (
+            <div className="mt-4 border-t pt-4">
+              <button
+                type="button"
+                onClick={() => setAdminOpen((v) => !v)}
+                className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span>{labels.nav.admin}</span>
+                <ChevronDown
+                  className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")}
+                />
+              </button>
+              {adminOpen ? <div className="mt-1 space-y-1">{adminItems.map(renderItem)}</div> : null}
+            </div>
+          ) : null}
         </nav>
 
         <div className="border-t p-4 text-xs text-muted-foreground">

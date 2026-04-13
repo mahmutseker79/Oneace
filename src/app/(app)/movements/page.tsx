@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 import {
@@ -64,6 +65,10 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
+
+  // P10.1 — capability flags for conditional UI rendering
+  const canCreate = hasCapability(membership.role, "movements.create");
+  const canExport = hasCapability(membership.role, "reports.export");
 
   const filter = await parseMovementFilter(searchParams);
   const filterActive = hasAnyFilter(filter);
@@ -132,18 +137,22 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
           <p className="text-muted-foreground">{t.movements.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link href={buildExportHref(filter)}>
-              <Download className="h-4 w-4" />
-              {t.common.exportCsv}
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/movements/new">
-              <Plus className="h-4 w-4" />
-              {t.movements.newMovement}
-            </Link>
-          </Button>
+          {canExport ? (
+            <Button asChild variant="outline">
+              <Link href={buildExportHref(filter)}>
+                <Download className="h-4 w-4" />
+                {t.common.exportCsv}
+              </Link>
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button asChild>
+              <Link href="/movements/new">
+                <Plus className="h-4 w-4" />
+                {t.movements.newMovement}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -184,7 +193,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
               {filterActive ? t.movements.filter.emptyFilteredBody : t.movements.emptyBody}
             </CardDescription>
           </CardHeader>
-          {!filterActive ? (
+          {!filterActive && canCreate ? (
             <CardContent className="flex justify-center">
               <Button asChild>
                 <Link href="/movements/new">

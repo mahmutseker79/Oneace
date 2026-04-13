@@ -6,6 +6,7 @@ import { z } from "zod";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 
@@ -29,6 +30,10 @@ export async function binTransferAction(
 ): Promise<BinTransferResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "bins.transfer")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = binTransferSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {

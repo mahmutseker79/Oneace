@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import { hasCapability } from "@/lib/permissions";
 import { deriveReceiveIdempotencyKey } from "@/lib/purchase-orders/idempotency";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
@@ -129,6 +130,10 @@ export async function createPurchaseOrderAction(formData: FormData): Promise<Act
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
+  if (!hasCapability(membership.role, "purchaseOrders.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
+
   const parsed = purchaseOrderInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
     return {
@@ -222,6 +227,10 @@ export async function updatePurchaseOrderAction(
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
 
+  if (!hasCapability(membership.role, "purchaseOrders.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
+
   const parsed = purchaseOrderInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
     return {
@@ -305,6 +314,10 @@ export async function markPurchaseOrderSentAction(id: string): Promise<ActionRes
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
+  if (!hasCapability(membership.role, "purchaseOrders.send")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
+
   const existing = await db.purchaseOrder.findFirst({
     where: { id, organizationId: membership.organizationId },
     select: { id: true, status: true, poNumber: true },
@@ -336,6 +349,10 @@ export async function cancelPurchaseOrderAction(id: string): Promise<ActionResul
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
+  if (!hasCapability(membership.role, "purchaseOrders.cancel")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
+
   const existing = await db.purchaseOrder.findFirst({
     where: { id, organizationId: membership.organizationId },
     select: { id: true, status: true, poNumber: true },
@@ -366,6 +383,10 @@ export async function cancelPurchaseOrderAction(id: string): Promise<ActionResul
 export async function deletePurchaseOrderAction(id: string): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "purchaseOrders.delete")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const existing = await db.purchaseOrder.findFirst({
     where: { id, organizationId: membership.organizationId },
@@ -441,6 +462,10 @@ export async function deletePurchaseOrderAction(id: string): Promise<ActionResul
 export async function receivePurchaseOrderAction(formData: FormData): Promise<ReceiveResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "purchaseOrders.receive")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const rawReceipts = formData.get("receipts");
   let receipts: unknown[] = [];

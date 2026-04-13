@@ -45,6 +45,24 @@ export const en = {
     rateLimited: "You're doing that too fast. Please wait a moment and try again.",
   },
 
+  permissions: {
+    forbidden: "You don't have permission to do that.",
+    readOnly: "You have read-only access to this organization.",
+    roles: {
+      OWNER: "Owner",
+      ADMIN: "Admin",
+      MANAGER: "Operator",
+      MEMBER: "Operator",
+      VIEWER: "Viewer",
+    },
+    roleDescriptions: {
+      OWNER: "Full control over the organization, including deletion and ownership transfer.",
+      ADMIN: "Manage team, locations, and operational configuration.",
+      MEMBER: "Day-to-day inventory operations: items, movements, counts, and purchase orders.",
+      VIEWER: "Read-only access. Cannot create, edit, or delete anything.",
+    },
+  },
+
   nav: {
     dashboard: "Dashboard",
     items: "Items",

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 import { deleteSupplierAction } from "./actions";
@@ -29,6 +30,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SuppliersPage() {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  // P10.1 — capability flags for conditional UI rendering
+  const canCreate = hasCapability(membership.role, "suppliers.create");
+  const canEdit = hasCapability(membership.role, "suppliers.edit");
+  const canDelete = hasCapability(membership.role, "suppliers.delete");
 
   const suppliers = await db.supplier.findMany({
     where: { organizationId: membership.organizationId },
@@ -44,12 +50,14 @@ export default async function SuppliersPage() {
           <h1 className="text-2xl font-semibold">{t.suppliers.heading}</h1>
           <p className="text-muted-foreground">{t.suppliers.subtitle}</p>
         </div>
-        <Button asChild>
-          <Link href="/suppliers/new">
-            <Plus className="h-4 w-4" />
-            {t.suppliers.newSupplier}
-          </Link>
-        </Button>
+        {canCreate ? (
+          <Button asChild>
+            <Link href="/suppliers/new">
+              <Plus className="h-4 w-4" />
+              {t.suppliers.newSupplier}
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {suppliers.length === 0 ? (
@@ -61,14 +69,16 @@ export default async function SuppliersPage() {
             <CardTitle>{t.suppliers.emptyTitle}</CardTitle>
             <CardDescription>{t.suppliers.emptyBody}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button asChild>
-              <Link href="/suppliers/new">
-                <Plus className="h-4 w-4" />
-                {t.suppliers.emptyCta}
-              </Link>
-            </Button>
-          </CardContent>
+          {canCreate ? (
+            <CardContent className="flex justify-center">
+              <Button asChild>
+                <Link href="/suppliers/new">
+                  <Plus className="h-4 w-4" />
+                  {t.suppliers.emptyCta}
+                </Link>
+              </Button>
+            </CardContent>
+          ) : null}
         </Card>
       ) : (
         <Card>
@@ -108,20 +118,24 @@ export default async function SuppliersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/suppliers/${s.id}/edit`}>{t.common.edit}</Link>
-                        </Button>
-                        <DeleteButton
-                          labels={{
-                            trigger: t.common.delete,
-                            title: t.suppliers.deleteConfirmTitle,
-                            body: t.suppliers.deleteConfirmBody,
-                            cancel: t.common.cancel,
-                            confirm: t.common.delete,
-                          }}
-                          action={deleteSupplierAction.bind(null, s.id)}
-                          iconOnly
-                        />
+                        {canEdit ? (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/suppliers/${s.id}/edit`}>{t.common.edit}</Link>
+                          </Button>
+                        ) : null}
+                        {canDelete ? (
+                          <DeleteButton
+                            labels={{
+                              trigger: t.common.delete,
+                              title: t.suppliers.deleteConfirmTitle,
+                              body: t.suppliers.deleteConfirmBody,
+                              cancel: t.common.cancel,
+                              confirm: t.common.delete,
+                            }}
+                            action={deleteSupplierAction.bind(null, s.id)}
+                            iconOnly
+                          />
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>

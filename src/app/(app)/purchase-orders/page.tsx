@@ -17,6 +17,7 @@ import {
 import { PurchaseOrderStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
@@ -66,6 +67,10 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
+
+  // P10.1 — capability flags for conditional UI rendering
+  const canCreate = hasCapability(membership.role, "purchaseOrders.create");
+  const canExport = hasCapability(membership.role, "reports.export");
 
   const filter = await parsePurchaseOrderFilter(searchParams);
   const filterActive = hasAnyFilter(filter);
@@ -118,14 +123,16 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
             <CardTitle>{t.purchaseOrders.emptyTitle}</CardTitle>
             <CardDescription>{t.purchaseOrders.emptyNoSuppliers}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button asChild>
-              <Link href="/suppliers/new">
-                <Plus className="h-4 w-4" />
-                {t.purchaseOrders.emptyNoSuppliersCta}
-              </Link>
-            </Button>
-          </CardContent>
+          {canCreate ? (
+            <CardContent className="flex justify-center">
+              <Button asChild>
+                <Link href="/suppliers/new">
+                  <Plus className="h-4 w-4" />
+                  {t.purchaseOrders.emptyNoSuppliersCta}
+                </Link>
+              </Button>
+            </CardContent>
+          ) : null}
         </Card>
       </div>
     );
@@ -154,18 +161,22 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
           <p className="text-muted-foreground">{t.purchaseOrders.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link href={buildExportHref(filter)}>
-              <Download className="h-4 w-4" />
-              {t.common.exportCsv}
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/purchase-orders/new">
-              <Plus className="h-4 w-4" />
-              {t.purchaseOrders.newPurchaseOrder}
-            </Link>
-          </Button>
+          {canExport ? (
+            <Button asChild variant="outline">
+              <Link href={buildExportHref(filter)}>
+                <Download className="h-4 w-4" />
+                {t.common.exportCsv}
+              </Link>
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button asChild>
+              <Link href="/purchase-orders/new">
+                <Plus className="h-4 w-4" />
+                {t.purchaseOrders.newPurchaseOrder}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -205,7 +216,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
                 : t.purchaseOrders.emptyBody}
             </CardDescription>
           </CardHeader>
-          {!filterActive ? (
+          {!filterActive && canCreate ? (
             <CardContent className="flex justify-center">
               <Button asChild>
                 <Link href="/purchase-orders/new">

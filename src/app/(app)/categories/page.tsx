@@ -16,6 +16,7 @@ import {
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import type { CategorySnapshotRow } from "@/lib/offline/categories-cache";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 import { deleteCategoryAction } from "./actions";
@@ -30,6 +31,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CategoriesPage() {
   const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
+
+  // P10.1 — capability flags for conditional UI rendering
+  const canCreate = hasCapability(membership.role, "categories.create");
+  const canEdit = hasCapability(membership.role, "categories.edit");
+  const canDelete = hasCapability(membership.role, "categories.delete");
 
   const categories = await db.category.findMany({
     where: { organizationId: membership.organizationId },
@@ -82,14 +88,16 @@ export default async function CategoriesPage() {
         <p className="text-muted-foreground">{t.categories.subtitle}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t.categories.newCategory}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CategoryCreateForm labels={labels} parents={categories} />
-        </CardContent>
-      </Card>
+      {canCreate ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t.categories.newCategory}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CategoryCreateForm labels={labels} parents={categories} />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {categories.length === 0 ? (
         <Card>
@@ -123,22 +131,26 @@ export default async function CategoriesPage() {
                     <TableCell className="text-right tabular-nums">{c._count.items}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <CategoryRenameDialog
-                          categoryId={c.id}
-                          currentName={c.name}
-                          labels={renameLabels}
-                        />
-                        <DeleteButton
-                          labels={{
-                            trigger: t.common.delete,
-                            title: t.categories.deleteConfirmTitle,
-                            body: t.categories.deleteConfirmBody,
-                            cancel: t.common.cancel,
-                            confirm: t.common.delete,
-                          }}
-                          action={deleteCategoryAction.bind(null, c.id)}
-                          iconOnly
-                        />
+                        {canEdit ? (
+                          <CategoryRenameDialog
+                            categoryId={c.id}
+                            currentName={c.name}
+                            labels={renameLabels}
+                          />
+                        ) : null}
+                        {canDelete ? (
+                          <DeleteButton
+                            labels={{
+                              trigger: t.common.delete,
+                              title: t.categories.deleteConfirmTitle,
+                              body: t.categories.deleteConfirmBody,
+                              cancel: t.common.cancel,
+                              confirm: t.common.delete,
+                            }}
+                            action={deleteCategoryAction.bind(null, c.id)}
+                            iconOnly
+                          />
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>

@@ -6,6 +6,7 @@ import { Prisma } from "@/generated/prisma";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { canAddEntry, canCancel, canReconcile } from "@/lib/stockcount/machine";
@@ -67,6 +68,10 @@ export async function createStockCountAction(
 ): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "stockCounts.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = createCountInputSchema.safeParse(input);
   if (!parsed.success) {
@@ -346,6 +351,10 @@ export async function addCountEntryAction(
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
+  if (!hasCapability(membership.role, "stockCounts.addEntry")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
+
   const parsed = addEntryInputSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -435,6 +444,10 @@ export async function submitCountEntryOpAction(
 
   const t = await getMessages();
 
+  if (!hasCapability(membership.role, "stockCounts.addEntry")) {
+    return { ok: false, retryable: false, error: t.permissions.forbidden };
+  }
+
   const parsed = countEntryOpPayloadSchema.safeParse(payload);
   if (!parsed.success) {
     return {
@@ -500,6 +513,10 @@ export async function cancelStockCountAction(
 ): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "stockCounts.cancel")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = cancelCountInputSchema.safeParse(input);
   if (!parsed.success) {
@@ -571,6 +588,10 @@ export async function completeStockCountAction(
 ): Promise<ActionResult<{ id: string; postedMovements: number }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "stockCounts.reconcile")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = completeCountInputSchema.safeParse(input);
   if (!parsed.success) {

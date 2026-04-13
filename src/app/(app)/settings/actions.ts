@@ -13,6 +13,7 @@ import {
   SUPPORTED_LOCALES,
   SUPPORTED_REGIONS,
 } from "@/lib/i18n/config";
+import { hasCapability } from "@/lib/permissions";
 import { ACTIVE_ORG_COOKIE, requireActiveMembership } from "@/lib/session";
 import { organizationProfileSchema } from "@/lib/validation/organization";
 
@@ -20,19 +21,13 @@ export type SettingsActionResult =
   | { ok: true }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
-const ADMIN_ROLES: readonly Role[] = [Role.OWNER, Role.ADMIN];
-
-function isAdmin(role: Role): boolean {
-  return ADMIN_ROLES.includes(role);
-}
-
 export async function updateOrganizationProfileAction(
   formData: FormData,
 ): Promise<SettingsActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (!isAdmin(membership.role)) {
+  if (!hasCapability(membership.role, "org.editProfile")) {
     return { ok: false, error: t.settings.organization.errors.forbidden };
   }
 
@@ -143,7 +138,7 @@ export async function updateOrgDefaultsAction(formData: FormData): Promise<Setti
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (!isAdmin(membership.role)) {
+  if (!hasCapability(membership.role, "org.editDefaults")) {
     return { ok: false, error: t.settings.orgDefaults.errors.forbidden };
   }
 
@@ -253,7 +248,7 @@ export async function deleteOrganizationAction(
   const { membership, memberships } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (membership.role !== Role.OWNER) {
+  if (!hasCapability(membership.role, "org.delete")) {
     return {
       ok: false,
       error: t.settings.dangerZone.errors.forbidden,
@@ -394,7 +389,7 @@ export async function transferOrganizationAction(
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (membership.role !== Role.OWNER) {
+  if (!hasCapability(membership.role, "org.transfer")) {
     return {
       ok: false,
       error: t.settings.transferOwnership.errors.forbidden,

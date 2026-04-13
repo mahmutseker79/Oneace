@@ -18,6 +18,7 @@ import { buildInvitationEmail } from "@/lib/mail/templates/invitation-email";
 // Phase 6A / P2 — narrow rate-limit surface. See
 // `src/lib/rate-limit.ts` for the design note on why this is
 // explicitly fail-open.
+import { hasCapability } from "@/lib/permissions";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership, requireSession } from "@/lib/session";
 import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation/membership";
@@ -57,12 +58,6 @@ export type AcceptInvitationResult =
       reason: "expired" | "revoked" | "already" | "wrong_email" | "other";
     };
 
-const ADMIN_ROLES: readonly Role[] = [Role.OWNER, Role.ADMIN];
-
-function canManageTeam(role: Role): boolean {
-  return ADMIN_ROLES.includes(role);
-}
-
 async function isLastOwner(organizationId: string, membershipId: string): Promise<boolean> {
   const target = await db.membership.findUnique({
     where: { id: membershipId },
@@ -95,7 +90,7 @@ export async function inviteMemberAction(formData: FormData): Promise<InviteMemb
   const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (!canManageTeam(membership.role)) {
+  if (!hasCapability(membership.role, "team.invite")) {
     return { ok: false, error: t.users.invite.errors.forbidden };
   }
 
@@ -301,7 +296,7 @@ export async function revokeInvitationAction(invitationId: string): Promise<User
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (!canManageTeam(membership.role)) {
+  if (!hasCapability(membership.role, "team.invite")) {
     return { ok: false, error: t.users.invite.errors.forbidden };
   }
 
@@ -468,7 +463,7 @@ export async function updateMemberRoleAction(
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (!canManageTeam(membership.role)) {
+  if (!hasCapability(membership.role, "team.changeRole")) {
     return { ok: false, error: t.users.errors.forbidden };
   }
 
@@ -537,7 +532,7 @@ export async function removeMemberAction(membershipId: string): Promise<UsersAct
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
-  if (!canManageTeam(membership.role)) {
+  if (!hasCapability(membership.role, "team.remove")) {
     return { ok: false, error: t.users.errors.forbidden };
   }
 

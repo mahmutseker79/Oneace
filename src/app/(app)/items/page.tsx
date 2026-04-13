@@ -33,10 +33,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
+import { formatRelative } from "@/lib/format-relative";
 import { getMessages, getRegion } from "@/lib/i18n";
 import type { ItemSnapshotRow } from "@/lib/offline/items-cache";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
-import { formatRelative } from "@/lib/format-relative";
 import { formatCurrency } from "@/lib/utils";
 
 import { CompactBridge } from "@/components/bridge/compact-bridge";
@@ -72,6 +73,13 @@ export default async function ItemsPage({
 
   const params = (await searchParams) ?? {};
   const statusFilter = parseStatusFilter(params.status);
+
+  // P10.1 — capability flags for conditional UI rendering
+  const canCreate = hasCapability(membership.role, "items.create");
+  const canEdit = hasCapability(membership.role, "items.edit");
+  const canDelete = hasCapability(membership.role, "items.delete");
+  const canImport = hasCapability(membership.role, "items.import");
+  const canExport = hasCapability(membership.role, "reports.export");
 
   const items = await db.item.findMany({
     where: {
@@ -168,13 +176,11 @@ export default async function ItemsPage({
 
   // ── P8.4 — Identify single dominant supplier for direct PO shortcut ─
   const lowStockSupplierIds = new Set(
-    lowStockItems
-      .map((item) => item.preferredSupplier?.id)
-      .filter(Boolean),
+    lowStockItems.map((item) => item.preferredSupplier?.id).filter(Boolean),
   );
   const singleSupplier =
     lowStockSupplierIds.size === 1
-      ? lowStockItems.find((item) => item.preferredSupplier)?.preferredSupplier ?? null
+      ? (lowStockItems.find((item) => item.preferredSupplier)?.preferredSupplier ?? null)
       : null;
   const directPoHref = singleSupplier
     ? `/purchase-orders/new?supplier=${singleSupplier.id}&items=${lowStockItems.map((i) => i.id).join(",")}`
@@ -310,24 +316,30 @@ export default async function ItemsPage({
           />
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link href="/items/export">
-              <Download className="h-4 w-4" />
-              {t.common.exportCsv}
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/items/import">
-              <FileUp className="h-4 w-4" />
-              {t.items.importCta}
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/items/new">
-              <Plus className="h-4 w-4" />
-              {t.items.newItem}
-            </Link>
-          </Button>
+          {canExport ? (
+            <Button asChild variant="outline">
+              <Link href="/items/export">
+                <Download className="h-4 w-4" />
+                {t.common.exportCsv}
+              </Link>
+            </Button>
+          ) : null}
+          {canImport ? (
+            <Button asChild variant="outline">
+              <Link href="/items/import">
+                <FileUp className="h-4 w-4" />
+                {t.items.importCta}
+              </Link>
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button asChild>
+              <Link href="/items/new">
+                <Plus className="h-4 w-4" />
+                {t.items.newItem}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -365,13 +377,17 @@ export default async function ItemsPage({
           {lastCount ? (
             <span>
               {t.setup.trustLastCountLabel}{" "}
-              <span className="tabular-nums">{formatRelative(lastCount.updatedAt, undefined, region.numberLocale)}</span>
+              <span className="tabular-nums">
+                {formatRelative(lastCount.updatedAt, undefined, region.numberLocale)}
+              </span>
             </span>
           ) : null}
           {lastMovement ? (
             <span>
               {t.setup.trustLastMovementLabel}{" "}
-              <span className="tabular-nums">{formatRelative(lastMovement.createdAt, undefined, region.numberLocale)}</span>
+              <span className="tabular-nums">
+                {formatRelative(lastMovement.createdAt, undefined, region.numberLocale)}
+              </span>
             </span>
           ) : null}
         </div>
@@ -416,262 +432,257 @@ export default async function ItemsPage({
             <CardTitle>{t.items.emptyTitle}</CardTitle>
             <CardDescription>{t.items.emptyBody}</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center gap-2">
-            <Button asChild>
-              <Link href="/items/new">
-                <Plus className="h-4 w-4" />
-                {t.items.emptyCta}
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/items/import">
-                <FileUp className="h-4 w-4" />
-                {t.items.emptyImportCta}
-              </Link>
-            </Button>
-          </CardContent>
+          {canCreate ? (
+            <CardContent className="flex flex-col items-center gap-2">
+              <Button asChild>
+                <Link href="/items/new">
+                  <Plus className="h-4 w-4" />
+                  {t.items.emptyCta}
+                </Link>
+              </Button>
+              {canImport ? (
+                <Button asChild variant="outline">
+                  <Link href="/items/import">
+                    <FileUp className="h-4 w-4" />
+                    {t.items.emptyImportCta}
+                  </Link>
+                </Button>
+              ) : null}
+            </CardContent>
+          ) : null}
         </Card>
       ) : (
         <>
-        {/* ── CASE B: Items exist, setup incomplete — banner ───────────── */}
-        {!setupComplete ? (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>
-              {!hasLocation
-                ? t.setup.bannerAddLocation
-                : t.setup.bannerReadyToCount}
-            </AlertTitle>
-            <AlertDescription>
-              <Button variant="link" className="h-auto p-0" asChild>
-                <Link
-                  href={!hasLocation ? "/warehouses/new" : "/stock-counts/new"}
-                >
-                  {!hasLocation
-                    ? t.setup.bannerAddLocationCta
-                    : t.setup.bannerReadyToCountCta}
-                  <ArrowRight className="ml-1 inline h-3 w-3" />
-                </Link>
-              </Button>
-            </AlertDescription>
-          </Alert>
-        ) : null}
+          {/* ── CASE B: Items exist, setup incomplete — banner ───────────── */}
+          {!setupComplete ? (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertTitle>
+                {!hasLocation ? t.setup.bannerAddLocation : t.setup.bannerReadyToCount}
+              </AlertTitle>
+              <AlertDescription>
+                <Button variant="link" className="h-auto p-0" asChild>
+                  <Link href={!hasLocation ? "/warehouses/new" : "/stock-counts/new"}>
+                    {!hasLocation ? t.setup.bannerAddLocationCta : t.setup.bannerReadyToCountCta}
+                    <ArrowRight className="ml-1 inline h-3 w-3" />
+                  </Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
-        {/* ── P7.4 + P8.5b: Success moment — shown once, then flagged ── */}
-        {showSuccessBanner ? (
-          <Alert className="border-emerald-500/40 bg-emerald-500/10">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <AlertTitle>{t.setup.complete}</AlertTitle>
-            <AlertDescription className="text-sm text-muted-foreground">
-              {t.setup.completeBody}
-            </AlertDescription>
-          </Alert>
-        ) : null}
+          {/* ── P7.4 + P8.5b: Success moment — shown once, then flagged ── */}
+          {showSuccessBanner ? (
+            <Alert className="border-emerald-500/40 bg-emerald-500/10">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <AlertTitle>{t.setup.complete}</AlertTitle>
+              <AlertDescription className="text-sm text-muted-foreground">
+                {t.setup.completeBody}
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
-        {/* ── CASE C: Setup complete — post-setup operational bridge ──── */}
-        {/* P7.2: bridge renders as full → compact → gone based on bridgeStage */}
-        {setupComplete && bridgeStage === "full" ? (
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold">{t.setup.bridgeHeading}</h2>
-              <p className="text-sm text-muted-foreground">
-                {t.setup.bridgeSubtitle}
-              </p>
-            </div>
-            {/* Desktop: full cards — hidden on mobile */}
-            <div className="hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                reorderCard,
-                {
-                  icon: ArrowLeftRight,
-                  title: t.setup.bridgeMovementTitle,
-                  body: t.setup.bridgeMovementBody,
-                  cta: t.setup.bridgeMovementCta,
-                  href: "/movements",
-                },
-                {
-                  icon: BarChart3,
-                  title: t.setup.bridgeReportsTitle,
-                  body: t.setup.bridgeReportsBody,
-                  cta: t.setup.bridgeReportsCta,
-                  href: "/reports",
-                },
-                {
-                  icon: Users,
-                  title: t.setup.bridgeTeamTitle,
-                  body: t.setup.bridgeTeamBody,
-                  cta: t.setup.bridgeTeamCta,
-                  href: "/users",
-                },
-              ].map((card) => (
-                <Card key={card.href} className="flex flex-col">
-                  <CardHeader className="flex-1 space-y-1.5 pb-3">
-                    <card.icon className="h-5 w-5 text-muted-foreground" />
-                    <CardTitle className="text-sm font-medium">
-                      {card.title}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {card.body}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      asChild
-                    >
-                      <Link href={card.href}>
-                        {card.cta}
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            {/* Mobile: compact 2×2 grid — visible only below sm */}
-            <div className="grid grid-cols-2 gap-2 sm:hidden">
-              {[
-                reorderCard,
-                {
-                  icon: ArrowLeftRight,
-                  title: t.setup.bridgeMovementTitle,
-                  cta: t.setup.bridgeMovementCta,
-                  href: "/movements",
-                },
-                {
-                  icon: BarChart3,
-                  title: t.setup.bridgeReportsTitle,
-                  cta: t.setup.bridgeReportsCta,
-                  href: "/reports",
-                },
-                {
-                  icon: Users,
-                  title: t.setup.bridgeTeamTitle,
-                  cta: t.setup.bridgeTeamCta,
-                  href: "/users",
-                },
-              ].map((card) => (
-                <Link
-                  key={card.href}
-                  href={card.href}
-                  className="flex flex-col items-center gap-1 rounded-md border p-3 text-center text-xs transition-colors hover:bg-accent/50"
-                >
-                  <card.icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium leading-tight">{card.title}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {/* P7.2: Compact bridge — single row with quick-links + dismiss */}
-        {setupComplete && bridgeStage === "compact" ? (
-          <CompactBridge
-            links={[
-              { title: reorderCard.cta, href: reorderCard.href },
-              { title: t.setup.bridgeMovementCta, href: "/movements" },
-              { title: t.setup.bridgeReportsCta, href: "/reports" },
-              { title: t.setup.bridgeTeamCta, href: "/users" },
-            ]}
-            labels={{
-              label: t.setup.bridgeCompactLabel,
-              dismissLabel: t.setup.bridgeDismissLabel,
-            }}
-            dismissAction={dismissBridgeAction}
-          />
-        ) : null}
-
-        {/* ── Items table ─────────────────────────────────────────────── */}
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t.items.columnSku}</TableHead>
-                  <TableHead>{t.items.columnName}</TableHead>
-                  <TableHead>{t.items.columnCategory}</TableHead>
-                  <TableHead className="text-right">{t.items.columnStock}</TableHead>
-                  <TableHead>{t.items.columnStatus}</TableHead>
-                  <TableHead className="w-36 text-right">{t.items.columnActions}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => {
-                  const onHand = item.stockLevels.reduce((sum, level) => sum + level.quantity, 0);
-                  const price = item.salePrice
-                    ? formatCurrency(Number(item.salePrice), {
-                        currency: item.currency,
-                        locale: region.numberLocale,
-                      })
-                    : null;
-                  return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-mono text-xs">{item.sku}</TableCell>
-                      <TableCell>
-                        <Link href={`/items/${item.id}`} className="font-medium hover:underline">
-                          {item.name}
+          {/* ── CASE C: Setup complete — post-setup operational bridge ──── */}
+          {/* P7.2: bridge renders as full → compact → gone based on bridgeStage */}
+          {setupComplete && bridgeStage === "full" ? (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold">{t.setup.bridgeHeading}</h2>
+                <p className="text-sm text-muted-foreground">{t.setup.bridgeSubtitle}</p>
+              </div>
+              {/* Desktop: full cards — hidden on mobile */}
+              <div className="hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  reorderCard,
+                  {
+                    icon: ArrowLeftRight,
+                    title: t.setup.bridgeMovementTitle,
+                    body: t.setup.bridgeMovementBody,
+                    cta: t.setup.bridgeMovementCta,
+                    href: "/movements",
+                  },
+                  {
+                    icon: BarChart3,
+                    title: t.setup.bridgeReportsTitle,
+                    body: t.setup.bridgeReportsBody,
+                    cta: t.setup.bridgeReportsCta,
+                    href: "/reports",
+                  },
+                  {
+                    icon: Users,
+                    title: t.setup.bridgeTeamTitle,
+                    body: t.setup.bridgeTeamBody,
+                    cta: t.setup.bridgeTeamCta,
+                    href: "/users",
+                  },
+                ].map((card) => (
+                  <Card key={card.href} className="flex flex-col">
+                    <CardHeader className="flex-1 space-y-1.5 pb-3">
+                      <card.icon className="h-5 w-5 text-muted-foreground" />
+                      <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+                      <CardDescription className="text-xs">{card.body}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <Button variant="outline" size="sm" className="w-full" asChild>
+                        <Link href={card.href}>
+                          {card.cta}
+                          <ArrowRight className="ml-1 h-3 w-3" />
                         </Link>
-                        {price ? (
-                          <div className="text-xs text-muted-foreground">{price}</div>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {item.category?.name ?? t.common.none}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {onHand} {item.unit}
-                      </TableCell>
-                      <TableCell>{statusBadge(item.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/items/${item.id}`} aria-label={t.common.search}>
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/items/${item.id}/edit`}>{t.common.edit}</Link>
-                          </Button>
-                          <DeleteButton
-                            labels={{
-                              trigger: t.common.delete,
-                              title: t.items.deleteConfirmTitle,
-                              body: t.items.deleteConfirmBody,
-                              cancel: t.common.cancel,
-                              confirm: t.common.delete,
-                            }}
-                            action={deleteItemAction.bind(null, item.id)}
-                            iconOnly
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {/* Mobile: compact 2×2 grid — visible only below sm */}
+              <div className="grid grid-cols-2 gap-2 sm:hidden">
+                {[
+                  reorderCard,
+                  {
+                    icon: ArrowLeftRight,
+                    title: t.setup.bridgeMovementTitle,
+                    cta: t.setup.bridgeMovementCta,
+                    href: "/movements",
+                  },
+                  {
+                    icon: BarChart3,
+                    title: t.setup.bridgeReportsTitle,
+                    cta: t.setup.bridgeReportsCta,
+                    href: "/reports",
+                  },
+                  {
+                    icon: Users,
+                    title: t.setup.bridgeTeamTitle,
+                    cta: t.setup.bridgeTeamCta,
+                    href: "/users",
+                  },
+                ].map((card) => (
+                  <Link
+                    key={card.href}
+                    href={card.href}
+                    className="flex flex-col items-center gap-1 rounded-md border p-3 text-center text-xs transition-colors hover:bg-accent/50"
+                  >
+                    <card.icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium leading-tight">{card.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
-        {/* ── P7.7: Activity footer — recent count + movement links ──── */}
-        {setupComplete && (lastCount || lastMovement) ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            {lastCount ? (
-              <Link href={`/stock-counts/${lastCount.id}`} className="hover:underline">
-                {t.setup.trustLastCountLabel} {lastCount.name ?? t.common.unknown}{" "}
-                <span className="tabular-nums">({formatRelative(lastCount.updatedAt, undefined, region.numberLocale)})</span>
-              </Link>
-            ) : null}
-            {lastMovement ? (
-              <Link href="/movements" className="hover:underline">
-                {t.setup.trustLastMovementLabel}{" "}
-                <span className="tabular-nums">{formatRelative(lastMovement.createdAt, undefined, region.numberLocale)}</span>
-              </Link>
-            ) : null}
-          </div>
-        ) : null}
+          {/* P7.2: Compact bridge — single row with quick-links + dismiss */}
+          {setupComplete && bridgeStage === "compact" ? (
+            <CompactBridge
+              links={[
+                { title: reorderCard.cta, href: reorderCard.href },
+                { title: t.setup.bridgeMovementCta, href: "/movements" },
+                { title: t.setup.bridgeReportsCta, href: "/reports" },
+                { title: t.setup.bridgeTeamCta, href: "/users" },
+              ]}
+              labels={{
+                label: t.setup.bridgeCompactLabel,
+                dismissLabel: t.setup.bridgeDismissLabel,
+              }}
+              dismissAction={dismissBridgeAction}
+            />
+          ) : null}
+
+          {/* ── Items table ─────────────────────────────────────────────── */}
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.items.columnSku}</TableHead>
+                    <TableHead>{t.items.columnName}</TableHead>
+                    <TableHead>{t.items.columnCategory}</TableHead>
+                    <TableHead className="text-right">{t.items.columnStock}</TableHead>
+                    <TableHead>{t.items.columnStatus}</TableHead>
+                    <TableHead className="w-36 text-right">{t.items.columnActions}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => {
+                    const onHand = item.stockLevels.reduce((sum, level) => sum + level.quantity, 0);
+                    const price = item.salePrice
+                      ? formatCurrency(Number(item.salePrice), {
+                          currency: item.currency,
+                          locale: region.numberLocale,
+                        })
+                      : null;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                        <TableCell>
+                          <Link href={`/items/${item.id}`} className="font-medium hover:underline">
+                            {item.name}
+                          </Link>
+                          {price ? (
+                            <div className="text-xs text-muted-foreground">{price}</div>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {item.category?.name ?? t.common.none}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {onHand} {item.unit}
+                        </TableCell>
+                        <TableCell>{statusBadge(item.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={`/items/${item.id}`} aria-label={t.common.search}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            {canEdit ? (
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/items/${item.id}/edit`}>{t.common.edit}</Link>
+                              </Button>
+                            ) : null}
+                            {canDelete ? (
+                              <DeleteButton
+                                labels={{
+                                  trigger: t.common.delete,
+                                  title: t.items.deleteConfirmTitle,
+                                  body: t.items.deleteConfirmBody,
+                                  cancel: t.common.cancel,
+                                  confirm: t.common.delete,
+                                }}
+                                action={deleteItemAction.bind(null, item.id)}
+                                iconOnly
+                              />
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* ── P7.7: Activity footer — recent count + movement links ──── */}
+          {setupComplete && (lastCount || lastMovement) ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+              {lastCount ? (
+                <Link href={`/stock-counts/${lastCount.id}`} className="hover:underline">
+                  {t.setup.trustLastCountLabel} {lastCount.name ?? t.common.unknown}{" "}
+                  <span className="tabular-nums">
+                    ({formatRelative(lastCount.updatedAt, undefined, region.numberLocale)})
+                  </span>
+                </Link>
+              ) : null}
+              {lastMovement ? (
+                <Link href="/movements" className="hover:underline">
+                  {t.setup.trustLastMovementLabel}{" "}
+                  <span className="tabular-nums">
+                    {formatRelative(lastMovement.createdAt, undefined, region.numberLocale)}
+                  </span>
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
         </>
       )}
 
@@ -731,7 +742,9 @@ export default async function ItemsPage({
                 <span>
                   {step.done ? step.doneLabel : step.label}
                   {step.sublabel ? (
-                    <span className="block text-xs text-muted-foreground font-normal no-underline">{step.sublabel}</span>
+                    <span className="block text-xs text-muted-foreground font-normal no-underline">
+                      {step.sublabel}
+                    </span>
                   ) : null}
                 </span>
                 {!step.done ? (
@@ -739,7 +752,10 @@ export default async function ItemsPage({
                 ) : null}
               </Link>
               {!step.done && step.sublabelHref ? (
-                <Link href={step.sublabelHref} className="block text-xs text-muted-foreground hover:underline -mt-1">
+                <Link
+                  href={step.sublabelHref}
+                  className="block text-xs text-muted-foreground hover:underline -mt-1"
+                >
                   {step.sublabelText}
                 </Link>
               ) : null}

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 type CountState = "OPEN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
@@ -36,6 +37,9 @@ export default async function StockCountsPage() {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
+
+  // P10.1 — capability flag for conditional UI rendering
+  const canCreate = hasCapability(membership.role, "stockCounts.create");
 
   const counts = await db.stockCount.findMany({
     where: { organizationId: membership.organizationId },
@@ -122,12 +126,14 @@ export default async function StockCountsPage() {
           <h1 className="text-2xl font-semibold">{t.stockCounts.heading}</h1>
           <p className="text-muted-foreground">{t.stockCounts.subtitle}</p>
         </div>
-        <Button asChild>
-          <Link href="/stock-counts/new">
-            <Plus className="h-4 w-4" />
-            {t.stockCounts.newCount}
-          </Link>
-        </Button>
+        {canCreate ? (
+          <Button asChild>
+            <Link href="/stock-counts/new">
+              <Plus className="h-4 w-4" />
+              {t.stockCounts.newCount}
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {counts.length === 0 ? (
@@ -140,12 +146,14 @@ export default async function StockCountsPage() {
             <CardDescription>{t.stockCounts.emptyBody}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-2">
-            <Button asChild>
-              <Link href="/stock-counts/new">
-                <Plus className="h-4 w-4" />
-                {t.stockCounts.emptyCta}
-              </Link>
-            </Button>
+            {canCreate ? (
+              <Button asChild>
+                <Link href="/stock-counts/new">
+                  <Plus className="h-4 w-4" />
+                  {t.stockCounts.emptyCta}
+                </Link>
+              </Button>
+            ) : null}
             <div className="flex flex-wrap justify-center gap-2">
               <Button asChild variant="outline" size="sm">
                 <Link href="/items">

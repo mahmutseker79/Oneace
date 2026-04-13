@@ -2,6 +2,8 @@
 
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 type ReorderUpdate = {
@@ -12,6 +14,11 @@ type ReorderUpdate = {
 
 export async function batchUpdateReorderPoints(updates: ReorderUpdate[]) {
   const { membership, session } = await requireActiveMembership();
+  const t = await getMessages();
+
+  if (!hasCapability(membership.role, "reorderConfig.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   // Verify all item IDs belong to the caller's org (prevents cross-org writes)
   const orgItemIds = await db.item.findMany({

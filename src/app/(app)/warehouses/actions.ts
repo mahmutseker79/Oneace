@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { warehouseInputSchema } from "@/lib/validation/warehouse";
 
@@ -24,6 +25,10 @@ function formToInput(formData: FormData) {
 export async function createWarehouseAction(formData: FormData): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "warehouses.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = warehouseInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
@@ -87,6 +92,10 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
 export async function updateWarehouseAction(id: string, formData: FormData): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "warehouses.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = warehouseInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
@@ -160,6 +169,10 @@ export async function updateWarehouseAction(id: string, formData: FormData): Pro
 export async function deleteWarehouseAction(id: string): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "warehouses.delete")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   try {
     const remaining = await db.warehouse.count({

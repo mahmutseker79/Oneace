@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { binInputSchema } from "@/lib/validation/bin";
 
@@ -23,6 +24,10 @@ export async function createBinAction(
 ): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "bins.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   // Verify warehouse belongs to the org
   const warehouse = await db.warehouse.findFirst({
@@ -84,6 +89,10 @@ export async function updateBinAction(
 ): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "bins.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const warehouse = await db.warehouse.findFirst({
     where: { id: warehouseId, organizationId: membership.organizationId },
@@ -148,6 +157,10 @@ export async function deleteBinAction(
 ): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "bins.delete")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const warehouse = await db.warehouse.findFirst({
     where: { id: warehouseId, organizationId: membership.organizationId },

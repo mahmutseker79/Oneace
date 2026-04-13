@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+import { hasCapability } from "@/lib/permissions";
 // Phase 6A / P2 — narrow rate-limit surface for bulk import. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";
@@ -25,6 +26,10 @@ export type ActionResult =
 export async function createItemAction(formData: FormData): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "items.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = itemInputSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -84,6 +89,10 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
 export async function updateItemAction(id: string, formData: FormData): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "items.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = itemInputSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -176,6 +185,10 @@ export async function importItemsAction(input: {
 }): Promise<ImportItemsResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "items.import")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   // Phase 6A / P2 — bulk import is cheap per row but expensive at
   // scale because every call spins up the validate-then-insert path
@@ -306,6 +319,10 @@ export async function importItemsAction(input: {
 export async function deleteItemAction(id: string): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "items.delete")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   try {
     await db.item.delete({

@@ -38,6 +38,8 @@ export type SidebarLabels = {
   badges?: {
     items?: string;
   };
+  // P10.1 — hide admin section for roles without admin capabilities
+  showAdmin?: boolean;
 };
 
 type NavItem = {
@@ -134,20 +136,22 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
           </div>
         ))}
 
-        {/* Admin — collapsible group */}
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={() => setAdminOpen((v) => !v)}
-            className="flex w-full items-center justify-between px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-sidebar-foreground transition-colors"
-          >
-            <span>{labels.nav.admin}</span>
-            <ChevronDown
-              className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")}
-            />
-          </button>
-          {adminOpen ? <div className="mt-1 space-y-1">{adminItems.map(renderItem)}</div> : null}
-        </div>
+        {/* Admin — collapsible group (P10.1: hidden for non-admin roles) */}
+        {labels.showAdmin !== false ? (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setAdminOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-sidebar-foreground transition-colors"
+            >
+              <span>{labels.nav.admin}</span>
+              <ChevronDown
+                className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")}
+              />
+            </button>
+            {adminOpen ? <div className="mt-1 space-y-1">{adminItems.map(renderItem)}</div> : null}
+          </div>
+        ) : null}
       </nav>
       <div className="border-t border-sidebar-border p-4 text-xs text-muted-foreground">
         <p>{labels.versionLine}</p>

@@ -25,6 +25,7 @@ import {
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import type { WarehouseSnapshotRow } from "@/lib/offline/warehouses-cache";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 import { deleteWarehouseAction } from "./actions";
@@ -42,6 +43,11 @@ function formatLocation(parts: Array<string | null | undefined>, fallback: strin
 export default async function WarehousesPage() {
   const { membership, session } = await requireActiveMembership();
   const t = await getMessages();
+
+  // P10.1 — capability flags for conditional UI rendering
+  const canCreate = hasCapability(membership.role, "warehouses.create");
+  const canEdit = hasCapability(membership.role, "warehouses.edit");
+  const canDelete = hasCapability(membership.role, "warehouses.delete");
 
   const warehouses = await db.warehouse.findMany({
     where: { organizationId: membership.organizationId },
@@ -72,12 +78,14 @@ export default async function WarehousesPage() {
           <h1 className="text-2xl font-semibold">{t.warehouses.heading}</h1>
           <p className="text-muted-foreground">{t.warehouses.subtitle}</p>
         </div>
-        <Button asChild>
-          <Link href="/warehouses/new">
-            <Plus className="h-4 w-4" />
-            {t.warehouses.newWarehouse}
-          </Link>
-        </Button>
+        {canCreate ? (
+          <Button asChild>
+            <Link href="/warehouses/new">
+              <Plus className="h-4 w-4" />
+              {t.warehouses.newWarehouse}
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {warehouses.length === 0 ? (
@@ -90,12 +98,14 @@ export default async function WarehousesPage() {
             <CardDescription>{t.warehouses.emptyBody}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-2">
-            <Button asChild>
-              <Link href="/warehouses/new">
-                <Plus className="h-4 w-4" />
-                {t.warehouses.emptyCta}
-              </Link>
-            </Button>
+            {canCreate ? (
+              <Button asChild>
+                <Link href="/warehouses/new">
+                  <Plus className="h-4 w-4" />
+                  {t.warehouses.emptyCta}
+                </Link>
+              </Button>
+            ) : null}
             <Button asChild variant="outline" size="sm">
               <Link href="/items">
                 <Package className="h-4 w-4" />
@@ -131,20 +141,24 @@ export default async function WarehousesPage() {
                     <TableCell>{w.isDefault ? <Badge>{t.common.yes}</Badge> : null}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/warehouses/${w.id}/edit`}>{t.common.edit}</Link>
-                        </Button>
-                        <DeleteButton
-                          labels={{
-                            trigger: t.common.delete,
-                            title: t.warehouses.deleteConfirmTitle,
-                            body: t.warehouses.deleteConfirmBody,
-                            cancel: t.common.cancel,
-                            confirm: t.common.delete,
-                          }}
-                          action={deleteWarehouseAction.bind(null, w.id)}
-                          iconOnly
-                        />
+                        {canEdit ? (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/warehouses/${w.id}/edit`}>{t.common.edit}</Link>
+                          </Button>
+                        ) : null}
+                        {canDelete ? (
+                          <DeleteButton
+                            labels={{
+                              trigger: t.common.delete,
+                              title: t.warehouses.deleteConfirmTitle,
+                              body: t.warehouses.deleteConfirmBody,
+                              cancel: t.common.cancel,
+                              confirm: t.common.delete,
+                            }}
+                            action={deleteWarehouseAction.bind(null, w.id)}
+                            iconOnly
+                          />
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>

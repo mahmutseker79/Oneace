@@ -7,6 +7,7 @@ import { AppShellClient } from "@/components/shell/app-shell-client";
 import { Sidebar } from "@/components/shell/sidebar";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 export default async function AppLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -45,6 +46,13 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     return count > 0 ? String(count) : undefined;
   })();
 
+  // P10.1 — admin section visible only to roles that can manage team,
+  // view audit, or edit org settings.
+  const showAdmin =
+    hasCapability(membership.role, "team.invite") ||
+    hasCapability(membership.role, "audit.view") ||
+    hasCapability(membership.role, "org.editProfile");
+
   return (
     <div className="min-h-screen">
       <a
@@ -62,6 +70,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           statusLine: "Sprint 0 scaffold",
           nav: t.nav,
           badges: { items: lowStockBadge },
+          showAdmin,
         }}
       />
       <div className="lg:pl-64">
@@ -91,6 +100,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             statusLine: "Sprint 0 scaffold",
             nav: t.nav,
             badges: { items: lowStockBadge },
+            showAdmin,
           }}
         />
         <OfflineQueueBanner

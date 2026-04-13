@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { slugify } from "@/lib/utils";
 import { categoryInputSchema } from "@/lib/validation/item";
@@ -44,6 +45,10 @@ async function uniqueSlug(
 export async function createCategoryAction(formData: FormData): Promise<ActionResult> {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "categories.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = categoryInputSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -88,6 +93,10 @@ export async function createCategoryAction(formData: FormData): Promise<ActionRe
 export async function updateCategoryAction(id: string, formData: FormData): Promise<ActionResult> {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "categories.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = categoryRenameSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -139,6 +148,10 @@ export async function updateCategoryAction(id: string, formData: FormData): Prom
 export async function deleteCategoryAction(id: string): Promise<ActionResult> {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "categories.delete")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   try {
     await db.category.delete({

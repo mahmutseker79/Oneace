@@ -6,6 +6,7 @@ import { Prisma } from "@/generated/prisma";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
@@ -284,6 +285,10 @@ export async function createMovementAction(formData: FormData): Promise<ActionRe
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
+  if (!hasCapability(membership.role, "movements.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
+
   const parsed = movementInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
     return {
@@ -415,6 +420,10 @@ export async function submitMovementOpAction(
   }
 
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "movements.create")) {
+    return { ok: false, retryable: false, error: t.permissions.forbidden };
+  }
 
   const parsed = movementOpPayloadSchema.safeParse(payload);
   if (!parsed.success) {

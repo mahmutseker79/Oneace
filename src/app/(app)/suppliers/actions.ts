@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { supplierInputSchema } from "@/lib/validation/supplier";
 
@@ -23,6 +24,10 @@ function formToInput(formData: FormData) {
 export async function createSupplierAction(formData: FormData): Promise<ActionResult> {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "suppliers.create")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = supplierInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
@@ -74,6 +79,10 @@ export async function createSupplierAction(formData: FormData): Promise<ActionRe
 export async function updateSupplierAction(id: string, formData: FormData): Promise<ActionResult> {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "suppliers.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   const parsed = supplierInputSchema.safeParse(formToInput(formData));
   if (!parsed.success) {
@@ -131,6 +140,10 @@ export async function updateSupplierAction(id: string, formData: FormData): Prom
 export async function deleteSupplierAction(id: string): Promise<ActionResult> {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  if (!hasCapability(membership.role, "suppliers.delete")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
 
   try {
     // Block deletion if the supplier has any purchase orders — we use
