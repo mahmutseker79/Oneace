@@ -18,6 +18,10 @@ next-env.d.ts
 # os
 .DS_Store
 Thumbs.db
+# macOS Finder "keep both" duplicates (spaces in filenames)
+*\ 2.*
+*\ 3.*
+*\ 4.*
 
 # editor
 .vscode
