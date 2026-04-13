@@ -81,6 +81,17 @@ export default async function ScanPage({
           },
           lookingUp: t.scan.result.lookingUp,
           lookupError: t.scan.result.lookupError,
+          // P9.1 additions
+          continuousMode: t.scan.continuousMode,
+          scanCount: t.scan.scanCount,
+          mute: t.scan.mute,
+          unmute: t.scan.unmute,
+          history: t.scan.history,
+          clearHistory: t.scan.clearHistory,
+          noHistory: t.scan.noHistory,
+          fullscreen: t.scan.fullscreen,
+          exitFullscreen: t.scan.exitFullscreen,
+          quickAdd: t.scan.quickAdd,
         }}
       />
     </div>
