@@ -3,6 +3,7 @@
 import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -689,6 +690,18 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
     revalidatePath("/movements");
     revalidatePath("/items");
     revalidatePath("/dashboard");
+
+    // P10.2 — fire-and-forget low-stock alert evaluation for received items
+    const receivedItemIds = [
+      ...new Set(
+        Array.from(deltaByLine.keys())
+          .map((lineId) => lineMap.get(lineId)?.itemId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
+    if (receivedItemIds.length > 0) {
+      void evaluateAlerts(orgId, receivedItemIds);
+    }
 
     return { ok: true, id: existing.id, receivedLineCount, fullyReceived };
   } catch (error) {

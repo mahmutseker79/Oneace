@@ -4,8 +4,9 @@ import { useState } from "react";
 
 import { Header, type HeaderLabels } from "./header";
 import { MobileNav } from "./mobile-nav";
-import type { SidebarLabels } from "./sidebar";
+import type { NotificationCenterLabels, NotificationItem } from "./notification-center";
 import type { OrgSwitcherOption } from "./org-switcher";
+import type { SidebarLabels } from "./sidebar";
 
 type AppShellClientProps = {
   userName?: string | null;
@@ -13,6 +14,10 @@ type AppShellClientProps = {
   activeOrganizationId: string;
   headerLabels: HeaderLabels;
   sidebarLabels: SidebarLabels;
+  // P10.2 — notification data from server
+  notifications?: NotificationItem[];
+  unreadCount?: number;
+  notificationLabels?: NotificationCenterLabels;
 };
 
 export function AppShellClient({
@@ -21,6 +26,9 @@ export function AppShellClient({
   activeOrganizationId,
   headerLabels,
   sidebarLabels,
+  notifications,
+  unreadCount,
+  notificationLabels,
 }: AppShellClientProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -32,12 +40,11 @@ export function AppShellClient({
         activeOrganizationId={activeOrganizationId}
         labels={headerLabels}
         onMenuClick={() => setMobileNavOpen(true)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        notificationLabels={notificationLabels}
       />
-      <MobileNav
-        labels={sidebarLabels}
-        open={mobileNavOpen}
-        onOpenChange={setMobileNavOpen}
-      />
+      <MobileNav labels={sidebarLabels} open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
     </>
   );
 }

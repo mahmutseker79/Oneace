@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma";
+import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -712,6 +713,13 @@ export async function completeStockCountAction(
         touchedWarehouses: touchedWarehouseIds.size,
       },
     });
+
+    // P10.2 — fire-and-forget low-stock alert evaluation for all items
+    // touched by the reconcile adjustments
+    const touchedItemIds = [...new Set(postable.map((row) => row.itemId))];
+    if (touchedItemIds.length > 0) {
+      void evaluateAlerts(orgId, touchedItemIds);
+    }
 
     return { ok: true, id: count.id, postedMovements: result.posted };
   } catch {

@@ -63,6 +63,22 @@ export const en = {
     },
   },
 
+  // P10.2 — Notifications & Alerts
+  notifications: {
+    heading: "Notifications",
+    empty: "You're all caught up.",
+    markRead: "Mark as read",
+    markAllRead: "Mark all as read",
+    dismiss: "Dismiss",
+    dismissAlert: "Dismiss alert",
+    viewAll: "View all",
+    unreadCount: "{count} unread",
+    alertResolved: "Resolved",
+    alertDismissed: "Dismissed",
+    lowStockTitle: "Low stock: {name}",
+    lowStockBody: "{sku} has {qty} units (reorder point: {threshold})",
+  },
+
   nav: {
     dashboard: "Dashboard",
     items: "Items",

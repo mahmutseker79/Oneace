@@ -53,6 +53,48 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     hasCapability(membership.role, "audit.view") ||
     hasCapability(membership.role, "org.editProfile");
 
+  // ── P10.2 — Notification center data ──────────────────────────────
+  // Query recent notifications for the current user. Lean: 20 most
+  // recent, only the fields the UI needs. Separate count query for
+  // the unread badge to avoid over-fetching.
+  const [recentNotifications, unreadCount] = await Promise.all([
+    db.notification.findMany({
+      where: {
+        userId: session.user.id,
+        organizationId: membership.organizationId,
+      },
+      select: {
+        id: true,
+        title: true,
+        message: true,
+        href: true,
+        alertId: true,
+        readAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    db.notification.count({
+      where: {
+        userId: session.user.id,
+        organizationId: membership.organizationId,
+        readAt: null,
+      },
+    }),
+  ]);
+
+  // Serialize dates for the client component
+  const notificationItems = recentNotifications.map((n) => ({
+    id: n.id,
+    title: n.title,
+    message: n.message,
+    href: n.href,
+    alertId: n.alertId,
+    readAt: n.readAt?.toISOString() ?? null,
+    createdAt: n.createdAt.toISOString(),
+  }));
+
   return (
     <div className="min-h-screen">
       <a
@@ -101,6 +143,14 @@ export default async function AppLayout({ children }: Readonly<{ children: React
             nav: t.nav,
             badges: { items: lowStockBadge },
             showAdmin,
+          }}
+          notifications={notificationItems}
+          unreadCount={unreadCount}
+          notificationLabels={{
+            heading: t.notifications.heading,
+            empty: t.notifications.empty,
+            markAllRead: t.notifications.markAllRead,
+            dismiss: t.notifications.dismiss,
           }}
         />
         <OfflineQueueBanner

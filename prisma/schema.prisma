@@ -54,6 +54,9 @@ model Organization {
   invitations        Invitation[]
   // Sprint 36: append-only audit trail scoped to this org.
   auditEvents        AuditEvent[]
+  // P10.2: alerts and notifications scoped to this org.
+  alerts             Alert[]
+  notifications      Notification[]
 
   @@index([slug])
 }
@@ -171,6 +174,8 @@ model User {
   // other side so system-generated events can persist after the user row
   // is deleted).
   auditEventsLogged   AuditEvent[]
+  // P10.2: per-user notifications
+  notifications       Notification[]
 
   @@index([email])
 }
@@ -329,6 +334,8 @@ model Item {
   countSnapshots      CountSnapshot[]
   countEntries        CountEntry[]
   purchaseOrderLines  PurchaseOrderLine[]
+  // P10.2: low-stock alerts for this item
+  alerts              Alert[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -779,4 +786,83 @@ model AuditEvent {
 
   @@index([organizationId, createdAt])
   @@index([entityType, entityId])
+}
+
+// =========================
+// P10.2: Alerts & Notifications
+// =========================
+//
+// An Alert represents a durable, condition-based signal scoped to an
+// organization — currently LOW_STOCK alerts for items whose on-hand
+// quantity falls at or below their reorder point. The lifecycle is:
+//
+//   ACTIVE → RESOLVED (auto, when stock recovers above reorder point)
+//   ACTIVE → DISMISSED (manual, by a user from the notification center)
+//
+// Deduplication: a composite unique on (organizationId, itemId, type)
+// filtered to ACTIVE alerts ensures at most one open alert per item
+// per type. Resolved/dismissed alerts are kept for audit history.
+//
+// A Notification is a per-user record linked to an alert. When a new
+// alert fires, notifications are fanned out to all OWNER/ADMIN/MEMBER
+// roles in the org. A user can mark a notification as read (readAt),
+// which does NOT resolve the underlying alert — resolution only happens
+// when the condition clears.
+
+model Alert {
+  id             String      @id @default(cuid())
+  organizationId String
+  itemId         String
+  type           AlertType   @default(LOW_STOCK)
+  status         AlertStatus @default(ACTIVE)
+  // Snapshot at trigger time — useful for history ("was 3, reorder at 10")
+  threshold      Int         @default(0)
+  currentQty     Int         @default(0)
+  resolvedAt     DateTime?
+  dismissedAt    DateTime?
+  dismissedById  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item         Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  // Only one ACTIVE alert per (org, item, type). The partial unique
+  // below is PostgreSQL-specific (WHERE clause on the index). For
+  // Prisma we enforce dedup in application code and add a regular
+  // index + app-level check. The regular index supports fast lookups.
+  @@index([organizationId, itemId, type, status])
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  alertId        String?
+  title          String
+  message        String
+  href           String?  // click-through deep link, e.g. "/items/{id}"
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alert        Alert?       @relation(fields: [alertId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([organizationId, userId])
+  @@index([alertId])
+}
+
+enum AlertType {
+  LOW_STOCK
+}
+
+enum AlertStatus {
+  ACTIVE
+  RESOLVED
+  DISMISSED
 }

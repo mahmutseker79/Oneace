@@ -1,5 +1,6 @@
 "use server";
 
+import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -53,4 +54,10 @@ export async function batchUpdateReorderPoints(updates: ReorderUpdate[]) {
     entityType: "ui_interaction",
     metadata: { itemCount: safeUpdates.length },
   });
+
+  // P10.2 — reorder point changes can create or resolve alerts
+  void evaluateAlerts(
+    membership.organizationId,
+    safeUpdates.map((u) => u.id),
+  );
 }

@@ -8,6 +8,11 @@ import { Bell, Menu, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 
+import {
+  NotificationCenter,
+  type NotificationCenterLabels,
+  type NotificationItem,
+} from "@/components/shell/notification-center";
 import { OrgSwitcher, type OrgSwitcherOption } from "@/components/shell/org-switcher";
 
 export type HeaderLabels = {
@@ -26,9 +31,22 @@ type HeaderProps = {
   activeOrganizationId: string;
   labels: HeaderLabels;
   onMenuClick?: () => void;
+  // P10.2 — notification center data
+  notifications?: NotificationItem[];
+  unreadCount?: number;
+  notificationLabels?: NotificationCenterLabels;
 };
 
-export function Header({ userName, organizations, activeOrganizationId, labels, onMenuClick }: HeaderProps) {
+export function Header({
+  userName,
+  organizations,
+  activeOrganizationId,
+  labels,
+  onMenuClick,
+  notifications,
+  unreadCount,
+  notificationLabels,
+}: HeaderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("q") ?? "";
@@ -94,9 +112,18 @@ export function Header({ userName, organizations, activeOrganizationId, labels, 
           createLabel={labels.organizationCreate}
         />
 
-        <Button variant="ghost" size="icon" aria-label={labels.notifications}>
-          <Bell className="h-4 w-4" />
-        </Button>
+        {notifications && notificationLabels ? (
+          <NotificationCenter
+            notifications={notifications}
+            unreadCount={unreadCount ?? 0}
+            labels={notificationLabels}
+            bellLabel={labels.notifications}
+          />
+        ) : (
+          <Button variant="ghost" size="icon" aria-label={labels.notifications}>
+            <Bell className="h-4 w-4" />
+          </Button>
+        )}
 
         <button
           type="button"

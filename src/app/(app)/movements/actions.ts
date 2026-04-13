@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma";
+import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -326,6 +327,8 @@ export async function createMovementAction(formData: FormData): Promise<ActionRe
           reference: parsed.data.reference ?? null,
         },
       });
+      // P10.2 — fire-and-forget low-stock alert evaluation
+      void evaluateAlerts(membership.organizationId, [parsed.data.itemId]);
       return { ok: true, id: outcome.id };
     case "alreadyExists":
       // Should never happen on the legacy path — no idempotency key is
@@ -467,6 +470,8 @@ export async function submitMovementOpAction(
           idempotent: true,
         },
       });
+      // P10.2 — fire-and-forget low-stock alert evaluation
+      void evaluateAlerts(membership.organizationId, [input.itemId]);
       return { ok: true, id: outcome.id, replayed: false };
     case "alreadyExists":
       // Do NOT revalidate on a replay — the row already existed, the
