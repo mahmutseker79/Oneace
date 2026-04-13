@@ -1810,6 +1810,10 @@ export const en = {
       "stock_count.completed": "Completed stock count",
       "stock_count.cancelled": "Cancelled stock count",
       "stock_movement.created": "Recorded stock movement",
+      "ui.bridge_card_click": "Clicked bridge card",
+      "ui.bridge_dismiss": "Dismissed bridge",
+      "ui.low_stock_banner_click": "Clicked low-stock banner",
+      "ui.reorder_config_save": "Saved reorder config",
     },
   },
 } as const;

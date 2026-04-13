@@ -62,3 +62,5 @@ tsconfig.sandbox.json
 # port sprints. The active `*.tsbuildinfo` pattern above doesn't
 # catch these because the extension is `.old`, `.old2`, `.old10b`, ...
 tsconfig.tsbuildinfo.old*
+oneace
+oneace.pub
