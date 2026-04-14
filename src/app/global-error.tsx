@@ -20,6 +20,8 @@
 
 import { useEffect } from "react";
 
+import { captureException } from "@/lib/sentry";
+
 type GlobalErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -27,10 +29,8 @@ type GlobalErrorProps = {
 
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
-    // Next.js assigns a short `digest` to every server-rendered error
-    // and includes it in server logs. Surfacing it to the client
-    // console makes triage ("here's the digest the user saw") much
-    // faster without exposing the underlying stack.
+    // Send to Sentry — no-op when DSN is unset.
+    captureException(error);
     // eslint-disable-next-line no-console
     console.error("[global-error] unhandled render error", {
       digest: error.digest,

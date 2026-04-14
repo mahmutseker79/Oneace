@@ -34,6 +34,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { captureException } from "@/lib/sentry";
 
 type AppErrorProps = {
   error: Error & { digest?: string };
@@ -42,10 +43,10 @@ type AppErrorProps = {
 
 export default function AppError({ error, reset }: AppErrorProps) {
   useEffect(() => {
-    // Client-side console bread crumb. The server already logged
-    // the same error via our structured logger (Next.js pipes
-    // thrown server errors through React's error channel before
-    // emitting them to stderr, which the logger picks up).
+    // Send to Sentry for production visibility. captureException is a
+    // no-op when NEXT_PUBLIC_SENTRY_DSN is unset (local dev / CI).
+    captureException(error);
+    // Client-side console breadcrumb for local dev triage.
     // eslint-disable-next-line no-console
     console.error("[app-error] route segment crashed", {
       digest: error.digest,

@@ -34,7 +34,14 @@ Object.assign(process.env, {
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
 });
 
-// Phase 7D: strip Upstash vars so the rate-limit module falls back to
-// the in-memory backend, regardless of what the caller's shell exports.
-process.env.UPSTASH_REDIS_REST_URL = undefined;
-process.env.UPSTASH_REDIS_REST_TOKEN = undefined;
+// Phase 7D / Hardening: strip Upstash and Sentry vars so modules that
+// import env.ts see them as absent (optional → passes schema validation)
+// rather than as the string "undefined" (→ fails z.string().url()).
+//
+// IMPORTANT: `process.env.X = undefined` coerces to the string "undefined"
+// in Node.js. Use `delete` to actually remove the key from the env object
+// so the Zod schema's `.optional()` branch fires correctly.
+delete process.env.UPSTASH_REDIS_REST_URL;
+delete process.env.UPSTASH_REDIS_REST_TOKEN;
+delete process.env.SENTRY_DSN;
+delete process.env.NEXT_PUBLIC_SENTRY_DSN;

@@ -62,10 +62,12 @@ const securityHeaders = [
       // 'unsafe-inline' + 'unsafe-eval' only until we wire a
       // nonce-based CSP. See the starter-CSP note above.
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      // Limit XHR/fetch to same-origin. If we ever add Sentry or
-      // Upstash REST from the browser (not today), add those
-      // origins explicitly.
-      "connect-src 'self'",
+      // Hardening Track: Sentry browser SDK POSTs error reports to
+      // ingest.sentry.io. Without this entry the browser CSP silently
+      // drops every Sentry upload, making the integration invisible.
+      // The wildcard *.ingest.sentry.io covers both the US and EU
+      // ingest endpoints without needing separate project-specific URLs.
+      "connect-src 'self' https://*.ingest.sentry.io",
       "font-src 'self' data:",
       "object-src 'none'",
       "worker-src 'self' blob:",

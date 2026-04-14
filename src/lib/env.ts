@@ -94,6 +94,25 @@ const schema = z.object({
   // runtime selector above rather than duplicated).
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).optional(),
 
+  // --- Sentry error monitoring (optional, Hardening Track) -------------
+  // When set, the Sentry SDK initialises and captures unhandled
+  // exceptions. When unset (local dev, CI without Sentry config) the
+  // SDK is a no-op — the app boots and behaves identically to today.
+  // Set this in your Vercel production environment variables only.
+  //
+  // Format: https://<key>@<org>.ingest.sentry.io/<project>
+  SENTRY_DSN: optionalUrl,
+  // Public DSN exposed to the browser bundle. Must be the same value
+  // as SENTRY_DSN — Next.js only exposes NEXT_PUBLIC_* vars to client
+  // components. Set both in Vercel production environment variables.
+  NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
+  // Controls Sentry's trace sample rate (0.0–1.0). Defaults to 0.1
+  // in production (10% of requests traced) to stay within quotas.
+  SENTRY_TRACES_SAMPLE_RATE: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((v) => (v !== undefined ? Number(v) : undefined)),
+
   // --- Registration gate (optional, Phase 7C) --------------------------
   // When `false`, the `/register` page redirects to `/login` and the
   // Better Auth sign-up endpoint returns 403. Defaults to `true` so

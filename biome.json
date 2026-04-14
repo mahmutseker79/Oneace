@@ -38,6 +38,16 @@
           }
         }
       }
+    },
+    {
+      "include": ["vitest.setup.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noDelete": "off"
+          }
+        }
+      }
     }
   ],
   "javascript": {
