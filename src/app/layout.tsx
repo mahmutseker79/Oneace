@@ -1,6 +1,7 @@
 import { getDirection, getLocale, getMessages } from "@/lib/i18n";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { VercelAnalytics } from "@/components/analytics";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -62,7 +63,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        {children}
+        <VercelAnalytics />
+      </body>
     </html>
   );
 }
