@@ -20,7 +20,6 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server";
-// @ts-expect-error stripe is in package.json; run `pnpm install` to resolve.
 import type Stripe from "stripe";
 
 import { db } from "@/lib/db";
@@ -47,7 +46,10 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET!);
+    // STRIPE_WEBHOOK_SECRET is guaranteed non-null here: hasStripe gate
+    // checks it at the top of the handler before this line is reached.
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET as string);
   } catch (err) {
     logger.warn("stripe webhook: signature verification failed", {
       err: err instanceof Error ? err.message : String(err),

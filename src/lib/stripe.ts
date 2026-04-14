@@ -12,9 +12,6 @@
  *   - All billing operations are server-side only.
  */
 
-// @ts-expect-error stripe is in package.json but not installed in the sandbox.
-// Run `pnpm install` after pulling to resolve. The type error disappears once
-// the package is present. No runtime issue — getStripeClient() guards on env.
 import Stripe from "stripe";
 
 import { env } from "@/lib/env";
