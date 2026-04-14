@@ -1,4 +1,11 @@
-import { AlertTriangle, DollarSign, FileBarChart, Truck } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  DollarSign,
+  FileBarChart,
+  Grid3X3,
+  Truck,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -19,10 +26,21 @@ export default async function ReportsPage() {
   // P3.7 — Only show the Supplier Performance card if the org has
   // suppliers or purchase orders. For a first-run user this keeps the
   // reports page focused on the two core reports.
-  const supplierCount = await db.supplier.count({
-    where: { organizationId: membership.organizationId },
-  });
+  // Hardening Track: also conditionally show bin inventory (bins exist)
+  // and movement history (any movements recorded).
+  const [supplierCount, binCount, movementCount] = await Promise.all([
+    db.supplier.count({ where: { organizationId: membership.organizationId } }),
+    db.bin.count({
+      where: {
+        warehouse: { organizationId: membership.organizationId },
+      },
+    }),
+    db.stockMovement.count({ where: { organizationId: membership.organizationId } }),
+  ]);
+
   const hasSuppliers = supplierCount > 0;
+  const hasBins = binCount > 0;
+  const hasMovements = movementCount > 0;
 
   const reports = [
     {
@@ -37,6 +55,26 @@ export default async function ReportsPage() {
       title: t.reports.stockValue.heading,
       description: t.reports.stockValue.subtitle,
     },
+    ...(hasMovements
+      ? [
+          {
+            href: "/reports/movements",
+            icon: ArrowLeftRight,
+            title: t.reports.movementHistory.heading,
+            description: t.reports.movementHistory.subtitle,
+          },
+        ]
+      : []),
+    ...(hasBins
+      ? [
+          {
+            href: "/reports/bin-inventory",
+            icon: Grid3X3,
+            title: t.reports.binInventory.heading,
+            description: t.reports.binInventory.subtitle,
+          },
+        ]
+      : []),
     ...(hasSuppliers
       ? [
           {
