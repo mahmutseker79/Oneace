@@ -1,6 +1,10 @@
 import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import { getMailer } from "@/lib/mail";
+import { buildWelcomeEmail } from "@/lib/mail/templates/welcome-email";
 // Phase 6A / P2 — narrow rate-limit surface for org create. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";
@@ -104,6 +108,27 @@ export async function POST(request: Request) {
       },
     });
   }
+
+  // Phase 15.4 — send welcome email (fire-and-forget, soft failure)
+  void (async () => {
+    try {
+      const appUrl = env.NEXT_PUBLIC_APP_URL ?? "https://oneace.app";
+      const mailer = getMailer();
+      const email = buildWelcomeEmail({
+        userName: session.user.name ?? session.user.email,
+        orgName: org.name,
+        appUrl,
+      });
+      await mailer.send({ to: session.user.email, ...email });
+    } catch (err) {
+      // Welcome email failure is a soft miss — user has already
+      // created their org successfully. Log and continue.
+      logger.warn("welcome email: send failed", {
+        userId: session.user.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  })();
 
   return NextResponse.json({ organization: org }, { status: 201 });
 }
