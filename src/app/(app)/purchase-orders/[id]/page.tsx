@@ -641,8 +641,16 @@ export default async function PurchaseOrderDetailPage({
 												{actorLabel}
 											</span>
 										</div>
-										{details ? (
-											<p className="text-xs text-muted-foreground">{details}</p>
+										{/* Phase 7.7 — expandable metadata (mirrors audit page) */}
+										{row.metadata ? (
+											<details className="text-xs text-muted-foreground">
+												<summary className="cursor-pointer list-none hover:text-foreground">
+													{details || "Details"}
+												</summary>
+												<pre className="mt-1 overflow-auto rounded bg-muted p-1.5 text-[11px] leading-relaxed max-h-28">
+													{JSON.stringify(row.metadata, null, 2)}
+												</pre>
+											</details>
 										) : null}
 									</li>
 								);

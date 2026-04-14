@@ -93,6 +93,8 @@ type ItemFormProps = {
 	};
 	/** Pre-fill the barcode field on a fresh create form (e.g. deep-link from /scan). */
 	defaultBarcode?: string;
+	/** Phase 7.3 — pre-fill currency from org region on create forms. */
+	defaultCurrency?: string;
 };
 
 export function ItemForm({
@@ -102,6 +104,7 @@ export function ItemForm({
 	mode,
 	initial,
 	defaultBarcode,
+	defaultCurrency = "USD",
 }: ItemFormProps) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
@@ -344,7 +347,7 @@ export function ItemForm({
 						id="currency"
 						name="currency"
 						maxLength={3}
-						defaultValue={initial?.currency ?? "USD"}
+						defaultValue={initial?.currency ?? defaultCurrency}
 						aria-invalid={!!fieldError("currency")}
 					/>
 					{fieldError("currency") ? (

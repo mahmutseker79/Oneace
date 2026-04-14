@@ -113,8 +113,9 @@ export const en = {
 	},
 
 	header: {
-		searchPlaceholder: "Search items, barcodes, SKUs…",
-		searchLabel: "Search",
+		// Phase 7.8 — more descriptive placeholder covering all searchable entities
+		searchPlaceholder: "Search items, suppliers, locations…",
+		searchLabel: "Search (Enter to search)",
 		notifications: "Notifications",
 		openMenu: "Open menu",
 		signOut: "Sign out",

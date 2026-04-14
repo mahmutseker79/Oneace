@@ -9,7 +9,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { ExportButton } from "@/components/ui/export-button";
 import {
 	Card,
 	CardContent,
@@ -18,6 +17,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ExportButton } from "@/components/ui/export-button";
 import {
 	Table,
 	TableBody,
@@ -188,8 +188,15 @@ export default async function LowStockReportPage() {
 						return (
 							<Card key={supplier?.id ?? "__no_supplier__"}>
 								<CardHeader className="flex flex-row items-start justify-between gap-4">
+									{/* Phase 7.6 — show item count in each supplier group heading */}
 									<div className="space-y-1">
-										<CardTitle className="text-base">{heading}</CardTitle>
+										<CardTitle className="text-base">
+											{heading}
+											<span className="ml-2 text-sm font-normal text-muted-foreground">
+												({group.items.length} item
+												{group.items.length !== 1 ? "s" : ""})
+											</span>
+										</CardTitle>
 										{!supplier ? (
 											<CardDescription>
 												{t.reports.lowStock.groupNoSupplierHelp}

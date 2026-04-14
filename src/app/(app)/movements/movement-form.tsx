@@ -11,13 +11,17 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -27,98 +31,107 @@ import { Textarea } from "@/components/ui/textarea";
 // ---------------------------------------------------------------------------
 
 function ItemCombobox({
-  items,
-  value,
-  onValueChange,
-  placeholder,
+	items,
+	value,
+	onValueChange,
+	placeholder,
 }: {
-  items: Array<{ id: string; label: string; sub?: string }>;
-  value: string;
-  onValueChange: (v: string) => void;
-  placeholder: string;
+	items: Array<{ id: string; label: string; sub?: string }>;
+	value: string;
+	onValueChange: (v: string) => void;
+	placeholder: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
+	const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return items;
-    return items.filter(
-      (i) => i.label.toLowerCase().includes(q) || (i.sub ?? "").toLowerCase().includes(q),
-    );
-  }, [items, query]);
+	const filtered = useMemo(() => {
+		const q = query.toLowerCase().trim();
+		if (!q) return items;
+		return items.filter(
+			(i) =>
+				i.label.toLowerCase().includes(q) ||
+				(i.sub ?? "").toLowerCase().includes(q),
+		);
+	}, [items, query]);
 
-  const selected = items.find((i) => i.id === value);
+	const selected = items.find((i) => i.id === value);
 
-  function handleSelect(id: string) {
-    onValueChange(id);
-    setQuery("");
-    setOpen(false);
-  }
+	function handleSelect(id: string) {
+		onValueChange(id);
+		setQuery("");
+		setOpen(false);
+	}
 
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (v) {
-          // Focus the search input when popover opens.
-          window.setTimeout(() => inputRef.current?.focus(), 0);
-        } else {
-          setQuery("");
-        }
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-        >
-          <span className="truncate text-left">{selected ? selected.label : placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <div className="border-b p-2">
-          <Input
-            ref={inputRef}
-            placeholder="Search..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
-          />
-        </div>
-        <div className="max-h-56 overflow-y-auto py-1">
-          {filtered.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">No items found.</p>
-          ) : (
-            filtered.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleSelect(item.id)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
-              >
-                <Check
-                  className={`h-3.5 w-3.5 shrink-0 ${value === item.id ? "opacity-100" : "opacity-0"}`}
-                />
-                <span className="truncate">{item.label}</span>
-                {item.sub ? (
-                  <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
-                    {item.sub}
-                  </span>
-                ) : null}
-              </button>
-            ))
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+	return (
+		<Popover
+			open={open}
+			onOpenChange={(v) => {
+				setOpen(v);
+				if (v) {
+					// Focus the search input when popover opens.
+					window.setTimeout(() => inputRef.current?.focus(), 0);
+				} else {
+					setQuery("");
+				}
+			}}
+		>
+			<PopoverTrigger asChild>
+				<Button
+					type="button"
+					variant="outline"
+					aria-haspopup="listbox"
+					aria-expanded={open}
+					className="w-full justify-between font-normal"
+				>
+					<span className="truncate text-left">
+						{selected ? selected.label : placeholder}
+					</span>
+					<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent
+				className="w-[--radix-popover-trigger-width] p-0"
+				align="start"
+			>
+				<div className="border-b p-2">
+					<Input
+						ref={inputRef}
+						placeholder="Search..."
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
+					/>
+				</div>
+				<div className="max-h-56 overflow-y-auto py-1">
+					{filtered.length === 0 ? (
+						<p className="px-3 py-2 text-sm text-muted-foreground">
+							No items found.
+						</p>
+					) : (
+						filtered.map((item) => (
+							<button
+								key={item.id}
+								type="button"
+								onClick={() => handleSelect(item.id)}
+								className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+							>
+								<Check
+									className={`h-3.5 w-3.5 shrink-0 ${value === item.id ? "opacity-100" : "opacity-0"}`}
+								/>
+								<span className="truncate">{item.label}</span>
+								{item.sub ? (
+									<span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
+										{item.sub}
+									</span>
+								) : null}
+							</button>
+						))
+					)}
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
 }
 import { MOVEMENT_CREATE_OP_TYPE } from "@/lib/offline/dispatchers/movement-create";
 import { enqueueOp } from "@/lib/offline/queue";
@@ -127,34 +140,34 @@ import type { MovementInput } from "@/lib/validation/movement";
 import { submitMovementOpAction } from "./actions";
 
 export type MovementFormLabels = {
-  type: string;
-  typeOptions: Record<"RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER", string>;
-  typeHelp: Record<"RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER", string>;
-  item: string;
-  itemPlaceholder: string;
-  warehouse: string;
-  warehouseSource: string;
-  toWarehouse: string;
-  quantity: string;
-  direction: string;
-  directionIn: string;
-  directionOut: string;
-  reference: string;
-  referencePlaceholder: string;
-  note: string;
-  notePlaceholder: string;
-  submit: string;
-  submittingLabel: string;
-  queuedLabel: string;
-  error: string;
-  cancel: string;
+	type: string;
+	typeOptions: Record<"RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER", string>;
+	typeHelp: Record<"RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER", string>;
+	item: string;
+	itemPlaceholder: string;
+	warehouse: string;
+	warehouseSource: string;
+	toWarehouse: string;
+	quantity: string;
+	direction: string;
+	directionIn: string;
+	directionOut: string;
+	reference: string;
+	referencePlaceholder: string;
+	note: string;
+	notePlaceholder: string;
+	submit: string;
+	submittingLabel: string;
+	queuedLabel: string;
+	error: string;
+	cancel: string;
 };
 
 export type MovementFormOption = { id: string; label: string; sub?: string };
 
 export type MovementFormScope = {
-  orgId: string;
-  userId: string;
+	orgId: string;
+	userId: string;
 };
 
 /**
@@ -172,12 +185,12 @@ export type MovementFormScope = {
 type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER";
 
 type MovementFormProps = {
-  labels: MovementFormLabels;
-  scope: MovementFormScope;
-  items: MovementFormOption[];
-  warehouses: MovementFormOption[];
-  presetItemId?: string;
-  presetWarehouseId?: string;
+	labels: MovementFormLabels;
+	scope: MovementFormScope;
+	items: MovementFormOption[];
+	warehouses: MovementFormOption[];
+	presetItemId?: string;
+	presetWarehouseId?: string;
 };
 
 /**
@@ -205,293 +218,340 @@ type MovementFormProps = {
  *      — a broken payload would just loop in the queue forever.
  */
 export function MovementForm({
-  labels,
-  scope,
-  items,
-  warehouses,
-  presetItemId,
-  presetWarehouseId,
+	labels,
+	scope,
+	items,
+	warehouses,
+	presetItemId,
+	presetWarehouseId,
 }: MovementFormProps) {
-  const router = useRouter();
-  const [type, setType] = useState<MovementType>("RECEIPT");
-  const [itemId, setItemId] = useState<string>(presetItemId ?? "");
-  const [warehouseId, setWarehouseId] = useState<string>(
-    presetWarehouseId ?? warehouses[0]?.id ?? "",
-  );
-  const [toWarehouseId, setToWarehouseId] = useState<string>("");
-  const [direction, setDirection] = useState<"1" | "-1">("1");
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const [isPending, startTransition] = useTransition();
+	const router = useRouter();
+	const [type, setType] = useState<MovementType>("RECEIPT");
+	const [itemId, setItemId] = useState<string>(presetItemId ?? "");
+	const [warehouseId, setWarehouseId] = useState<string>(
+		presetWarehouseId ?? warehouses[0]?.id ?? "",
+	);
+	const [toWarehouseId, setToWarehouseId] = useState<string>("");
+	const [direction, setDirection] = useState<"1" | "-1">("1");
+	const [error, setError] = useState<string | null>(null);
+	const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+	const [isPending, startTransition] = useTransition();
 
-  const destinationOptions = useMemo(
-    () => warehouses.filter((w) => w.id !== warehouseId),
-    [warehouses, warehouseId],
-  );
+	const destinationOptions = useMemo(
+		() => warehouses.filter((w) => w.id !== warehouseId),
+		[warehouses, warehouseId],
+	);
 
-  function buildInput(form: HTMLFormElement): MovementInput | null {
-    const formData = new FormData(form);
-    const quantityRaw = formData.get("quantity");
-    const quantity = Number(quantityRaw);
-    if (!Number.isFinite(quantity) || quantity < 1) return null;
-    const reference = ((formData.get("reference") as string | null) ?? "").trim() || null;
-    const note = ((formData.get("note") as string | null) ?? "").trim() || null;
+	function buildInput(form: HTMLFormElement): MovementInput | null {
+		const formData = new FormData(form);
+		const quantityRaw = formData.get("quantity");
+		const quantity = Number(quantityRaw);
+		if (!Number.isFinite(quantity) || quantity < 1) return null;
+		const reference =
+			((formData.get("reference") as string | null) ?? "").trim() || null;
+		const note = ((formData.get("note") as string | null) ?? "").trim() || null;
 
-    const base = {
-      itemId,
-      warehouseId,
-      quantity: Math.trunc(quantity),
-      reference,
-      note,
-    };
+		const base = {
+			itemId,
+			warehouseId,
+			quantity: Math.trunc(quantity),
+			reference,
+			note,
+		};
 
-    if (type === "TRANSFER") {
-      return { type: "TRANSFER", ...base, toWarehouseId };
-    }
-    if (type === "ADJUSTMENT") {
-      return { type: "ADJUSTMENT", ...base, direction: direction === "-1" ? -1 : 1 };
-    }
-    // RECEIPT | ISSUE
-    return { type, ...base };
-  }
+		if (type === "TRANSFER") {
+			return { type: "TRANSFER", ...base, toWarehouseId };
+		}
+		if (type === "ADJUSTMENT") {
+			return {
+				type: "ADJUSTMENT",
+				...base,
+				direction: direction === "-1" ? -1 : 1,
+			};
+		}
+		// RECEIPT | ISSUE
+		return { type, ...base };
+	}
 
-  /**
-   * Client-side feature check for `crypto.randomUUID`. All modern
-   * browsers on secure contexts support it; the fallback is only
-   * ever hit in odd test environments. The queue's idempotency
-   * guarantee depends on the key being globally unique, so the
-   * fallback uses `Math.random()` across 36 chars — not
-   * cryptographically random but unique enough for a per-tab op.
-   */
-  function generateIdempotencyKey(): string {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-      return crypto.randomUUID();
-    }
-    // RFC 4122 v4 shape via Math.random fallback
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === "x" ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  }
+	/**
+	 * Client-side feature check for `crypto.randomUUID`. All modern
+	 * browsers on secure contexts support it; the fallback is only
+	 * ever hit in odd test environments. The queue's idempotency
+	 * guarantee depends on the key being globally unique, so the
+	 * fallback uses `Math.random()` across 36 chars — not
+	 * cryptographically random but unique enough for a per-tab op.
+	 */
+	function generateIdempotencyKey(): string {
+		if (
+			typeof crypto !== "undefined" &&
+			typeof crypto.randomUUID === "function"
+		) {
+			return crypto.randomUUID();
+		}
+		// RFC 4122 v4 shape via Math.random fallback
+		return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+			const r = (Math.random() * 16) | 0;
+			const v = c === "x" ? r : (r & 0x3) | 0x8;
+			return v.toString(16);
+		});
+	}
 
-  async function enqueueAndNavigate(idempotencyKey: string, input: MovementInput): Promise<void> {
-    const enqueued = await enqueueOp({
-      scope: { orgId: scope.orgId, userId: scope.userId },
-      opType: MOVEMENT_CREATE_OP_TYPE,
-      payload: { idempotencyKey, input },
-    });
-    if (!enqueued) {
-      // Dexie unavailable — surface the original error so the user
-      // isn't told "queued" when nothing actually persisted.
-      setError(labels.error);
-      return;
-    }
-    router.push("/movements");
-    router.refresh();
-  }
+	async function enqueueAndNavigate(
+		idempotencyKey: string,
+		input: MovementInput,
+	): Promise<void> {
+		const enqueued = await enqueueOp({
+			scope: { orgId: scope.orgId, userId: scope.userId },
+			opType: MOVEMENT_CREATE_OP_TYPE,
+			payload: { idempotencyKey, input },
+		});
+		if (!enqueued) {
+			// Dexie unavailable — surface the original error so the user
+			// isn't told "queued" when nothing actually persisted.
+			setError(labels.error);
+			return;
+		}
+		router.push("/movements");
+		router.refresh();
+	}
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setFieldErrors({});
-    const form = event.currentTarget;
-    const input = buildInput(form);
-    if (!input) {
-      // The native `required` / `min={1}` attributes should cover
-      // this, but guard anyway so a future DOM refactor doesn't
-      // silently ship broken payloads.
-      setError(labels.error);
-      return;
-    }
+	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		setError(null);
+		setFieldErrors({});
 
-    const idempotencyKey = generateIdempotencyKey();
-    const payload = { idempotencyKey, input };
+		// Phase 7.4 — client-side validation: TRANSFER source and destination
+		// must be different warehouses. The server enforces this too, but a
+		// client-side check gives immediate feedback without a round-trip.
+		if (type === "TRANSFER" && toWarehouseId && warehouseId === toWarehouseId) {
+			setError("Source and destination warehouse must be different.");
+			return;
+		}
 
-    startTransition(async () => {
-      // Pre-flight: if the browser already believes it's offline,
-      // skip the direct RPC and go straight to the queue. Saves a
-      // fetch attempt that will fail and also preserves deterministic
-      // behavior when the user is explicitly offline.
-      const startsOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+		const form = event.currentTarget;
+		const input = buildInput(form);
+		if (!input) {
+			// The native `required` / `min={1}` attributes should cover
+			// this, but guard anyway so a future DOM refactor doesn't
+			// silently ship broken payloads.
+			setError(labels.error);
+			return;
+		}
 
-      if (!startsOffline) {
-        try {
-          const result = await submitMovementOpAction(payload);
-          if (result.ok) {
-            router.push("/movements");
-            router.refresh();
-            return;
-          }
-          if (!result.retryable) {
-            setError(result.error);
-            if (result.fieldErrors) setFieldErrors(result.fieldErrors);
-            return;
-          }
-          // Retryable failure from the server (transient DB error
-          // etc.). Fall through to the enqueue path.
-        } catch {
-          // Transport-layer throw — fetch failed, the SW returned
-          // the offline fallback, CORS weirdness. Fall through to
-          // enqueue so the user doesn't lose their input.
-        }
-      }
+		const idempotencyKey = generateIdempotencyKey();
+		const payload = { idempotencyKey, input };
 
-      await enqueueAndNavigate(idempotencyKey, input);
-    });
-  }
+		startTransition(async () => {
+			// Pre-flight: if the browser already believes it's offline,
+			// skip the direct RPC and go straight to the queue. Saves a
+			// fetch attempt that will fail and also preserves deterministic
+			// behavior when the user is explicitly offline.
+			const startsOffline =
+				typeof navigator !== "undefined" && navigator.onLine === false;
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Type selector */}
-      <div className="space-y-2">
-        <Label htmlFor="movement-type">{labels.type}</Label>
-        <Select value={type} onValueChange={(v) => setType(v as MovementType)}>
-          <SelectTrigger id="movement-type">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="RECEIPT">{labels.typeOptions.RECEIPT}</SelectItem>
-            <SelectItem value="ISSUE">{labels.typeOptions.ISSUE}</SelectItem>
-            <SelectItem value="ADJUSTMENT">{labels.typeOptions.ADJUSTMENT}</SelectItem>
-            <SelectItem value="TRANSFER">{labels.typeOptions.TRANSFER}</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-xs text-muted-foreground">{labels.typeHelp[type]}</p>
-      </div>
+			if (!startsOffline) {
+				try {
+					const result = await submitMovementOpAction(payload);
+					if (result.ok) {
+						router.push("/movements");
+						router.refresh();
+						return;
+					}
+					if (!result.retryable) {
+						setError(result.error);
+						if (result.fieldErrors) setFieldErrors(result.fieldErrors);
+						return;
+					}
+					// Retryable failure from the server (transient DB error
+					// etc.). Fall through to the enqueue path.
+				} catch {
+					// Transport-layer throw — fetch failed, the SW returned
+					// the offline fallback, CORS weirdness. Fall through to
+					// enqueue so the user doesn't lose their input.
+				}
+			}
 
-      {/* Item — Combobox with type-ahead search (Phase 2 UX) */}
-      <div className="space-y-2">
-        <Label>{labels.item}</Label>
-        <ItemCombobox
-          items={items}
-          value={itemId}
-          onValueChange={setItemId}
-          placeholder={labels.itemPlaceholder}
-        />
-        {fieldErrors.itemId ? (
-          <p className="text-xs text-destructive">{fieldErrors.itemId[0]}</p>
-        ) : null}
-      </div>
+			await enqueueAndNavigate(idempotencyKey, input);
+		});
+	}
 
-      {/* Source warehouse */}
-      <div className="space-y-2">
-        <Label htmlFor="movement-warehouse">
-          {type === "TRANSFER" ? labels.warehouseSource : labels.warehouse}
-        </Label>
-        <Select value={warehouseId} onValueChange={setWarehouseId}>
-          <SelectTrigger id="movement-warehouse">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {warehouses.map((w) => (
-              <SelectItem key={w.id} value={w.id}>
-                {w.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {fieldErrors.warehouseId ? (
-          <p className="text-xs text-destructive">{fieldErrors.warehouseId[0]}</p>
-        ) : null}
-      </div>
+	return (
+		<form onSubmit={handleSubmit} className="space-y-6">
+			{/* Type selector */}
+			<div className="space-y-2">
+				<Label htmlFor="movement-type">{labels.type}</Label>
+				<Select value={type} onValueChange={(v) => setType(v as MovementType)}>
+					<SelectTrigger id="movement-type">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="RECEIPT">
+							{labels.typeOptions.RECEIPT}
+						</SelectItem>
+						<SelectItem value="ISSUE">{labels.typeOptions.ISSUE}</SelectItem>
+						<SelectItem value="ADJUSTMENT">
+							{labels.typeOptions.ADJUSTMENT}
+						</SelectItem>
+						<SelectItem value="TRANSFER">
+							{labels.typeOptions.TRANSFER}
+						</SelectItem>
+					</SelectContent>
+				</Select>
+				<p className="text-xs text-muted-foreground">{labels.typeHelp[type]}</p>
+			</div>
 
-      {/* Destination warehouse — only for TRANSFER */}
-      {type === "TRANSFER" ? (
-        <div className="space-y-2">
-          <Label htmlFor="movement-to-warehouse">{labels.toWarehouse}</Label>
-          <Select value={toWarehouseId} onValueChange={setToWarehouseId}>
-            <SelectTrigger id="movement-to-warehouse">
-              <SelectValue placeholder={labels.toWarehouse} />
-            </SelectTrigger>
-            <SelectContent>
-              {destinationOptions.map((w) => (
-                <SelectItem key={w.id} value={w.id}>
-                  {w.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {fieldErrors.toWarehouseId ? (
-            <p className="text-xs text-destructive">{fieldErrors.toWarehouseId[0]}</p>
-          ) : null}
-        </div>
-      ) : null}
+			{/* Item — Combobox with type-ahead search (Phase 2 UX) */}
+			<div className="space-y-2">
+				<Label>{labels.item}</Label>
+				<ItemCombobox
+					items={items}
+					value={itemId}
+					onValueChange={setItemId}
+					placeholder={labels.itemPlaceholder}
+				/>
+				{fieldErrors.itemId ? (
+					<p className="text-xs text-destructive">{fieldErrors.itemId[0]}</p>
+				) : null}
+			</div>
 
-      {/* Direction — only for ADJUSTMENT */}
-      {type === "ADJUSTMENT" ? (
-        <div className="space-y-2">
-          <Label htmlFor="movement-direction">{labels.direction}</Label>
-          <Select value={direction} onValueChange={(v) => setDirection(v as "1" | "-1")}>
-            <SelectTrigger id="movement-direction">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">{labels.directionIn}</SelectItem>
-              <SelectItem value="-1">{labels.directionOut}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      ) : null}
+			{/* Source warehouse */}
+			<div className="space-y-2">
+				<Label htmlFor="movement-warehouse">
+					{type === "TRANSFER" ? labels.warehouseSource : labels.warehouse}
+				</Label>
+				<Select value={warehouseId} onValueChange={setWarehouseId}>
+					<SelectTrigger id="movement-warehouse">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{warehouses.map((w) => (
+							<SelectItem key={w.id} value={w.id}>
+								{w.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+				{fieldErrors.warehouseId ? (
+					<p className="text-xs text-destructive">
+						{fieldErrors.warehouseId[0]}
+					</p>
+				) : null}
+			</div>
 
-      {/* Quantity */}
-      <div className="space-y-2">
-        <Label htmlFor="movement-quantity">{labels.quantity}</Label>
-        <Input id="movement-quantity" name="quantity" type="number" min={1} step={1} required />
-      </div>
+			{/* Destination warehouse — only for TRANSFER */}
+			{type === "TRANSFER" ? (
+				<div className="space-y-2">
+					<Label htmlFor="movement-to-warehouse">{labels.toWarehouse}</Label>
+					<Select value={toWarehouseId} onValueChange={setToWarehouseId}>
+						<SelectTrigger id="movement-to-warehouse">
+							<SelectValue placeholder={labels.toWarehouse} />
+						</SelectTrigger>
+						<SelectContent>
+							{destinationOptions.map((w) => (
+								<SelectItem key={w.id} value={w.id}>
+									{w.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					{fieldErrors.toWarehouseId ? (
+						<p className="text-xs text-destructive">
+							{fieldErrors.toWarehouseId[0]}
+						</p>
+					) : null}
+				</div>
+			) : null}
 
-      {/* Reference */}
-      <div className="space-y-2">
-        <Label htmlFor="movement-reference">{labels.reference}</Label>
-        <Input
-          id="movement-reference"
-          name="reference"
-          type="text"
-          placeholder={labels.referencePlaceholder}
-          maxLength={120}
-        />
-      </div>
+			{/* Direction — only for ADJUSTMENT */}
+			{type === "ADJUSTMENT" ? (
+				<div className="space-y-2">
+					<Label htmlFor="movement-direction">{labels.direction}</Label>
+					<Select
+						value={direction}
+						onValueChange={(v) => setDirection(v as "1" | "-1")}
+					>
+						<SelectTrigger id="movement-direction">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="1">{labels.directionIn}</SelectItem>
+							<SelectItem value="-1">{labels.directionOut}</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+			) : null}
 
-      {/* Note */}
-      <div className="space-y-2">
-        <Label htmlFor="movement-note">{labels.note}</Label>
-        <Textarea
-          id="movement-note"
-          name="note"
-          placeholder={labels.notePlaceholder}
-          maxLength={1000}
-          rows={3}
-        />
-      </div>
+			{/* Quantity */}
+			<div className="space-y-2">
+				<Label htmlFor="movement-quantity">{labels.quantity}</Label>
+				<Input
+					id="movement-quantity"
+					name="quantity"
+					type="number"
+					min={1}
+					step={1}
+					required
+				/>
+			</div>
 
-      {error ? (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </div>
-      ) : null}
+			{/* Reference */}
+			<div className="space-y-2">
+				<Label htmlFor="movement-reference">{labels.reference}</Label>
+				<Input
+					id="movement-reference"
+					name="reference"
+					type="text"
+					placeholder={labels.referencePlaceholder}
+					maxLength={120}
+				/>
+			</div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isPending}>
-          {labels.cancel}
-        </Button>
-        <Button type="submit" disabled={isPending || !itemId || !warehouseId}>
-          {isPending ? (
-            <>
-              {typeof navigator !== "undefined" && navigator.onLine === false ? (
-                <CloudOff className="h-4 w-4" />
-              ) : (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              )}
-              <span>{labels.submittingLabel}</span>
-            </>
-          ) : (
-            labels.submit
-          )}
-        </Button>
-      </div>
-    </form>
-  );
+			{/* Note */}
+			<div className="space-y-2">
+				<Label htmlFor="movement-note">{labels.note}</Label>
+				<Textarea
+					id="movement-note"
+					name="note"
+					placeholder={labels.notePlaceholder}
+					maxLength={1000}
+					rows={3}
+				/>
+			</div>
+
+			{error ? (
+				<div
+					role="alert"
+					className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+				>
+					{error}
+				</div>
+			) : null}
+
+			<div className="flex items-center justify-end gap-2">
+				<Button
+					type="button"
+					variant="ghost"
+					onClick={() => router.back()}
+					disabled={isPending}
+				>
+					{labels.cancel}
+				</Button>
+				<Button type="submit" disabled={isPending || !itemId || !warehouseId}>
+					{isPending ? (
+						<>
+							{typeof navigator !== "undefined" &&
+							navigator.onLine === false ? (
+								<CloudOff className="h-4 w-4" />
+							) : (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							)}
+							<span>{labels.submittingLabel}</span>
+						</>
+					) : (
+						labels.submit
+					)}
+				</Button>
+			</div>
+		</form>
+	);
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { db } from "@/lib/db";
-import { getMessages } from "@/lib/i18n";
+import { getMessages, getRegion } from "@/lib/i18n";
 import { UNLIMITED, getPlanLimit } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -25,6 +25,9 @@ export default async function NewItemPage({
 }) {
 	const { membership } = await requireActiveMembership();
 	const t = await getMessages();
+	// Phase 7.3 — pre-fill currency from org region so new items default
+	// to the correct currency without manual selection.
+	const region = await getRegion();
 	const params = (await searchParams) ?? {};
 	const defaultBarcode = params.barcode?.trim();
 
@@ -109,6 +112,7 @@ export default async function NewItemPage({
 				suppliers={suppliers}
 				mode="create"
 				defaultBarcode={defaultBarcode || undefined}
+				defaultCurrency={region.currency}
 			/>
 		</div>
 	);
