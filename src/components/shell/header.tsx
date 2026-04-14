@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 import { Bell, Menu, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import {
   NotificationCenter,
@@ -51,6 +51,7 @@ export function Header({
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("q") ?? "";
   const [query, setQuery] = useState(currentQuery);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Keep the input in sync when the user navigates directly to /search?q=...
   // or clears the URL. Without this, going back in history would show stale
@@ -58,6 +59,28 @@ export function Header({
   useEffect(() => {
     setQuery(currentQuery);
   }, [currentQuery]);
+
+  // Phase 13.1 — Cmd+K / Ctrl+K keyboard shortcut to focus the search box.
+  // Standard power-user affordance: works like VS Code, Linear, Notion.
+  // Skips if the active element is already an input/textarea to avoid
+  // clobbering edits in forms elsewhere on the page.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+        const active = document.activeElement;
+        const isTyping =
+          active instanceof HTMLInputElement ||
+          active instanceof HTMLTextAreaElement ||
+          (active instanceof HTMLElement && active.isContentEditable);
+        if (isTyping) return;
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,14 +117,19 @@ export function Header({
       <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-xl">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          ref={searchInputRef}
           type="search"
           name="q"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={labels.searchPlaceholder}
-          className="pl-9"
+          className="pl-9 pr-16"
           aria-label={labels.searchLabel}
         />
+        {/* Phase 13.1 — keyboard shortcut hint badge */}
+        <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden items-center gap-0.5 rounded border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground sm:flex">
+          <span className="text-xs">⌘</span>K
+        </kbd>
       </form>
 
       <div className="ml-auto flex items-center gap-2">

@@ -23,6 +23,7 @@
 // strings. If i18n itself is what crashed, the global boundary
 // handles it.
 
+import Link from "next/link";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,15 @@ type AppErrorProps = {
   reset: () => void;
 };
 
+// Phase 13.2 — quick-navigation links so users can escape a crashed page
+// without hunting the sidebar. Mirrors the pattern in not-found.tsx.
+const NAV_LINKS = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Items", href: "/items" },
+  { label: "Warehouses", href: "/warehouses" },
+  { label: "Stock counts", href: "/stock-counts" },
+];
+
 export default function AppError({ error, reset }: AppErrorProps) {
   useEffect(() => {
     // Send to Sentry for production visibility. captureException is a
@@ -55,26 +65,41 @@ export default function AppError({ error, reset }: AppErrorProps) {
   }, [error]);
 
   return (
-    <div className="flex min-h-[50vh] items-center justify-center">
-      <Card className="max-w-lg">
+    <div className="flex min-h-[50vh] items-center justify-center px-4">
+      <Card className="w-full max-w-lg">
         <CardHeader>
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Something went wrong
           </p>
           <CardTitle>This page hit an unexpected error.</CardTitle>
           <CardDescription>
-            The rest of the app is still usable. You can retry this page, or navigate away and come
-            back.
+            The rest of the app is still usable. You can retry this page, or navigate to a working
+            section below.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {error.digest ? (
             <p className="font-mono text-xs text-muted-foreground">Ref: {error.digest}</p>
           ) : null}
+          <div className="grid gap-1.5">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex items-center justify-between rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent/50 transition-colors"
+              >
+                {link.label}
+                <span className="text-muted-foreground">→</span>
+              </Link>
+            ))}
+          </div>
         </CardContent>
-        <CardFooter className="gap-2">
+        <CardFooter className="gap-2 border-t pt-4">
           <Button type="button" onClick={() => reset()}>
             Try again
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/dashboard">Go to dashboard</Link>
           </Button>
         </CardFooter>
       </Card>
