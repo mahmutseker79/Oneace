@@ -1,8 +1,8 @@
 "use client";
 
-import { CheckCircle2, Package } from "lucide-react";
+import { CheckCircle2, Package, ScanLine, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,13 +16,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { scanError, scanSuccess } from "@/lib/scanner/feedback";
 
 import { receivePurchaseOrderAction } from "../../actions";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export type ReceiveLine = {
   id: string;
   itemName: string;
   itemSku: string;
+  /** Phase 11.2: barcode for scan-matching. null when item has no barcode. */
+  itemBarcode: string | null;
   orderedQty: number;
   receivedQty: number;
 };
@@ -46,6 +53,13 @@ export type ReceiveFormLabels = {
   nothingToReceive: string;
   receiveOverflow: string;
   genericError: string;
+  // Phase 11.2 — scan input labels
+  scanInputLabel: string;
+  scanInputPlaceholder: string;
+  scanInputHint: string;
+  scanMatchFound: string;
+  scanMatchNotFound: string;
+  scanMatchAlreadyFull: string;
 };
 
 type ReceiveFormProps = {
@@ -60,6 +74,37 @@ type SuccessState = {
   receivedLineCount: number;
   fullyReceived: boolean;
 };
+
+// ---------------------------------------------------------------------------
+// Barcode matching logic
+// ---------------------------------------------------------------------------
+
+/**
+ * Find the PO line that matches a scanned code.
+ *
+ * Match priority:
+ *   1. item.barcode (exact)
+ *   2. item.sku (exact, case-insensitive)
+ *
+ * Returns the matching line or null.
+ */
+export function matchLineByCode(lines: ReceiveLine[], code: string): ReceiveLine | null {
+  const trimmed = code.trim();
+  if (!trimmed) return null;
+
+  // Priority 1: barcode exact match
+  const byBarcode = lines.find((l) => l.itemBarcode !== null && l.itemBarcode === trimmed);
+  if (byBarcode) return byBarcode;
+
+  // Priority 2: SKU case-insensitive
+  const lower = trimmed.toLowerCase();
+  const bySku = lines.find((l) => l.itemSku.toLowerCase() === lower);
+  return bySku ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export function ReceiveForm({
   purchaseOrderId,
@@ -78,16 +123,19 @@ export function ReceiveForm({
     for (const line of lines) initial[line.id] = "";
     return initial;
   });
-  // Phase 6C — replay protection nonce. Minted once per form mount
-  // and resubmitted on every retry, so the server action can derive
-  // the same per-line idempotency keys on a replay and short-circuit
-  // the transaction. A fresh navigation to this page mints a new
-  // nonce (correct — a new human decision is a new receive). Two
-  // tabs open on the same PO will mint DIFFERENT nonces and can
-  // still over-receive; that is the existing multi-writer
-  // concurrency bug tracked at `actions.ts:482-489` and is
-  // explicitly out of Phase 6C scope.
+
+  // Phase 6C — replay protection nonce.
   const [submissionNonce] = useState(() => crypto.randomUUID());
+
+  // Phase 11.2 — scan state
+  const [scanValue, setScanValue] = useState("");
+  const [scanStatus, setScanStatus] = useState<"idle" | "matched" | "not-found" | "already-full">(
+    "idle",
+  );
+  const [highlightedLineId, setHighlightedLineId] = useState<string | null>(null);
+
+  // Refs to each quantity input so we can focus after a scan match
+  const quantityRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const openByLine = useMemo(() => {
     const map = new Map<string, number>();
@@ -102,8 +150,9 @@ export function ReceiveForm({
     [openByLine],
   );
 
+  // ── Quantity helpers ────────────────────────────────────────────────────
+
   function updateQuantity(lineId: string, value: string) {
-    // Allow only digits and empty
     if (value !== "" && !/^\d+$/.test(value)) return;
     setQuantities((prev) => ({ ...prev, [lineId]: value }));
   }
@@ -116,6 +165,60 @@ export function ReceiveForm({
     }
     setQuantities(next);
   }
+
+  // ── Phase 11.2: scan input handler ─────────────────────────────────────
+
+  const handleScan = useCallback(
+    (code: string) => {
+      const trimmed = code.trim();
+      if (!trimmed) return;
+
+      const matched = matchLineByCode(lines, trimmed);
+
+      if (!matched) {
+        setScanStatus("not-found");
+        setHighlightedLineId(null);
+        scanError();
+        return;
+      }
+
+      const open = openByLine.get(matched.id) ?? 0;
+      if (open <= 0) {
+        setScanStatus("already-full");
+        setHighlightedLineId(matched.id);
+        scanError();
+        return;
+      }
+
+      // Match found — increment quantity by 1, up to the open amount
+      setQuantities((prev) => {
+        const current = Number(prev[matched.id] ?? "0") || 0;
+        const next = Math.min(current + 1, open);
+        return { ...prev, [matched.id]: String(next) };
+      });
+
+      setScanStatus("matched");
+      setHighlightedLineId(matched.id);
+      scanSuccess();
+
+      // Focus the quantity input for the matched line
+      // so the operator can manually adjust if needed
+      const ref = quantityRefs.current[matched.id];
+      if (ref) {
+        ref.focus();
+        ref.select();
+      }
+    },
+    [lines, openByLine],
+  );
+
+  function handleScanSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleScan(scanValue);
+    setScanValue("");
+  }
+
+  // ── Main form submit ────────────────────────────────────────────────────
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,7 +237,6 @@ export function ReceiveForm({
       return;
     }
 
-    // Client-side overflow guard — server re-checks too.
     for (const r of receipts) {
       const open = openByLine.get(r.lineId) ?? 0;
       if (r.quantity > open) {
@@ -162,6 +264,8 @@ export function ReceiveForm({
       router.refresh();
     });
   }
+
+  // ── Success screen ──────────────────────────────────────────────────────
 
   if (success) {
     return (
@@ -191,90 +295,157 @@ export function ReceiveForm({
     );
   }
 
+  // ── Receive form ────────────────────────────────────────────────────────
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{labels.columnItem}</TableHead>
-              <TableHead>{labels.columnSku}</TableHead>
-              <TableHead className="text-right">{labels.columnOrdered}</TableHead>
-              <TableHead className="text-right">{labels.columnReceived}</TableHead>
-              <TableHead className="text-right">{labels.columnOpen}</TableHead>
-              <TableHead className="w-[140px] text-right">{labels.columnReceiveNow}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {lines.map((line) => {
-              const open = openByLine.get(line.id) ?? 0;
-              const isClosed = open <= 0;
-              return (
-                <TableRow key={line.id}>
-                  <TableCell className="font-medium">{line.itemName}</TableCell>
-                  <TableCell className="font-mono text-xs">{line.itemSku}</TableCell>
-                  <TableCell className="text-right font-mono">{line.orderedQty}</TableCell>
-                  <TableCell className="text-right font-mono">{line.receivedQty}</TableCell>
-                  <TableCell className="text-right font-mono">{open}</TableCell>
-                  <TableCell className="text-right">
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={quantities[line.id] ?? ""}
-                      onChange={(e) => updateQuantity(line.id, e.target.value)}
-                      disabled={isClosed || isPending}
-                      placeholder={isClosed ? "—" : "0"}
-                      className="text-right font-mono"
-                      aria-label={`${labels.columnReceiveNow} — ${line.itemName}`}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+    <div className="space-y-4">
+      {/* ── Phase 11.2: Scan input panel ─────────────────────────── */}
+      <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <ScanLine className="h-4 w-4 text-muted-foreground" />
+          {labels.scanInputLabel}
+        </div>
+        <form onSubmit={handleScanSubmit} className="flex gap-2">
+          <Input
+            type="text"
+            value={scanValue}
+            onChange={(e) => {
+              setScanValue(e.target.value);
+              setScanStatus("idle");
+              setHighlightedLineId(null);
+            }}
+            placeholder={labels.scanInputPlaceholder}
+            autoComplete="off"
+            autoFocus
+            className="font-mono"
+            aria-label={labels.scanInputLabel}
+          />
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={!scanValue.trim()}
+            className="shrink-0"
+          >
+            <ScanLine className="h-4 w-4" />
+          </Button>
+        </form>
+        <p className="text-xs text-muted-foreground">{labels.scanInputHint}</p>
+        {scanStatus === "not-found" ? (
+          <div className="flex items-center gap-1.5 text-xs text-destructive" role="alert">
+            <TriangleAlert className="h-3.5 w-3.5" />
+            {labels.scanMatchNotFound}
+          </div>
+        ) : null}
+        {scanStatus === "already-full" ? (
+          <div className="flex items-center gap-1.5 text-xs text-amber-600" role="alert">
+            <TriangleAlert className="h-3.5 w-3.5" />
+            {labels.scanMatchAlreadyFull}
+          </div>
+        ) : null}
+        {scanStatus === "matched" ? (
+          <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {labels.scanMatchFound}
+          </div>
+        ) : null}
       </div>
 
-      <div className="flex items-center justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleReceiveAll}
-          disabled={!hasAnyOpen || isPending}
-        >
-          <Package className="h-4 w-4" />
-          {labels.submitAll}
-        </Button>
-      </div>
+      {/* ── Receive table + submit ────────────────────────────────── */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{labels.columnItem}</TableHead>
+                <TableHead>{labels.columnSku}</TableHead>
+                <TableHead className="text-right">{labels.columnOrdered}</TableHead>
+                <TableHead className="text-right">{labels.columnReceived}</TableHead>
+                <TableHead className="text-right">{labels.columnOpen}</TableHead>
+                <TableHead className="w-[140px] text-right">{labels.columnReceiveNow}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lines.map((line) => {
+                const open = openByLine.get(line.id) ?? 0;
+                const isClosed = open <= 0;
+                const isHighlighted = line.id === highlightedLineId;
+                return (
+                  <TableRow
+                    key={line.id}
+                    className={
+                      isHighlighted
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 transition-colors"
+                        : undefined
+                    }
+                  >
+                    <TableCell className="font-medium">{line.itemName}</TableCell>
+                    <TableCell className="font-mono text-xs">{line.itemSku}</TableCell>
+                    <TableCell className="text-right font-mono">{line.orderedQty}</TableCell>
+                    <TableCell className="text-right font-mono">{line.receivedQty}</TableCell>
+                    <TableCell className="text-right font-mono">{open}</TableCell>
+                    <TableCell className="text-right">
+                      <Input
+                        ref={(el) => {
+                          quantityRefs.current[line.id] = el;
+                        }}
+                        type="text"
+                        inputMode="numeric"
+                        value={quantities[line.id] ?? ""}
+                        onChange={(e) => updateQuantity(line.id, e.target.value)}
+                        disabled={isClosed || isPending}
+                        placeholder={isClosed ? "—" : "0"}
+                        className="text-right font-mono"
+                        aria-label={`${labels.columnReceiveNow} — ${line.itemName}`}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="receive-notes">{labels.notesLabel}</Label>
-        <Textarea
-          id="receive-notes"
-          name="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder={labels.notesPlaceholder}
-          rows={3}
-          disabled={isPending}
-        />
-      </div>
+        <div className="flex items-center justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleReceiveAll}
+            disabled={!hasAnyOpen || isPending}
+          >
+            <Package className="h-4 w-4" />
+            {labels.submitAll}
+          </Button>
+        </div>
 
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+        <div className="space-y-2">
+          <Label htmlFor="receive-notes">{labels.notesLabel}</Label>
+          <Textarea
+            id="receive-notes"
+            name="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={labels.notesPlaceholder}
+            rows={3}
+            disabled={isPending}
+          />
+        </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="ghost" asChild disabled={isPending}>
-          <a href={backHref}>{labels.cancel}</a>
-        </Button>
-        <Button type="submit" disabled={isPending || !hasAnyOpen}>
-          {labels.submit} {poNumber ? `· ${poNumber}` : ""}
-        </Button>
-      </div>
-    </form>
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="flex items-center justify-end gap-2">
+          <Button type="button" variant="ghost" asChild disabled={isPending}>
+            <a href={backHref}>{labels.cancel}</a>
+          </Button>
+          <Button type="submit" disabled={isPending || !hasAnyOpen}>
+            {labels.submit} {poNumber ? `· ${poNumber}` : ""}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

@@ -34,7 +34,9 @@ export default async function ReceivePurchaseOrderPage({ params }: ReceivePagePr
       lines: {
         orderBy: { createdAt: "asc" },
         include: {
-          item: { select: { id: true, sku: true, name: true } },
+          // Phase 11.2: barcode added so the scan input can match
+          // scanned codes to the correct PO line.
+          item: { select: { id: true, sku: true, name: true, barcode: true } },
         },
       },
     },
@@ -51,6 +53,9 @@ export default async function ReceivePurchaseOrderPage({ params }: ReceivePagePr
     id: line.id,
     itemName: line.item.name,
     itemSku: line.item.sku,
+    // Phase 11.2: barcode used by the scan input for line matching.
+    // null when the item has no barcode registered.
+    itemBarcode: line.item.barcode ?? null,
     orderedQty: line.orderedQty,
     receivedQty: line.receivedQty,
   }));
@@ -75,6 +80,13 @@ export default async function ReceivePurchaseOrderPage({ params }: ReceivePagePr
     nothingToReceive: t.purchaseOrders.errors.nothingToReceive,
     receiveOverflow: t.purchaseOrders.errors.receiveOverflow,
     genericError: t.purchaseOrders.errors.receiveFailed,
+    // Phase 11.2 — scan-driven receiving
+    scanInputLabel: t.purchaseOrders.receive.scanInputLabel,
+    scanInputPlaceholder: t.purchaseOrders.receive.scanInputPlaceholder,
+    scanInputHint: t.purchaseOrders.receive.scanInputHint,
+    scanMatchFound: t.purchaseOrders.receive.scanMatchFound,
+    scanMatchNotFound: t.purchaseOrders.receive.scanMatchNotFound,
+    scanMatchAlreadyFull: t.purchaseOrders.receive.scanMatchAlreadyFull,
   };
 
   return (

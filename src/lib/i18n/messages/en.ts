@@ -1216,6 +1216,13 @@ export const en = {
       notesPlaceholder: "Shipment reference, discrepancies, damage reports…",
       submit: "Post receipt",
       submitAll: "Receive all open",
+      // Phase 11.2 — scan-driven receiving
+      scanInputLabel: "Scan barcode",
+      scanInputPlaceholder: "Scan or type barcode / SKU…",
+      scanInputHint: "Scan a barcode or type a SKU and press Enter to find the line.",
+      scanMatchFound: "Matched",
+      scanMatchNotFound: "No line found for this barcode in this PO.",
+      scanMatchAlreadyFull: "This line is fully received.",
       successTitle: "Receipt posted",
       successBody: "{count} line(s) updated. Stock levels are refreshed.",
       successFullyReceived: "This PO is now fully received.",
