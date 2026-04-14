@@ -133,6 +133,7 @@ function ItemCombobox({
 		</Popover>
 	);
 }
+import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 import { MOVEMENT_CREATE_OP_TYPE } from "@/lib/offline/dispatchers/movement-create";
 import { enqueueOp } from "@/lib/offline/queue";
 import type { MovementInput } from "@/lib/validation/movement";
@@ -226,6 +227,7 @@ export function MovementForm({
 	presetWarehouseId,
 }: MovementFormProps) {
 	const router = useRouter();
+	const { reset: resetUnsaved, setDirty } = useUnsavedWarning();
 	const [type, setType] = useState<MovementType>("RECEIPT");
 	const [itemId, setItemId] = useState<string>(presetItemId ?? "");
 	const [warehouseId, setWarehouseId] = useState<string>(
@@ -353,6 +355,7 @@ export function MovementForm({
 				try {
 					const result = await submitMovementOpAction(payload);
 					if (result.ok) {
+						resetUnsaved();
 						router.push("/movements");
 						router.refresh();
 						return;
@@ -380,7 +383,13 @@ export function MovementForm({
 			{/* Type selector */}
 			<div className="space-y-2">
 				<Label htmlFor="movement-type">{labels.type}</Label>
-				<Select value={type} onValueChange={(v) => setType(v as MovementType)}>
+				<Select
+					value={type}
+					onValueChange={(v) => {
+						setType(v as MovementType);
+						setDirty(true);
+					}}
+				>
 					<SelectTrigger id="movement-type">
 						<SelectValue />
 					</SelectTrigger>

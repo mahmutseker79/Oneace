@@ -405,7 +405,10 @@ export default async function ItemsPage({
 					/>
 				</div>
 				<div className="flex items-center gap-2">
-					{canExport ? (
+					{/* Phase 9.1 — gate export/import by both role AND plan.
+						FREE plan users can't export; only PRO+ can use these features.
+						Role check (canExport/canImport) is also required. */}
+					{canExport && canExportByPlan ? (
 						<Button asChild variant="outline">
 							<Link href="/items/export">
 								<Download className="h-4 w-4" />
@@ -413,7 +416,7 @@ export default async function ItemsPage({
 							</Link>
 						</Button>
 					) : null}
-					{canImport ? (
+					{canImport && canExportByPlan ? (
 						<Button asChild variant="outline">
 							<Link href="/items/import">
 								<FileUp className="h-4 w-4" />
@@ -509,6 +512,41 @@ export default async function ItemsPage({
 						</Link>
 					</span>
 				) : null}
+				{/* Phase 9.7 — sort buttons restore the sort UI removed in Phase 4.3 */}
+				<div className="ml-auto flex items-center gap-1">
+					<span className="text-xs text-muted-foreground">Sort:</span>
+					{(
+						[
+							{ col: "date" as const, label: "Newest" },
+							{ col: "name" as const, label: "Name" },
+							{ col: "sku" as const, label: "SKU" },
+						] as const
+					).map(({ col, label }) => {
+						const isActive = sortCol === col;
+						const nextDir = isActive && sortDir === "asc" ? "desc" : "asc";
+						const sp = new URLSearchParams();
+						sp.set("sort", col);
+						sp.set("dir", nextDir);
+						if (statusFilter !== "all") sp.set("status", params.status ?? "");
+						if (searchQuery) sp.set("q", searchQuery);
+						return (
+							<Link
+								key={col}
+								href={`/items?${sp.toString()}`}
+								aria-label={`Sort by ${label} ${isActive ? (sortDir === "asc" ? "descending" : "ascending") : "ascending"}`}
+								className={`rounded px-2 py-1 text-xs transition-colors ${
+									isActive
+										? "bg-primary/10 font-medium text-primary"
+										: "text-muted-foreground hover:text-foreground"
+								}`}
+							>
+								{label}
+								{isActive ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
+							</Link>
+						);
+					})}
+				</div>
+
 				{/* Phase 8.7 — show "Clear all filters" when multiple filter dimensions are active */}
 				{!searchQuery && statusFilter !== "all" && params.sort ? (
 					<Link
@@ -648,7 +686,8 @@ export default async function ItemsPage({
 							...(canCreate
 								? [{ label: t.items.emptyCta, href: "/items/new", icon: Plus }]
 								: []),
-							...(canImport
+							// Phase 9.1 — import also requires plan capability
+							...(canImport && canExportByPlan
 								? [
 										{
 											label: t.items.emptyImportCta,

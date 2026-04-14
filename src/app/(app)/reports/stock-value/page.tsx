@@ -227,11 +227,18 @@ export default async function StockValueReportPage() {
 						</Card>
 					</div>
 
+					{/* Phase 9.6 — actionable note when cost prices are missing */}
 					{itemsMissingCost > 0 ? (
 						<p className="text-muted-foreground text-sm">
 							{format(t.reports.stockValue.missingCostWarning, {
 								count: String(itemsMissingCost),
-							})}
+							})}{" "}
+							<Link
+								href="/items"
+								className="text-primary hover:underline text-sm"
+							>
+								Add cost prices to items →
+							</Link>
 						</p>
 					) : null}
 
