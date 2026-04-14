@@ -23,10 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import type { WarehouseSnapshotRow } from "@/lib/offline/warehouses-cache";
 import { hasCapability } from "@/lib/permissions";
+import { UNLIMITED, getPlanLimit } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 import { deleteWarehouseAction } from "./actions";
@@ -47,6 +49,10 @@ export default async function WarehousesPage() {
 
   // P10.1 — capability flags for conditional UI rendering
   const canCreate = hasCapability(membership.role, "warehouses.create");
+
+  // Phase 15.2 — plan-aware warehouse limit for upgrade UX
+  const whPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const whLimit = getPlanLimit(whPlan, "warehouses");
   const canEdit = hasCapability(membership.role, "warehouses.edit");
   const canDelete = hasCapability(membership.role, "warehouses.delete");
 
@@ -79,7 +85,14 @@ export default async function WarehousesPage() {
           <h1 className="text-2xl font-semibold">{t.warehouses.heading}</h1>
           <p className="text-muted-foreground">{t.warehouses.subtitle}</p>
         </div>
-        {canCreate ? (
+        {canCreate && whLimit === UNLIMITED ? (
+          <Button asChild>
+            <Link href="/warehouses/new">
+              <Plus className="h-4 w-4" />
+              {t.warehouses.newWarehouse}
+            </Link>
+          </Button>
+        ) : canCreate && whLimit !== UNLIMITED && warehouses.length < whLimit ? (
           <Button asChild>
             <Link href="/warehouses/new">
               <Plus className="h-4 w-4" />
@@ -88,6 +101,15 @@ export default async function WarehousesPage() {
           </Button>
         ) : null}
       </div>
+
+      {/* Phase 15.2 — warehouse limit upgrade banner */}
+      {whLimit !== UNLIMITED && warehouses.length >= whLimit ? (
+        <UpgradePrompt
+          reason={`Your current plan includes ${whLimit} warehouse location. Upgrade to Pro for unlimited locations.`}
+          requiredPlan="PRO"
+          variant="banner"
+        />
+      ) : null}
 
       {warehouses.length === 0 ? (
         <EmptyState

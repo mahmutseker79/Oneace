@@ -14,8 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 import { deleteBinAction } from "./actions";
@@ -35,6 +37,10 @@ export default async function BinsPage({ params }: PageProps) {
   const { id: warehouseId } = await params;
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  // Phase 15.2 — plan check for bins (PRO+ feature)
+  const binsPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const canUseBins = hasPlanCapability(binsPlan, "bins");
 
   const warehouse = await db.warehouse.findFirst({
     where: { id: warehouseId, organizationId: membership.organizationId },
@@ -112,6 +118,15 @@ export default async function BinsPage({ params }: PageProps) {
           <BinFormDialog warehouseId={warehouseId} labels={formLabels} mode="create" />
         </div>
       </div>
+
+      {/* Phase 15.2 — bins plan gate banner for FREE users */}
+      {!canUseBins ? (
+        <UpgradePrompt
+          reason="Unlock bin-level tracking on Pro to organize stock at shelf or rack level."
+          requiredPlan="PRO"
+          variant="banner"
+        />
+      ) : null}
 
       {bins.length === 0 ? (
         <Card>

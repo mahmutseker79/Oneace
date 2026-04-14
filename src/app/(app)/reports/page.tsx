@@ -10,8 +10,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,6 +24,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ReportsPage() {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  // Phase 15.2 — plan check for reports/exports
+  const reportsPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const canExportByPlan = hasPlanCapability(reportsPlan, "exports");
 
   // P3.7 — Only show the Supplier Performance card if the org has
   // suppliers or purchase orders. For a first-run user this keeps the
@@ -96,6 +102,16 @@ export default async function ReportsPage() {
           <p className="text-muted-foreground">{t.reports.subtitle}</p>
         </div>
       </div>
+
+      {/* Phase 15.2 — exports upgrade prompt for FREE users */}
+      {!canExportByPlan ? (
+        <UpgradePrompt
+          reason="Exports are available on Pro and Business plans."
+          requiredPlan="PRO"
+          variant="banner"
+          description="Upgrade to download CSV and Excel exports from any report."
+        />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         {reports.map((report) => {
