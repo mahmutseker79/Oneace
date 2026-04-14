@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
+import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 
@@ -31,6 +32,12 @@ export async function binTransferAction(
 
   if (!hasCapability(membership.role, "bins.transfer")) {
     return { ok: false, error: t.permissions.forbidden };
+  }
+
+  // Phase 13.2 — bin transfers require PRO or BUSINESS
+  const btPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(btPlan, "bins")) {
+    return { ok: false, error: planCapabilityError("bins") };
   }
 
   const parsed = binTransferSchema.safeParse(Object.fromEntries(formData));

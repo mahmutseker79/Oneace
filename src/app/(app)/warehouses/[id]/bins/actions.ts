@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
+import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { binInputSchema } from "@/lib/validation/bin";
 
@@ -27,6 +28,12 @@ export async function createBinAction(
 
   if (!hasCapability(membership.role, "bins.create")) {
     return { ok: false, error: t.permissions.forbidden };
+  }
+
+  // Phase 13.2 — bins require PRO or BUSINESS plan
+  const binPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(binPlan, "bins")) {
+    return { ok: false, error: planCapabilityError("bins") };
   }
 
   // Verify warehouse belongs to the org

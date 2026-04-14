@@ -8,6 +8,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
+import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { cleanFieldErrors } from "@/lib/validation/action-result";
@@ -79,6 +80,12 @@ export async function createTransferAction(
 
   if (!hasCapability(membership.role, "movements.create")) {
     return { ok: false, error: t.permissions.forbidden };
+  }
+
+  // Phase 13.2 — inter-warehouse transfers require PRO or BUSINESS
+  const transferPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(transferPlan, "transfers")) {
+    return { ok: false, error: planCapabilityError("transfers") };
   }
 
   // Re-validate the full input on the server.

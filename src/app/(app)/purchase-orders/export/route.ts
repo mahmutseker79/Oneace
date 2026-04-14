@@ -1,5 +1,6 @@
 import { type CsvColumn, csvResponse, serializeCsv, todayIsoDate } from "@/lib/csv";
 import { db } from "@/lib/db";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 import {
@@ -68,6 +69,18 @@ const columns: CsvColumn<ExportRow>[] = [
 
 export async function GET(request: Request) {
   const { membership } = await requireActiveMembership();
+
+  // Phase 13.2 — exports require PRO or BUSINESS plan
+  const exportPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(exportPlan, "exports")) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "Exports are available on Pro and Business plans. Upgrade to unlock CSV and Excel exports.",
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   // Reuse the page filter so the CSV snapshot matches the on-
   // screen view. `parsePurchaseOrderFilter` takes a Promise to

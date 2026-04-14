@@ -19,6 +19,7 @@ import { buildInvitationEmail } from "@/lib/mail/templates/invitation-email";
 // `src/lib/rate-limit.ts` for the design note on why this is
 // explicitly fail-open.
 import { hasCapability } from "@/lib/permissions";
+import { checkPlanLimit, planLimitError } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership, requireSession } from "@/lib/session";
 import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation/membership";
@@ -169,6 +170,26 @@ export async function inviteMemberAction(formData: FormData): Promise<InviteMemb
       error: t.users.invite.errors.alreadyInvited,
       fieldErrors: { email: [t.users.invite.errors.alreadyInvited] },
     };
+  }
+
+  // Phase 13.2 — plan member limit (FREE: 3, PRO: 10, BUSINESS: unlimited)
+  // Count active memberships + pending invitations to get the effective member count.
+  const memberPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const [currentMemberCount, pendingInviteCount] = await Promise.all([
+    db.membership.count({ where: { organizationId: membership.organizationId } }),
+    db.invitation.count({
+      where: {
+        organizationId: membership.organizationId,
+        acceptedAt: null,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    }),
+  ]);
+  const effectiveMemberCount = currentMemberCount + pendingInviteCount;
+  const memberLimitCheck = checkPlanLimit(memberPlan, "members", effectiveMemberCount);
+  if (!memberLimitCheck.allowed) {
+    return { ok: false, error: planLimitError("members", memberLimitCheck) };
   }
 
   const token = generateInvitationToken();

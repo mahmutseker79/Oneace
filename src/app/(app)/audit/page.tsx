@@ -39,6 +39,7 @@ import { Role } from "@/generated/prisma";
 import type { AuditAction } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 type SearchParams = Promise<{ cursor?: string }>;
@@ -93,6 +94,28 @@ export default async function AuditPage({
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
+
+  // Phase 13.2 — audit log requires BUSINESS plan
+  const auditPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(auditPlan, "auditLog")) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">{t.audit.heading}</h1>
+          <p className="text-muted-foreground">{t.audit.subtitle}</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            The audit log is available on the Business plan. Upgrade to access your full activity
+            history.{" "}
+            <Link href="/settings/billing" className="text-primary hover:underline">
+              Upgrade now
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Admins only. Short-circuits before the DB query.
   if (membership.role !== Role.OWNER && membership.role !== Role.ADMIN) {

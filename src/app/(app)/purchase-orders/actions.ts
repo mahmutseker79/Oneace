@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
+import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { deriveReceiveIdempotencyKey } from "@/lib/purchase-orders/idempotency";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
@@ -133,6 +134,12 @@ export async function createPurchaseOrderAction(formData: FormData): Promise<Act
 
   if (!hasCapability(membership.role, "purchaseOrders.create")) {
     return { ok: false, error: t.permissions.forbidden };
+  }
+
+  // Phase 13.2 — purchase orders require PRO or BUSINESS
+  const poPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(poPlan, "purchaseOrders")) {
+    return { ok: false, error: planCapabilityError("purchaseOrders") };
   }
 
   const parsed = purchaseOrderInputSchema.safeParse(formToInput(formData));

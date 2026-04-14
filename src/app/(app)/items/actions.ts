@@ -8,6 +8,12 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
+import {
+  checkPlanLimit,
+  hasPlanCapability,
+  planCapabilityError,
+  planLimitError,
+} from "@/lib/plans";
 // Phase 6A / P2 — narrow rate-limit surface for bulk import. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";
@@ -29,6 +35,16 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
 
   if (!hasCapability(membership.role, "items.create")) {
     return { ok: false, error: t.permissions.forbidden };
+  }
+
+  // Phase 13.2 — plan item limit enforcement (server-side, additive)
+  const plan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const currentItemCount = await db.item.count({
+    where: { organizationId: membership.organizationId },
+  });
+  const limitCheck = checkPlanLimit(plan, "items", currentItemCount);
+  if (!limitCheck.allowed) {
+    return { ok: false, error: planLimitError("items", limitCheck) };
   }
 
   const parsed = itemInputSchema.safeParse(Object.fromEntries(formData));
@@ -188,6 +204,17 @@ export async function importItemsAction(input: {
 
   if (!hasCapability(membership.role, "items.import")) {
     return { ok: false, error: t.permissions.forbidden };
+  }
+
+  // Phase 13.2 — plan item limit for bulk import
+  // Check whether ANY of the incoming rows would push over the limit.
+  const importPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const currentForImport = await db.item.count({
+    where: { organizationId: membership.organizationId },
+  });
+  const importLimitCheck = checkPlanLimit(importPlan, "items", currentForImport);
+  if (!importLimitCheck.allowed) {
+    return { ok: false, error: planLimitError("items", importLimitCheck) };
   }
 
   // Phase 6A / P2 — bulk import is cheap per row but expensive at

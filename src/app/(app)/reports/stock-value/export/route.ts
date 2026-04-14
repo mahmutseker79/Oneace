@@ -1,5 +1,6 @@
 import { type CsvColumn, csvResponse, serializeCsv, todayIsoDate } from "@/lib/csv";
 import { db } from "@/lib/db";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 /**
@@ -37,6 +38,18 @@ const columns: CsvColumn<ExportRow>[] = [
 
 export async function GET() {
   const { membership } = await requireActiveMembership();
+
+  // Phase 13.2 — exports require PRO or BUSINESS plan
+  const exportPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(exportPlan, "exports")) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "Exports are available on Pro and Business plans. Upgrade to unlock CSV and Excel exports.",
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   const items = await db.item.findMany({
     where: { organizationId: membership.organizationId, status: "ACTIVE" },

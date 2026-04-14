@@ -7,6 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
+import { checkPlanLimit, planLimitError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { warehouseInputSchema } from "@/lib/validation/warehouse";
 
@@ -28,6 +29,16 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
 
   if (!hasCapability(membership.role, "warehouses.create")) {
     return { ok: false, error: t.permissions.forbidden };
+  }
+
+  // Phase 13.2 — plan warehouse limit (FREE: 1 warehouse)
+  const whPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const currentWhCount = await db.warehouse.count({
+    where: { organizationId: membership.organizationId, isArchived: false },
+  });
+  const whLimitCheck = checkPlanLimit(whPlan, "warehouses", currentWhCount);
+  if (!whLimitCheck.allowed) {
+    return { ok: false, error: planLimitError("warehouses", whLimitCheck) };
   }
 
   const parsed = warehouseInputSchema.safeParse(formToInput(formData));
