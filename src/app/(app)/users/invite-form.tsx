@@ -16,6 +16,16 @@ import {
 
 import { inviteMemberAction } from "./actions";
 
+// Phase 2 UX — role descriptions shown in the invite dropdown so
+// admins know what each role can do without looking at documentation.
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  OWNER: "Full access including billing and org deletion",
+  ADMIN: "Can manage members, warehouses, items, and settings",
+  MANAGER: "Can create and manage inventory operations",
+  MEMBER: "Can record movements and stock counts",
+  VIEWER: "Read-only access to all data",
+};
+
 export type InviteFormLabels = {
   emailLabel: string;
   emailPlaceholder: string;
@@ -124,7 +134,14 @@ export function InviteForm({ labels, defaultRole, locale }: InviteFormProps) {
             <SelectContent>
               {labels.roleOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
+                  <div>
+                    <span className="font-medium">{opt.label}</span>
+                    {ROLE_DESCRIPTIONS[opt.value] ? (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {ROLE_DESCRIPTIONS[opt.value]}
+                      </span>
+                    ) : null}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

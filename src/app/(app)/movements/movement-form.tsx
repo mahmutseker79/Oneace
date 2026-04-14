@@ -1,12 +1,17 @@
 "use client";
 
-import { CloudOff, Loader2 } from "lucide-react";
+// Phase 2 UX — the item selector is now a Combobox with type-ahead
+// search. With 100+ items a plain Select requires too much scrolling.
+// Warehouse selectors keep the standard Select (typically ≤10 options).
+
+import { Check, ChevronsUpDown, CloudOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -15,6 +20,106 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+
+// ---------------------------------------------------------------------------
+// ItemCombobox — Popover-based type-ahead selector for item picking.
+// Keeps the Select API signature so the parent form is unchanged.
+// ---------------------------------------------------------------------------
+
+function ItemCombobox({
+  items,
+  value,
+  onValueChange,
+  placeholder,
+}: {
+  items: Array<{ id: string; label: string; sub?: string }>;
+  value: string;
+  onValueChange: (v: string) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    if (!q) return items;
+    return items.filter(
+      (i) => i.label.toLowerCase().includes(q) || (i.sub ?? "").toLowerCase().includes(q),
+    );
+  }, [items, query]);
+
+  const selected = items.find((i) => i.id === value);
+
+  function handleSelect(id: string) {
+    onValueChange(id);
+    setQuery("");
+    setOpen(false);
+  }
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (v) {
+          // Focus the search input when popover opens.
+          window.setTimeout(() => inputRef.current?.focus(), 0);
+        } else {
+          setQuery("");
+        }
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className="truncate text-left">{selected ? selected.label : placeholder}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <div className="border-b p-2">
+          <Input
+            ref={inputRef}
+            placeholder="Search..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-8 border-0 p-0 shadow-none focus-visible:ring-0"
+          />
+        </div>
+        <div className="max-h-56 overflow-y-auto py-1">
+          {filtered.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">No items found.</p>
+          ) : (
+            filtered.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleSelect(item.id)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
+              >
+                <Check
+                  className={`h-3.5 w-3.5 shrink-0 ${value === item.id ? "opacity-100" : "opacity-0"}`}
+                />
+                <span className="truncate">{item.label}</span>
+                {item.sub ? (
+                  <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
+                    {item.sub}
+                  </span>
+                ) : null}
+              </button>
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 import { MOVEMENT_CREATE_OP_TYPE } from "@/lib/offline/dispatchers/movement-create";
 import { enqueueOp } from "@/lib/offline/queue";
 import type { MovementInput } from "@/lib/validation/movement";
@@ -255,24 +360,15 @@ export function MovementForm({
         <p className="text-xs text-muted-foreground">{labels.typeHelp[type]}</p>
       </div>
 
-      {/* Item */}
+      {/* Item — Combobox with type-ahead search (Phase 2 UX) */}
       <div className="space-y-2">
-        <Label htmlFor="movement-item">{labels.item}</Label>
-        <Select value={itemId} onValueChange={setItemId}>
-          <SelectTrigger id="movement-item">
-            <SelectValue placeholder={labels.itemPlaceholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {items.map((item) => (
-              <SelectItem key={item.id} value={item.id}>
-                {item.label}
-                {item.sub ? (
-                  <span className="ml-2 text-xs text-muted-foreground">{item.sub}</span>
-                ) : null}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label>{labels.item}</Label>
+        <ItemCombobox
+          items={items}
+          value={itemId}
+          onValueChange={setItemId}
+          placeholder={labels.itemPlaceholder}
+        />
         {fieldErrors.itemId ? (
           <p className="text-xs text-destructive">{fieldErrors.itemId[0]}</p>
         ) : null}

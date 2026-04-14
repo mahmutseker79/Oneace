@@ -166,6 +166,18 @@ export function RegisterForm({ labels }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Phase 2 — billing intent context banner.
+          Shown when user arrives from a plan-specific pricing CTA so they
+          know their plan selection is remembered and will be acted on. */}
+      {billingIntent && !isInviteFlow ? (
+        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm">
+          <span className="font-medium">
+            {billingIntent.plan} {billingIntent.interval === "year" ? "Annual" : "Monthly"}
+          </span>{" "}
+          plan selected — after account creation you&apos;ll be taken directly to checkout.
+        </div>
+      ) : null}
+
       <div className="space-y-2">
         <Label htmlFor="name">{labels.name}</Label>
         <Input

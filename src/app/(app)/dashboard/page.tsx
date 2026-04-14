@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ClipboardCheck,
   FileBarChart,
+  Lock,
   Package,
   Plus,
   ScanLine,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
@@ -160,6 +162,12 @@ export default async function DashboardPage() {
 
   const data = await loadDashboardData(membership.organizationId);
 
+  // Phase 2 — plan-gated action buttons on the dashboard.
+  // We show all buttons regardless of plan (for discoverability) but disable
+  // and explain the restriction for features the current plan doesn't unlock.
+  const orgPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const canUsePOs = hasPlanCapability(orgPlan, "purchaseOrders");
+
   const lowStockCount = data.lowStockItems.length;
 
   const totalItemsCaption =
@@ -266,12 +274,19 @@ export default async function DashboardPage() {
               {t.dashboard.actions.newItem}
             </Link>
           </Button>
-          <Button asChild>
-            <Link href="/purchase-orders/new">
-              <ShoppingCart className="h-4 w-4" />
+          {canUsePOs ? (
+            <Button asChild>
+              <Link href="/purchase-orders/new">
+                <ShoppingCart className="h-4 w-4" />
+                {t.dashboard.actions.newPurchaseOrder}
+              </Link>
+            </Button>
+          ) : (
+            <Button disabled title="Purchase orders are available on the Pro plan">
+              <Lock className="h-4 w-4" />
               {t.dashboard.actions.newPurchaseOrder}
-            </Link>
-          </Button>
+            </Button>
+          )}
         </div>
       </div>
 

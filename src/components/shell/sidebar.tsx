@@ -1,5 +1,11 @@
 "use client";
 
+// Phase 2 UX — Sidebar now includes Operations group:
+//   Movements | Purchase Orders | Scan | Suppliers | Categories
+// Previously PO, Suppliers, Categories, and Scan were only reachable
+// via dashboard shortcuts or direct navigation. They now have persistent
+// nav entries so they're always one click away.
+
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -8,9 +14,13 @@ import {
   BarChart3,
   ChevronDown,
   ClipboardList,
+  FolderOpen,
   History,
   Package,
+  ScanLine,
   Settings,
+  ShoppingCart,
+  Truck,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -30,9 +40,16 @@ export type SidebarLabels = {
     users: string;
     audit: string;
     settings: string;
+    // Section headings
     activity: string;
     analytics: string;
     admin: string;
+    // Phase 2 — new nav items
+    operations: string;
+    purchaseOrders: string;
+    suppliers: string;
+    categories: string;
+    scan: string;
   };
   // P8.2 — optional badge counts passed from the layout
   badges?: {
@@ -73,9 +90,15 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       ],
     },
     {
-      // P3.5 — Movements are operational history, not a setup step.
-      heading: labels.nav.activity,
-      items: [{ label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight }],
+      // Operations — all transactional and procurement workflows.
+      heading: labels.nav.operations,
+      items: [
+        { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
+        { label: labels.nav.purchaseOrders, href: "/purchase-orders", icon: ShoppingCart },
+        { label: labels.nav.scan, href: "/scan", icon: ScanLine },
+        { label: labels.nav.suppliers, href: "/suppliers", icon: Truck },
+        { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
+      ],
     },
     {
       heading: labels.nav.analytics,
@@ -90,7 +113,11 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
   ];
 
   function renderItem(item: NavItem) {
-    const isActive = pathname.startsWith(item.href);
+    // Active when the current pathname starts with the item href.
+    // Exception: /items should not match /items/import or /items/new
+    // when those are deeper — but startsWith is correct here because
+    // /items IS a prefix of /items/new (both should highlight "Items").
+    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
     const Icon = item.icon;
     return (
       <Link
@@ -103,10 +130,10 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
             : "text-sidebar-foreground hover:bg-sidebar-accent/60",
         )}
       >
-        <Icon className="h-4 w-4" />
-        <span>{item.label}</span>
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="truncate">{item.label}</span>
         {item.badge ? (
-          <span className="ml-auto rounded-full bg-sidebar-primary px-2 py-0.5 text-xs text-sidebar-primary-foreground">
+          <span className="ml-auto shrink-0 rounded-full bg-sidebar-primary px-2 py-0.5 text-xs text-sidebar-primary-foreground">
             {item.badge}
           </span>
         ) : null}
@@ -117,10 +144,10 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-30 border-r bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold">
           O
         </div>
-        <span className="text-lg font-semibold">{labels.brand}</span>
+        <span className="truncate text-lg font-semibold">{labels.brand}</span>
       </div>
       <nav className="flex-1 overflow-y-auto p-4">
         {groups.map((group, gi) => (
@@ -139,6 +166,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
           <div className="mt-4">
             <button
               type="button"
+              aria-expanded={adminOpen}
               onClick={() => setAdminOpen((v) => !v)}
               className="flex w-full items-center justify-between px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-sidebar-foreground transition-colors"
             >

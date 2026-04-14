@@ -1,5 +1,8 @@
 "use client";
 
+// Phase 2 UX — mobile nav mirrors the desktop sidebar restructure:
+// Operations group added with PO, Scan, Suppliers, Categories.
+
 import { useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -8,9 +11,13 @@ import {
   BarChart3,
   ChevronDown,
   ClipboardList,
+  FolderOpen,
   History,
   Package,
+  ScanLine,
   Settings,
+  ShoppingCart,
+  Truck,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -48,9 +55,12 @@ export function MobileNav({
     { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
   ];
 
-  // P3.5 — Movements are operational history, separated from the core setup flow.
-  const activityItems: NavItem[] = [
+  const operationsItems: NavItem[] = [
     { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
+    { label: labels.nav.purchaseOrders, href: "/purchase-orders", icon: ShoppingCart },
+    { label: labels.nav.scan, href: "/scan", icon: ScanLine },
+    { label: labels.nav.suppliers, href: "/suppliers", icon: Truck },
+    { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
   ];
 
   const analyticsItems: NavItem[] = [
@@ -64,7 +74,7 @@ export function MobileNav({
   ];
 
   function renderItem(item: NavItem) {
-    const isActive = pathname.startsWith(item.href);
+    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
     const Icon = item.icon;
     return (
       <Link
@@ -76,10 +86,10 @@ export function MobileNav({
           isActive ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-accent/60",
         )}
       >
-        <Icon className="h-4 w-4" />
-        <span>{item.label}</span>
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="truncate">{item.label}</span>
         {item.badge ? (
-          <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+          <span className="ml-auto shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
             {item.badge}
           </span>
         ) : null}
@@ -92,10 +102,10 @@ export function MobileNav({
       <SheetContent side="left" className="w-72 p-0">
         <SheetHeader className="border-b px-6 py-4">
           <SheetTitle className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
               O
             </div>
-            <span>{labels.brand}</span>
+            <span className="truncate">{labels.brand}</span>
           </SheetTitle>
         </SheetHeader>
 
@@ -103,12 +113,12 @@ export function MobileNav({
           {/* Core */}
           <div className="space-y-1">{coreItems.map(renderItem)}</div>
 
-          {/* Activity — P3.5 */}
+          {/* Operations */}
           <div className="mt-4 border-t pt-4">
             <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {labels.nav.activity}
+              {labels.nav.operations}
             </p>
-            <div className="space-y-1">{activityItems.map(renderItem)}</div>
+            <div className="space-y-1">{operationsItems.map(renderItem)}</div>
           </div>
 
           {/* Analytics */}
@@ -124,6 +134,7 @@ export function MobileNav({
             <div className="mt-4 border-t pt-4">
               <button
                 type="button"
+                aria-expanded={adminOpen}
                 onClick={() => setAdminOpen((v) => !v)}
                 className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
               >

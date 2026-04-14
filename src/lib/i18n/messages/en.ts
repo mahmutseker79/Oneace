@@ -98,6 +98,8 @@ export const en = {
     activity: "Activity",
     analytics: "Analytics",
     admin: "Admin",
+    // Phase 2 UX — new section heading for operations group
+    operations: "Operations",
   },
 
   /** Shown on pages that are accessible but not part of the primary simplified workflow. */

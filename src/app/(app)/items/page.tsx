@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ArrowLeftRight,
   ArrowRight,
+  ArrowUpDown,
   BarChart3,
   Check,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   Info,
   Package,
   Plus,
+  Search,
   Users,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -25,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -48,7 +51,13 @@ import { CompactBridge } from "@/components/bridge/compact-bridge";
 import { deleteItemAction } from "./actions";
 import { dismissBridgeAction } from "./dismiss-bridge-action";
 
-type SearchParams = Promise<{ status?: string }>;
+// Phase 2 UX — extended search params for text search + column sort.
+type SearchParams = Promise<{
+  status?: string;
+  q?: string; // text search across name, SKU, barcode
+  sort?: string; // "name" | "sku" | "date"
+  dir?: string; // "asc" | "desc"
+}>;
 
 type ItemStatus = "ACTIVE" | "ARCHIVED" | "DRAFT";
 type StatusFilter = "all" | ItemStatus;
@@ -58,6 +67,21 @@ function parseStatusFilter(raw: string | undefined): StatusFilter {
   if (raw === "archived") return "ARCHIVED";
   if (raw === "draft") return "DRAFT";
   return "all";
+}
+
+type SortCol = "name" | "sku" | "date";
+type SortDir = "asc" | "desc";
+
+function parseSortParams(rawSort?: string, rawDir?: string): { col: SortCol; dir: SortDir } {
+  const col: SortCol = rawSort === "name" ? "name" : rawSort === "sku" ? "sku" : "date";
+  const dir: SortDir = rawDir === "asc" ? "asc" : "desc";
+  return { col, dir };
+}
+
+function buildOrderBy(col: SortCol, dir: SortDir) {
+  if (col === "name") return { name: dir };
+  if (col === "sku") return { sku: dir };
+  return { createdAt: dir };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -76,6 +100,8 @@ export default async function ItemsPage({
 
   const params = (await searchParams) ?? {};
   const statusFilter = parseStatusFilter(params.status);
+  const searchQuery = (params.q ?? "").trim();
+  const { col: sortCol, dir: sortDir } = parseSortParams(params.sort, params.dir);
 
   // P10.1 — capability flags for conditional UI rendering
   const canCreate = hasCapability(membership.role, "items.create");
@@ -100,9 +126,22 @@ export default async function ItemsPage({
       // P8.4 — needed for low-stock → PO shortcut (indexed column, negligible cost)
       preferredSupplier: { select: { id: true, name: true } },
     },
-    orderBy: { createdAt: "desc" },
+    // Phase 2 — dynamic sort based on query params; default newest-first.
+    orderBy: buildOrderBy(sortCol, sortDir),
     take: 100,
   });
+
+  // Phase 2 — client-side text filter applied after fetch (100-item limit means
+  // filtering in JS is instant; will move server-side when pagination ships).
+  const q = searchQuery.toLowerCase();
+  const displayedItems = q
+    ? items.filter(
+        (item) =>
+          item.name.toLowerCase().includes(q) ||
+          item.sku.toLowerCase().includes(q) ||
+          (item.barcode ?? "").toLowerCase().includes(q),
+      )
+    : items;
 
   // ── P3.3 / P3.4 + P7 — setup progress & operational trust queries ───
   // Lightweight counts to drive the stateful setup checklist, forward
@@ -361,27 +400,66 @@ export default async function ItemsPage({
         </div>
       </div>
 
+      {/* Phase 2 — search + status filter row */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Text search */}
+        <form method="GET" className="flex items-center">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              name="q"
+              placeholder="Search items..."
+              defaultValue={searchQuery}
+              className="h-9 w-44 pl-8 text-sm md:w-56"
+            />
+          </div>
+          {/* Preserve status and sort params across search submissions */}
+          {statusFilter !== "all" && <input type="hidden" name="status" value={params.status} />}
+          {params.sort && <input type="hidden" name="sort" value={params.sort} />}
+          {params.dir && <input type="hidden" name="dir" value={params.dir} />}
+        </form>
+
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {t.items.filter.label}:
         </span>
         {(
           [
-            { key: "all", label: t.items.filter.all, href: "/items" },
-            { key: "ACTIVE", label: t.items.filter.active, href: "/items?status=active" },
-            { key: "ARCHIVED", label: t.items.filter.archived, href: "/items?status=archived" },
-            { key: "DRAFT", label: t.items.filter.draft, href: "/items?status=draft" },
+            { key: "all", label: t.items.filter.all, status: undefined },
+            { key: "ACTIVE", label: t.items.filter.active, status: "active" },
+            { key: "ARCHIVED", label: t.items.filter.archived, status: "archived" },
+            { key: "DRAFT", label: t.items.filter.draft, status: "draft" },
           ] as const
-        ).map((opt) => (
-          <Button
-            key={opt.key}
-            size="sm"
-            variant={statusFilter === opt.key ? "default" : "outline"}
-            asChild
-          >
-            <Link href={opt.href}>{opt.label}</Link>
-          </Button>
-        ))}
+        ).map((opt) => {
+          // Build href preserving q + sort params
+          const sp = new URLSearchParams();
+          if (opt.status) sp.set("status", opt.status);
+          if (searchQuery) sp.set("q", searchQuery);
+          if (params.sort) sp.set("sort", params.sort);
+          if (params.dir) sp.set("dir", params.dir);
+          const href = `/items${sp.toString() ? `?${sp.toString()}` : ""}`;
+          return (
+            <Button
+              key={opt.key}
+              size="sm"
+              variant={statusFilter === opt.key ? "default" : "outline"}
+              asChild
+            >
+              <Link href={href}>{opt.label}</Link>
+            </Button>
+          );
+        })}
+
+        {/* Active search indicator */}
+        {searchQuery ? (
+          <span className="text-xs text-muted-foreground">
+            {displayedItems.length} result{displayedItems.length !== 1 ? "s" : ""} for &ldquo;
+            {searchQuery}&rdquo;
+            {" · "}
+            <Link href="/items" className="underline hover:text-foreground">
+              Clear
+            </Link>
+          </span>
+        ) : null}
       </div>
 
       {/* ── P7.7: Trust micro-stat line (only when setup is complete) ── */}
@@ -453,15 +531,18 @@ export default async function ItemsPage({
         />
       ) : null}
 
-      {/* ── CASE A: No items (true empty vs filtered empty) ──────────────── */}
-      {items.length === 0 ? (
-        // A1: Filter active but returned nothing — distinct from true empty so
-        // the user isn't shown "create your first item" when items exist.
-        statusFilter !== "all" ? (
+      {/* ── CASE A: No items (true empty vs filtered/searched empty) ───────── */}
+      {displayedItems.length === 0 ? (
+        // A1: Search or filter active but returned nothing
+        statusFilter !== "all" || searchQuery ? (
           <EmptyState
             icon={Package}
-            title={t.items.emptyFilteredTitle}
-            description={t.items.emptyFilteredBody}
+            title={searchQuery ? `No items match "${searchQuery}"` : t.items.emptyFilteredTitle}
+            description={
+              searchQuery
+                ? "Try a different search term or clear the filter."
+                : t.items.emptyFilteredBody
+            }
             variant="filtered"
             actions={[{ label: t.items.emptyFilteredCta, href: "/items", variant: "secondary" }]}
           />
@@ -624,76 +705,110 @@ export default async function ItemsPage({
           {/* ── Items table ─────────────────────────────────────────────── */}
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t.items.columnSku}</TableHead>
-                    <TableHead>{t.items.columnName}</TableHead>
-                    <TableHead>{t.items.columnCategory}</TableHead>
-                    <TableHead className="text-right">{t.items.columnStock}</TableHead>
-                    <TableHead>{t.items.columnStatus}</TableHead>
-                    <TableHead className="w-36 text-right">{t.items.columnActions}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => {
-                    const onHand = item.stockLevels.reduce((sum, level) => sum + level.quantity, 0);
-                    const price = item.salePrice
-                      ? formatCurrency(Number(item.salePrice), {
-                          currency: item.currency,
-                          locale: region.numberLocale,
-                        })
-                      : null;
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-mono text-xs">{item.sku}</TableCell>
-                        <TableCell>
-                          <Link href={`/items/${item.id}`} className="font-medium hover:underline">
-                            {item.name}
-                          </Link>
-                          {price ? (
-                            <div className="text-xs text-muted-foreground">{price}</div>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.category?.name ?? t.common.none}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {onHand} {item.unit}
-                        </TableCell>
-                        <TableCell>{statusBadge(item.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/items/${item.id}`} aria-label={t.common.search}>
-                                <Eye className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                            {canEdit ? (
-                              <Button variant="ghost" size="sm" asChild>
-                                <Link href={`/items/${item.id}/edit`}>{t.common.edit}</Link>
-                              </Button>
-                            ) : null}
-                            {canDelete ? (
-                              <DeleteButton
-                                labels={{
-                                  trigger: t.common.delete,
-                                  title: t.items.deleteConfirmTitle,
-                                  body: t.items.deleteConfirmBody,
-                                  cancel: t.common.cancel,
-                                  confirm: t.common.delete,
-                                }}
-                                action={deleteItemAction.bind(null, item.id)}
-                                iconOnly
+              <div className="overflow-x-auto">
+                <Table className="min-w-[560px]">
+                  <TableHeader>
+                    <TableRow>
+                      {/* Phase 2 — sortable column headers */}
+                      {(
+                        [
+                          { col: "sku" as const, label: t.items.columnSku, align: "" },
+                          { col: "name" as const, label: t.items.columnName, align: "" },
+                        ] as const
+                      ).map(({ col, label }) => {
+                        const isActive = sortCol === col;
+                        const nextDir = isActive && sortDir === "asc" ? "desc" : "asc";
+                        const sp = new URLSearchParams();
+                        sp.set("sort", col);
+                        sp.set("dir", nextDir);
+                        if (statusFilter !== "all") sp.set("status", params.status ?? "");
+                        if (searchQuery) sp.set("q", searchQuery);
+                        return (
+                          <TableHead key={col}>
+                            <Link
+                              href={`/items?${sp.toString()}`}
+                              className="inline-flex items-center gap-1 hover:text-foreground"
+                            >
+                              {label}
+                              <ArrowUpDown
+                                className={`h-3 w-3 ${isActive ? "text-foreground" : "text-muted-foreground/40"}`}
                               />
+                            </Link>
+                          </TableHead>
+                        );
+                      })}
+                      <TableHead>{t.items.columnCategory}</TableHead>
+                      <TableHead className="text-right">{t.items.columnStock}</TableHead>
+                      <TableHead>{t.items.columnStatus}</TableHead>
+                      <TableHead className="w-36 text-right">{t.items.columnActions}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayedItems.map((item) => {
+                      const onHand = item.stockLevels.reduce(
+                        (sum, level) => sum + level.quantity,
+                        0,
+                      );
+                      const price = item.salePrice
+                        ? formatCurrency(Number(item.salePrice), {
+                            currency: item.currency,
+                            locale: region.numberLocale,
+                          })
+                        : null;
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                          <TableCell>
+                            <Link
+                              href={`/items/${item.id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {item.name}
+                            </Link>
+                            {price ? (
+                              <div className="text-xs text-muted-foreground">{price}</div>
                             ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {item.category?.name ?? t.common.none}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {onHand} {item.unit}
+                          </TableCell>
+                          <TableCell>{statusBadge(item.status)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/items/${item.id}`} aria-label={t.common.search}>
+                                  <Eye className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              {canEdit ? (
+                                <Button variant="ghost" size="sm" asChild>
+                                  <Link href={`/items/${item.id}/edit`}>{t.common.edit}</Link>
+                                </Button>
+                              ) : null}
+                              {canDelete ? (
+                                <DeleteButton
+                                  labels={{
+                                    trigger: t.common.delete,
+                                    title: t.items.deleteConfirmTitle,
+                                    body: t.items.deleteConfirmBody,
+                                    cancel: t.common.cancel,
+                                    confirm: t.common.delete,
+                                  }}
+                                  action={deleteItemAction.bind(null, item.id)}
+                                  iconOnly
+                                />
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
 
