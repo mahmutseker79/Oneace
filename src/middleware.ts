@@ -1,7 +1,17 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/register",
+  "/forgot-password",
+  // Phase 12 — public marketing pages
+  "/pricing",
+];
+
+// Prefix-based public paths (all sub-routes are public)
+const PUBLIC_PREFIXES = ["/docs"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -9,6 +19,7 @@ export function middleware(request: NextRequest) {
   // Public pages and static assets pass through untouched.
   if (
     PUBLIC_PATHS.includes(pathname) ||
+    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
     pathname.includes(".")
