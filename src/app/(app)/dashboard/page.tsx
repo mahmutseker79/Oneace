@@ -242,7 +242,8 @@ export default async function DashboardPage() {
 			}),
 			caption: stockValueCaption,
 			icon: TrendingUp,
-			href: "/warehouses",
+			// Phase 6.4 — links to the stock value report (more relevant than /warehouses)
+			href: "/reports/stock-value",
 		},
 		{
 			label: t.dashboard.kpi.lowStock,

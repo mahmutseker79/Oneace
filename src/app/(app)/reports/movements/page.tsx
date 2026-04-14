@@ -194,18 +194,15 @@ export default async function MovementHistoryReportPage({
 					</div>
 					<div className="flex items-center gap-2">
 						{canExport && visibleMovements.length > 0 ? (
-							<Button asChild variant="outline">
-								<Link
-									href={buildExportHref(
-										filter.rawFrom,
-										filter.rawTo,
-										filter.rawType,
-									)}
-								>
-									<Download className="h-4 w-4" />
-									Export CSV
-								</Link>
-							</Button>
+							<ExportButton
+								href={buildExportHref(
+									filter.rawFrom,
+									filter.rawTo,
+									filter.rawType,
+								)}
+							>
+								Export CSV
+							</ExportButton>
 						) : null}
 						<Button asChild variant="outline">
 							<Link
