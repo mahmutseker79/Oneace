@@ -70,6 +70,13 @@ export type AuditAction =
   | "bin.created"
   | "bin.updated"
   | "bin.deleted"
+  // --- Billing lifecycle (Phase 14.1) ------------------------------------
+  // Emitted by Stripe webhook handlers so OWNER/ADMIN can see plan changes
+  // in the audit log. actorId is null (system-initiated).
+  | "billing.plan_upgraded"
+  | "billing.plan_downgraded"
+  | "billing.payment_failed"
+  | "billing.subscription_cancelled"
   // --- UI interaction tracking (Phase 8) -----------------------------------
   // Lightweight bridge analytics. Fire-and-forget from client wrappers.
   | "ui.bridge_card_click"
@@ -95,7 +102,9 @@ export type AuditEntityType =
   // P9.2 — bin sub-locations
   | "bin"
   // Phase 8 — UI interaction tracking
-  | "ui_interaction";
+  | "ui_interaction"
+  // Phase 14.1 — billing events
+  | "billing";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so
