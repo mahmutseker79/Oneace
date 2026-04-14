@@ -19,6 +19,9 @@ type SearchParams = Promise<{
   // Phase 16.3 — billing intent fallback from register flow
   plan?: string;
   interval?: string;
+  // Phase 1 UX — portal return: ?portal=1 triggers a data refresh
+  // so the page reflects any changes made in the Stripe billing portal.
+  portal?: string;
 }>;
 
 export default async function BillingSettingsPage({
@@ -60,6 +63,7 @@ export default async function BillingSettingsPage({
         hasCustomer={Boolean(org?.stripeCustomerId)}
         checkoutSuccess={sp.success === "1"}
         checkoutCancelled={sp.cancelled === "1"}
+        portalReturn={sp.portal === "1"}
         // Phase 16.3 — billing intent fallback (from register when Stripe checkout failed)
         intentPlan={sp.plan === "PRO" || sp.plan === "BUSINESS" ? sp.plan : undefined}
         intentInterval={

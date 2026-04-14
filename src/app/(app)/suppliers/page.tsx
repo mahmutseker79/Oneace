@@ -36,6 +36,7 @@ export default async function SuppliersPage() {
   const canCreate = hasCapability(membership.role, "suppliers.create");
   const canEdit = hasCapability(membership.role, "suppliers.edit");
   const canDelete = hasCapability(membership.role, "suppliers.delete");
+  const orgPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
 
   const suppliers = await db.supplier.findMany({
     where: { organizationId: membership.organizationId },
@@ -44,7 +45,7 @@ export default async function SuppliersPage() {
 
   return (
     <div className="space-y-6">
-      <AdvancedFeatureBanner labels={t.advancedFeature} />
+      <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>

@@ -20,7 +20,8 @@ export default async function ScanPage({
 }) {
   // Gate on an active membership — the lookup action also re-checks, but
   // refusing to render the camera for signed-out users is cheaper.
-  await requireActiveMembership();
+  const { membership } = await requireActiveMembership();
+  const orgPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
   const t = await getMessages();
 
   const params = (await searchParams) ?? {};
@@ -28,7 +29,7 @@ export default async function ScanPage({
 
   return (
     <div className="space-y-6">
-      <AdvancedFeatureBanner labels={t.advancedFeature} />
+      <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">{t.scan.heading}</h1>

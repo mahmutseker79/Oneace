@@ -59,6 +59,8 @@ export type BillingPageProps = {
   // Phase 16.3 — billing intent from register fallback (shown as banner + pre-selects toggle)
   intentPlan?: "PRO" | "BUSINESS";
   intentInterval?: "month" | "year";
+  // Phase 1 UX — show "portal return" info banner after returning from Stripe portal
+  portalReturn?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -177,6 +179,7 @@ export function BillingPage({
   cancelAt,
   intentPlan,
   intentInterval,
+  portalReturn,
 }: BillingPageProps) {
   const [isRedirecting, startTransition] = useTransition();
   // Phase 16.2 — initialize from real DB value, not always "month".
@@ -261,6 +264,14 @@ export function BillingPage({
             . You will be moved to the Free plan at that time. To keep your plan, reactivate your
             subscription in the billing portal.
           </span>
+        </div>
+      ) : null}
+
+      {/* Portal return banner */}
+      {portalReturn ? (
+        <div className="flex items-center gap-2 rounded-md border px-4 py-3 text-sm text-muted-foreground">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+          Your billing details have been updated.
         </div>
       ) : null}
 

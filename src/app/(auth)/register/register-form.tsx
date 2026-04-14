@@ -78,11 +78,13 @@ export function RegisterForm({ labels }: RegisterFormProps) {
   const [password, setPassword] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [orgNameError, setOrgNameError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setOrgNameError(null);
 
     startTransition(async () => {
       const { error: signUpError, data } = await authClient.signUp.email({
@@ -105,8 +107,18 @@ export function RegisterForm({ labels }: RegisterFormProps) {
           body: JSON.stringify({ name: organizationName }),
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { message?: string };
-          setError(body.message ?? labels.orgError);
+          const body = (await res.json().catch(() => ({}))) as {
+            message?: string;
+            issues?: Array<{ path: string[]; message: string }>;
+          };
+          // Surface field-level errors (e.g. org name too short) on the
+          // correct field rather than as a generic banner.
+          const nameIssue = body.issues?.find((i) => i.path[0] === "name");
+          if (nameIssue) {
+            setOrgNameError(nameIssue.message);
+          } else {
+            setError(body.message ?? labels.orgError);
+          }
           return;
         }
 
@@ -181,9 +193,18 @@ export function RegisterForm({ labels }: RegisterFormProps) {
             type="text"
             placeholder={labels.organizationPlaceholder}
             required
+            aria-invalid={!!orgNameError}
             value={organizationName}
-            onChange={(e) => setOrganizationName(e.target.value)}
+            onChange={(e) => {
+              setOrganizationName(e.target.value);
+              if (orgNameError) setOrgNameError(null);
+            }}
           />
+          {orgNameError ? (
+            <p className="text-xs text-destructive" role="alert">
+              {orgNameError}
+            </p>
+          ) : null}
         </div>
       )}
       <div className="space-y-2">
@@ -210,6 +231,7 @@ export function RegisterForm({ labels }: RegisterFormProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        <p className="text-xs text-muted-foreground">At least 8 characters</p>
       </div>
 
       {error ? (

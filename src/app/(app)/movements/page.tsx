@@ -213,65 +213,69 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
           </div>
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t.movements.columnDate}</TableHead>
-                    <TableHead>{t.movements.columnItem}</TableHead>
-                    <TableHead>{t.movements.columnType}</TableHead>
-                    <TableHead>{t.movements.columnWarehouse}</TableHead>
-                    <TableHead className="text-right">{t.movements.columnQuantity}</TableHead>
-                    <TableHead>{t.movements.columnReference}</TableHead>
-                    <TableHead>{t.movements.columnUser}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {movements.map((m) => {
-                    const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
-                    const qtyPrefix =
-                      signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
-                    const absQty = Math.abs(signedQty);
-                    const warehouseCell =
-                      m.type === "TRANSFER" && m.toWarehouse
-                        ? `${m.warehouse.name} ${t.movements.transferLabel} ${m.toWarehouse.name}`
-                        : m.warehouse.name;
-                    const userLabel =
-                      m.createdBy?.name ?? m.createdBy?.email ?? t.movements.unknownUser;
-                    return (
-                      <TableRow key={m.id}>
-                        <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
-                          {dateFormatter.format(m.createdAt)}
-                        </TableCell>
-                        <TableCell>
-                          <Link
-                            href={`/items/${m.item.id}`}
-                            className="font-medium hover:underline"
-                          >
-                            {m.item.name}
-                          </Link>
-                          <div className="text-muted-foreground font-mono text-xs">
-                            {m.item.sku}
-                          </div>
-                        </TableCell>
-                        <TableCell>{typeBadge(m.type as MovementType)}</TableCell>
-                        <TableCell className="text-sm">{warehouseCell}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          <span
-                            className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}
-                          >
-                            {qtyPrefix}
-                            {absQty} {m.item.unit}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
-                          {m.reference ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{userLabel}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[640px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t.movements.columnDate}</TableHead>
+                      <TableHead>{t.movements.columnItem}</TableHead>
+                      <TableHead>{t.movements.columnType}</TableHead>
+                      <TableHead>{t.movements.columnWarehouse}</TableHead>
+                      <TableHead className="text-right">{t.movements.columnQuantity}</TableHead>
+                      <TableHead>{t.movements.columnReference}</TableHead>
+                      <TableHead>{t.movements.columnUser}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {movements.map((m) => {
+                      const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
+                      const qtyPrefix =
+                        signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
+                      const absQty = Math.abs(signedQty);
+                      const warehouseCell =
+                        m.type === "TRANSFER" && m.toWarehouse
+                          ? `${m.warehouse.name} ${t.movements.transferLabel} ${m.toWarehouse.name}`
+                          : m.warehouse.name;
+                      const userLabel =
+                        m.createdBy?.name ?? m.createdBy?.email ?? t.movements.unknownUser;
+                      return (
+                        <TableRow key={m.id}>
+                          <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
+                            {dateFormatter.format(m.createdAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Link
+                              href={`/items/${m.item.id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {m.item.name}
+                            </Link>
+                            <div className="text-muted-foreground font-mono text-xs">
+                              {m.item.sku}
+                            </div>
+                          </TableCell>
+                          <TableCell>{typeBadge(m.type as MovementType)}</TableCell>
+                          <TableCell className="text-sm">{warehouseCell}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            <span
+                              className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}
+                            >
+                              {qtyPrefix}
+                              {absQty} {m.item.unit}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {m.reference ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {userLabel}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </>

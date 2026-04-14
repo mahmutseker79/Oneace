@@ -36,6 +36,7 @@ export default async function CategoriesPage() {
   const canCreate = hasCapability(membership.role, "categories.create");
   const canEdit = hasCapability(membership.role, "categories.edit");
   const canDelete = hasCapability(membership.role, "categories.delete");
+  const orgPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
 
   const categories = await db.category.findMany({
     where: { organizationId: membership.organizationId },
@@ -81,7 +82,7 @@ export default async function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <AdvancedFeatureBanner labels={t.advancedFeature} />
+      <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
       <div>
         <h1 className="text-2xl font-semibold">{t.categories.heading}</h1>

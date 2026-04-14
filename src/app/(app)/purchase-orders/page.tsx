@@ -117,7 +117,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
   if (!canUsePurchaseOrders) {
     return (
       <div className="space-y-6">
-        <AdvancedFeatureBanner labels={t.advancedFeature} />
+        <AdvancedFeatureBanner labels={t.advancedFeature} plan={poPlan} />
         <div>
           <h1 className="text-2xl font-semibold">{t.purchaseOrders.heading}</h1>
           <p className="text-muted-foreground">{t.purchaseOrders.subtitle}</p>
@@ -135,7 +135,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
   if (suppliers.length === 0) {
     return (
       <div className="space-y-6">
-        <AdvancedFeatureBanner labels={t.advancedFeature} />
+        <AdvancedFeatureBanner labels={t.advancedFeature} plan={poPlan} />
 
         <div>
           <h1 className="text-2xl font-semibold">{t.purchaseOrders.heading}</h1>
@@ -251,63 +251,67 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
           </div>
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t.purchaseOrders.columnPoNumber}</TableHead>
-                    <TableHead>{t.purchaseOrders.columnSupplier}</TableHead>
-                    <TableHead>{t.purchaseOrders.columnWarehouse}</TableHead>
-                    <TableHead>{t.purchaseOrders.columnStatus}</TableHead>
-                    <TableHead className="text-right">{t.purchaseOrders.columnTotal}</TableHead>
-                    <TableHead>{t.purchaseOrders.columnOrderDate}</TableHead>
-                    <TableHead>{t.purchaseOrders.columnExpected}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((po) => {
-                    let total = 0;
-                    for (const line of po.lines) {
-                      total += line.orderedQty * Number(line.unitCost);
-                    }
-                    return (
-                      <TableRow key={po.id}>
-                        <TableCell className="font-mono text-xs">
-                          <Link href={`/purchase-orders/${po.id}`} className="hover:underline">
-                            {po.poNumber}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{po.supplier.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{po.warehouse.name}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              po.status === "RECEIVED"
-                                ? "default"
-                                : po.status === "CANCELLED"
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                          >
-                            {t.purchaseOrders.statusBadge[po.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(total, {
-                            locale: region.numberLocale,
-                            currency: po.currency,
-                          })}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDateOrDash(po.orderedAt, region.numberLocale)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDateOrDash(po.expectedAt, region.numberLocale)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[700px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t.purchaseOrders.columnPoNumber}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnSupplier}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnWarehouse}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnStatus}</TableHead>
+                      <TableHead className="text-right">{t.purchaseOrders.columnTotal}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnOrderDate}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnExpected}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((po) => {
+                      let total = 0;
+                      for (const line of po.lines) {
+                        total += line.orderedQty * Number(line.unitCost);
+                      }
+                      return (
+                        <TableRow key={po.id}>
+                          <TableCell className="font-mono text-xs">
+                            <Link href={`/purchase-orders/${po.id}`} className="hover:underline">
+                              {po.poNumber}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{po.supplier.name}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {po.warehouse.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                po.status === "RECEIVED"
+                                  ? "default"
+                                  : po.status === "CANCELLED"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                            >
+                              {t.purchaseOrders.statusBadge[po.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(total, {
+                              locale: region.numberLocale,
+                              currency: po.currency,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDateOrDash(po.orderedAt, region.numberLocale)}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDateOrDash(po.expectedAt, region.numberLocale)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </>

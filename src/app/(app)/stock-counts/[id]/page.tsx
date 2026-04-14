@@ -396,88 +396,94 @@ export default async function StockCountDetailPage({ params }: PageProps) {
               {t.stockCounts.detail.itemsTableEmpty}
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t.stockCounts.detail.columnSku}</TableHead>
-                  <TableHead>{t.stockCounts.detail.columnItem}</TableHead>
-                  <TableHead>{t.stockCounts.detail.columnWarehouse}</TableHead>
-                  {isBlind ? null : (
-                    <TableHead className="text-right">
-                      {t.stockCounts.detail.columnExpected}
-                    </TableHead>
-                  )}
-                  <TableHead className="text-right">{t.stockCounts.detail.columnCounted}</TableHead>
-                  {isBlind ? null : (
-                    <>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[640px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.stockCounts.detail.columnSku}</TableHead>
+                    <TableHead>{t.stockCounts.detail.columnItem}</TableHead>
+                    <TableHead>{t.stockCounts.detail.columnWarehouse}</TableHead>
+                    {isBlind ? null : (
                       <TableHead className="text-right">
-                        {t.stockCounts.detail.columnVariance}
+                        {t.stockCounts.detail.columnExpected}
                       </TableHead>
-                      <TableHead>{t.stockCounts.detail.columnStatus}</TableHead>
-                    </>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {count.snapshots.map((snapshot, idx) => {
-                  const variance = varianceRows[idx];
-                  const item = itemById.get(snapshot.itemId);
-                  const warehouse = warehouseById.get(snapshot.warehouseId);
-                  return (
-                    <TableRow key={snapshot.id}>
-                      <TableCell className="font-mono text-xs">
-                        {item ? (
-                          <Link href={`/items/${snapshot.itemId}`} className="hover:underline">
-                            {item.sku}
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {item ? (
-                          <Link href={`/items/${snapshot.itemId}`} className="hover:underline">
-                            {item.name}
-                          </Link>
-                        ) : (
-                          snapshot.itemId
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {warehouse?.name ?? snapshot.warehouseId}
-                      </TableCell>
-                      {isBlind ? null : (
-                        <TableCell className="text-right tabular-nums">
-                          {snapshot.expectedQuantity}
+                    )}
+                    <TableHead className="text-right">
+                      {t.stockCounts.detail.columnCounted}
+                    </TableHead>
+                    {isBlind ? null : (
+                      <>
+                        <TableHead className="text-right">
+                          {t.stockCounts.detail.columnVariance}
+                        </TableHead>
+                        <TableHead>{t.stockCounts.detail.columnStatus}</TableHead>
+                      </>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {count.snapshots.map((snapshot, idx) => {
+                    const variance = varianceRows[idx];
+                    const item = itemById.get(snapshot.itemId);
+                    const warehouse = warehouseById.get(snapshot.warehouseId);
+                    return (
+                      <TableRow key={snapshot.id}>
+                        <TableCell className="font-mono text-xs">
+                          {item ? (
+                            <Link href={`/items/${snapshot.itemId}`} className="hover:underline">
+                              {item.sku}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
                         </TableCell>
-                      )}
-                      <TableCell className="text-right tabular-nums">
-                        {variance?.countedQuantity ?? 0}
-                      </TableCell>
-                      {isBlind ? null : (
-                        <>
+                        <TableCell>
+                          {item ? (
+                            <Link href={`/items/${snapshot.itemId}`} className="hover:underline">
+                              {item.name}
+                            </Link>
+                          ) : (
+                            snapshot.itemId
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {warehouse?.name ?? snapshot.warehouseId}
+                        </TableCell>
+                        {isBlind ? null : (
                           <TableCell className="text-right tabular-nums">
-                            <span
-                              className={
-                                variance && variance.variance > 0
-                                  ? "text-emerald-600"
-                                  : variance && variance.variance < 0
-                                    ? "text-destructive"
-                                    : "text-muted-foreground"
-                              }
-                            >
-                              {variance && variance.variance > 0 ? "+" : ""}
-                              {variance?.variance ?? 0}
-                            </span>
+                            {snapshot.expectedQuantity}
                           </TableCell>
-                          <TableCell>{variance ? varianceBadge(variance.status) : null}</TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        )}
+                        <TableCell className="text-right tabular-nums">
+                          {variance?.countedQuantity ?? 0}
+                        </TableCell>
+                        {isBlind ? null : (
+                          <>
+                            <TableCell className="text-right tabular-nums">
+                              <span
+                                className={
+                                  variance && variance.variance > 0
+                                    ? "text-emerald-600"
+                                    : variance && variance.variance < 0
+                                      ? "text-destructive"
+                                      : "text-muted-foreground"
+                                }
+                              >
+                                {variance && variance.variance > 0 ? "+" : ""}
+                                {variance?.variance ?? 0}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {variance ? varianceBadge(variance.status) : null}
+                            </TableCell>
+                          </>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

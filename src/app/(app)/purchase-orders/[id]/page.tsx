@@ -444,59 +444,64 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
           <CardTitle>{t.purchaseOrders.detail.linesHeading}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t.purchaseOrders.detail.columnItem}</TableHead>
-                <TableHead>{t.purchaseOrders.detail.columnSku}</TableHead>
-                <TableHead className="text-right">
-                  {t.purchaseOrders.detail.columnOrdered}
-                </TableHead>
-                <TableHead className="text-right">
-                  {t.purchaseOrders.detail.columnReceived}
-                </TableHead>
-                <TableHead className="text-right">{t.purchaseOrders.detail.columnOpen}</TableHead>
-                <TableHead className="text-right">
-                  {t.purchaseOrders.detail.columnUnitCost}
-                </TableHead>
-                <TableHead className="text-right">
-                  {t.purchaseOrders.detail.columnLineTotal}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {po.lines.map((line) => {
-                const unit = Number(line.unitCost);
-                const open = line.orderedQty - line.receivedQty;
-                return (
-                  <TableRow key={line.id}>
-                    <TableCell className="font-medium">{line.item.name}</TableCell>
-                    <TableCell className="font-mono text-xs">{line.item.sku}</TableCell>
-                    <TableCell className="text-right font-mono">{line.orderedQty}</TableCell>
-                    <TableCell className="text-right font-mono">{line.receivedQty}</TableCell>
-                    <TableCell className="text-right font-mono">{open}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(unit, { locale: region.numberLocale, currency: po.currency })}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(line.orderedQty * unit, {
-                        locale: region.numberLocale,
-                        currency: po.currency,
-                      })}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              <TableRow>
-                <TableCell colSpan={6} className="text-right font-semibold">
-                  {t.purchaseOrders.totalsLabel}
-                </TableCell>
-                <TableCell className="text-right font-mono font-semibold">
-                  {formatCurrency(total, { locale: region.numberLocale, currency: po.currency })}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[640px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.purchaseOrders.detail.columnItem}</TableHead>
+                  <TableHead>{t.purchaseOrders.detail.columnSku}</TableHead>
+                  <TableHead className="text-right">
+                    {t.purchaseOrders.detail.columnOrdered}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t.purchaseOrders.detail.columnReceived}
+                  </TableHead>
+                  <TableHead className="text-right">{t.purchaseOrders.detail.columnOpen}</TableHead>
+                  <TableHead className="text-right">
+                    {t.purchaseOrders.detail.columnUnitCost}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t.purchaseOrders.detail.columnLineTotal}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {po.lines.map((line) => {
+                  const unit = Number(line.unitCost);
+                  const open = line.orderedQty - line.receivedQty;
+                  return (
+                    <TableRow key={line.id}>
+                      <TableCell className="font-medium">{line.item.name}</TableCell>
+                      <TableCell className="font-mono text-xs">{line.item.sku}</TableCell>
+                      <TableCell className="text-right font-mono">{line.orderedQty}</TableCell>
+                      <TableCell className="text-right font-mono">{line.receivedQty}</TableCell>
+                      <TableCell className="text-right font-mono">{open}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(unit, {
+                          locale: region.numberLocale,
+                          currency: po.currency,
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(line.orderedQty * unit, {
+                          locale: region.numberLocale,
+                          currency: po.currency,
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                <TableRow>
+                  <TableCell colSpan={6} className="text-right font-semibold">
+                    {t.purchaseOrders.totalsLabel}
+                  </TableCell>
+                  <TableCell className="text-right font-mono font-semibold">
+                    {formatCurrency(total, { locale: region.numberLocale, currency: po.currency })}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

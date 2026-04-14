@@ -53,9 +53,12 @@ export async function POST(_request: NextRequest) {
 
   const appUrl = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+  // Phase 1 UX — ?portal=1 on return URL triggers a server-side data
+  // refresh so the billing page reflects changes made in the portal
+  // (e.g. plan downgrade, payment method update, cancellation).
   const session = await stripe.billingPortal.sessions.create({
     customer: org.stripeCustomerId,
-    return_url: `${appUrl}/settings/billing`,
+    return_url: `${appUrl}/settings/billing?portal=1`,
   });
 
   return NextResponse.json({ url: session.url });
