@@ -1,5 +1,9 @@
+import { CreditCard } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getLocale, getMessages, getRegion } from "@/lib/i18n";
@@ -204,6 +208,25 @@ export default async function SettingsPage() {
             }}
           />
         ) : null}
+
+        {/* Phase 12.3 — Billing card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              Plan &amp; Billing
+              <Badge variant="secondary" className="ml-1 font-mono text-xs">
+                {organization.plan}
+              </Badge>
+            </CardTitle>
+            <CardDescription>Manage your subscription and billing details.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/settings/billing">Manage billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         {canDeleteOrg ? (
           <DangerZoneCard

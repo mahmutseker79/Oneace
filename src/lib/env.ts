@@ -113,6 +113,21 @@ const schema = z.object({
     .optional()
     .transform((v) => (v !== undefined ? Number(v) : undefined)),
 
+  // --- Stripe billing (optional, Phase 12.3) ---------------------------
+  // All Stripe vars are optional so the app boots cleanly without a Stripe
+  // account configured. Billing routes guard on `hasStripe` below before
+  // calling any Stripe SDK methods.
+  //
+  // Required Stripe vars when billing is enabled:
+  //   STRIPE_SECRET_KEY           — sk_live_... or sk_test_...
+  //   STRIPE_WEBHOOK_SECRET       — whsec_... from the Stripe dashboard
+  //   STRIPE_PRO_PRICE_ID         — price_... for the Pro monthly plan
+  //   STRIPE_BUSINESS_PRICE_ID    — price_... for the Business monthly plan
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  STRIPE_PRO_PRICE_ID: z.string().min(1).optional(),
+  STRIPE_BUSINESS_PRICE_ID: z.string().min(1).optional(),
+
   // --- Registration gate (optional, Phase 7C) --------------------------
   // When `false`, the `/register` page redirects to `/login` and the
   // Better Auth sign-up endpoint returns 403. Defaults to `true` so

@@ -72,6 +72,7 @@ export type Capability =
   | "org.editDefaults"
   | "org.delete"
   | "org.transfer"
+  | "org.billing"
   // Team management
   | "team.invite"
   | "team.changeRole"
@@ -145,6 +146,7 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "org.editDefaults": new Set<Role>(["OWNER", "ADMIN"]),
   "org.delete": new Set<Role>(["OWNER"]),
   "org.transfer": new Set<Role>(["OWNER"]),
+  "org.billing": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Team management ---
   "team.invite": new Set<Role>(["OWNER", "ADMIN"]),

@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@sentry/nextjs": "^8",
+    "stripe": "^17",
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^6.1.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",

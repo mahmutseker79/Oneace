@@ -29,6 +29,15 @@ model Organization {
   name               String
   slug               String              @unique
   plan               Plan                @default(FREE)
+  // Phase 12.3 — Stripe billing. Nullable: only set once an org initiates
+  // checkout. Used to look up the Stripe customer on billing portal entry
+  // and webhook reconciliation. Null = no Stripe customer yet (FREE plan,
+  // no payment method added).
+  stripeCustomerId   String?             @unique
+  // Phase 12.3 — Tracks the current Stripe subscription id so the webhook
+  // handler can match subscription events back to the organization without
+  // a stripeCustomerId round-trip.
+  stripeSubscriptionId String?           @unique
   // Sprint 19: per-org fallback for interface language + region.
   // `null` means "no org-level override; fall through to the
   // Accept-Language header / platform default". Validated at the

@@ -11,7 +11,11 @@ const PUBLIC_PATHS = [
 ];
 
 // Prefix-based public paths (all sub-routes are public)
-const PUBLIC_PREFIXES = ["/docs"];
+const PUBLIC_PREFIXES = [
+  "/docs",
+  // Stripe webhook must be publicly accessible — Stripe POSTs from outside.
+  "/api/billing/webhook",
+];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
