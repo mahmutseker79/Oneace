@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Download, Plus } from "lucide-react";
+import { ArrowLeftRight, ArrowRightLeft, Download, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -142,6 +142,14 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
               <Link href={buildExportHref(filter)}>
                 <Download className="h-4 w-4" />
                 {t.common.exportCsv}
+              </Link>
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button asChild variant="outline">
+              <Link href="/movements/transfers/new">
+                <ArrowRightLeft className="h-4 w-4" />
+                {t.movements.transfers.heading}
               </Link>
             </Button>
           ) : null}
