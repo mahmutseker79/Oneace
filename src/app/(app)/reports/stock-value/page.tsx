@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -176,15 +177,11 @@ export default async function StockValueReportPage() {
       </div>
 
       {rows.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="bg-muted mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-              <PackageOpen className="text-muted-foreground h-6 w-6" />
-            </div>
-            <CardTitle>{t.reports.stockValue.emptyTitle}</CardTitle>
-            <CardDescription>{t.reports.stockValue.emptyBody}</CardDescription>
-          </CardHeader>
-        </Card>
+        <EmptyState
+          icon={PackageOpen}
+          title={t.reports.stockValue.emptyTitle}
+          description={t.reports.stockValue.emptyBody}
+        />
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-3">

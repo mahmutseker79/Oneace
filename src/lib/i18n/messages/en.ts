@@ -322,6 +322,10 @@ export const en = {
     emptyBody: "You haven't added any items. Items are the SKUs you buy, stock, and sell.",
     emptyCta: "Create your first item",
     emptyImportCta: "or import a CSV",
+    // Filtered / search returned no results — distinct from the true-empty state
+    emptyFilteredTitle: "No items match this filter",
+    emptyFilteredBody: "Try a different status filter or clear the filter to see all items.",
+    emptyFilteredCta: "Clear filter",
     activationHeading: "Getting started",
     activationStep1: "Create your first item manually",
     activationStep2: "Import your catalog from a CSV file",

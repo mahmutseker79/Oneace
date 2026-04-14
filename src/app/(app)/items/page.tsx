@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -422,35 +423,39 @@ export default async function ItemsPage({
         </Alert>
       ) : null}
 
-      {/* ── CASE A: No items yet — empty card ─────────────────────────── */}
+      {/* ── CASE A: No items (true empty vs filtered empty) ──────────────── */}
       {items.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <Package className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle>{t.items.emptyTitle}</CardTitle>
-            <CardDescription>{t.items.emptyBody}</CardDescription>
-          </CardHeader>
-          {canCreate ? (
-            <CardContent className="flex flex-col items-center gap-2">
-              <Button asChild>
-                <Link href="/items/new">
-                  <Plus className="h-4 w-4" />
-                  {t.items.emptyCta}
-                </Link>
-              </Button>
-              {canImport ? (
-                <Button asChild variant="outline">
-                  <Link href="/items/import">
-                    <FileUp className="h-4 w-4" />
-                    {t.items.emptyImportCta}
-                  </Link>
-                </Button>
-              ) : null}
-            </CardContent>
-          ) : null}
-        </Card>
+        // A1: Filter active but returned nothing — distinct from true empty so
+        // the user isn't shown "create your first item" when items exist.
+        statusFilter !== "all" ? (
+          <EmptyState
+            icon={Package}
+            title={t.items.emptyFilteredTitle}
+            description={t.items.emptyFilteredBody}
+            variant="filtered"
+            actions={[{ label: t.items.emptyFilteredCta, href: "/items", variant: "secondary" }]}
+          />
+        ) : (
+          // A2: Truly no items yet
+          <EmptyState
+            icon={Package}
+            title={t.items.emptyTitle}
+            description={t.items.emptyBody}
+            actions={[
+              ...(canCreate ? [{ label: t.items.emptyCta, href: "/items/new", icon: Plus }] : []),
+              ...(canImport
+                ? [
+                    {
+                      label: t.items.emptyImportCta,
+                      href: "/items/import",
+                      icon: FileUp,
+                      variant: "secondary" as const,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        )
       ) : (
         <>
           {/* ── CASE B: Items exist, setup incomplete — banner ───────────── */}

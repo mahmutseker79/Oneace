@@ -20,11 +20,13 @@
 // shows as "Deleted user" rather than 404ing the row — the AuditEvent
 // schema uses `onDelete: SetNull` on the actor FK for exactly this.
 
+import { History } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -155,7 +157,12 @@ export default async function AuditPage({
         </CardHeader>
         <CardContent className="space-y-4">
           {visibleRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t.audit.empty}</p>
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                <History className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">{t.audit.empty}</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>

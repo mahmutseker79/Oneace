@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -137,42 +138,29 @@ export default async function StockCountsPage() {
       </div>
 
       {counts.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <ClipboardList className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle>{t.stockCounts.emptyTitle}</CardTitle>
-            <CardDescription>{t.stockCounts.emptyBody}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-2">
-            {canCreate ? (
-              <Button asChild>
-                <Link href="/stock-counts/new">
-                  <Plus className="h-4 w-4" />
-                  {t.stockCounts.emptyCta}
-                </Link>
-              </Button>
-            ) : null}
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button asChild variant="outline" size="sm">
-                <Link href="/items">
-                  <Package className="h-4 w-4" />
-                  {t.stockCounts.emptyItemsCta}
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/warehouses">
-                  <Warehouse className="h-4 w-4" />
-                  {t.stockCounts.emptyLocationsCta}
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-          <CardFooter className="justify-center border-t px-6 py-3">
-            <p className="text-xs text-muted-foreground">{t.stockCounts.emptyPrereq}</p>
-          </CardFooter>
-        </Card>
+        <EmptyState
+          icon={ClipboardList}
+          title={t.stockCounts.emptyTitle}
+          description={t.stockCounts.emptyBody}
+          actions={[
+            ...(canCreate
+              ? [{ label: t.stockCounts.emptyCta, href: "/stock-counts/new", icon: Plus }]
+              : []),
+            {
+              label: t.stockCounts.emptyItemsCta,
+              href: "/items",
+              icon: Package,
+              variant: "secondary" as const,
+            },
+            {
+              label: t.stockCounts.emptyLocationsCta,
+              href: "/warehouses",
+              icon: Warehouse,
+              variant: "secondary" as const,
+            },
+          ]}
+          footer={t.stockCounts.emptyPrereq}
+        />
       ) : (
         <div className="space-y-6">
           <Card>

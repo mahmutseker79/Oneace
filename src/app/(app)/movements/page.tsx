@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -189,29 +190,17 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
       />
 
       {movements.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <ArrowLeftRight className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle>
-              {filterActive ? t.movements.filter.emptyFilteredTitle : t.movements.emptyTitle}
-            </CardTitle>
-            <CardDescription>
-              {filterActive ? t.movements.filter.emptyFilteredBody : t.movements.emptyBody}
-            </CardDescription>
-          </CardHeader>
-          {!filterActive && canCreate ? (
-            <CardContent className="flex justify-center">
-              <Button asChild>
-                <Link href="/movements/new">
-                  <Plus className="h-4 w-4" />
-                  {t.movements.emptyCta}
-                </Link>
-              </Button>
-            </CardContent>
-          ) : null}
-        </Card>
+        <EmptyState
+          icon={ArrowLeftRight}
+          title={filterActive ? t.movements.filter.emptyFilteredTitle : t.movements.emptyTitle}
+          description={filterActive ? t.movements.filter.emptyFilteredBody : t.movements.emptyBody}
+          variant={filterActive ? "filtered" : "empty"}
+          actions={
+            !filterActive && canCreate
+              ? [{ label: t.movements.emptyCta, href: "/movements/new", icon: Plus }]
+              : undefined
+          }
+        />
       ) : (
         <>
           <div className="text-muted-foreground flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">

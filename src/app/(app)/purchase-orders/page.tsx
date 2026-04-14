@@ -6,6 +6,7 @@ import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banne
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -115,25 +116,23 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
           <h1 className="text-2xl font-semibold">{t.purchaseOrders.heading}</h1>
           <p className="text-muted-foreground">{t.purchaseOrders.subtitle}</p>
         </div>
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <ShoppingCart className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle>{t.purchaseOrders.emptyTitle}</CardTitle>
-            <CardDescription>{t.purchaseOrders.emptyNoSuppliers}</CardDescription>
-          </CardHeader>
-          {canCreate ? (
-            <CardContent className="flex justify-center">
-              <Button asChild>
-                <Link href="/suppliers/new">
-                  <Plus className="h-4 w-4" />
-                  {t.purchaseOrders.emptyNoSuppliersCta}
-                </Link>
-              </Button>
-            </CardContent>
-          ) : null}
-        </Card>
+        <EmptyState
+          icon={ShoppingCart}
+          title={t.purchaseOrders.emptyTitle}
+          description={t.purchaseOrders.emptyNoSuppliers}
+          variant="unavailable"
+          actions={
+            canCreate
+              ? [
+                  {
+                    label: t.purchaseOrders.emptyNoSuppliersCta,
+                    href: "/suppliers/new",
+                    icon: Plus,
+                  },
+                ]
+              : undefined
+          }
+        />
       </div>
     );
   }
@@ -200,33 +199,21 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
       />
 
       {orders.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <ShoppingCart className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle>
-              {filterActive
-                ? t.purchaseOrders.filter.emptyFilteredTitle
-                : t.purchaseOrders.emptyTitle}
-            </CardTitle>
-            <CardDescription>
-              {filterActive
-                ? t.purchaseOrders.filter.emptyFilteredBody
-                : t.purchaseOrders.emptyBody}
-            </CardDescription>
-          </CardHeader>
-          {!filterActive && canCreate ? (
-            <CardContent className="flex justify-center">
-              <Button asChild>
-                <Link href="/purchase-orders/new">
-                  <Plus className="h-4 w-4" />
-                  {t.purchaseOrders.emptyCta}
-                </Link>
-              </Button>
-            </CardContent>
-          ) : null}
-        </Card>
+        <EmptyState
+          icon={ShoppingCart}
+          title={
+            filterActive ? t.purchaseOrders.filter.emptyFilteredTitle : t.purchaseOrders.emptyTitle
+          }
+          description={
+            filterActive ? t.purchaseOrders.filter.emptyFilteredBody : t.purchaseOrders.emptyBody
+          }
+          variant={filterActive ? "filtered" : "empty"}
+          actions={
+            !filterActive && canCreate
+              ? [{ label: t.purchaseOrders.emptyCta, href: "/purchase-orders/new", icon: Plus }]
+              : undefined
+          }
+        />
       ) : (
         <>
           <div className="text-muted-foreground flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:justify-between">

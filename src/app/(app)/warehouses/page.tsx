@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -89,34 +90,23 @@ export default async function WarehousesPage() {
       </div>
 
       {warehouses.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <WarehouseIcon className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle>{t.warehouses.emptyTitle}</CardTitle>
-            <CardDescription>{t.warehouses.emptyBody}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-2">
-            {canCreate ? (
-              <Button asChild>
-                <Link href="/warehouses/new">
-                  <Plus className="h-4 w-4" />
-                  {t.warehouses.emptyCta}
-                </Link>
-              </Button>
-            ) : null}
-            <Button asChild variant="outline" size="sm">
-              <Link href="/items">
-                <Package className="h-4 w-4" />
-                {t.warehouses.emptyItemsCta}
-              </Link>
-            </Button>
-          </CardContent>
-          <CardFooter className="justify-center border-t px-6 py-3">
-            <p className="text-xs text-muted-foreground">{t.warehouses.emptyHint}</p>
-          </CardFooter>
-        </Card>
+        <EmptyState
+          icon={WarehouseIcon}
+          title={t.warehouses.emptyTitle}
+          description={t.warehouses.emptyBody}
+          actions={[
+            ...(canCreate
+              ? [{ label: t.warehouses.emptyCta, href: "/warehouses/new", icon: Plus }]
+              : []),
+            {
+              label: t.warehouses.emptyItemsCta,
+              href: "/items",
+              icon: Package,
+              variant: "secondary" as const,
+            },
+          ]}
+          footer={t.warehouses.emptyHint}
+        />
       ) : (
         <Card>
           <CardContent className="p-0">

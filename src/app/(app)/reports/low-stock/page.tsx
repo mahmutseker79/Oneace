@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -142,15 +143,11 @@ export default async function LowStockReportPage() {
       </div>
 
       {lowStockItems.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="bg-muted mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-              <CheckCircle2 className="text-muted-foreground h-6 w-6" />
-            </div>
-            <CardTitle>{t.reports.lowStock.emptyTitle}</CardTitle>
-            <CardDescription>{t.reports.lowStock.emptyBody}</CardDescription>
-          </CardHeader>
-        </Card>
+        <EmptyState
+          icon={CheckCircle2}
+          title={t.reports.lowStock.emptyTitle}
+          description={t.reports.lowStock.emptyBody}
+        />
       ) : (
         <>
           <p className="text-muted-foreground text-sm">

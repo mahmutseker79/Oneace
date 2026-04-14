@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -202,15 +203,11 @@ export default async function SupplierPerformancePage() {
       </div>
 
       {!hasAnyData ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="bg-muted mx-auto flex h-12 w-12 items-center justify-center rounded-full">
-              <TruckIcon className="text-muted-foreground h-6 w-6" />
-            </div>
-            <CardTitle>{t.reports.supplierPerformance.emptyTitle}</CardTitle>
-            <CardDescription>{t.reports.supplierPerformance.emptyBody}</CardDescription>
-          </CardHeader>
-        </Card>
+        <EmptyState
+          icon={TruckIcon}
+          title={t.reports.supplierPerformance.emptyTitle}
+          description={t.reports.supplierPerformance.emptyBody}
+        />
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-3">

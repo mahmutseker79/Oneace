@@ -7,6 +7,7 @@ import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -61,25 +62,16 @@ export default async function SuppliersPage() {
       </div>
 
       {suppliers.length === 0 ? (
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <Truck className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <CardTitle>{t.suppliers.emptyTitle}</CardTitle>
-            <CardDescription>{t.suppliers.emptyBody}</CardDescription>
-          </CardHeader>
-          {canCreate ? (
-            <CardContent className="flex justify-center">
-              <Button asChild>
-                <Link href="/suppliers/new">
-                  <Plus className="h-4 w-4" />
-                  {t.suppliers.emptyCta}
-                </Link>
-              </Button>
-            </CardContent>
-          ) : null}
-        </Card>
+        <EmptyState
+          icon={Truck}
+          title={t.suppliers.emptyTitle}
+          description={t.suppliers.emptyBody}
+          actions={
+            canCreate
+              ? [{ label: t.suppliers.emptyCta, href: "/suppliers/new", icon: Plus }]
+              : undefined
+          }
+        />
       ) : (
         <Card>
           <CardContent className="p-0">
