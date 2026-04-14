@@ -348,6 +348,56 @@ export default async function DashboardPage() {
 				})}
 			</div>
 
+			{/* Phase 11.8 — First-time user quick-start card (shown until first item exists) */}
+			{data.activeItemCount === 0 && data.archivedItemCount === 0 ? (
+				<Card className="border-primary/20 bg-primary/5">
+					<CardHeader>
+						<CardTitle className="text-base">👋 Welcome to OneAce!</CardTitle>
+						<CardDescription>
+							You&apos;re all set. Here&apos;s how to get started in 3 steps.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<ol className="space-y-2 text-sm">
+							{[
+								{
+									step: 1,
+									label: "Add your first item",
+									href: "/items/new",
+									icon: "📦",
+								},
+								{
+									step: 2,
+									label: "Set up a warehouse location",
+									href: "/warehouses",
+									icon: "🏭",
+								},
+								{
+									step: 3,
+									label: "Record your first stock count",
+									href: "/stock-counts/new",
+									icon: "📋",
+								},
+							].map((item) => (
+								<li key={item.step}>
+									<Link
+										href={item.href}
+										className="flex items-center gap-3 rounded-md border bg-background/80 px-3 py-2 hover:border-primary/40 hover:bg-background transition-colors"
+									>
+										<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+											{item.step}
+										</span>
+										<span className="text-sm">
+											{item.icon} {item.label}
+										</span>
+									</Link>
+								</li>
+							))}
+						</ol>
+					</CardContent>
+				</Card>
+			) : null}
+
 			{/* Movement trend chart — last 14 days */}
 			<Card>
 				<CardHeader>

@@ -547,6 +547,15 @@ export default async function ItemsPage({
 					})}
 				</div>
 
+				{/* Phase 11.7 — show item count summary when in browse mode */}
+				{!isSearchMode && totalItems > 0 ? (
+					<span className="text-xs text-muted-foreground">
+						{displayedItems.length < totalItems
+							? `Showing ${displayedItems.length} of ${totalItems.toLocaleString()} items`
+							: `${totalItems.toLocaleString()} item${totalItems !== 1 ? "s" : ""}`}
+					</span>
+				) : null}
+
 				{/* Phase 8.7 — show "Clear all filters" when multiple filter dimensions are active */}
 				{!searchQuery && statusFilter !== "all" && params.sort ? (
 					<Link

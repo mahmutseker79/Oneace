@@ -393,6 +393,56 @@ export default async function LandingPage() {
 					</div>
 				</section>
 
+				{/* ── Phase 11.4: Use-case / Who it's for section ─────────────── */}
+				<section className="border-b border-border/60 bg-muted/20 px-4 py-16 sm:px-6">
+					<div className="mx-auto max-w-4xl space-y-10">
+						<div className="space-y-2 text-center">
+							<h2 className="text-2xl font-semibold sm:text-3xl">
+								Built for the people who actually move stock
+							</h2>
+							<p className="text-muted-foreground">
+								Whether you run a warehouse team or a single-person operation,
+								OneAce fits your workflow.
+							</p>
+						</div>
+						<div className="grid gap-6 sm:grid-cols-3">
+							{(
+								[
+									{
+										role: "Warehouse Operators",
+										icon: "📦",
+										description:
+											"Scan incoming goods, run offline stock counts with your phone, and track exactly which shelf everything lives on.",
+									},
+									{
+										role: "Operations Managers",
+										icon: "📊",
+										description:
+											"Monitor stock levels across locations, generate low-stock reports, and create purchase orders before you run out.",
+									},
+									{
+										role: "Small Business Owners",
+										icon: "🏪",
+										description:
+											"Get warehouse-grade inventory control without enterprise pricing. Free plan covers 100 items with no time limit.",
+									},
+								] as const
+							).map((item) => (
+								<div
+									key={item.role}
+									className="rounded-xl border border-border/60 bg-background p-6 space-y-3"
+								>
+									<div className="text-3xl">{item.icon}</div>
+									<h3 className="font-semibold">{item.role}</h3>
+									<p className="text-sm text-muted-foreground leading-relaxed">
+										{item.description}
+									</p>
+								</div>
+							))}
+						</div>
+					</div>
+				</section>
+
 				{/* ── Pricing teaser ──────────────────────────────────────────── */}
 				<section className="border-b border-border/60 px-4 py-16 sm:px-6">
 					<div className="mx-auto max-w-3xl space-y-6 text-center">

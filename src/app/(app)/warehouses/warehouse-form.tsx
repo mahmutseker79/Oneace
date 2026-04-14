@@ -113,7 +113,12 @@ export function WarehouseForm({ labels, mode, initial }: WarehouseFormProps) {
 				</div>
 
 				<div className="space-y-2">
-					<Label htmlFor="code">{labels.fields.code}</Label>
+					<Label htmlFor="code">
+						{labels.fields.code}
+						<span className="ml-0.5 text-destructive" aria-hidden>
+							*
+						</span>
+					</Label>
 					<Input
 						id="code"
 						name="code"
