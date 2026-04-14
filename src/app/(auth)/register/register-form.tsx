@@ -36,6 +36,27 @@ type RegisterFormProps = {
   labels: RegisterFormLabels;
 };
 
+/**
+ * Phase 16.3 — Billing intent capture.
+ *
+ * The pricing page CTA sends users to `/register?plan=PRO&interval=year`.
+ * We capture these params here and, after org creation, initiate checkout
+ * immediately so the user's annual intent is not silently lost.
+ *
+ * Supported plans: PRO | BUSINESS
+ * Supported intervals: month | year
+ * Any other value is ignored (falls back to normal /items redirect).
+ */
+function parseBillingIntent(searchParams: ReturnType<typeof useSearchParams>): {
+  plan: "PRO" | "BUSINESS";
+  interval: "month" | "year";
+} | null {
+  const plan = searchParams.get("plan");
+  const interval = searchParams.get("interval");
+  if (plan !== "PRO" && plan !== "BUSINESS") return null;
+  return { plan, interval: interval === "year" ? "year" : "month" };
+}
+
 export function RegisterForm({ labels }: RegisterFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,6 +69,9 @@ export function RegisterForm({ labels }: RegisterFormProps) {
   const nextParam = searchParams.get("next") ?? searchParams.get("redirect");
   const redirectTo = resolveSafeRedirect(nextParam, "/items");
   const isInviteFlow = redirectTo.startsWith("/invite/");
+
+  // Phase 16.3 — billing intent from query params (e.g. from pricing CTA).
+  const billingIntent = parseBillingIntent(searchParams);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -83,6 +107,42 @@ export function RegisterForm({ labels }: RegisterFormProps) {
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as { message?: string };
           setError(body.message ?? labels.orgError);
+          return;
+        }
+
+        // Phase 16.3 — billing intent: initiate checkout immediately after
+        // org creation if the user came from a plan-specific pricing CTA.
+        // This ensures annual intent is not silently lost between registration
+        // and the billing settings page.
+        if (billingIntent) {
+          try {
+            const checkoutRes = await fetch("/api/billing/checkout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                plan: billingIntent.plan,
+                interval: billingIntent.interval,
+              }),
+            });
+            const checkoutData = (await checkoutRes.json().catch(() => ({}))) as {
+              url?: string;
+            };
+            if (checkoutData.url) {
+              // Redirect directly to Stripe checkout — skips /items entirely.
+              window.location.href = checkoutData.url;
+              return;
+            }
+          } catch {
+            // Checkout initiation failed (Stripe not configured, network error,
+            // etc.) — fall through to normal /items redirect. The user will
+            // land on /settings/billing where they can upgrade manually.
+          }
+          // Checkout failed or returned no URL — fall through to billing settings
+          // with a hint so the user can complete the upgrade.
+          router.push(
+            `/settings/billing?plan=${billingIntent.plan}&interval=${billingIntent.interval}`,
+          );
+          router.refresh();
           return;
         }
       }
@@ -165,7 +225,7 @@ export function RegisterForm({ labels }: RegisterFormProps) {
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {labels.submit}
       </Button>
-      <p className="text-xs text-muted-foreground text-center">
+      <p className="text-center text-xs text-muted-foreground">
         {labels.terms}{" "}
         <a href="/legal/terms" className="underline">
           {labels.termsLink}

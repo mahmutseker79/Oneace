@@ -13,7 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `Billing — ${t.settings.metaTitle ?? "Settings"}` };
 }
 
-type SearchParams = Promise<{ success?: string; cancelled?: string }>;
+type SearchParams = Promise<{
+  success?: string;
+  cancelled?: string;
+  // Phase 16.3 — billing intent fallback from register flow
+  plan?: string;
+  interval?: string;
+}>;
 
 export default async function BillingSettingsPage({
   searchParams,
@@ -23,10 +29,17 @@ export default async function BillingSettingsPage({
   const { membership } = await requireActiveMembership();
 
   // Phase 13.4 — load usage counts for limit indicators in billing UI
+  // Phase 16.2 — also load billingInterval, cancelAtPeriodEnd, cancelAt
   const [org, currentItems, currentWarehouses, currentMembers] = await Promise.all([
     db.organization.findUnique({
       where: { id: membership.organizationId },
-      select: { plan: true, stripeCustomerId: true },
+      select: {
+        plan: true,
+        stripeCustomerId: true,
+        billingInterval: true,
+        cancelAtPeriodEnd: true,
+        cancelAt: true,
+      },
     }),
     db.item.count({ where: { organizationId: membership.organizationId } }),
     db.warehouse.count({
@@ -47,9 +60,18 @@ export default async function BillingSettingsPage({
         hasCustomer={Boolean(org?.stripeCustomerId)}
         checkoutSuccess={sp.success === "1"}
         checkoutCancelled={sp.cancelled === "1"}
+        // Phase 16.3 — billing intent fallback (from register when Stripe checkout failed)
+        intentPlan={sp.plan === "PRO" || sp.plan === "BUSINESS" ? sp.plan : undefined}
+        intentInterval={
+          sp.interval === "year" ? "year" : sp.interval === "month" ? "month" : undefined
+        }
         currentItems={currentItems}
         currentWarehouses={currentWarehouses}
         currentMembers={currentMembers}
+        // Phase 16.2 — subscription truth
+        billingInterval={(org?.billingInterval ?? "month") as "month" | "year"}
+        cancelAtPeriodEnd={org?.cancelAtPeriodEnd ?? false}
+        cancelAt={org?.cancelAt?.toISOString() ?? null}
       />
     </div>
   );

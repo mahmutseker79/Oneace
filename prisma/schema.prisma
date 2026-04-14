@@ -38,6 +38,15 @@ model Organization {
   // handler can match subscription events back to the organization without
   // a stripeCustomerId round-trip.
   stripeSubscriptionId String?           @unique
+  // Phase 16.2 — Billing interval truthfulness.
+  // "month" | "year". Set from Stripe checkout/subscription events.
+  // Default "month" is correct for all pre-16 orgs (no annual billing existed).
+  billingInterval      String              @default("month")
+  // Phase 16.1 — Pending cancellation state.
+  // Set when Stripe signals cancel_at_period_end=true on a subscription.
+  // Cleared when subscription.deleted fires (final cancellation).
+  cancelAtPeriodEnd    Boolean             @default(false)
+  cancelAt             DateTime?
   // Sprint 19: per-org fallback for interface language + region.
   // `null` means "no org-level override; fall through to the
   // Accept-Language header / platform default". Validated at the
@@ -864,6 +873,31 @@ model Notification {
   @@index([userId, readAt])
   @@index([organizationId, userId])
   @@index([alertId])
+}
+
+// =========================
+// Phase 16.1 — Stripe webhook idempotency
+// =========================
+//
+// A lightweight deduplication table so Stripe retry deliveries never
+// double-process billing state changes. Stripe guarantees at-least-once
+// delivery; this table provides exactly-once semantics.
+//
+// Design:
+//   - eventId is the Stripe event ID (evt_...), unique constraint enforced.
+//   - On first delivery: INSERT succeeds → process event.
+//   - On duplicate:     INSERT fails unique constraint → return 200, skip.
+//   - TTL: rows older than 90 days can be purged by a cron job (not
+//     implemented yet; Stripe's retry window is 72 hours, so 90 days
+//     provides a 27× safety margin). The createdAt index supports sweeps.
+//
+model StripeWebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique             // Stripe evt_... ID
+  eventType String                       // e.g. "customer.subscription.updated"
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 enum AlertType {

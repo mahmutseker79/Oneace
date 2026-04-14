@@ -76,7 +76,10 @@ export type AuditAction =
   | "billing.plan_upgraded"
   | "billing.plan_downgraded"
   | "billing.payment_failed"
+  | "billing.payment_recovered"
   | "billing.subscription_cancelled"
+  | "billing.cancellation_pending"
+  | "billing.cancellation_cleared"
   // --- UI interaction tracking (Phase 8) -----------------------------------
   // Lightweight bridge analytics. Fire-and-forget from client wrappers.
   | "ui.bridge_card_click"

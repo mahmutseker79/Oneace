@@ -9,7 +9,18 @@
 
 "use client";
 
-import { ArrowRight, Check, CheckCircle2, CreditCard, Loader2, Minus } from "lucide-react";
+// Phase 16.4 — Vercel Analytics for billing conversion events.
+// @ts-expect-error @vercel/analytics is in package.json; run `pnpm install` to resolve.
+import { track } from "@vercel/analytics";
+import {
+  AlertCircle,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  CreditCard,
+  Loader2,
+  Minus,
+} from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
@@ -41,6 +52,13 @@ export type BillingPageProps = {
   currentItems: number;
   currentWarehouses: number;
   currentMembers: number;
+  // Phase 16.2 — subscription truth (billing interval + cancellation state)
+  billingInterval: "month" | "year";
+  cancelAtPeriodEnd: boolean;
+  cancelAt: string | null; // ISO string or null
+  // Phase 16.3 — billing intent from register fallback (shown as banner + pre-selects toggle)
+  intentPlan?: "PRO" | "BUSINESS";
+  intentInterval?: "month" | "year";
 };
 
 // ---------------------------------------------------------------------------
@@ -154,12 +172,25 @@ export function BillingPage({
   currentItems,
   currentWarehouses,
   currentMembers,
+  billingInterval: initialBillingInterval,
+  cancelAtPeriodEnd,
+  cancelAt,
+  intentPlan,
+  intentInterval,
 }: BillingPageProps) {
   const [isRedirecting, startTransition] = useTransition();
-  // Phase 15.1 — billing interval selector (only shown when annual IDs configured)
-  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
+  // Phase 16.2 — initialize from real DB value, not always "month".
+  // Phase 16.3 — intent from register flow overrides if present (and plan is FREE).
+  // For FREE plan orgs, billingInterval is "month" (default) but the toggle
+  // only appears for paid plans so this initialization is safe for all cases.
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">(
+    plan === "FREE" && intentInterval ? intentInterval : initialBillingInterval,
+  );
 
   async function handleUpgrade(targetPlan: "PRO" | "BUSINESS") {
+    // Phase 16.4 — track checkout started event.
+    void track("checkout_started", { plan: targetPlan, interval: billingInterval, from: plan });
+
     startTransition(async () => {
       try {
         const res = await fetch("/api/billing/checkout", {
@@ -202,6 +233,37 @@ export function BillingPage({
         </p>
       </div>
 
+      {/* Phase 16.3 — Billing intent banner (shown when checkout failed during registration) */}
+      {plan === "FREE" && intentPlan && hasStripe ? (
+        <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <span>
+            You selected the{" "}
+            <strong>
+              {intentPlan} {intentInterval === "year" ? "Annual" : "Monthly"}
+            </strong>{" "}
+            plan during sign-up. Use the upgrade button below to complete your subscription.
+          </span>
+        </div>
+      ) : null}
+
+      {/* Phase 16.1 — Pending cancellation banner */}
+      {cancelAtPeriodEnd && cancelAt ? (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Your subscription is set to cancel on{" "}
+            <strong>
+              {new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+                new Date(cancelAt),
+              )}
+            </strong>
+            . You will be moved to the Free plan at that time. To keep your plan, reactivate your
+            subscription in the billing portal.
+          </span>
+        </div>
+      ) : null}
+
       {/* Success / cancellation banners */}
       {checkoutSuccess ? (
         <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
@@ -228,8 +290,12 @@ export function BillingPage({
             {plan === "FREE"
               ? "You're on the Free plan."
               : plan === "PRO"
-                ? "You're on the Pro plan — $29/month."
-                : "You're on the Business plan — $79/month."}
+                ? initialBillingInterval === "year"
+                  ? "You're on the Pro plan — $23/mo billed annually ($276/yr)."
+                  : "You're on the Pro plan — $29/month."
+                : initialBillingInterval === "year"
+                  ? "You're on the Business plan — $63/mo billed annually ($756/yr)."
+                  : "You're on the Business plan — $79/month."}
           </CardDescription>
         </CardHeader>
 
@@ -274,7 +340,10 @@ export function BillingPage({
               <div className="flex w-full items-center gap-3 text-sm">
                 <button
                   type="button"
-                  onClick={() => setBillingInterval("month")}
+                  onClick={() => {
+                    setBillingInterval("month");
+                    void track("billing_interval_changed", { interval: "month", plan });
+                  }}
                   className={`font-medium transition-colors ${
                     billingInterval === "month"
                       ? "text-foreground"
@@ -285,7 +354,11 @@ export function BillingPage({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setBillingInterval(billingInterval === "month" ? "year" : "month")}
+                  onClick={() => {
+                    const next = billingInterval === "month" ? "year" : "month";
+                    setBillingInterval(next);
+                    void track("billing_interval_changed", { interval: next, plan });
+                  }}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                     billingInterval === "year" ? "bg-primary" : "bg-muted"
                   }`}

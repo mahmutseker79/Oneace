@@ -169,6 +169,8 @@ export default async function ItemsPage({
   // trust micro-stat line and reorder partial-copy show correct numbers
   // even when a status filter (?status=archived) is active.
   const totalItems = cacheItems.length;
+  // Phase 16.6 — disable "New item" button when at plan limit.
+  const atItemLimit = itemLimit !== UNLIMITED && totalItems >= itemLimit;
 
   // ── P8.1 — Low-stock detection (zero extra queries) ───────────────
   // Reuses the already-fetched `items` array. Same filter logic as
@@ -340,12 +342,20 @@ export default async function ItemsPage({
               </Link>
             </Button>
           ) : null}
-          {canCreate ? (
+          {canCreate && !atItemLimit ? (
             <Button asChild>
               <Link href="/items/new">
                 <Plus className="h-4 w-4" />
                 {t.items.newItem}
               </Link>
+            </Button>
+          ) : canCreate && atItemLimit ? (
+            <Button
+              disabled
+              title={`Item limit reached (${itemLimit}). Upgrade to Pro for unlimited items.`}
+            >
+              <Plus className="h-4 w-4" />
+              {t.items.newItem}
             </Button>
           ) : null}
         </div>
