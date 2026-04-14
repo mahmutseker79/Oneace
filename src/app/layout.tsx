@@ -30,6 +30,19 @@ export async function generateMetadata(): Promise<Metadata> {
       ],
       apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     },
+    // Phase 12.5 — Open Graph / social card defaults.
+    // Individual pages override these via their own generateMetadata().
+    openGraph: {
+      type: "website",
+      siteName: t.app.name,
+      title: t.metadata.title,
+      description: t.metadata.description,
+    },
+    twitter: {
+      card: "summary",
+      title: t.metadata.title,
+      description: t.metadata.description,
+    },
   };
 }
 
