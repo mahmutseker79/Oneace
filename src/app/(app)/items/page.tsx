@@ -33,11 +33,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { db } from "@/lib/db";
 import { formatRelative } from "@/lib/format-relative";
 import { getMessages, getRegion } from "@/lib/i18n";
 import type { ItemSnapshotRow } from "@/lib/offline/items-cache";
 import { hasCapability } from "@/lib/permissions";
+import { UNLIMITED, getPlanLimit, hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
@@ -81,6 +83,11 @@ export default async function ItemsPage({
   const canDelete = hasCapability(membership.role, "items.delete");
   const canImport = hasCapability(membership.role, "items.import");
   const canExport = hasCapability(membership.role, "reports.export");
+
+  // Phase 13.3 — plan-aware item limit for upgrade UX
+  const orgPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const itemLimit = getPlanLimit(orgPlan, "items");
+  const canExportByPlan = hasPlanCapability(orgPlan, "exports");
 
   const items = await db.item.findMany({
     where: {
@@ -421,6 +428,19 @@ export default async function ItemsPage({
             ) : null}
           </AlertDescription>
         </Alert>
+      ) : null}
+
+      {/* ── Phase 13.3: Plan limit banner ────────────────────────────────── */}
+      {itemLimit !== UNLIMITED && totalItems >= itemLimit * 0.8 ? (
+        <UpgradePrompt
+          reason={
+            totalItems >= itemLimit
+              ? `You've reached the ${itemLimit}-item limit on the Free plan.`
+              : `You're approaching the ${itemLimit}-item limit (${totalItems}/${itemLimit} used).`
+          }
+          requiredPlan="PRO"
+          variant="banner"
+        />
       ) : null}
 
       {/* ── CASE A: No items (true empty vs filtered empty) ──────────────── */}

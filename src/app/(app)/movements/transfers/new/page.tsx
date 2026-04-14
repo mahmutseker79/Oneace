@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 import {
@@ -24,6 +25,38 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function NewTransferPage() {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
+
+  // Phase 13.3 — plan gate for transfer wizard
+  const transferPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  if (!hasPlanCapability(transferPlan, "transfers")) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/movements">
+              <ArrowLeft className="h-4 w-4" />
+              {t.common.back}
+            </Link>
+          </Button>
+        </div>
+        <div>
+          <h1 className="text-2xl font-semibold">{t.movements.transfers.heading}</h1>
+          <p className="text-muted-foreground">{t.movements.transfers.subtitle}</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Inter-warehouse transfers are available on Pro and Business plans. Upgrade to move
+              stock between locations with a guided wizard.
+            </p>
+            <Button asChild size="sm">
+              <Link href="/settings/billing">Upgrade to Pro</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const [rawWarehouses, rawItems] = await Promise.all([
     db.warehouse.findMany({

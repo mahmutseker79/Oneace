@@ -15,10 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { PurchaseOrderStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
@@ -73,6 +75,10 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
   const canCreate = hasCapability(membership.role, "purchaseOrders.create");
   const canExport = hasCapability(membership.role, "reports.export");
 
+  // Phase 13.3 — plan check for upgrade UX
+  const poPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const canUsePurchaseOrders = hasPlanCapability(poPlan, "purchaseOrders");
+
   const filter = await parsePurchaseOrderFilter(searchParams);
   const filterActive = hasAnyFilter(filter);
   const limit = filterActive ? FILTERED_LIMIT : UNFILTERED_LIMIT;
@@ -106,6 +112,25 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
       orderBy: { name: "asc" },
     }),
   ]);
+
+  // Phase 13.3 — show upgrade prompt for FREE users before the rest of the page
+  if (!canUsePurchaseOrders) {
+    return (
+      <div className="space-y-6">
+        <AdvancedFeatureBanner labels={t.advancedFeature} />
+        <div>
+          <h1 className="text-2xl font-semibold">{t.purchaseOrders.heading}</h1>
+          <p className="text-muted-foreground">{t.purchaseOrders.subtitle}</p>
+        </div>
+        <UpgradePrompt
+          reason="Purchase orders are not available on the Free plan."
+          requiredPlan="PRO"
+          variant="card"
+          description="Create purchase orders, receive stock with barcode assistance, and track supplier deliveries. Available on Pro and Business plans."
+        />
+      </div>
+    );
+  }
 
   if (suppliers.length === 0) {
     return (
