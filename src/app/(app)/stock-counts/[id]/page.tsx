@@ -320,6 +320,35 @@ export default async function StockCountDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Phase 3 — progress indicator (only for IN_PROGRESS counts with snapshots) */}
+      {state === "IN_PROGRESS" && count.snapshots.length > 0
+        ? (() => {
+            const snapshotCount = count.snapshots.length;
+            // A snapshot row is "counted" if at least one entry exists for that
+            // (itemId, warehouseId) pair. Use fullEntries for unbounded accuracy.
+            const countedPairs = new Set(fullEntries.map((e) => `${e.itemId}::${e.warehouseId}`));
+            const snapshotPairs = count.snapshots.map((s) => `${s.itemId}::${s.warehouseId}`);
+            const countedCount = snapshotPairs.filter((p) => countedPairs.has(p)).length;
+            const pct = Math.round((countedCount / snapshotCount) * 100);
+            return (
+              <div className="space-y-1.5 rounded-md border bg-muted/20 p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Count progress</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {countedCount} / {snapshotCount} items &mdash; {pct}%
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })()
+        : null}
+
       {/* Metadata card */}
       <Card>
         <CardContent className="grid gap-4 pt-6 text-sm md:grid-cols-2 lg:grid-cols-3">

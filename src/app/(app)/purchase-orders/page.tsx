@@ -1,4 +1,4 @@
-import { Download, Plus, ShoppingCart } from "lucide-react";
+import { AlertTriangle, Download, Plus, ShoppingCart } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -281,18 +281,18 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
                           <TableCell className="text-muted-foreground">
                             {po.warehouse.name}
                           </TableCell>
+                          {/* Phase 3.7 — RECEIVED = emerald (semantically "done"),
+                              not primary/indigo which reads as "active/in-progress". */}
                           <TableCell>
-                            <Badge
-                              variant={
-                                po.status === "RECEIVED"
-                                  ? "default"
-                                  : po.status === "CANCELLED"
-                                    ? "secondary"
-                                    : "outline"
-                              }
-                            >
-                              {t.purchaseOrders.statusBadge[po.status]}
-                            </Badge>
+                            {po.status === "RECEIVED" ? (
+                              <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
+                                {t.purchaseOrders.statusBadge[po.status]}
+                              </Badge>
+                            ) : (
+                              <Badge variant={po.status === "CANCELLED" ? "secondary" : "outline"}>
+                                {t.purchaseOrders.statusBadge[po.status]}
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatCurrency(total, {
@@ -303,8 +303,28 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
                           <TableCell className="text-muted-foreground">
                             {formatDateOrDash(po.orderedAt, region.numberLocale)}
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDateOrDash(po.expectedAt, region.numberLocale)}
+                          {/* Phase 3.6 — overdue expected date shown in red. */}
+                          <TableCell>
+                            {po.expectedAt ? (
+                              (() => {
+                                const isOverdue =
+                                  new Date(po.expectedAt) < new Date() &&
+                                  po.status !== "RECEIVED" &&
+                                  po.status !== "CANCELLED";
+                                return (
+                                  <span
+                                    className={`flex items-center gap-1 ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}
+                                  >
+                                    {isOverdue ? (
+                                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                                    ) : null}
+                                    {formatDateOrDash(po.expectedAt, region.numberLocale)}
+                                  </span>
+                                );
+                              })()
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

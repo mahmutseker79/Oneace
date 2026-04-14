@@ -19,8 +19,12 @@ import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
+// Phase 3 — movement history pagination.
+const MOVE_PAGE_SIZE = 20;
+
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ moveCursor?: string }>;
 };
 
 type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "COUNT";
@@ -30,8 +34,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t.itemDetail.metaTitle };
 }
 
-export default async function ItemDetailPage({ params }: PageProps) {
+export default async function ItemDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { moveCursor } = (await searchParams) ?? {};
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
@@ -53,7 +58,7 @@ export default async function ItemDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const movements = await db.stockMovement.findMany({
+  const movementsRaw = await db.stockMovement.findMany({
     where: { organizationId: membership.organizationId, itemId: item.id },
     include: {
       warehouse: { select: { id: true, name: true } },
@@ -61,8 +66,14 @@ export default async function ItemDetailPage({ params }: PageProps) {
       createdBy: { select: { id: true, name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    // Phase 3 — fetch PAGE+1 to detect next page; cursor-based pagination.
+    take: MOVE_PAGE_SIZE + 1,
+    ...(moveCursor ? { cursor: { id: moveCursor }, skip: 1 } : {}),
   });
+
+  const hasMoreMovements = movementsRaw.length > MOVE_PAGE_SIZE;
+  const movements = hasMoreMovements ? movementsRaw.slice(0, MOVE_PAGE_SIZE) : movementsRaw;
+  const nextMoveCursor = hasMoreMovements ? movements[movements.length - 1]?.id : null;
 
   const dateFormatter = new Intl.DateTimeFormat(region.numberLocale, {
     dateStyle: "medium",
@@ -340,6 +351,17 @@ export default async function ItemDetailPage({ params }: PageProps) {
               </TableBody>
             </Table>
           )}
+          {/* Phase 3 — load more for movement history */}
+          {nextMoveCursor ? (
+            <div className="flex justify-center border-t pt-3">
+              <Link
+                href={`/items/${item.id}?moveCursor=${encodeURIComponent(nextMoveCursor)}`}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Load more movements &rarr;
+              </Link>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>

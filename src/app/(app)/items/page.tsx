@@ -51,13 +51,20 @@ import { CompactBridge } from "@/components/bridge/compact-bridge";
 import { deleteItemAction } from "./actions";
 import { dismissBridgeAction } from "./dismiss-bridge-action";
 
-// Phase 2 UX — extended search params for text search + column sort.
+// Phase 2/3 UX — extended search params: text search, column sort, pagination.
 type SearchParams = Promise<{
   status?: string;
   q?: string; // text search across name, SKU, barcode
   sort?: string; // "name" | "sku" | "date"
   dir?: string; // "asc" | "desc"
+  cursor?: string; // item.id — cursor for pagination
 }>;
+
+// Phase 3 — pagination constants.
+// Search mode uses SEARCH_LIMIT (client-side filter needs all matching rows).
+// Browse mode uses PAGE_SIZE with cursor-based load-more.
+const PAGE_SIZE = 50;
+const SEARCH_LIMIT = 100;
 
 type ItemStatus = "ACTIVE" | "ARCHIVED" | "DRAFT";
 type StatusFilter = "all" | ItemStatus;
@@ -102,6 +109,7 @@ export default async function ItemsPage({
   const statusFilter = parseStatusFilter(params.status);
   const searchQuery = (params.q ?? "").trim();
   const { col: sortCol, dir: sortDir } = parseSortParams(params.sort, params.dir);
+  const cursor = params.cursor; // undefined = first page
 
   // P10.1 — capability flags for conditional UI rendering
   const canCreate = hasCapability(membership.role, "items.create");
@@ -115,33 +123,45 @@ export default async function ItemsPage({
   const itemLimit = getPlanLimit(orgPlan, "items");
   const canExportByPlan = hasPlanCapability(orgPlan, "exports");
 
+  // Phase 3 — two fetch modes:
+  //   Search mode (q present): fetch up to SEARCH_LIMIT, filter client-side.
+  //   Browse mode (no q):      cursor-based pages of PAGE_SIZE.
+  const baseWhere = {
+    organizationId: membership.organizationId,
+    ...(statusFilter === "all" ? {} : { status: statusFilter }),
+  };
+  const orderBy = buildOrderBy(sortCol, sortDir);
+
+  const isSearchMode = searchQuery.length > 0;
+
   const items = await db.item.findMany({
-    where: {
-      organizationId: membership.organizationId,
-      ...(statusFilter === "all" ? {} : { status: statusFilter }),
-    },
+    where: baseWhere,
     include: {
       category: { select: { id: true, name: true } },
       stockLevels: { select: { quantity: true } },
       // P8.4 — needed for low-stock → PO shortcut (indexed column, negligible cost)
       preferredSupplier: { select: { id: true, name: true } },
     },
-    // Phase 2 — dynamic sort based on query params; default newest-first.
-    orderBy: buildOrderBy(sortCol, sortDir),
-    take: 100,
+    orderBy,
+    take: isSearchMode ? SEARCH_LIMIT : PAGE_SIZE + 1,
+    ...(!isSearchMode && cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
 
-  // Phase 2 — client-side text filter applied after fetch (100-item limit means
-  // filtering in JS is instant; will move server-side when pagination ships).
+  // Phase 3 — determine if there's a next page (browse mode only).
+  const hasNextPage = !isSearchMode && items.length > PAGE_SIZE;
+  const pageItems = hasNextPage ? items.slice(0, PAGE_SIZE) : items;
+  const nextCursor = hasNextPage ? pageItems[pageItems.length - 1]?.id : null;
+
+  // Phase 2 — client-side text filter (search mode only, PAGE_SIZE or fewer rows).
   const q = searchQuery.toLowerCase();
-  const displayedItems = q
-    ? items.filter(
+  const displayedItems = isSearchMode
+    ? pageItems.filter(
         (item) =>
           item.name.toLowerCase().includes(q) ||
           item.sku.toLowerCase().includes(q) ||
           (item.barcode ?? "").toLowerCase().includes(q),
       )
-    : items;
+    : pageItems;
 
   // ── P3.3 / P3.4 + P7 — setup progress & operational trust queries ───
   // Lightweight counts to drive the stateful setup checklist, forward
@@ -190,24 +210,32 @@ export default async function ItemsPage({
   // — `cacheItems` is the unfiltered snapshot and is decoupled from the
   // rendered `items` variable on purpose.
   // IMPORTANT: Must be declared before `totalItems` which depends on it.
+  // Phase 3 — cacheItems: only sync on first page, unfiltered.
+  // On page 2+ we don't overwrite the IndexedDB cache (partial pages
+  // would evict previously cached items). In search mode we also skip
+  // the cache update because displayedItems is a subset of the inventory.
+  const isFirstPage = !cursor;
   const cacheItems =
-    statusFilter === "all"
-      ? items
-      : await db.item.findMany({
-          where: { organizationId: membership.organizationId },
-          include: {
-            category: { select: { id: true, name: true } },
-            stockLevels: { select: { quantity: true } },
-            preferredSupplier: { select: { id: true, name: true } },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 100,
-        });
+    isFirstPage && !isSearchMode
+      ? statusFilter === "all"
+        ? pageItems
+        : await db.item.findMany({
+            where: { organizationId: membership.organizationId },
+            include: {
+              category: { select: { id: true, name: true } },
+              stockLevels: { select: { quantity: true } },
+              preferredSupplier: { select: { id: true, name: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: PAGE_SIZE,
+          })
+      : []; // empty → ItemsCacheSync skips the write
 
-  // ── P8.5a — totalItems must reflect the *unfiltered* inventory so the
-  // trust micro-stat line and reorder partial-copy show correct numbers
-  // even when a status filter (?status=archived) is active.
-  const totalItems = cacheItems.length;
+  // Phase 3 — totalItems: use a real count instead of cacheItems.length
+  // so the trust micro-stat and reorder copy are accurate across all pages.
+  const totalItems = await db.item.count({
+    where: { organizationId: membership.organizationId },
+  });
   // Phase 16.6 — disable "New item" button when at plan limit.
   const atItemLimit = itemLimit !== UNLIMITED && totalItems >= itemLimit;
 
@@ -811,6 +839,34 @@ export default async function ItemsPage({
               </div>
             </CardContent>
           </Card>
+
+          {/* ── Phase 3: Pagination load-more ─────────────────────────── */}
+          {nextCursor ? (
+            <div className="flex items-center justify-between border-t pt-4 text-sm">
+              <span className="text-muted-foreground">
+                Showing {displayedItems.length} of {totalItems} items
+              </span>
+              {(() => {
+                const sp = new URLSearchParams();
+                sp.set("cursor", nextCursor);
+                if (statusFilter !== "all") sp.set("status", params.status ?? "");
+                if (params.sort) sp.set("sort", params.sort);
+                if (params.dir) sp.set("dir", params.dir);
+                return (
+                  <Link
+                    href={`/items?${sp.toString()}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Load more &rarr;
+                  </Link>
+                );
+              })()}
+            </div>
+          ) : !isSearchMode && totalItems > PAGE_SIZE ? (
+            <p className="pt-2 text-center text-xs text-muted-foreground">
+              All {totalItems} items loaded.
+            </p>
+          ) : null}
 
           {/* ── P7.7: Activity footer — recent count + movement links ──── */}
           {setupComplete && (lastCount || lastMovement) ? (

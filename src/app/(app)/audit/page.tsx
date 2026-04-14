@@ -25,8 +25,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -42,7 +52,13 @@ import { getMessages, getRegion } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
-type SearchParams = Promise<{ cursor?: string }>;
+// Phase 3 — audit log filters.
+type SearchParams = Promise<{
+  cursor?: string;
+  action?: string; // action prefix: "billing" | "item" | "warehouse" | etc.
+  from?: string; // ISO date string (inclusive)
+  to?: string; // ISO date string (inclusive)
+}>;
 
 // Deliberately modest — a warehouse OWNER eyeballing "what happened
 // today?" rarely needs more than the top 50. Bumping this is cheap
@@ -136,6 +152,23 @@ export default async function AuditPage({
 
   const params = (await searchParams) ?? {};
   const cursor = params.cursor;
+  const actionFilter = params.action?.trim() ?? "";
+  const fromFilter = params.from?.trim() ?? "";
+  const toFilter = params.to?.trim() ?? "";
+
+  // Phase 3 — build filter where clause.
+  const auditWhere = {
+    organizationId: membership.organizationId,
+    ...(actionFilter ? { action: { startsWith: actionFilter } } : {}),
+    ...(fromFilter || toFilter
+      ? {
+          createdAt: {
+            ...(fromFilter ? { gte: new Date(fromFilter) } : {}),
+            ...(toFilter ? { lte: new Date(`${toFilter}T23:59:59.999Z`) } : {}),
+          },
+        }
+      : {}),
+  };
 
   // Fetch PAGE_SIZE + 1 rows so we can detect whether there's a next
   // page without a second count query. `cursor` is the id of the last
@@ -143,7 +176,7 @@ export default async function AuditPage({
   // continues from the record *after* that id on the composite
   // (createdAt desc, id) order.
   const rows = await db.auditEvent.findMany({
-    where: { organizationId: membership.organizationId },
+    where: auditWhere,
     include: {
       actor: { select: { id: true, name: true, email: true } },
     },
@@ -179,6 +212,52 @@ export default async function AuditPage({
           <CardDescription>{t.audit.subtitle}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Phase 3 — filter bar (GET form, server-side filtering) */}
+          <form method="GET" className="flex flex-wrap gap-3 border-b pb-4">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Action type</Label>
+              <Select name="action" defaultValue={actionFilter || "all"}>
+                <SelectTrigger className="h-8 w-40 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All actions</SelectItem>
+                  <SelectItem value="billing">Billing</SelectItem>
+                  <SelectItem value="item">Items</SelectItem>
+                  <SelectItem value="warehouse">Warehouses</SelectItem>
+                  <SelectItem value="stock_count">Stock counts</SelectItem>
+                  <SelectItem value="stock_movement">Movements</SelectItem>
+                  <SelectItem value="purchase_order">Purchase orders</SelectItem>
+                  <SelectItem value="member">Members</SelectItem>
+                  <SelectItem value="organization">Organization</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">From date</Label>
+              <Input
+                name="from"
+                type="date"
+                defaultValue={fromFilter}
+                className="h-8 w-36 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">To date</Label>
+              <Input name="to" type="date" defaultValue={toFilter} className="h-8 w-36 text-xs" />
+            </div>
+            <div className="flex items-end gap-2">
+              <Button type="submit" size="sm" variant="outline" className="h-8 text-xs">
+                Apply
+              </Button>
+              {actionFilter || fromFilter || toFilter ? (
+                <Button asChild size="sm" variant="ghost" className="h-8 text-xs">
+                  <Link href="/audit">Clear</Link>
+                </Button>
+              ) : null}
+            </div>
+          </form>
+
           {visibleRows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -234,12 +313,21 @@ export default async function AuditPage({
 
           {hasMore && lastId ? (
             <div className="flex justify-center pt-2">
-              <Link
-                href={`/audit?cursor=${encodeURIComponent(lastId)}`}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                {t.audit.loadMore}
-              </Link>
+              {(() => {
+                const sp = new URLSearchParams();
+                sp.set("cursor", lastId);
+                if (actionFilter) sp.set("action", actionFilter);
+                if (fromFilter) sp.set("from", fromFilter);
+                if (toFilter) sp.set("to", toFilter);
+                return (
+                  <Link
+                    href={`/audit?${sp.toString()}`}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {t.audit.loadMore}
+                  </Link>
+                );
+              })()}
             </div>
           ) : null}
         </CardContent>

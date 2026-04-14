@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,6 +106,7 @@ export function ItemForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { reset: resetUnsaved, setDirty } = useUnsavedWarning();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const [categoryId, setCategoryId] = useState<string>(initial?.categoryId ?? NO_CATEGORY);
@@ -138,6 +141,7 @@ export function ItemForm({
         setFieldErrors(result.fieldErrors ?? {});
         return;
       }
+      resetUnsaved();
       router.push("/items");
       router.refresh();
     });
@@ -158,6 +162,7 @@ export function ItemForm({
             required
             defaultValue={initial?.sku}
             aria-invalid={!!fieldError("sku")}
+            onChange={() => setDirty(true)}
           />
           <p className="text-xs text-muted-foreground">{labels.fields.skuHelp}</p>
           {fieldError("sku") ? (

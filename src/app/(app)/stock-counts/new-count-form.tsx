@@ -174,18 +174,23 @@ export function NewCountForm({ labels, items, warehouses }: NewCountFormProps) {
                 <SelectTrigger id="count-methodology">
                   <SelectValue />
                 </SelectTrigger>
+                {/* Phase 3 — show description inside each option so
+                    users know what they're selecting before they pick it. */}
                 <SelectContent>
-                  <SelectItem value="FULL">{labels.methodologyOptions.FULL}</SelectItem>
-                  <SelectItem value="CYCLE">{labels.methodologyOptions.CYCLE}</SelectItem>
-                  <SelectItem value="SPOT">{labels.methodologyOptions.SPOT}</SelectItem>
-                  <SelectItem value="BLIND">{labels.methodologyOptions.BLIND}</SelectItem>
-                  <SelectItem value="DOUBLE_BLIND">
-                    {labels.methodologyOptions.DOUBLE_BLIND}
-                  </SelectItem>
-                  <SelectItem value="DIRECTED">{labels.methodologyOptions.DIRECTED}</SelectItem>
+                  {(["FULL", "CYCLE", "SPOT", "BLIND", "DOUBLE_BLIND", "DIRECTED"] as const).map(
+                    (key) => (
+                      <SelectItem key={key} value={key}>
+                        <div>
+                          <span className="font-medium">{labels.methodologyOptions[key]}</span>
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            {labels.methodologyHelp[key]}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">{labels.methodologyHelp[methodology]}</p>
             </div>
           </div>
         ) : null}
