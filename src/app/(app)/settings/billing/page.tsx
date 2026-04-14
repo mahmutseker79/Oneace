@@ -22,10 +22,18 @@ export default async function BillingSettingsPage({
 }) {
   const { membership } = await requireActiveMembership();
 
-  const org = await db.organization.findUnique({
-    where: { id: membership.organizationId },
-    select: { plan: true, stripeCustomerId: true },
-  });
+  // Phase 13.4 — load usage counts for limit indicators in billing UI
+  const [org, currentItems, currentWarehouses, currentMembers] = await Promise.all([
+    db.organization.findUnique({
+      where: { id: membership.organizationId },
+      select: { plan: true, stripeCustomerId: true },
+    }),
+    db.item.count({ where: { organizationId: membership.organizationId } }),
+    db.warehouse.count({
+      where: { organizationId: membership.organizationId, isArchived: false },
+    }),
+    db.membership.count({ where: { organizationId: membership.organizationId } }),
+  ]);
 
   const sp = (await searchParams) ?? {};
 
@@ -38,6 +46,9 @@ export default async function BillingSettingsPage({
         hasCustomer={Boolean(org?.stripeCustomerId)}
         checkoutSuccess={sp.success === "1"}
         checkoutCancelled={sp.cancelled === "1"}
+        currentItems={currentItems}
+        currentWarehouses={currentWarehouses}
+        currentMembers={currentMembers}
       />
     </div>
   );

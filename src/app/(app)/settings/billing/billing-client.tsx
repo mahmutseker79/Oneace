@@ -1,25 +1,28 @@
 /**
- * Phase 12.3 — Billing settings page at /settings/billing.
+ * Phase 12.3 + 13.4 — Billing settings page at /settings/billing.
  *
- * Shows the org's current plan and upgrade/manage CTAs.
- * OWNER and ADMIN can initiate checkout or open the billing portal.
- * Other roles see the plan read-only.
- *
- * When Stripe is not configured (no STRIPE_SECRET_KEY), the page
- * renders an informational state — no broken UI.
+ * Phase 13.4 enhances this with:
+ * - Plan feature summary showing what the current plan includes
+ * - Limit indicators (items used/allowed, warehouses, members)
+ * - Specific "what you'd unlock" copy for upgrade prompts
  */
 
 "use client";
 
-import { ArrowRight, CheckCircle2, CreditCard, Loader2 } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, CreditCard, Loader2, Minus } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 // ---------------------------------------------------------------------------
@@ -33,10 +36,14 @@ export type BillingPageProps = {
   hasCustomer: boolean;
   checkoutSuccess: boolean;
   checkoutCancelled: boolean;
+  // Phase 13.4 — usage data for limit indicators
+  currentItems: number;
+  currentWarehouses: number;
+  currentMembers: number;
 };
 
 // ---------------------------------------------------------------------------
-// Plan display helpers
+// Plan display data
 // ---------------------------------------------------------------------------
 
 const PLAN_LABELS: Record<string, string> = {
@@ -45,11 +52,91 @@ const PLAN_LABELS: Record<string, string> = {
   BUSINESS: "Business",
 };
 
-const PLAN_DESCRIPTIONS: Record<string, string> = {
-  FREE: "Basic inventory tracking for small teams.",
-  PRO: "Full warehouse ops: bins, purchase orders, Excel exports, alerts.",
-  BUSINESS: "Unlimited scale with audit log and priority support.",
+type PlanFeature = { label: string; included: boolean | string };
+
+const PLAN_FEATURES: Record<string, PlanFeature[]> = {
+  FREE: [
+    { label: "Up to 100 items", included: true },
+    { label: "1 warehouse location", included: true },
+    { label: "Up to 3 team members", included: true },
+    { label: "Barcode scanning & offline counts", included: true },
+    { label: "Stock movements ledger", included: true },
+    { label: "Bin-level tracking", included: false },
+    { label: "Purchase orders & receiving", included: false },
+    { label: "Exports (CSV & Excel)", included: false },
+    { label: "Reports & audit log", included: false },
+  ],
+  PRO: [
+    { label: "Unlimited items", included: true },
+    { label: "Unlimited warehouse locations", included: true },
+    { label: "Up to 10 team members", included: true },
+    { label: "Barcode scanning & offline counts", included: true },
+    { label: "Bin-level tracking + putaway", included: true },
+    { label: "Purchase orders & scan-assisted receiving", included: true },
+    { label: "CSV & Excel exports", included: true },
+    { label: "Reports (stock value, movements, bins)", included: true },
+    { label: "Audit log", included: false },
+  ],
+  BUSINESS: [
+    { label: "Unlimited items", included: true },
+    { label: "Unlimited warehouse locations", included: true },
+    { label: "Unlimited team members", included: true },
+    { label: "Barcode scanning & offline counts", included: true },
+    { label: "Bin-level tracking + putaway", included: true },
+    { label: "Purchase orders & scan-assisted receiving", included: true },
+    { label: "CSV & Excel exports", included: true },
+    { label: "Reports (stock value, movements, bins)", included: true },
+    { label: "Audit log (full history)", included: true },
+  ],
 };
+
+// ---------------------------------------------------------------------------
+// Limit bar — visual indicator of limit usage
+// ---------------------------------------------------------------------------
+
+function LimitBar({
+  label,
+  current,
+  max,
+}: {
+  label: string;
+  current: number;
+  max: number | null; // null = unlimited
+}) {
+  if (max === null) {
+    return (
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{current.toLocaleString()} / Unlimited</span>
+      </div>
+    );
+  }
+
+  const pct = Math.min(100, (current / max) * 100);
+  const isNear = pct >= 80;
+  const isAt = current >= max;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span
+          className={`font-medium ${isAt ? "text-destructive" : isNear ? "text-amber-600" : ""}`}
+        >
+          {current} / {max}
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={`h-full rounded-full transition-all ${
+            isAt ? "bg-destructive" : isNear ? "bg-amber-500" : "bg-primary"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Client component
@@ -62,8 +149,10 @@ export function BillingPage({
   hasCustomer,
   checkoutSuccess,
   checkoutCancelled,
+  currentItems,
+  currentWarehouses,
+  currentMembers,
 }: BillingPageProps) {
-  const router = useRouter();
   const [isRedirecting, startTransition] = useTransition();
 
   async function handleUpgrade(targetPlan: "PRO" | "BUSINESS") {
@@ -79,7 +168,7 @@ export function BillingPage({
           window.location.href = data.url;
         }
       } catch {
-        // Error handled gracefully — user stays on page
+        // stays on page
       }
     });
   }
@@ -93,10 +182,12 @@ export function BillingPage({
           window.location.href = data.url;
         }
       } catch {
-        // Error handled gracefully
+        // stays on page
       }
     });
   }
+
+  const features = PLAN_FEATURES[plan] ?? [];
 
   return (
     <div className="space-y-6">
@@ -120,7 +211,7 @@ export function BillingPage({
         </div>
       ) : null}
 
-      {/* Current plan */}
+      {/* Current plan + usage */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -129,62 +220,101 @@ export function BillingPage({
               {PLAN_LABELS[plan] ?? plan}
             </Badge>
           </CardTitle>
-          <CardDescription>{PLAN_DESCRIPTIONS[plan] ?? ""}</CardDescription>
+          <CardDescription>
+            {plan === "FREE"
+              ? "You're on the Free plan."
+              : plan === "PRO"
+                ? "You're on the Pro plan — $29/month."
+                : "You're on the Business plan — $79/month."}
+          </CardDescription>
         </CardHeader>
 
-        {canManageBilling && hasStripe ? (
-          <CardContent className="space-y-3">
-            {hasCustomer ? (
-              <Button variant="outline" onClick={handleManage} disabled={isRedirecting}>
-                {isRedirecting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+        {/* Plan feature checklist */}
+        <CardContent className="space-y-4">
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {features.map((f) => (
+              <div key={f.label} className="flex items-center gap-2 text-sm">
+                {f.included ? (
+                  <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
                 ) : (
-                  <CreditCard className="h-4 w-4" />
+                  <Minus className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
                 )}
-                Manage billing
-              </Button>
-            ) : null}
+                <span className={f.included ? "" : "text-muted-foreground/60"}>{f.label}</span>
+              </div>
+            ))}
+          </div>
 
-            {plan !== "BUSINESS" ? (
-              <div className="flex flex-wrap gap-2">
-                {plan === "FREE" ? (
-                  <Button onClick={() => handleUpgrade("PRO")} disabled={isRedirecting}>
+          {/* Usage indicators — shown for FREE plan only */}
+          {plan === "FREE" ? (
+            <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+              <p className="text-xs font-medium text-muted-foreground">Usage</p>
+              <LimitBar label="Items" current={currentItems} max={100} />
+              <LimitBar label="Warehouse locations" current={currentWarehouses} max={1} />
+              <LimitBar label="Team members" current={currentMembers} max={3} />
+            </div>
+          ) : plan === "PRO" ? (
+            <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+              <p className="text-xs font-medium text-muted-foreground">Usage</p>
+              <LimitBar label="Items" current={currentItems} max={null} />
+              <LimitBar label="Warehouse locations" current={currentWarehouses} max={null} />
+              <LimitBar label="Team members" current={currentMembers} max={10} />
+            </div>
+          ) : null}
+        </CardContent>
+
+        {/* Billing actions */}
+        {canManageBilling ? (
+          <CardFooter className="flex flex-wrap gap-2 border-t pt-4">
+            {hasStripe ? (
+              <>
+                {hasCustomer ? (
+                  <Button variant="outline" onClick={handleManage} disabled={isRedirecting}>
                     {isRedirecting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <ArrowRight className="h-4 w-4" />
+                      <CreditCard className="h-4 w-4" />
                     )}
-                    Upgrade to Pro — $29/mo
+                    Manage billing
                   </Button>
                 ) : null}
-                <Button
-                  variant={plan === "FREE" ? "outline" : "default"}
-                  onClick={() => handleUpgrade("BUSINESS")}
-                  disabled={isRedirecting}
-                >
-                  {isRedirecting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4" />
-                  )}
-                  Upgrade to Business — $79/mo
-                </Button>
-              </div>
-            ) : null}
-          </CardContent>
-        ) : canManageBilling && !hasStripe ? (
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Billing is not yet configured. Contact your administrator or check the environment
-              setup.
-            </p>
-          </CardContent>
+                {plan !== "BUSINESS" ? (
+                  <>
+                    {plan === "FREE" ? (
+                      <Button onClick={() => handleUpgrade("PRO")} disabled={isRedirecting}>
+                        {isRedirecting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ArrowRight className="h-4 w-4" />
+                        )}
+                        Upgrade to Pro — $29/mo
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant={plan === "FREE" ? "outline" : "default"}
+                      onClick={() => handleUpgrade("BUSINESS")}
+                      disabled={isRedirecting}
+                    >
+                      {isRedirecting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4" />
+                      )}
+                      Upgrade to Business — $79/mo
+                    </Button>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Billing is not yet configured. Contact your administrator.
+              </p>
+            )}
+          </CardFooter>
         ) : null}
       </Card>
 
       <Separator />
 
-      {/* Pricing link */}
       <p className="text-sm text-muted-foreground">
         View the full{" "}
         <Link href="/pricing" className="text-primary hover:underline">
