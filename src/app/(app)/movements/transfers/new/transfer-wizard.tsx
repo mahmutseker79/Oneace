@@ -3,15 +3,17 @@
 import {
   ArrowRight,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Plus,
+  ScanLine,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { scanError, scanSuccess } from "@/lib/scanner/feedback";
 import type { CreateTransferInput } from "@/lib/validation/transfer";
 import { createTransferAction } from "./actions";
 
@@ -43,6 +46,8 @@ export type ItemOption = {
   id: string;
   name: string;
   sku: string;
+  /** Phase 11.4: barcode for client-side scan matching. null when item has no barcode. */
+  barcode?: string | null;
   /** On-hand quantity at a given warehouse; populated when warehouse is selected */
   onHand?: number;
 };
@@ -88,6 +93,13 @@ export type TransferWizardLabels = {
   successMessage: string;
   errorMessage: string;
   cancel: string;
+  // Phase 11.4 — scan input
+  scanInputLabel: string;
+  scanInputPlaceholder: string;
+  scanInputHint: string;
+  scanMatched: string;
+  scanIncremented: string;
+  scanNotFound: string;
 };
 
 type TransferWizardProps = {
@@ -133,6 +145,34 @@ function generateIdempotencyKey(): string {
 
 function getOnHand(snapshot: StockSnapshot[], itemId: string, warehouseId: string): number {
   return snapshot.find((s) => s.itemId === itemId && s.warehouseId === warehouseId)?.quantity ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// Scan matching logic (pure — exported for tests)
+// ---------------------------------------------------------------------------
+
+/**
+ * Phase 11.4 — Find an item in the catalog by scanned code.
+ *
+ * Match priority:
+ *   1. item.barcode (exact match)
+ *   2. item.sku    (case-insensitive)
+ *
+ * Returns the matched ItemOption or null.
+ */
+export function matchItemByCode(items: ItemOption[], code: string): ItemOption | null {
+  const trimmed = code.trim();
+  if (!trimmed) return null;
+
+  // Priority 1: barcode exact match
+  const byBarcode = items.find(
+    (i) => i.barcode != null && i.barcode !== "" && i.barcode === trimmed,
+  );
+  if (byBarcode) return byBarcode;
+
+  // Priority 2: SKU case-insensitive
+  const lower = trimmed.toLowerCase();
+  return items.find((i) => i.sku.toLowerCase() === lower) ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -216,6 +256,14 @@ export function TransferWizard({ warehouses, items, stockSnapshot, labels }: Tra
   const [locationError, setLocationError] = useState<string | null>(null);
   const [lineErrors, setLineErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // ── Phase 11.4: scan state ────────────────────────────────────────────────
+  const [scanValue, setScanValue] = useState("");
+  const [scanStatus, setScanStatus] = useState<"idle" | "matched" | "incremented" | "not-found">(
+    "idle",
+  );
+  // Refs to each quantity input so we can auto-focus after a scan
+  const quantityRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
@@ -327,6 +375,92 @@ export function TransferWizard({ warehouses, items, stockSnapshot, labels }: Tra
 
     setLineErrors(errors);
     return valid;
+  }
+
+  // ── Phase 11.4: scan handler ──────────────────────────────────────────────
+
+  /**
+   * Handle a scanned/typed code in Step 2.
+   *
+   * Three outcomes:
+   *   1. Item already in lines → increment its quantity by 1.
+   *   2. Item not yet in lines → reuse the first empty line or add a new one; qty=1.
+   *   3. Item not found → show error, no state change.
+   */
+  const handleTransferScan = useCallback(
+    (code: string) => {
+      const trimmed = code.trim();
+      if (!trimmed) return;
+
+      const matched = matchItemByCode(items, trimmed);
+
+      if (!matched) {
+        setScanStatus("not-found");
+        scanError();
+        return;
+      }
+
+      // Check if this item is already a line
+      const existingLine = lines.find((l) => l.itemId === matched.id);
+
+      if (existingLine) {
+        // Increment quantity by 1
+        setLines((prev) =>
+          prev.map((l) => {
+            if (l.key !== existingLine.key) return l;
+            const current = Number(l.quantity) || 0;
+            return { ...l, quantity: String(current + 1) };
+          }),
+        );
+        setScanStatus("incremented");
+        scanSuccess();
+        // Focus the quantity input for this line
+        const ref = quantityRefs.current[existingLine.key];
+        if (ref) {
+          ref.focus();
+          ref.select();
+        }
+      } else {
+        // Find the first empty line to reuse, or add a new one
+        const emptyLine = lines.find((l) => l.itemId === "");
+        if (emptyLine) {
+          setLines((prev) =>
+            prev.map((l) =>
+              l.key === emptyLine.key ? { ...l, itemId: matched.id, quantity: "1" } : l,
+            ),
+          );
+          setScanStatus("matched");
+          scanSuccess();
+          // Focus the quantity input for the filled line
+          const ref = quantityRefs.current[emptyLine.key];
+          if (ref) {
+            ref.focus();
+            ref.select();
+          }
+        } else {
+          // All existing lines have items — add a new line
+          const newKey = generateKey();
+          setLines((prev) => [...prev, { key: newKey, itemId: matched.id, quantity: "1" }]);
+          setScanStatus("matched");
+          scanSuccess();
+          // Focus will happen after React re-renders via the ref callback
+        }
+        // Clear any error on this line from previous validation
+        setLineErrors((prev) => {
+          const next = { ...prev };
+          const targetKey = lines.find((l) => l.itemId === "")?.key;
+          if (targetKey) delete next[targetKey];
+          return next;
+        });
+      }
+    },
+    [items, lines],
+  );
+
+  function handleScanSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    handleTransferScan(scanValue);
+    setScanValue("");
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
@@ -463,6 +597,55 @@ export function TransferWizard({ warehouses, items, stockSnapshot, labels }: Tra
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Phase 11.4: scan input panel */}
+            <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <ScanLine className="h-4 w-4 text-muted-foreground" />
+                {labels.scanInputLabel}
+              </div>
+              <form onSubmit={handleScanSubmit} className="flex gap-2">
+                <Input
+                  type="text"
+                  value={scanValue}
+                  onChange={(e) => {
+                    setScanValue(e.target.value);
+                    setScanStatus("idle");
+                  }}
+                  placeholder={labels.scanInputPlaceholder}
+                  autoComplete="off"
+                  className="font-mono"
+                  aria-label={labels.scanInputLabel}
+                />
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  disabled={!scanValue.trim()}
+                  className="shrink-0"
+                >
+                  <ScanLine className="h-4 w-4" />
+                </Button>
+              </form>
+              <p className="text-xs text-muted-foreground">{labels.scanInputHint}</p>
+              {scanStatus === "not-found" ? (
+                <div className="flex items-center gap-1.5 text-xs text-destructive" role="alert">
+                  <TriangleAlert className="h-3.5 w-3.5" />
+                  {labels.scanNotFound}
+                </div>
+              ) : null}
+              {scanStatus === "matched" ? (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {labels.scanMatched}
+                </div>
+              ) : null}
+              {scanStatus === "incremented" ? (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {labels.scanIncremented}
+                </div>
+              ) : null}
+            </div>
+
             {lines.map((line, index) => {
               const onHand = line.itemId ? getOnHand(stockSnapshot, line.itemId, fromId) : null;
               const qty = Number(line.quantity);
@@ -513,6 +696,9 @@ export function TransferWizard({ warehouses, items, stockSnapshot, labels }: Tra
                         {labels.quantity}
                       </Label>
                       <Input
+                        ref={(el) => {
+                          quantityRefs.current[line.key] = el;
+                        }}
                         id={`qty-${line.key}`}
                         type="number"
                         min={1}

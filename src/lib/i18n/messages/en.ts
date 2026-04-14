@@ -771,6 +771,13 @@ export const en = {
       reviewOnHand: "On hand",
       submit: "Confirm transfer",
       successMessage: "Transfer recorded successfully.",
+      // Phase 11.4 — scan input in the items step
+      scanInputLabel: "Scan item",
+      scanInputPlaceholder: "Scan barcode or type SKU…",
+      scanInputHint: "Scan or type a barcode / SKU to add an item to this transfer.",
+      scanMatched: "Added",
+      scanIncremented: "Quantity increased",
+      scanNotFound: "No item found for this barcode in your catalog.",
     },
   },
 

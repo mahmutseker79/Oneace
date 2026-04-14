@@ -35,7 +35,8 @@ export default async function NewTransferPage() {
       where: { organizationId: membership.organizationId, status: "ACTIVE" },
       orderBy: { name: "asc" },
       take: 500,
-      select: { id: true, name: true, sku: true },
+      // Phase 11.4: barcode added for client-side scan matching
+      select: { id: true, name: true, sku: true, barcode: true },
     }),
   ]);
 
@@ -99,6 +100,8 @@ export default async function NewTransferPage() {
     id: i.id,
     name: i.name,
     sku: i.sku,
+    // Phase 11.4: barcode passed to wizard for scan matching
+    barcode: i.barcode ?? null,
   }));
 
   const stockSnapshot: StockSnapshot[] = stockLevels.map((sl) => ({
@@ -142,6 +145,13 @@ export default async function NewTransferPage() {
     successMessage: t.movements.transfers.successMessage,
     errorMessage: t.movements.errors.createFailed,
     cancel: t.common.cancel,
+    // Phase 11.4 — scan input labels
+    scanInputLabel: t.movements.transfers.scanInputLabel,
+    scanInputPlaceholder: t.movements.transfers.scanInputPlaceholder,
+    scanInputHint: t.movements.transfers.scanInputHint,
+    scanMatched: t.movements.transfers.scanMatched,
+    scanIncremented: t.movements.transfers.scanIncremented,
+    scanNotFound: t.movements.transfers.scanNotFound,
   };
 
   return (
