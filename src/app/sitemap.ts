@@ -29,6 +29,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    // Phase 14.3 — docs sub-pages
+    ...(
+      [
+        "getting-started",
+        "scanning",
+        "stock-counts",
+        "warehouses",
+        "purchase-orders",
+        "reports",
+        "permissions",
+      ] as const
+    ).map((slug) => ({
+      url: `${baseUrl}/docs/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     {
       url: `${baseUrl}/login`,
       lastModified: new Date(),
