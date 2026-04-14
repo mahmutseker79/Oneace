@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { useRef } from "react";
+
 import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 
 import { Button } from "@/components/ui/button";
@@ -110,6 +112,7 @@ export function ItemForm({
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState<string | null>(null);
 	const { reset: resetUnsaved, setDirty } = useUnsavedWarning();
+	const skuInputRef = useRef<HTMLInputElement>(null);
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
 	const [categoryId, setCategoryId] = useState<string>(
@@ -166,14 +169,56 @@ export function ItemForm({
 							*
 						</span>
 					</Label>
-					<Input
-						id="sku"
-						name="sku"
-						required
-						defaultValue={initial?.sku}
-						aria-invalid={!!fieldError("sku")}
-						onChange={() => setDirty(true)}
-					/>
+					<div className="flex gap-2">
+						<Input
+							ref={skuInputRef}
+							id="sku"
+							name="sku"
+							required
+							defaultValue={initial?.sku}
+							aria-invalid={!!fieldError("sku")}
+							onChange={() => setDirty(true)}
+							className="flex-1"
+						/>
+						{/* Phase 12.4 — auto-generate SKU in create mode */}
+						{mode === "create" ? (
+							<button
+								type="button"
+								className="rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors shrink-0"
+								title="Generate a random SKU"
+								onClick={() => {
+									const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+									const prefix = Array.from(
+										{ length: 3 },
+										() => chars[Math.floor(Math.random() * 26)],
+									).join("");
+									const suffix = Array.from(
+										{ length: 4 },
+										() => chars[Math.floor(Math.random() * chars.length)],
+									).join("");
+									const generated = `${prefix}-${suffix}`;
+									if (skuInputRef.current) {
+										// Use native input value setter to trigger onChange
+										const nativeInputValueSetter =
+											Object.getOwnPropertyDescriptor(
+												window.HTMLInputElement.prototype,
+												"value",
+											)?.set;
+										nativeInputValueSetter?.call(
+											skuInputRef.current,
+											generated,
+										);
+										skuInputRef.current.dispatchEvent(
+											new Event("input", { bubbles: true }),
+										);
+									}
+									setDirty(true);
+								}}
+							>
+								Generate
+							</button>
+						) : null}
+					</div>
 					<p className="text-xs text-muted-foreground">
 						{labels.fields.skuHelp}
 					</p>

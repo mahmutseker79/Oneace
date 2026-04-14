@@ -123,12 +123,13 @@ export const en = {
 
 	auth: {
 		brand: {
-			headline: "Your inventory,\nalways in your pocket.",
+			// Phase 12.3 — updated auth panel copy to reflect actual features
+			headline: "Inventory management\nfor warehouse teams.",
 			subhead:
 				"The simplicity of Sortly with the power of inFlow. Offline stock counts, fast barcode scanning, and multi-warehouse transfers — in one app.",
-			featureOffline: "Offline stock counts",
-			featureBarcodes: "Unlimited barcodes",
-			featureI18n: "Multi-language & region",
+			featureOffline: "Works offline, barcode-first",
+			featureBarcodes: "Multi-warehouse + bin tracking",
+			featureI18n: "Free plan, no credit card",
 			rights: "All rights reserved.",
 		},
 		login: {
