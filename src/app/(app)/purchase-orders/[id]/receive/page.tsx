@@ -42,6 +42,13 @@ export default async function ReceivePurchaseOrderPage({ params }: ReceivePagePr
     },
   });
 
+  // Phase 11.3: check if the PO's warehouse has any bins so we can
+  // conditionally show the putaway CTA on the success screen.
+  // Use a cheap count — we only need to know if bins exist, not the full list.
+  const warehouseBinCount = po
+    ? await db.bin.count({ where: { warehouseId: po.warehouse.id, isArchived: false } })
+    : 0;
+
   if (!po) notFound();
 
   // Only DRAFT, SENT, or PARTIALLY_RECEIVED POs are receivable.
@@ -87,6 +94,9 @@ export default async function ReceivePurchaseOrderPage({ params }: ReceivePagePr
     scanMatchFound: t.purchaseOrders.receive.scanMatchFound,
     scanMatchNotFound: t.purchaseOrders.receive.scanMatchNotFound,
     scanMatchAlreadyFull: t.purchaseOrders.receive.scanMatchAlreadyFull,
+    // Phase 11.3: putaway CTA — only shown when warehouse has bins.
+    putawayLabel: warehouseBinCount > 0 ? t.purchaseOrders.putaway.heading : undefined,
+    putawayHref: warehouseBinCount > 0 ? `/purchase-orders/${id}/putaway` : undefined,
   };
 
   return (

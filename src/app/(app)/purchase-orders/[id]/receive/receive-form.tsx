@@ -50,6 +50,10 @@ export type ReceiveFormLabels = {
   successBody: (count: number) => string;
   successFullyReceived: string;
   viewPo: string;
+  /** Phase 11.3: label for the putaway CTA. If omitted, no putaway button shown. */
+  putawayLabel?: string;
+  /** Phase 11.3: href for the putaway CTA. If omitted, no putaway button shown. */
+  putawayHref?: string;
   nothingToReceive: string;
   receiveOverflow: string;
   genericError: string;
@@ -284,10 +288,16 @@ export function ReceiveForm({
                 {labels.successFullyReceived}
               </p>
             ) : null}
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-wrap gap-2 pt-2">
               <Button variant="outline" asChild>
                 <a href={backHref}>{labels.viewPo}</a>
               </Button>
+              {/* Phase 11.3: putaway CTA — only shown when warehouse has bins */}
+              {labels.putawayHref && labels.putawayLabel ? (
+                <Button asChild>
+                  <a href={labels.putawayHref}>{labels.putawayLabel}</a>
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>

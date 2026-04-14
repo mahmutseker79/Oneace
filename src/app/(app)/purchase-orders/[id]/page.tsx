@@ -270,6 +270,8 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
   const canMarkSent = po.status === "DRAFT";
   const canCancel =
     po.status === "DRAFT" || po.status === "SENT" || po.status === "PARTIALLY_RECEIVED";
+  // Phase 11.3: putaway is available when any stock has been received.
+  const canPutaway = receivedUnits > 0;
 
   return (
     <div className="space-y-6">
@@ -314,6 +316,14 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
                 <Link href={`/purchase-orders/${po.id}/receive`}>
                   <Package className="h-4 w-4" />
                   {t.purchaseOrders.detail.receiveAction}
+                </Link>
+              </Button>
+            ) : null}
+            {/* Phase 11.3: putaway CTA */}
+            {canPutaway ? (
+              <Button variant="outline" asChild>
+                <Link href={`/purchase-orders/${po.id}/putaway`}>
+                  {t.purchaseOrders.putaway.heading}
                 </Link>
               </Button>
             ) : null}

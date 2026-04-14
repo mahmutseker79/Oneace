@@ -1245,6 +1245,26 @@ export const en = {
       nothingToReceive: "Enter a quantity to receive on at least one line.",
       cancelFailed: "Could not cancel this purchase order.",
     },
+    // Phase 11.3 — putaway
+    putaway: {
+      metaTitle: "Putaway",
+      heading: "Putaway to bins",
+      subtitle:
+        "Assign received stock to specific bins. Only unbinned stock at this location is shown.",
+      columnUnbinned: "Unbinned",
+      columnBin: "Target bin",
+      binPlaceholder: "Select bin…",
+      noBins: "No bins are set up for this location. Add bins first.",
+      noUnbinnedStock: "All received stock is already assigned to bins.",
+      submit: "Confirm putaway",
+      successTitle: "Putaway complete",
+      successBody: "{count} item(s) assigned to bins.",
+      overAssignError: "Quantity exceeds available unbinned stock",
+      nothingToAssign: "Select a bin and quantity for at least one item.",
+      nothingReceivedTitle: "Nothing received yet",
+      nothingReceivedBody:
+        "This PO has no received quantities. Receive stock first, then return here to put it away.",
+    },
     created: "Purchase order created.",
     updated: "Purchase order updated.",
     deleted: "Purchase order deleted.",
