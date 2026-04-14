@@ -497,7 +497,7 @@ export default async function ItemsPage({
 					);
 				})}
 
-				{/* Active search indicator */}
+				{/* Active search/filter indicator with clear-all */}
 				{searchQuery ? (
 					<span className="text-xs text-muted-foreground">
 						{displayedItems.length} result
@@ -508,6 +508,15 @@ export default async function ItemsPage({
 							Clear
 						</Link>
 					</span>
+				) : null}
+				{/* Phase 8.7 — show "Clear all filters" when multiple filter dimensions are active */}
+				{!searchQuery && statusFilter !== "all" && params.sort ? (
+					<Link
+						href="/items"
+						className="text-xs text-muted-foreground underline hover:text-foreground"
+					>
+						Clear all filters
+					</Link>
 				) : null}
 			</div>
 

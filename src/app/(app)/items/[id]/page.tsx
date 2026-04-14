@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
@@ -47,6 +48,9 @@ export default async function ItemDetailPage({
 	const { id } = await params;
 	const { moveCursor } = (await searchParams) ?? {};
 	const { membership } = await requireActiveMembership();
+	// Phase 8.1 — role-based button visibility on item detail.
+	const canEditItem = hasCapability(membership.role, "items.edit");
+	const canCreateMovement = hasCapability(membership.role, "movements.create");
 	const t = await getMessages();
 	const region = await getRegion();
 
@@ -154,18 +158,22 @@ export default async function ItemDetailPage({
 					<p className="font-mono text-sm text-muted-foreground">{item.sku}</p>
 				</div>
 				<div className="flex items-center gap-2">
-					<Button variant="outline" size="sm" asChild>
-						<Link href={`/movements/new?itemId=${item.id}`}>
-							<Plus className="h-4 w-4" />
-							{t.itemDetail.recordMovement}
-						</Link>
-					</Button>
-					<Button size="sm" asChild>
-						<Link href={`/items/${item.id}/edit`}>
-							<Pencil className="h-4 w-4" />
-							{t.itemDetail.editItem}
-						</Link>
-					</Button>
+					{canCreateMovement ? (
+						<Button variant="outline" size="sm" asChild>
+							<Link href={`/movements/new?itemId=${item.id}`}>
+								<Plus className="h-4 w-4" />
+								{t.itemDetail.recordMovement}
+							</Link>
+						</Button>
+					) : null}
+					{canEditItem ? (
+						<Button size="sm" asChild>
+							<Link href={`/items/${item.id}/edit`}>
+								<Pencil className="h-4 w-4" />
+								{t.itemDetail.editItem}
+							</Link>
+						</Button>
+					) : null}
 				</div>
 			</div>
 
