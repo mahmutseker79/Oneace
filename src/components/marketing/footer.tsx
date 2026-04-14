@@ -56,6 +56,21 @@ export function MarketingFooter() {
                 </li>
               </ul>
             </div>
+            <div className="space-y-3">
+              <p className="font-medium">Support</p>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>
+                  <Link href="/docs" className="hover:text-foreground">
+                    Documentation
+                  </Link>
+                </li>
+                <li>
+                  <a href="mailto:hello@oneace.app" className="hover:text-foreground">
+                    Contact us
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
