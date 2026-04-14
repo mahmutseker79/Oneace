@@ -5,7 +5,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { requireActiveMembership } from "@/lib/session";
-import { getStripeClient, hasStripe, stripePriceIdForPlan } from "@/lib/stripe";
+import {
+  type BillingInterval,
+  getStripeClient,
+  hasStripe,
+  stripePriceIdForPlan,
+} from "@/lib/stripe";
 
 /**
  * POST /api/billing/checkout
@@ -51,25 +56,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Only OWNER or ADMIN can manage billing." }, { status: 403 });
   }
 
-  // Parse body
+  // Parse body — Phase 15.1: accepts optional `interval` ("month" | "year")
   let plan: "PRO" | "BUSINESS";
+  let interval: BillingInterval = "month";
   try {
     const body = await request.json();
     if (body.plan !== "PRO" && body.plan !== "BUSINESS") {
       return NextResponse.json({ error: "Invalid plan." }, { status: 400 });
     }
     plan = body.plan;
+    // Validate interval; silently fall back to monthly for unknown values
+    if (body.interval === "year") {
+      interval = "year";
+    }
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const priceId = stripePriceIdForPlan(plan);
+  const priceId = stripePriceIdForPlan(plan, interval);
   if (!priceId) {
-    return NextResponse.json(
-      { error: `Price ID for ${plan} plan is not configured.` },
-      { status: 503 },
-    );
+    // If yearly price ID not configured, fall back to monthly
+    const fallbackId = interval === "year" ? stripePriceIdForPlan(plan, "month") : null;
+    if (fallbackId) {
+      interval = "month";
+    } else {
+      return NextResponse.json(
+        { error: `Price ID for ${plan} plan is not configured.` },
+        { status: 503 },
+      );
+    }
   }
+
+  // Re-resolve after potential fallback. At this point interval has been
+  // validated (possibly downgraded to "month" if yearly wasn't configured),
+  // so the result is guaranteed non-null.
+  const resolvedPriceId = stripePriceIdForPlan(plan, interval) as string;
 
   // Load org to get or create Stripe customer
   const org = await db.organization.findUnique({
@@ -100,15 +121,14 @@ export async function POST(request: NextRequest) {
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: resolvedPriceId, quantity: 1 }],
     success_url: `${appUrl}/settings/billing?success=1`,
     cancel_url: `${appUrl}/settings/billing?cancelled=1`,
-    metadata: { organizationId: org.id, plan },
+    metadata: { organizationId: org.id, plan, interval },
     // Allow promo codes
     allow_promotion_codes: true,
-    // Prefill billing email if member email is available (Better Auth)
     subscription_data: {
-      metadata: { organizationId: org.id, plan },
+      metadata: { organizationId: org.id, plan, interval },
     },
   });
 

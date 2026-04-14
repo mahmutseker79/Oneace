@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Minus, TrendingDown } from "lucide-react";
+import { ArrowRight, Check, Minus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { hasAnnualBilling } from "@/lib/stripe";
+import { PricingPlans } from "./pricing-plans";
 
 export const metadata: Metadata = {
   title: "Pricing — OneAce",
@@ -209,81 +211,9 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Plan cards */}
+      {/* Plan cards — Phase 15.1: client component with monthly/annual toggle */}
       <section className="px-4 py-12 sm:px-6 sm:py-16">
-        <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-3">
-          {PLANS.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`relative flex flex-col ${
-                plan.featured
-                  ? "border-primary shadow-md ring-1 ring-primary/20"
-                  : "border-border/60"
-              }`}
-            >
-              {plan.badge ? (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary px-3 text-primary-foreground">{plan.badge}</Badge>
-                </div>
-              ) : null}
-
-              <CardHeader className="pb-4 pt-6">
-                <p className="text-sm font-medium text-muted-foreground">{plan.name}</p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground">/ {plan.priceNote}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{plan.description}</p>
-                {plan.highlight ? (
-                  <div className="mt-1 flex items-start gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1.5 dark:bg-emerald-950/30">
-                    <TrendingDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                      {plan.highlight}
-                    </p>
-                  </div>
-                ) : null}
-              </CardHeader>
-
-              <CardContent className="flex-1 space-y-2">
-                {PRICING_FEATURES.filter((f) => f[plan.id] !== null && f[plan.id] !== false)
-                  .slice(0, 9)
-                  .map((feature) => (
-                    <div key={feature.label} className="flex items-center gap-2 text-sm">
-                      <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      <span>
-                        {typeof feature[plan.id] === "string" ? (
-                          <>
-                            <span className="font-medium">{feature[plan.id]}</span>{" "}
-                            {feature.label.toLowerCase()}
-                          </>
-                        ) : (
-                          feature.label
-                        )}
-                      </span>
-                    </div>
-                  ))}
-              </CardContent>
-
-              <CardFooter className="pt-4">
-                <Button
-                  asChild
-                  className="w-full"
-                  variant={plan.featured ? "default" : "outline"}
-                  size="lg"
-                >
-                  <Link href={plan.ctaHref}>
-                    {plan.cta}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          All plans include a 14-day free trial of Pro features. Cancel anytime.
-        </p>
+        <PricingPlans showAnnual={hasAnnualBilling} />
       </section>
 
       <Separator />
@@ -431,7 +361,9 @@ export default function PricingPage() {
               },
               {
                 q: "Is there a minimum contract?",
-                a: "No. All paid plans are billed monthly. Cancel anytime, no questions.",
+                a: hasAnnualBilling
+                  ? "No. Monthly plans cancel anytime. Annual plans are billed upfront — unused months are refunded on cancellation."
+                  : "No. All paid plans are billed monthly. Cancel anytime, no questions.",
               },
               {
                 q: "What if I downgrade and already have more items than the limit?",

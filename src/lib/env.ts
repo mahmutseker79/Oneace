@@ -127,6 +127,14 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_PRO_PRICE_ID: z.string().min(1).optional(),
   STRIPE_BUSINESS_PRICE_ID: z.string().min(1).optional(),
+  // Phase 15.1 — Annual billing price IDs. Optional: monthly billing still
+  // works without them. When set, the pricing page shows a monthly/annual
+  // toggle and annual checkout sessions use these price IDs.
+  // Create yearly recurring prices in Stripe for the same Pro/Business products.
+  //   STRIPE_PRO_YEARLY_PRICE_ID       — price_... for Pro annual plan
+  //   STRIPE_BUSINESS_YEARLY_PRICE_ID  — price_... for Business annual plan
+  STRIPE_PRO_YEARLY_PRICE_ID: z.string().min(1).optional(),
+  STRIPE_BUSINESS_YEARLY_PRICE_ID: z.string().min(1).optional(),
 
   // --- Registration gate (optional, Phase 7C) --------------------------
   // When `false`, the `/register` page redirects to `/login` and the

@@ -11,7 +11,7 @@
 
 import { ArrowRight, Check, CheckCircle2, CreditCard, Loader2, Minus } from "lucide-react";
 import Link from "next/link";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ export type BillingPageProps = {
   canManageBilling: boolean;
   hasStripe: boolean;
   hasCustomer: boolean;
+  hasAnnualBilling: boolean;
   checkoutSuccess: boolean;
   checkoutCancelled: boolean;
   // Phase 13.4 — usage data for limit indicators
@@ -147,6 +148,7 @@ export function BillingPage({
   canManageBilling,
   hasStripe,
   hasCustomer,
+  hasAnnualBilling,
   checkoutSuccess,
   checkoutCancelled,
   currentItems,
@@ -154,6 +156,8 @@ export function BillingPage({
   currentMembers,
 }: BillingPageProps) {
   const [isRedirecting, startTransition] = useTransition();
+  // Phase 15.1 — billing interval selector (only shown when annual IDs configured)
+  const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
 
   async function handleUpgrade(targetPlan: "PRO" | "BUSINESS") {
     startTransition(async () => {
@@ -161,7 +165,7 @@ export function BillingPage({
         const res = await fetch("/api/billing/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plan: targetPlan }),
+          body: JSON.stringify({ plan: targetPlan, interval: billingInterval }),
         });
         const data = await res.json();
         if (data.url) {
@@ -264,51 +268,93 @@ export function BillingPage({
 
         {/* Billing actions */}
         {canManageBilling ? (
-          <CardFooter className="flex flex-wrap gap-2 border-t pt-4">
-            {hasStripe ? (
-              <>
-                {hasCustomer ? (
-                  <Button variant="outline" onClick={handleManage} disabled={isRedirecting}>
-                    {isRedirecting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <CreditCard className="h-4 w-4" />
-                    )}
-                    Manage billing
-                  </Button>
-                ) : null}
-                {plan !== "BUSINESS" ? (
-                  <>
-                    {plan === "FREE" ? (
-                      <Button onClick={() => handleUpgrade("PRO")} disabled={isRedirecting}>
+          <CardFooter className="flex flex-col gap-3 border-t pt-4">
+            {/* Phase 15.1 — annual/monthly toggle (only when annual billing configured) */}
+            {hasStripe && hasAnnualBilling && plan !== "BUSINESS" ? (
+              <div className="flex w-full items-center gap-3 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval("month")}
+                  className={`font-medium transition-colors ${
+                    billingInterval === "month"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval(billingInterval === "month" ? "year" : "month")}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    billingInterval === "year" ? "bg-primary" : "bg-muted"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                      billingInterval === "year" ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+                <span className="flex items-center gap-1.5 font-medium">
+                  Annual
+                  <Badge className="bg-emerald-600 px-1.5 py-0 text-[10px] text-white">
+                    Save 20%
+                  </Badge>
+                </span>
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              {hasStripe ? (
+                <>
+                  {hasCustomer ? (
+                    <Button variant="outline" onClick={handleManage} disabled={isRedirecting}>
+                      {isRedirecting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-4 w-4" />
+                      )}
+                      Manage billing
+                    </Button>
+                  ) : null}
+                  {plan !== "BUSINESS" ? (
+                    <>
+                      {plan === "FREE" ? (
+                        <Button onClick={() => handleUpgrade("PRO")} disabled={isRedirecting}>
+                          {isRedirecting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <ArrowRight className="h-4 w-4" />
+                          )}
+                          {billingInterval === "year"
+                            ? "Upgrade to Pro — $23/mo"
+                            : "Upgrade to Pro — $29/mo"}
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant={plan === "FREE" ? "outline" : "default"}
+                        onClick={() => handleUpgrade("BUSINESS")}
+                        disabled={isRedirecting}
+                      >
                         {isRedirecting ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <ArrowRight className="h-4 w-4" />
                         )}
-                        Upgrade to Pro — $29/mo
+                        {billingInterval === "year"
+                          ? "Upgrade to Business — $63/mo"
+                          : "Upgrade to Business — $79/mo"}
                       </Button>
-                    ) : null}
-                    <Button
-                      variant={plan === "FREE" ? "outline" : "default"}
-                      onClick={() => handleUpgrade("BUSINESS")}
-                      disabled={isRedirecting}
-                    >
-                      {isRedirecting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <ArrowRight className="h-4 w-4" />
-                      )}
-                      Upgrade to Business — $79/mo
-                    </Button>
-                  </>
-                ) : null}
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Billing is not yet configured. Contact your administrator.
-              </p>
-            )}
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Billing is not yet configured. Contact your administrator.
+                </p>
+              )}
+            </div>
           </CardFooter>
         ) : null}
       </Card>
