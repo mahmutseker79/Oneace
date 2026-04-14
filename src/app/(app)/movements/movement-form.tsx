@@ -500,7 +500,18 @@ export function MovementForm({
 					min={1}
 					step={1}
 					required
+					onChange={() => setDirty(true)}
 				/>
+				{/* Phase 10.4 — contextual hint clarifies what quantity means per type */}
+				<p className="text-xs text-muted-foreground">
+					{type === "RECEIPT"
+						? "Units to add to stock (incoming from supplier or other source)"
+						: type === "ISSUE"
+							? "Units to remove from stock (outgoing to customer or destination)"
+							: type === "TRANSFER"
+								? "Units to move to the destination location"
+								: "Units to adjust — positive to increase, negative direction below"}
+				</p>
 			</div>
 
 			{/* Reference */}
