@@ -151,10 +151,7 @@ export async function updateBinAction(
   }
 }
 
-export async function deleteBinAction(
-  warehouseId: string,
-  binId: string,
-): Promise<ActionResult> {
+export async function deleteBinAction(warehouseId: string, binId: string): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

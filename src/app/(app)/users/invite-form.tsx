@@ -146,7 +146,12 @@ export function InviteForm({ labels, defaultRole, locale }: InviteFormProps) {
           <p className="text-xs text-emerald-800 dark:text-emerald-200">
             {labels.linkHelp
               .replace("{email}", created.email)
-              .replace("{expires}", new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(created.expiresAt))}
+              .replace(
+                "{expires}",
+                new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
+                  created.expiresAt,
+                ),
+              )}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="invite-url" className="sr-only">

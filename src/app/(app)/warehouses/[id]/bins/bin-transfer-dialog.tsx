@@ -39,12 +39,7 @@ type BinTransferDialogProps = {
   items: ItemOption[];
 };
 
-export function BinTransferDialog({
-  warehouseId,
-  labels,
-  bins,
-  items,
-}: BinTransferDialogProps) {
+export function BinTransferDialog({ warehouseId, labels, bins, items }: BinTransferDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -140,14 +135,7 @@ export function BinTransferDialog({
 
           <div className="space-y-2">
             <Label htmlFor="bt-qty">{labels.quantity}</Label>
-            <Input
-              id="bt-qty"
-              name="quantity"
-              type="number"
-              min={1}
-              required
-              defaultValue={1}
-            />
+            <Input id="bt-qty" name="quantity" type="number" min={1} required defaultValue={1} />
           </div>
 
           {error ? (

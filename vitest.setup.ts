@@ -36,5 +36,5 @@ Object.assign(process.env, {
 
 // Phase 7D: strip Upstash vars so the rate-limit module falls back to
 // the in-memory backend, regardless of what the caller's shell exports.
-delete process.env.UPSTASH_REDIS_REST_URL;
-delete process.env.UPSTASH_REDIS_REST_TOKEN;
+process.env.UPSTASH_REDIS_REST_URL = undefined;
+process.env.UPSTASH_REDIS_REST_TOKEN = undefined;

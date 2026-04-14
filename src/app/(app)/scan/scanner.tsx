@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
+import { type QuickAddLabels, QuickAddSheet } from "@/components/scanner/quick-add-sheet";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,6 @@ import {
   clearScanHistory,
   getScanHistory,
 } from "@/lib/scanner/scan-history";
-import { type QuickAddLabels, QuickAddSheet } from "@/components/scanner/quick-add-sheet";
 
 import { type ScanLookupResult, lookupItemByCodeAction } from "./actions";
 
@@ -440,7 +440,12 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
               {/* Bottom-anchored controls (thumb zone) */}
               <div className="flex flex-wrap items-center gap-2">
                 {isCameraRunning ? (
-                  <Button type="button" variant="outline" onClick={stopCamera} className="h-12 px-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={stopCamera}
+                    className="h-12 px-4"
+                  >
                     <CameraOff className="h-4 w-4 mr-1.5" />
                     {labels.stopCamera}
                   </Button>

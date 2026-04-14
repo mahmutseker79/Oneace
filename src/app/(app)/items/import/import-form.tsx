@@ -575,10 +575,6 @@ function MapStep({
                   <SelectContent>
                     <SelectItem value={UNMAPPED_VALUE}>{labels.unmapped}</SelectItem>
                     {header.map((h, idx) => (
-                      // Column order is fixed for the lifetime of a single
-                      // uploaded file — columns never shuffle or get inserted
-                      // mid-list, so keying by index is safe here.
-                      // biome-ignore lint/suspicious/noArrayIndexKey: stable column order
                       <SelectItem key={idx} value={String(idx)}>
                         {h || `Column ${idx + 1}`}
                       </SelectItem>

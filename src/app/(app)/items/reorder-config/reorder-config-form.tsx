@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -12,7 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { batchUpdateReorderPoints } from "./actions";
 
@@ -51,12 +51,8 @@ export function ReorderConfigForm({
     Record<string, { reorderPoint?: number; reorderQty?: number }>
   >({});
 
-  function handleChange(
-    id: string,
-    field: "reorderPoint" | "reorderQty",
-    value: string,
-  ) {
-    const num = value === "" ? 0 : Math.max(0, parseInt(value, 10) || 0);
+  function handleChange(id: string, field: "reorderPoint" | "reorderQty", value: string) {
+    const num = value === "" ? 0 : Math.max(0, Number.parseInt(value, 10) || 0);
     setEdits((prev) => ({
       ...prev,
       [id]: { ...prev[id], [field]: num },
@@ -67,8 +63,7 @@ export function ReorderConfigForm({
     const edit = edits[row.id];
     if (!edit) return false;
     return (
-      (edit.reorderPoint !== undefined &&
-        edit.reorderPoint !== row.reorderPoint) ||
+      (edit.reorderPoint !== undefined && edit.reorderPoint !== row.reorderPoint) ||
       (edit.reorderQty !== undefined && edit.reorderQty !== row.reorderQty)
     );
   });
@@ -82,9 +77,7 @@ export function ReorderConfigForm({
     }));
     startTransition(async () => {
       await batchUpdateReorderPoints(updates);
-      toast.success(
-        labels.successToast.replace("{count}", String(updates.length)),
-      );
+      toast.success(labels.successToast.replace("{count}", String(updates.length)));
       router.push("/items");
       router.refresh();
     });
@@ -99,27 +92,17 @@ export function ReorderConfigForm({
               <TableRow>
                 <TableHead>{labels.columnName}</TableHead>
                 <TableHead>{labels.columnSku}</TableHead>
-                <TableHead className="text-right">
-                  {labels.columnOnHand}
-                </TableHead>
-                <TableHead className="w-32 text-right">
-                  {labels.columnReorderPoint}
-                </TableHead>
-                <TableHead className="w-32 text-right">
-                  {labels.columnReorderQty}
-                </TableHead>
+                <TableHead className="text-right">{labels.columnOnHand}</TableHead>
+                <TableHead className="w-32 text-right">{labels.columnReorderPoint}</TableHead>
+                <TableHead className="w-32 text-right">{labels.columnReorderQty}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {row.sku}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {row.onHand}
-                  </TableCell>
+                  <TableCell className="font-mono text-xs">{row.sku}</TableCell>
+                  <TableCell className="text-right tabular-nums">{row.onHand}</TableCell>
                   <TableCell className="text-right">
                     <Input
                       type="number"
@@ -127,9 +110,7 @@ export function ReorderConfigForm({
                       className="ml-auto h-8 w-20 text-right"
                       defaultValue={row.reorderPoint || ""}
                       placeholder="0"
-                      onChange={(e) =>
-                        handleChange(row.id, "reorderPoint", e.target.value)
-                      }
+                      onChange={(e) => handleChange(row.id, "reorderPoint", e.target.value)}
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -139,9 +120,7 @@ export function ReorderConfigForm({
                       className="ml-auto h-8 w-20 text-right"
                       defaultValue={row.reorderQty || ""}
                       placeholder="0"
-                      onChange={(e) =>
-                        handleChange(row.id, "reorderQty", e.target.value)
-                      }
+                      onChange={(e) => handleChange(row.id, "reorderQty", e.target.value)}
                     />
                   </TableCell>
                 </TableRow>
@@ -154,15 +133,9 @@ export function ReorderConfigForm({
         <p className="text-xs text-muted-foreground">
           {changedRows.length === 0
             ? labels.noChanges
-            : labels.changedCount.replace(
-                "{count}",
-                String(changedRows.length),
-              )}
+            : labels.changedCount.replace("{count}", String(changedRows.length))}
         </p>
-        <Button
-          onClick={handleSave}
-          disabled={isPending || changedRows.length === 0}
-        >
+        <Button onClick={handleSave} disabled={isPending || changedRows.length === 0}>
           {isPending ? labels.saving : labels.saveCta}
         </Button>
       </div>

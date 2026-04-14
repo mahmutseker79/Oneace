@@ -75,9 +75,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     {
       // P3.5 — Movements are operational history, not a setup step.
       heading: labels.nav.activity,
-      items: [
-        { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
-      ],
+      items: [{ label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight }],
     },
     {
       heading: labels.nav.analytics,

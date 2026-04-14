@@ -17,10 +17,7 @@ type BridgeAction = Extract<
  * Fire-and-forget bridge interaction tracking.
  * Called from client wrappers — never blocks navigation.
  */
-export async function trackBridgeAction(
-  action: BridgeAction,
-  metadata?: Record<string, unknown>,
-) {
+export async function trackBridgeAction(action: BridgeAction, metadata?: Record<string, unknown>) {
   const { membership, session } = await requireActiveMembership();
   await recordAudit({
     organizationId: membership.organizationId,

@@ -1,17 +1,11 @@
-import { ArrowLeft, Grid3X3, Printer, Plus } from "lucide-react";
+import { ArrowLeft, Grid3X3, Plus, Printer } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -147,16 +141,19 @@ export default async function BinsPage({ params }: PageProps) {
                 {bins.map((bin) => (
                   <TableRow key={bin.id}>
                     <TableCell className="font-mono text-xs">{bin.code}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {bin.label || "—"}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground">{bin.label || "—"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <BinFormDialog
                           warehouseId={warehouseId}
                           labels={formLabels}
                           mode="edit"
-                          bin={{ id: bin.id, code: bin.code, label: bin.label, description: bin.description }}
+                          bin={{
+                            id: bin.id,
+                            code: bin.code,
+                            label: bin.label,
+                            description: bin.description,
+                          }}
                         />
                         <DeleteButton
                           labels={{

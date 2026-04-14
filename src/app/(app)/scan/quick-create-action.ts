@@ -39,7 +39,10 @@ export async function quickCreateItemAction(input: {
   }
 
   // Auto-generate a SKU from the barcode prefix + timestamp suffix.
-  const skuBase = barcode.slice(0, 8).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const skuBase = barcode
+    .slice(0, 8)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
   const skuSuffix = Date.now().toString(36).slice(-4).toUpperCase();
   const sku = `${skuBase}-${skuSuffix}`;
 
@@ -72,7 +75,10 @@ export async function quickCreateItemAction(input: {
     return { ok: true, id: item.id, name: item.name, sku: item.sku };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { ok: false, error: t.items.errors.skuExists ?? "An item with this barcode already exists." };
+      return {
+        ok: false,
+        error: t.items.errors.skuExists ?? "An item with this barcode already exists.",
+      };
     }
     return { ok: false, error: t.items.errors.createFailed ?? "Failed to create item." };
   }

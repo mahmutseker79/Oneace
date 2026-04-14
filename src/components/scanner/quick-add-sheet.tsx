@@ -14,7 +14,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-import { type QuickCreateResult, quickCreateItemAction } from "@/app/(app)/scan/quick-create-action";
+import {
+  type QuickCreateResult,
+  quickCreateItemAction,
+} from "@/app/(app)/scan/quick-create-action";
 
 export type QuickAddLabels = {
   title: string;
@@ -35,13 +38,7 @@ type QuickAddSheetProps = {
   onCreated: (item: { id: string; name: string; sku: string }) => void;
 };
 
-export function QuickAddSheet({
-  open,
-  barcode,
-  labels,
-  onClose,
-  onCreated,
-}: QuickAddSheetProps) {
+export function QuickAddSheet({ open, barcode, labels, onClose, onCreated }: QuickAddSheetProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -83,12 +80,7 @@ export function QuickAddSheet({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="qa-barcode">{labels.barcodeLabel}</Label>
-            <Input
-              id="qa-barcode"
-              value={barcode}
-              readOnly
-              className="font-mono bg-muted"
-            />
+            <Input id="qa-barcode" value={barcode} readOnly className="font-mono bg-muted" />
           </div>
 
           <div className="space-y-1.5">
@@ -104,9 +96,7 @@ export function QuickAddSheet({
             />
           </div>
 
-          {error ? (
-            <p className="text-sm text-destructive">{error}</p>
-          ) : null}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
           <Button
             type="submit"

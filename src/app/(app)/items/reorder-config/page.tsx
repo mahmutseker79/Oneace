@@ -66,12 +66,8 @@ export default async function ReorderConfigPage() {
             {t.items.reorderConfig.backToItems}
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold">
-          {t.items.reorderConfig.heading}
-        </h1>
-        <p className="text-muted-foreground">
-          {t.items.reorderConfig.subtitle}
-        </p>
+        <h1 className="text-2xl font-semibold">{t.items.reorderConfig.heading}</h1>
+        <p className="text-muted-foreground">{t.items.reorderConfig.subtitle}</p>
       </div>
       <ReorderConfigForm rows={rows} labels={formLabels} />
     </div>

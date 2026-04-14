@@ -21,9 +21,21 @@ const columns: ExcelColumn<ExportRow>[] = [
   { header: "Name", key: "name", value: (r) => r.name, width: 28 },
   { header: "Unit", key: "unit", value: (r) => r.unit, width: 10 },
   { header: "On hand", key: "onHand", value: (r) => r.onHand, width: 12 },
-  { header: "Cost price", key: "costPrice", value: (r) => r.costPrice, width: 14, numFmt: "#,##0.00" },
+  {
+    header: "Cost price",
+    key: "costPrice",
+    value: (r) => r.costPrice,
+    width: 14,
+    numFmt: "#,##0.00",
+  },
   { header: "Currency", key: "currency", value: (r) => r.currency, width: 10 },
-  { header: "Value at cost", key: "valueAtCost", value: (r) => r.valueAtCost, width: 16, numFmt: "#,##0.00" },
+  {
+    header: "Value at cost",
+    key: "valueAtCost",
+    value: (r) => r.valueAtCost,
+    width: 16,
+    numFmt: "#,##0.00",
+  },
 ];
 
 export async function GET() {

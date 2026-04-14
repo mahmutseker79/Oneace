@@ -22,9 +22,9 @@
 //     says "this action is not allowed right now" and the client can
 //     surface a useful message.
 
+import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -41,7 +41,10 @@ async function gatedPost(request: NextRequest) {
       ip: request.headers.get("x-forwarded-for") ?? "unknown",
     });
     return NextResponse.json(
-      { message: "Registration is currently closed. Please contact your administrator for an invitation." },
+      {
+        message:
+          "Registration is currently closed. Please contact your administrator for an invitation.",
+      },
       { status: 403 },
     );
   }

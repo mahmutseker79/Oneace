@@ -20,9 +20,7 @@ const binTransferSchema = z.object({
     .pipe(z.number().int().min(1, "Quantity must be at least 1")),
 });
 
-export type BinTransferResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string };
+export type BinTransferResult = { ok: true; id: string } | { ok: false; error: string };
 
 export async function binTransferAction(
   warehouseId: string,

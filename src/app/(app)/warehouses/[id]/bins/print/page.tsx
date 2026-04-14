@@ -142,7 +142,9 @@ export default async function BinLabelPrintPage({ params }: PageProps) {
             <div key={bin.id} className="label">
               <div className="label-code">{bin.code}</div>
               {bin.label ? <div className="label-name">{bin.label}</div> : null}
-              <div className="label-warehouse">{warehouse.code} — {warehouse.name}</div>
+              <div className="label-warehouse">
+                {warehouse.code} — {warehouse.name}
+              </div>
             </div>
           ))}
         </div>

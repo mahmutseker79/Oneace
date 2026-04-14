@@ -132,7 +132,9 @@ export function MobileNav({
                   className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")}
                 />
               </button>
-              {adminOpen ? <div className="mt-1 space-y-1">{adminItems.map(renderItem)}</div> : null}
+              {adminOpen ? (
+                <div className="mt-1 space-y-1">{adminItems.map(renderItem)}</div>
+              ) : null}
             </div>
           ) : null}
         </nav>
