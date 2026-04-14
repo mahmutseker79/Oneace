@@ -9,10 +9,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { Role } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { buildInvitationUrl } from "@/lib/invitations";
+import { checkPlanLimit } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 import { InvitationRow } from "./invitation-row";
@@ -64,6 +66,13 @@ export default async function UsersPage() {
     }),
   ]);
 
+  // Phase 15.3 — member limit nudge for over-limit FREE orgs
+  const memberPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
+  const effectiveMemberCount = memberships.length + pendingInvitations.length;
+  const memberLimitCheck = checkPlanLimit(memberPlan, "members", effectiveMemberCount);
+  // Show nudge when: over limit (retroactive downgrade) OR at limit (can't add more)
+  const showMemberLimitNudge = !memberLimitCheck.allowed;
+
   const sorted = [...memberships].sort((a, b) => {
     const roleDiff = ROLE_ORDER[a.role] - ROLE_ORDER[b.role];
     if (roleDiff !== 0) return roleDiff;
@@ -95,6 +104,15 @@ export default async function UsersPage() {
         <h1 className="text-2xl font-semibold">{t.users.heading}</h1>
         <p className="text-muted-foreground">{t.users.subtitle}</p>
       </div>
+
+      {/* Phase 15.3 — member limit nudge */}
+      {showMemberLimitNudge && !memberLimitCheck.allowed ? (
+        <UpgradePrompt
+          reason={`Your workspace has ${effectiveMemberCount} members. Your current plan includes ${memberLimitCheck.limit}.`}
+          requiredPlan={memberLimitCheck.limit <= 3 ? "PRO" : "BUSINESS"}
+          variant="banner"
+        />
+      ) : null}
 
       {canManage ? (
         <Card>
