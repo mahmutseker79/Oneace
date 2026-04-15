@@ -2480,6 +2480,43 @@ export const en = {
 		invalidType: "Only JPEG, PNG, and WebP images are allowed",
 		tooLarge: "Image must be under 5MB",
 	},
+
+	// ── Feature wiring audit: i18n keys for hardcoded strings ──
+	emptyStates: {
+		noPicks: "No pick tasks",
+		noPicksBody: "Pick tasks will appear here when sales orders are ready for fulfillment.",
+		noKits: "No kits created yet",
+		noKitsBody: "Create your first kit to bundle items together.",
+		noTransfers: "No transfers yet",
+		noTransfersBody: "Create a transfer to move stock between warehouses.",
+		noSalesOrders: "No sales orders yet",
+		noSalesOrdersBody: "Sales orders will appear here when created.",
+		noCompletedCounts: "No completed counts",
+		noCompletedCountsBody: "Complete a stock count to see location accuracy data.",
+		noAdjustments: "No adjustments recorded",
+		noAdjustmentsBody: "Adjustments from reconciled stock counts will appear here.",
+		noStockExceptions: "No stock exceptions",
+		noStockExceptionsBody: "Items with unusual stock levels will be flagged here.",
+		noStockLevels: "No stock levels",
+		noStockLevelsBody: "Add items and stock to see levels here.",
+		noTransferHistory: "No transfers recorded",
+		noTransferHistoryBody: "Completed transfers will appear in this report.",
+		noReasonCodes: "No reason codes recorded",
+		noReasonCodesBody: "Movements with reason codes will appear here.",
+	},
+
+	copyLabels: {
+		copySku: "Copy SKU",
+		copyBarcode: "Copy barcode",
+		copyPoNumber: "Copy PO number",
+		copySupplierCode: "Copy supplier code",
+	},
+
+	billing: {
+		labelItems: "Items",
+		labelWarehouseLocations: "Warehouse locations",
+		labelTeamMembers: "Team members",
+	},
 } as const;
 
 export type Messages = typeof en;
