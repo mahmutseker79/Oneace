@@ -157,7 +157,26 @@ export type AuditAction =
   | "pick_task.assigned"
   | "pick_task.started"
   | "pick_task.completed"
-  | "pick_task.verified";
+  | "pick_task.verified"
+  // --- Attachment lifecycle -----------------------------------------------
+  | "attachment.created"
+  | "attachment.deleted"
+  | "attachment.reordered"
+  // --- Location lifecycle -----------------------------------------------
+  | "location.created"
+  | "location.updated"
+  | "location.deleted"
+  | "location.reordered"
+  // --- Saved views lifecycle -----------------------------------------------
+  | "saved_view.created"
+  | "saved_view.updated"
+  | "saved_view.deleted"
+  | "saved_view.set_default"
+  // --- Serial numbers lifecycle -----------------------------------------------
+  | "serial.created"
+  | "serial.bulk_created"
+  | "serial.moved"
+  | "serial.status_updated";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
