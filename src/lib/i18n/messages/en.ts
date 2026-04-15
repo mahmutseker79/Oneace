@@ -105,6 +105,16 @@ export const en = {
 		admin: "Admin",
 		// Phase 2 UX — new section heading for operations group
 		operations: "Operations",
+		// V4 — Warehouse, Commerce, and Utilities groups
+		warehouse: "Warehouse",
+		transfers: "Transfers",
+		departments: "Departments",
+		commerce: "Commerce",
+		salesOrders: "Sales Orders",
+		kits: "Kits & Bundles",
+		picks: "Pick Tasks",
+		import: "Import",
+		export: "Export",
 	},
 
 	/** Shown on pages that are accessible but not part of the primary simplified workflow. */
