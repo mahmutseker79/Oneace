@@ -1,120 +1,174 @@
-// Pick task detail page
-"use client";
+import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
 
-export default function PickTaskDetailPage({ params }: { params: { id: string } }) {
-  const [task, setTask] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+import {
+  assignPickTaskAction,
+  completePickTaskAction,
+  startPickTaskAction,
+  verifyPickTaskAction,
+} from "../actions";
 
-  useState(() => {
-    // TODO: Fetch pick task by ID
-    setIsLoading(false);
+function statusBadge(status: string) {
+  if (status === "PENDING") return <Badge variant="secondary">{status}</Badge>;
+  if (status === "ASSIGNED") return <Badge variant="info">{status}</Badge>;
+  if (status === "IN_PROGRESS") return <Badge variant="processing">{status}</Badge>;
+  if (status === "PICKED") return <Badge variant="warning">{status}</Badge>;
+  if (status === "VERIFIED") return <Badge variant="success">{status}</Badge>;
+  if (status === "CANCELLED") return <Badge variant="destructive">{status}</Badge>;
+  return <Badge variant="outline">{status}</Badge>;
+}
+
+export default async function PickTaskDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const { membership, session } = await requireActiveMembership();
+  const t = await getMessages();
+
+  const task = await db.pickTask.findFirst({
+    where: { id, organizationId: membership.organizationId },
+    include: {
+      // @ts-expect-error — PickTask relations may not be fully typed yet
+      item: { select: { id: true, name: true, sku: true, unit: true } },
+      warehouse: { select: { id: true, name: true } },
+    },
   });
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  if (!task) notFound();
 
-  if (!task) {
-    return <div>Pick task not found</div>;
-  }
-
-  const statusColors: Record<
-    string,
-    "default" | "destructive" | "outline" | "secondary" | undefined
-  > = {
-    PENDING: "secondary",
-    ASSIGNED: "default",
-    IN_PROGRESS: "default",
-    PICKED: "default",
-    VERIFIED: "default",
-    CANCELLED: "destructive",
-  };
+  const canAssign = hasCapability(membership.role, "picks.assign");
+  const canStart = hasCapability(membership.role, "picks.start");
+  const canComplete = hasCapability(membership.role, "picks.complete");
+  const canVerify = hasCapability(membership.role, "picks.verify");
 
   return (
     <div className="space-y-6 max-w-2xl">
+      <Button variant="ghost" size="sm" asChild className="-ml-2">
+        <Link href="/picks">
+          <ChevronLeft className="h-4 w-4" />
+          Back to picks
+        </Link>
+      </Button>
+
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Pick Task #{task.id.slice(0, 8)}</h1>
-          <p className="text-muted-foreground">{task.itemId}</p>
+          <h1 className="text-2xl font-semibold">
+            Pick #{task.id.slice(0, 8)}
+          </h1>
+          <p className="text-muted-foreground">
+            {(task as any).item?.name ?? task.itemId} · {task.quantity}{" "}
+            {(task as any).item?.unit ?? "units"}
+          </p>
         </div>
-        <Badge variant={statusColors[task.status] || "default"} className="text-lg px-4 py-2">
-          {task.status}
-        </Badge>
+        {statusBadge(task.status)}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Item</p>
-          <p className="font-semibold">{task.itemId}</p>
-          {task.variantId && <p className="text-sm text-muted-foreground">{task.variantId}</p>}
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Warehouse</p>
-          <p className="font-semibold">{task.warehouseId}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Bin</p>
-          <p className="font-semibold">{task.fromBinId || "Not specified"}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Quantity</p>
-          <p className="font-semibold">{task.quantity}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Assigned To</p>
-          <p className="font-semibold">{task.assignedToUser?.name || "Unassigned"}</p>
-        </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground">Sales Order Line</p>
-          <p className="font-semibold">{task.salesOrderLineId ? "Linked" : "Manual"}</p>
-        </div>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm">
-          <strong>Instructions:</strong> Pick {task.quantity} unit{task.quantity > 1 ? "s" : ""} of {task.itemId} from{" "}
-          {task.fromBinId ? `bin ${task.fromBinId}` : `${task.warehouseId}`}.
-        </p>
-      </div>
-
-      <div className="flex gap-3 flex-wrap">
-        {task.status === "PENDING" && (
-          <>
-            <Button>Assign to Me</Button>
-            <Button variant="outline">Assign to User</Button>
-          </>
-        )}
-        {task.status === "ASSIGNED" && (
-          <>
-            <Button>Start Pick</Button>
-            <Button variant="outline">Unassign</Button>
-          </>
-        )}
-        {task.status === "IN_PROGRESS" && (
-          <>
-            <Button>Mark as Picked</Button>
-            <Button variant="outline">Cancel Pick</Button>
-          </>
-        )}
-        {task.status === "PICKED" && (
-          <>
-            <Button>Verify & Complete</Button>
-            <Button variant="outline">Back to Picking</Button>
-          </>
-        )}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Item</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Link href={`/items/${task.itemId}`} className="font-medium hover:underline">
+              {(task as any).item?.name ?? task.itemId}
+            </Link>
+            <p className="text-xs text-muted-foreground font-mono">
+              {(task as any).item?.sku ?? "—"}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Warehouse</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-medium">{(task as any).warehouse?.name ?? task.warehouseId}</p>
+            {task.fromBinId && (
+              <p className="text-xs text-muted-foreground">Bin: {task.fromBinId}</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Quantity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold tabular-nums">{task.quantity}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Assigned</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-medium">{task.assignedToUserId ?? "Unassigned"}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {task.note && (
-        <div className="rounded-lg border p-4 bg-muted/50">
-          <p className="text-xs font-semibold text-muted-foreground mb-2">Note</p>
-          <p className="text-sm">{task.note}</p>
-        </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground font-normal">Note</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">{task.note}</p>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Action buttons wired to server actions */}
+      <div className="flex gap-3 flex-wrap">
+        {task.status === "PENDING" && canAssign && (
+          <form action={assignPickTaskAction}>
+            <input type="hidden" name="taskId" value={task.id} />
+            <input type="hidden" name="assignedToUserId" value={session.user.id} />
+            <Button type="submit">Assign to Me</Button>
+          </form>
+        )}
+
+        {task.status === "ASSIGNED" && canStart && (
+          <form
+            action={async () => {
+              "use server";
+              await startPickTaskAction(task.id);
+            }}
+          >
+            <Button type="submit">Start Pick</Button>
+          </form>
+        )}
+
+        {task.status === "IN_PROGRESS" && canComplete && (
+          <form action={completePickTaskAction}>
+            <input type="hidden" name="taskId" value={task.id} />
+            <Button type="submit">Mark as Picked</Button>
+          </form>
+        )}
+
+        {task.status === "PICKED" && canVerify && (
+          <form
+            action={async () => {
+              "use server";
+              await verifyPickTaskAction(task.id);
+            }}
+          >
+            <Button type="submit" variant="default">
+              Verify & Complete
+            </Button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
