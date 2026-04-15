@@ -99,6 +99,31 @@ export type Capability =
   | "webhooks.create"
   | "webhooks.edit"
   | "webhooks.delete"
+  // Inventory management
+  | "inventory.manageStatus"
+  // Transfers
+  | "transfers.create"
+  | "transfers.ship"
+  | "transfers.receive"
+  | "transfers.cancel"
+  // Sales orders
+  | "salesOrders.create"
+  | "salesOrders.edit"
+  | "salesOrders.allocate"
+  | "salesOrders.ship"
+  | "salesOrders.cancel"
+  // Kits
+  | "kits.create"
+  | "kits.edit"
+  | "kits.assemble"
+  // Pick tasks
+  | "picks.create"
+  | "picks.assign"
+  | "picks.complete"
+  // Assets
+  | "assets.create"
+  | "assets.edit"
+  | "assets.assign"
   // Org admin
   | "org.editProfile"
   | "org.editDefaults"
@@ -213,6 +238,37 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "webhooks.create": new Set<Role>(["OWNER", "ADMIN"]),
   "webhooks.edit": new Set<Role>(["OWNER", "ADMIN"]),
   "webhooks.delete": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Inventory management ---
+  "inventory.manageStatus": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+
+  // --- Transfers ---
+  "transfers.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "transfers.ship": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "transfers.receive": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "transfers.cancel": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Sales orders ---
+  "salesOrders.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "salesOrders.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "salesOrders.allocate": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
+  "salesOrders.ship": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "salesOrders.cancel": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Kits ---
+  "kits.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "kits.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "kits.assemble": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+
+  // --- Pick tasks ---
+  "picks.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "picks.assign": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
+  "picks.complete": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+
+  // --- Assets ---
+  "assets.create": new Set<Role>(["OWNER", "ADMIN"]),
+  "assets.edit": new Set<Role>(["OWNER", "ADMIN"]),
+  "assets.assign": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
 
   // --- Org admin ---
   "org.editProfile": new Set<Role>(["OWNER", "ADMIN"]),
