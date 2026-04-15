@@ -33,38 +33,38 @@ ALTER TABLE "PurchaseOrderLine" ADD CONSTRAINT "PurchaseOrderLine_receivedQty_no
 -- ═══════════════════════════════════════════════════════════════
 
 -- StockLevel: aggregation queries (dashboard KPI, stock value, low-stock)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "StockLevel_org_item_qty_idx"
+CREATE INDEX IF NOT EXISTS "StockLevel_org_item_qty_idx"
   ON "StockLevel" ("organizationId", "itemId", "quantity");
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "StockLevel_org_warehouse_qty_idx"
+CREATE INDEX IF NOT EXISTS "StockLevel_org_warehouse_qty_idx"
   ON "StockLevel" ("organizationId", "warehouseId", "quantity");
 
 -- Item: listing with status filter + date sort
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "Item_org_status_created_idx"
+CREATE INDEX IF NOT EXISTS "Item_org_status_created_idx"
   ON "Item" ("organizationId", "status", "createdAt" DESC);
 
 -- Item: barcode scanner lookups
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "Item_org_barcode_idx"
+CREATE INDEX IF NOT EXISTS "Item_org_barcode_idx"
   ON "Item" ("organizationId", "barcode")
   WHERE "barcode" IS NOT NULL;
 
 -- Item: low-stock report (active items with reorder points)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "Item_org_active_reorder_idx"
+CREATE INDEX IF NOT EXISTS "Item_org_active_reorder_idx"
   ON "Item" ("organizationId", "reorderPoint" DESC)
   WHERE "status" = 'ACTIVE' AND "reorderPoint" > 0;
 
 -- StockMovement: dashboard trend chart + movement history
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "StockMovement_org_created_type_idx"
+CREATE INDEX IF NOT EXISTS "StockMovement_org_created_type_idx"
   ON "StockMovement" ("organizationId", "createdAt" DESC, "type");
 
 -- StockMovement: per-item movement aggregation (top items chart)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "StockMovement_org_item_created_idx"
+CREATE INDEX IF NOT EXISTS "StockMovement_org_item_created_idx"
   ON "StockMovement" ("organizationId", "itemId", "createdAt" DESC);
 
 -- StockCount: state + date listing
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "StockCount_org_state_created_idx"
+CREATE INDEX IF NOT EXISTS "StockCount_org_state_created_idx"
   ON "StockCount" ("organizationId", "state", "createdAt" DESC);
 
 -- PurchaseOrder: listing with status filter
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "PurchaseOrder_org_status_created_idx"
+CREATE INDEX IF NOT EXISTS "PurchaseOrder_org_status_created_idx"
   ON "PurchaseOrder" ("organizationId", "status", "createdAt" DESC);
