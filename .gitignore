@@ -71,3 +71,9 @@ oneace.pub
 
 # User uploads
 public/uploads/
+
+# Claude agent worktrees (sandbox artifacts)
+.claude/worktrees/
+
+# Escaped parenthesis directories (Finder artifacts)
+src/app/\\(app\\)/
