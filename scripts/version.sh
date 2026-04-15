@@ -9,6 +9,7 @@
 #   ./scripts/version.sh list       — list all versions with dates
 #   ./scripts/version.sh diff <tag> — show what changed since a tag
 #   ./scripts/version.sh fix-index  — repair FUSE git index corruption
+#   ./scripts/version.sh verify    — run full health check (calls verify.sh)
 # =============================================================
 
 set -euo pipefail
@@ -174,8 +175,21 @@ fix-index)
   ;;
 
 # ─────────────────────────────────────────────
+# VERIFY — run full health check
+# ─────────────────────────────────────────────
+verify)
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if [ -x "${SCRIPT_DIR}/verify.sh" ]; then
+    exec "${SCRIPT_DIR}/verify.sh" "${2:-full}"
+  else
+    echo -e "${RED}verify.sh not found in ${SCRIPT_DIR}${NC}"
+    exit 1
+  fi
+  ;;
+
+# ─────────────────────────────────────────────
 *)
-  echo "Usage: $0 {status|tag|backup|restore|list|diff|fix-index}"
+  echo "Usage: $0 {status|tag|backup|restore|list|diff|fix-index|verify}"
   exit 1
   ;;
 esac

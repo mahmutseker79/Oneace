@@ -63,9 +63,16 @@ git status --short                            # Should show only untracked temp 
 | v0.44.0-ux-phases-9-20 | UX Phase 9-20: plan gates, 46 skeletons |
 | v0.43.0-ux-phases-1-8 | UX Phase 1-8: loading, sidebar, onboarding |
 
-## Push Commands
+## Verification Script
+Run `./scripts/verify.sh` — 7-phase health check (37+ checks):
+- `quick` — git + files only (no network), use at session start
+- `full` — all 7 phases including Vercel
+- `deploy` — post-push check including Vercel HTTP status
+
+Also available via `./scripts/version.sh verify`
+
+## Push & Verify Commands
 ```bash
-git push origin main
-git push origin stable
-git push origin --tags
+git push origin main && git push origin stable && git push origin --tags
+./scripts/verify.sh deploy    # Confirm everything landed correctly
 ```
