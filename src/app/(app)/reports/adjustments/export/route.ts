@@ -62,7 +62,7 @@ export async function GET() {
         select: {
           countId: true,
           itemId: true,
-          systemQty: true,
+          expectedQuantity: true,
         },
       })
     : [];
@@ -87,7 +87,7 @@ export async function GET() {
     if (!snapshotMap.has(snap.countId)) {
       snapshotMap.set(snap.countId, new Map());
     }
-    snapshotMap.get(snap.countId)!.set(snap.itemId, snap.systemQty);
+    snapshotMap.get(snap.countId)!.set(snap.itemId, snap.expectedQuantity);
   }
 
   const entryMap = new Map<string, Map<string, number>>();

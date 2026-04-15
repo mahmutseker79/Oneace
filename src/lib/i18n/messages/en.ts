@@ -47,6 +47,10 @@ export const en = {
 		// translator-friendly.
 		rateLimited:
 			"You're doing that too fast. Please wait a moment and try again.",
+		loadMore: "Load more",
+		validationFailed: "Validation failed",
+		operationFailed: "Operation failed",
+		notFound: "Not found",
 	},
 
 	permissions: {

@@ -250,7 +250,7 @@ export default function DepartmentVariancePage() {
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="name" />
 								<YAxis />
-								<Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+								<Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
 								<Legend />
 								<Bar
 									dataKey="variance"

@@ -39,7 +39,6 @@ export default async function PickTaskDetailPage({
   const task = await db.pickTask.findFirst({
     where: { id, organizationId: membership.organizationId },
     include: {
-      // @ts-expect-error — PickTask relations may not be fully typed yet
       item: { select: { id: true, name: true, sku: true, unit: true } },
       warehouse: { select: { id: true, name: true } },
     },
@@ -67,8 +66,8 @@ export default async function PickTaskDetailPage({
             Pick #{task.id.slice(0, 8)}
           </h1>
           <p className="text-muted-foreground">
-            {(task as any).item?.name ?? task.itemId} · {task.quantity}{" "}
-            {(task as any).item?.unit ?? "units"}
+            {task.item?.name ?? task.itemId} · {task.quantity}{" "}
+            {task.item?.unit ?? "units"}
           </p>
         </div>
         {statusBadge(task.status)}
@@ -81,10 +80,10 @@ export default async function PickTaskDetailPage({
           </CardHeader>
           <CardContent>
             <Link href={`/items/${task.itemId}`} className="font-medium hover:underline">
-              {(task as any).item?.name ?? task.itemId}
+              {task.item?.name ?? task.itemId}
             </Link>
             <p className="text-xs text-muted-foreground font-mono">
-              {(task as any).item?.sku ?? "—"}
+              {task.item?.sku ?? "—"}
             </p>
           </CardContent>
         </Card>
@@ -93,7 +92,7 @@ export default async function PickTaskDetailPage({
             <CardTitle className="text-xs text-muted-foreground font-normal">Warehouse</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="font-medium">{(task as any).warehouse?.name ?? task.warehouseId}</p>
+            <p className="font-medium">{task.warehouse?.name ?? task.warehouseId}</p>
             {task.fromBinId && (
               <p className="text-xs text-muted-foreground">Bin: {task.fromBinId}</p>
             )}
@@ -131,7 +130,12 @@ export default async function PickTaskDetailPage({
       {/* Action buttons wired to server actions */}
       <div className="flex gap-3 flex-wrap">
         {task.status === "PENDING" && canAssign && (
-          <form action={assignPickTaskAction}>
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              await assignPickTaskAction(formData);
+            }}
+          >
             <input type="hidden" name="taskId" value={task.id} />
             <input type="hidden" name="assignedToUserId" value={session.user.id} />
             <Button type="submit">Assign to Me</Button>
@@ -150,7 +154,12 @@ export default async function PickTaskDetailPage({
         )}
 
         {task.status === "IN_PROGRESS" && canComplete && (
-          <form action={completePickTaskAction}>
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              await completePickTaskAction(formData);
+            }}
+          >
             <input type="hidden" name="taskId" value={task.id} />
             <Button type="submit">Mark as Picked</Button>
           </form>

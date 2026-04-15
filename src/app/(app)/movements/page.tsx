@@ -356,7 +356,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                   ...(filter.rawQ ? { q: filter.rawQ } : {}),
                   cursor: nextCursor,
                 }).toString()}`}>
-                  {t.common?.loadMore ?? "Load more"}
+                  {t.common.loadMore}
                 </Link>
               </Button>
             </div>

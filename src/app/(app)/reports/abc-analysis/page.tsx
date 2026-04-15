@@ -343,7 +343,7 @@ export default function ABCAnalysisPage() {
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="sku" />
 								<YAxis />
-								<Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+								<Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
 								<Legend />
 								<Line
 									type="monotone"

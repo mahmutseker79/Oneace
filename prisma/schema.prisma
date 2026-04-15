@@ -245,6 +245,7 @@ model User {
   createdZones        CountZone[]        @relation("ZoneCreatedBy")
   printedLabels       ZoneLabel[]        @relation("PrintedBy")
   createdMigrations   MigrationJob[]     @relation("MigrationCreatedBy")
+  assignedPickTasks   PickTask[]
 
   @@index([email])
 }
@@ -333,6 +334,7 @@ model Warehouse {
   batches             ItemBatch[]
   locationLevels      LocationLevel[]
   countZones          CountZone[]
+  pickTasks           PickTask[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -445,6 +447,7 @@ model Item {
   serialNumbers       SerialNumber[]
   attachments         ItemAttachment[]
   kits                Kit[]
+  pickTasks           PickTask[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -1965,9 +1968,14 @@ model PickTask {
   createdAt         DateTime         @default(now())
 
   organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse         Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  assignedToUser    User?            @relation(fields: [assignedToUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, status])
   @@index([assignedToUserId, status])
+  @@index([itemId])
+  @@index([warehouseId])
 }
 
 // =========================

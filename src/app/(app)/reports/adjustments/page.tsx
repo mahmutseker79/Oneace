@@ -65,6 +65,7 @@ export default async function AdjustmentReportPage() {
       createdAt: true,
       quantity: true,
       direction: true,
+      itemId: true,
       item: { select: { sku: true, name: true } },
       warehouse: { select: { name: true } },
       reasonCode: { select: { code: true, name: true } },
@@ -87,7 +88,7 @@ export default async function AdjustmentReportPage() {
         select: {
           countId: true,
           itemId: true,
-          systemQty: true,
+          expectedQuantity: true,
         },
       })
     : [];
@@ -112,7 +113,7 @@ export default async function AdjustmentReportPage() {
     if (!snapshotMap.has(snap.countId)) {
       snapshotMap.set(snap.countId, new Map());
     }
-    snapshotMap.get(snap.countId)!.set(snap.itemId, snap.systemQty);
+    snapshotMap.get(snap.countId)!.set(snap.itemId, snap.expectedQuantity);
   }
 
   const entryMap = new Map<string, Map<string, number>>();
