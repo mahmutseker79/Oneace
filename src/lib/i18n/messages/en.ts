@@ -412,6 +412,9 @@ export const en = {
 			deleteFailed: "Could not delete item.",
 			skuExists: "An item with this SKU already exists.",
 			notFound: "Item not found.",
+			attachmentFailed: "Could not save attachment.",
+			attachmentNotFound: "Attachment not found.",
+			serialExists: "A serial number with this value already exists.",
 		},
 		deleteConfirmTitle: "Delete this item?",
 		deleteConfirmBody:
