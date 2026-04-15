@@ -59,7 +59,10 @@ export type PlanCapability =
   | "lowStockAlerts" // low-stock alert notifications
   | "labels" // label template creation and customization
   | "abcAnalysis" // ABC classification and analysis reports
-  | "scheduledReports"; // automated scheduled report delivery
+  | "scheduledReports" // automated scheduled report delivery
+  | "kits" // kit assembly and disassembly operations
+  | "picks" // pick task creation and management
+  | "salesOrders"; // sales order creation and management
 
 /**
  * Capability map — explicit for every plan/capability combination so
@@ -77,6 +80,9 @@ const CAPABILITIES: Record<Plan, Record<PlanCapability, boolean>> = {
     labels: false,
     abcAnalysis: false,
     scheduledReports: false,
+    kits: false,
+    picks: false,
+    salesOrders: false,
   },
   PRO: {
     bins: true,
@@ -89,6 +95,9 @@ const CAPABILITIES: Record<Plan, Record<PlanCapability, boolean>> = {
     labels: true,
     abcAnalysis: true,
     scheduledReports: false,
+    kits: true,
+    picks: true,
+    salesOrders: true,
   },
   BUSINESS: {
     bins: true,
@@ -101,6 +110,9 @@ const CAPABILITIES: Record<Plan, Record<PlanCapability, boolean>> = {
     labels: true,
     abcAnalysis: true,
     scheduledReports: true,
+    kits: true,
+    picks: true,
+    salesOrders: true,
   },
 };
 
@@ -210,6 +222,12 @@ export function planCapabilityError(capability: PlanCapability): string {
       return "ABC analysis and classification are available on Pro and Business plans. Upgrade to access.";
     case "scheduledReports":
       return "Scheduled reports are available on the Business plan. Upgrade to automate report delivery.";
+    case "kits":
+      return "Kit management is available on Pro and Business plans. Upgrade to continue.";
+    case "picks":
+      return "Pick task management is available on Pro and Business plans. Upgrade to continue.";
+    case "salesOrders":
+      return "Sales orders are available on Pro and Business plans. Upgrade to continue.";
   }
 }
 
