@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { signOut } from "better-auth/client";
+import { authClient } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,7 @@ export function DeleteAccountForm({ isDisabled = false, labels }: DeleteAccountF
       toast.success("Account deleted successfully");
 
       // Sign out and redirect
-      await signOut();
+      await authClient.signOut();
       router.push("/login");
     } catch (err) {
       console.error("Delete account error:", err);
