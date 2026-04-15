@@ -27,7 +27,7 @@ function revalidateInventory() {
 /**
  * Change the status of stock (e.g., AVAILABLE -> DAMAGED).
  *
- * Creates a StockMovement with type "STATUS_CHANGE" and updates the
+ * Creates a StockMovement with type "ADJUSTMENT" and updates the
  * relevant StockLevel row. The reason code provides context for the change.
  */
 export async function changeStockStatusAction(
@@ -118,7 +118,7 @@ export async function changeStockStatusAction(
           organizationId: orgId,
           itemId: data.itemId,
           warehouseId: data.warehouseId,
-          type: "STATUS_CHANGE",
+          type: "ADJUSTMENT",
           quantity: data.quantity,
           direction: 1, // Direction is always +1 for status change (reference only)
           reference: `status-${data.fromStatus}-to-${data.toStatus}`,
