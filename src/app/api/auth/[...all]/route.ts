@@ -58,21 +58,40 @@ async function gatedPost(request: NextRequest) {
     }
   }
 
-  // Rate limit sign-up: 3 attempts per hour per IP
+  // Rate limit sign-up: per-IP AND per-email to prevent distributed attacks
   if (pathname.includes("/sign-up")) {
-    const rl = await rateLimit(
+    // Per-IP: 3 registrations per hour
+    const ipRl = await rateLimit(
       `register:ip:${ip}`,
       { max: 3, windowSeconds: 3600 }
     );
-    if (!rl.ok) {
-      logger.warn("Registration rate limit exceeded", {
-        tag: "auth.rate-limit",
-        ip,
-      });
+    if (!ipRl.ok) {
+      logger.warn("Registration rate limit exceeded (IP)", { tag: "auth.rate-limit", ip });
       return NextResponse.json(
         { error: "Too many registration attempts. Please try again later." },
-        { status: 429, headers: { "Retry-After": String(rl.reset) } }
+        { status: 429, headers: { "Retry-After": String(ipRl.reset) } }
       );
+    }
+
+    // Per-email: 2 registrations per hour (prevents email spam from multiple IPs)
+    try {
+      const body = await request.clone().json();
+      const email = typeof body?.email === "string" ? body.email.toLowerCase().trim() : null;
+      if (email) {
+        const emailRl = await rateLimit(
+          `register:email:${email}`,
+          { max: 2, windowSeconds: 3600 }
+        );
+        if (!emailRl.ok) {
+          logger.warn("Registration rate limit exceeded (email)", { tag: "auth.rate-limit", email: email.replace(/@.*/, "@***") });
+          return NextResponse.json(
+            { error: "Too many registration attempts for this email. Please try again later." },
+            { status: 429, headers: { "Retry-After": String(emailRl.reset) } }
+          );
+        }
+      }
+    } catch {
+      // If body parsing fails, continue with IP-only rate limiting
     }
   }
 

@@ -44,8 +44,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify signature
-    const secret = process.env.WEBHOOK_SECRET || "default-secret";
+    // Verify signature — reject if no secret is configured
+    const secret = process.env.WEBHOOK_SECRET;
+    if (!secret) {
+      logger.error("Webhook secret not configured — rejecting all webhooks");
+      return NextResponse.json({ error: "Webhook endpoint not configured" }, { status: 503 });
+    }
     const isValid = WebhookDispatcher.verifySignature(body, signature, secret);
 
     if (!isValid) {
