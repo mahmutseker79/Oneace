@@ -128,6 +128,9 @@ export default async function LowStockReportPage() {
           </div>
           {/* Phase 5.5 — ExportButton shows loading state while download starts */}
           <div className="flex items-center gap-2">
+            <ExportButton href="/reports/low-stock/pdf">
+              {t.common.downloadPdf}
+            </ExportButton>
             <ExportButton href="/reports/low-stock/export-xlsx">
               {t.common.exportExcel}
             </ExportButton>

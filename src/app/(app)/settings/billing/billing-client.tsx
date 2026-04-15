@@ -10,7 +10,7 @@
 "use client";
 
 // Phase 16.4 — Vercel Analytics for billing conversion events.
-// @ts-expect-error @vercel/analytics is in package.json; run `pnpm install` to resolve.
+// @vercel/analytics — installed.
 import { track } from "@vercel/analytics";
 import {
   AlertCircle,

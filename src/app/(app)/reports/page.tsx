@@ -4,6 +4,7 @@ import {
   DollarSign,
   FileBarChart,
   Grid3X3,
+  ScanLine,
   Truck,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -60,6 +61,12 @@ export default async function ReportsPage() {
       icon: DollarSign,
       title: t.reports.stockValue.heading,
       description: t.reports.stockValue.subtitle,
+    },
+    {
+      href: "/reports/scan-activity",
+      icon: ScanLine,
+      title: t.reports.scanActivity.heading,
+      description: t.reports.scanActivity.subtitle,
     },
     ...(hasMovements
       ? [

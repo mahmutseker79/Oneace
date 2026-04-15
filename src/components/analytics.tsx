@@ -9,7 +9,7 @@
  * The app boots without it — analytics are enhancement-only.
  */
 
-// @ts-expect-error @vercel/analytics is in package.json; run `pnpm install` to resolve.
+// @vercel/analytics — installed.
 import { Analytics } from "@vercel/analytics/next";
 
 export function VercelAnalytics() {

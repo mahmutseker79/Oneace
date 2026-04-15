@@ -165,7 +165,12 @@ export default async function BinInventoryReportPage() {
             <p className="text-sm text-muted-foreground">{t.reports.binInventory.subtitle}</p>
           </div>
           {canExport && warehouses.length > 0 ? (
-            <ExportButton href="/reports/bin-inventory/export">Export CSV</ExportButton>
+            <div className="flex items-center gap-2">
+              <ExportButton href="/reports/bin-inventory/pdf">
+                {t.common.downloadPdf}
+              </ExportButton>
+              <ExportButton href="/reports/bin-inventory/export">Export CSV</ExportButton>
+            </div>
           ) : null}
         </div>
       </div>

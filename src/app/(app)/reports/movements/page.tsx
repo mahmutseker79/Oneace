@@ -163,9 +163,14 @@ export default async function MovementHistoryReportPage({
           </div>
           <div className="flex items-center gap-2">
             {canExport && visibleMovements.length > 0 ? (
-              <ExportButton href={buildExportHref(filter.rawFrom, filter.rawTo, filter.rawType)}>
-                Export CSV
-              </ExportButton>
+              <>
+                <ExportButton href={buildExportHref(filter.rawFrom, filter.rawTo, filter.rawType).replace('/export', '/pdf')}>
+                  {t.common.downloadPdf}
+                </ExportButton>
+                <ExportButton href={buildExportHref(filter.rawFrom, filter.rawTo, filter.rawType)}>
+                  Export CSV
+                </ExportButton>
+              </>
             ) : null}
             <Button asChild variant="outline">
               <Link href={buildMovementsHref(filter.rawFrom, filter.rawTo, filter.rawType)}>

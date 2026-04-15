@@ -1,6 +1,7 @@
 import { OfflineQueueBanner } from "@/components/offline/offline-queue-banner";
 import { OfflineQueueRunner } from "@/components/offline/offline-queue-runner";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
+import { InstallBanner } from "@/components/pwa/install-banner";
 import { SwRegister } from "@/components/pwa/sw-register";
 import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { AppShellClient } from "@/components/shell/app-shell-client";
@@ -116,6 +117,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         }}
       />
       <div className="lg:pl-64">
+        <InstallBanner />
         <UpdatePrompt
           labels={{
             message: t.pwa.update.message,

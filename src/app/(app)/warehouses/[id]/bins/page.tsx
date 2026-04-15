@@ -93,12 +93,23 @@ export default async function BinsPage({ params }: PageProps) {
         </div>
         <div className="flex items-center gap-2">
           {bins.length > 0 ? (
-            <Button variant="outline" asChild>
-              <Link href={`/warehouses/${warehouseId}/bins/print`} target="_blank">
-                <Printer className="h-4 w-4" />
-                {t.bins.printLabels}
-              </Link>
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <a
+                  href={`/api/labels/bin-labels/pdf?warehouseId=${warehouseId}`}
+                  download={`bin-labels-${warehouse.name.replace(/\s+/g, "-")}.pdf`}
+                >
+                  <Printer className="h-4 w-4" />
+                  {t.labels.printLabels}
+                </a>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href={`/warehouses/${warehouseId}/bins/print`} target="_blank">
+                  <Printer className="h-4 w-4" />
+                  View Labels
+                </Link>
+              </Button>
+            </>
           ) : null}
           <BinTransferDialog
             warehouseId={warehouseId}

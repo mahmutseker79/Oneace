@@ -38,6 +38,8 @@ export const en = {
 		confirmDelete: "This action cannot be undone. Are you sure?",
 		exportCsv: "Export CSV",
 		exportExcel: "Export Excel",
+		downloadPdf: "Download PDF",
+		exportPdf: "Export PDF",
 		// Phase 6A / P2 — shared rate-limit copy for the four hotspots
 		// protected by `src/lib/rate-limit.ts`. Each hotspot decides
 		// whether to pass a `retryAfterSeconds` placeholder by appending
@@ -202,6 +204,10 @@ export const en = {
 			activeCounts: "Stock counts in progress",
 			activeCountsLabel: "{open} open · {inProgress} counting",
 			activeCountsNone: "None in progress",
+			vsLastWeek: "vs last week",
+			up: "up",
+			down: "down",
+			noChange: "no change",
 		},
 		actions: {
 			heading: "Quick actions",
@@ -238,6 +244,22 @@ export const en = {
 			title: "Movement volume (14 days)",
 			subtitle: "Daily totals of receipts, issues, and other movements.",
 			otherLabel: "Other",
+		},
+		topItemsChart: {
+			title: "Top 10 Most-Moved Items",
+			subtitle: "By total movement volume (last 30 days)",
+			noData: "No movements recorded yet",
+		},
+		categoryValueChart: {
+			title: "Stock Value by Category",
+			subtitle: "Distribution of inventory value across categories",
+			noData: "No stock data available",
+			uncategorized: "Uncategorized",
+		},
+		lowStockTrendChart: {
+			title: "Low Stock Trend",
+			subtitle: "Items below reorder point (last 30 days)",
+			noData: "No low stock data",
 		},
 	},
 
@@ -622,6 +644,11 @@ export const en = {
 		},
 	},
 
+	labels: {
+		printLabels: "Print bin labels",
+		generating: "Generating labels...",
+	},
+
 	categories: {
 		metaTitle: "Categories",
 		heading: "Categories",
@@ -631,6 +658,7 @@ export const en = {
 		emptyBody:
 			"Categories help group items — for example, Tools, Office, Electronics.",
 		emptyCta: "Create your first category",
+		createFirst: "Create a category",
 		columnName: "Name",
 		columnParent: "Parent",
 		columnItems: "Items",
@@ -1479,6 +1507,11 @@ export const en = {
 			summaryTypeCol: "Type",
 			summaryCountCol: "Count",
 			summaryQtyCol: "Total qty",
+		},
+		scanActivity: {
+			metaTitle: "Scan activity",
+			heading: "Scan activity",
+			subtitle: "Review recent barcode scans and their results. Export for auditing or analysis.",
 		},
 	},
 
