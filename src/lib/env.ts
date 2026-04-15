@@ -226,12 +226,22 @@ const schemaWithRefinements = schema.superRefine((values, ctx) => {
  * mutate env vars should do so before the first import of this file.
  */
 function parseEnv() {
+  // Skip validation on client-side — env vars are server-only.
+  // This file gets bundled into the client when imported transitively
+  // (e.g., via PostHog provider in layout.tsx). On the client,
+  // process.env is empty, so validation would always fail.
+  if (typeof window !== "undefined") {
+    // Return a minimal client-safe object with only NEXT_PUBLIC_ vars
+    return Object.freeze({
+      NODE_ENV: process.env.NODE_ENV ?? "production",
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "",
+      NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "",
+      NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN ?? "",
+    } as any);
+  }
+
   const result = schemaWithRefinements.safeParse(process.env);
   if (!result.success) {
-    // Format the errors into a single multi-line message. We don't
-    // use console.error here because Next.js will sometimes swallow
-    // module-load console output; throwing is loud and propagates
-    // through the dev server overlay cleanly.
     const lines = result.error.issues.map((issue) => {
       const path = issue.path.length > 0 ? issue.path.join(".") : "(root)";
       return `  - ${path}: ${issue.message}`;
