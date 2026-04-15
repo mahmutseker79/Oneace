@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ChevronLeft, Download, ExternalLink } from "lucide-react";
+import { ArrowLeftRight, Download, ExternalLink, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
   TableBody,
@@ -149,18 +151,15 @@ export default async function MovementHistoryReportPage({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            {t.reports.movementHistory.backToReports}
-          </Link>
-        </Button>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">{t.reports.movementHistory.heading}</h1>
-            <p className="text-sm text-muted-foreground">{t.reports.movementHistory.subtitle}</p>
-          </div>
+      <PageHeader
+        title={t.reports.movementHistory.heading}
+        description={t.reports.movementHistory.subtitle}
+        backHref="/reports"
+        breadcrumb={[
+          { label: t.reports.heading, href: "/reports" },
+          { label: t.reports.movementHistory.heading },
+        ]}
+        actions={
           <div className="flex items-center gap-2">
             {canExport && visibleMovements.length > 0 ? (
               <>
@@ -179,8 +178,8 @@ export default async function MovementHistoryReportPage({
               </Link>
             </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Simple date + type filter (GET-based — same pattern as reports) */}
       <form
@@ -263,55 +262,32 @@ export default async function MovementHistoryReportPage({
         />
       ) : (
         <>
-          {/* KPI strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {[
+          {/* KPI Summary Bar */}
+          <ReportSummaryCard
+            metrics={[
               {
                 label: t.reports.movementHistory.kpiTotalMovements,
                 value: totalMovements,
+                icon: ArrowUpDown,
               },
               {
                 label: t.reports.movementHistory.kpiReceipts,
                 value: receipts.length,
+                icon: TrendingUp,
               },
               {
                 label: t.reports.movementHistory.kpiIssues,
                 value: issues.length,
-              },
-              {
-                label: t.reports.movementHistory.kpiTransfers,
-                value: transfers.length,
-              },
-              {
-                label: t.reports.movementHistory.kpiAdjustments,
-                value: adjustments.length,
+                icon: TrendingDown,
               },
               {
                 label: t.reports.movementHistory.kpiNetUnits,
-                value: netUnits,
-                mono: true,
-                signed: true,
+                value: (netUnits > 0 ? "+" : "") + netUnits.toLocaleString(),
+                trend: netUnits > 0 ? "In" : "Out",
+                trendDirection: netUnits > 0 ? "positive" : "negative",
               },
-            ].map((kpi) => (
-              <Card key={kpi.label}>
-                <CardHeader className="pb-1 pt-4">
-                  <CardDescription className="text-xs">{kpi.label}</CardDescription>
-                  <CardTitle
-                    className={`text-2xl ${kpi.mono ? "tabular-nums" : ""} ${
-                      kpi.signed && kpi.value > 0
-                        ? "text-emerald-600"
-                        : kpi.signed && kpi.value < 0
-                          ? "text-destructive"
-                          : ""
-                    }`}
-                  >
-                    {kpi.signed && kpi.value > 0 ? "+" : ""}
-                    {kpi.value.toLocaleString()}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
+            ]}
+          />
 
           {/* Summary by type */}
           <Card>

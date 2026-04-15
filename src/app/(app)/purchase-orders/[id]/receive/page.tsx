@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -56,6 +57,8 @@ export default async function ReceivePurchaseOrderPage({ params }: ReceivePagePr
     redirect(`/purchase-orders/${id}`);
   }
 
+  const poLabel = po.poNumber;
+
   const lines: ReceiveLine[] = po.lines.map((line) => ({
     id: line.id,
     itemName: line.item.name,
@@ -101,19 +104,16 @@ export default async function ReceivePurchaseOrderPage({ params }: ReceivePagePr
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href={`/purchase-orders/${id}`}>
-            <ChevronLeft className="h-4 w-4" />
-            {t.purchaseOrders.detail.backToList}
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">{t.purchaseOrders.receive.heading}</h1>
-        <p className="text-muted-foreground text-sm">{t.purchaseOrders.receive.subtitle}</p>
-        <p className="text-muted-foreground font-mono text-xs">
-          {po.poNumber} · {po.supplier.name} → {po.warehouse.name}
-        </p>
-      </div>
+      <PageHeader
+        title={t.purchaseOrders.receive.heading}
+        description={t.purchaseOrders.receive.subtitle}
+        backHref={`/purchase-orders/${id}`}
+        breadcrumb={[
+          { label: t.nav?.purchaseOrders ?? "Purchase Orders", href: "/purchase-orders" },
+          { label: poLabel },
+          { label: t.purchaseOrders.receive.heading },
+        ]}
+      />
 
       <ReceiveForm
         purchaseOrderId={po.id}

@@ -1,9 +1,7 @@
-import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -48,18 +46,16 @@ export default async function EditWarehousePage({ params }: EditWarehousePagePro
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/warehouses">
-            <ChevronLeft className="h-4 w-4" />
-            {t.warehouses.backToList}
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">{t.warehouses.editWarehouse}</h1>
-        <p className="text-muted-foreground">
-          {warehouse.name} <span className="font-mono text-xs">· {warehouse.code}</span>
-        </p>
-      </div>
+      <PageHeader
+        title={t.warehouses.editWarehouse}
+        description={`${warehouse.name} · ${warehouse.code}`}
+        breadcrumb={[
+          { label: t.warehouses.metaTitle, href: "/warehouses" },
+          { label: warehouse.name, href: `/warehouses/${warehouse.id}` },
+          { label: t.warehouses.editWarehouse },
+        ]}
+        backHref="/warehouses"
+      />
 
       <WarehouseForm labels={labels} mode="edit" initial={warehouse} />
     </div>

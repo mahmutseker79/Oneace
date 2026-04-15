@@ -383,8 +383,8 @@ export default async function ItemsPage({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{t.items.heading}</h1>
-          <p className="text-muted-foreground">{t.items.subtitle}</p>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.items.heading}</h1>
+          <p className="text-sm text-muted-foreground">{t.items.subtitle}</p>
           <ItemsCacheBanner
             scope={cacheScope}
             locale={region.numberLocale}

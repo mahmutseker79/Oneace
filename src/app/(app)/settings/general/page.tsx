@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireActiveMembership } from "@/lib/session";
 import { getOrCreateOrgSettingsAction } from "./actions";
@@ -58,12 +59,15 @@ export default async function GeneralSettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">General Settings</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Configure numbering prefixes, counting workflows, stock management rules, and display preferences.
-        </p>
-      </div>
+      <PageHeader
+        title="General Settings"
+        description="Configure numbering prefixes, counting workflows, stock management rules, and display preferences."
+        breadcrumb={[
+          { label: "Settings", href: "/settings" },
+          { label: "General", href: "#" },
+        ]}
+        backHref="/settings"
+      />
 
       <GeneralSettingsForm
         settings={settings}

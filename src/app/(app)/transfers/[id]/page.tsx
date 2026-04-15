@@ -1,11 +1,12 @@
-import { ChevronLeft, Package, Trash2 } from "lucide-react";
+import { Package, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusTimeline } from "@/components/ui/status-timeline";
 import {
   Table,
   TableBody,
@@ -19,6 +20,7 @@ import { getMessages, getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canCancel, canReceive, canShip, isTerminal, statusLabel } from "@/lib/transfer/machine";
+import Link from "next/link";
 
 import { CancelTransferButton } from "./cancel-transfer-button";
 import { RemoveLineButton } from "./remove-line-button";
@@ -87,26 +89,31 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <Link href="/transfers">
-          <Button variant="ghost" size="sm">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Transfers
-          </Button>
-        </Link>
-      </div>
-
-      {/* Title & Status */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{transfer.transferNumber}</h1>
-          <p className="text-sm text-muted-foreground">
-            {transfer.fromWarehouse.name} → {transfer.toWarehouse.name}
-          </p>
-        </div>
-        <Badge variant="default">{statusLabel(transfer.status)}</Badge>
-      </div>
+      <PageHeader
+        title={transfer.transferNumber}
+        backHref="/transfers"
+        breadcrumb={[
+          { label: "Transfers", href: "/transfers" },
+          { label: transfer.transferNumber },
+        ]}
+      />
+      <StatusTimeline
+        steps={[
+          { label: "Draft", completed: transfer.status !== "DRAFT", active: transfer.status === "DRAFT" },
+          {
+            label: "Shipped",
+            completed: ["IN_TRANSIT", "RECEIVED"].includes(transfer.status),
+            active: transfer.status === "SHIPPED",
+          },
+          {
+            label: "In Transit",
+            completed: transfer.status === "RECEIVED",
+            active: transfer.status === "IN_TRANSIT",
+          },
+          { label: "Received", completed: transfer.status === "RECEIVED", active: false },
+        ]}
+        className="mb-2"
+      />
 
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-5">

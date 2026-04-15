@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -39,6 +40,8 @@ export default async function LocationsPage({ params }: PageProps) {
   if (!warehouse) {
     notFound();
   }
+
+  const warehouseLabel = warehouse.name;
 
   const locations = await db.locationLevel.findMany({
     where: { warehouseId, organizationId: membership.organizationId },
@@ -139,31 +142,26 @@ export default async function LocationsPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/warehouses/${warehouseId}`}>
-            <ArrowLeft className="h-4 w-4" />
-            {warehouse.name}
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{t.locations?.heading || "Location Hierarchy"}</h1>
-          <p className="text-muted-foreground">
-            {t.locations?.subtitle || "Organize locations by zone, aisle, rack, and shelf"}
-          </p>
-        </div>
-        {canCreateLocation && (
-          <Button variant="outline" asChild>
-            <Link href={`/warehouses/${warehouseId}/locations/new`}>
-              <Plus className="h-4 w-4" />
-              {t.locations?.addLocation || "Add Location"}
-            </Link>
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t.locations?.heading || "Location Hierarchy"}
+        description={t.locations?.subtitle || "Organize locations by zone, aisle, rack, and shelf"}
+        backHref={`/warehouses/${warehouseId}`}
+        breadcrumb={[
+          { label: t.nav?.warehouses ?? "Warehouses", href: "/warehouses" },
+          { label: warehouseLabel },
+          { label: t.locations?.heading || "Location Hierarchy" },
+        ]}
+        actions={
+          canCreateLocation ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/warehouses/${warehouseId}/locations/new`}>
+                <Plus className="h-4 w-4" />
+                {t.locations?.addLocation || "Add Location"}
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {rootLocations.length === 0 ? (
         <Card>

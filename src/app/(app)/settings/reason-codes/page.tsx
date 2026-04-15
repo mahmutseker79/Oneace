@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -52,12 +53,15 @@ export default async function ReasonCodesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Reason Codes</h1>
-        <p className="text-muted-foreground">
-          Manage reason codes for stock adjustments, variances, and movements
-        </p>
-      </div>
+      <PageHeader
+        title="Reason Codes"
+        description="Manage reason codes for stock adjustments, variances, and movements"
+        breadcrumb={[
+          { label: "Settings", href: "/settings" },
+          { label: "Reason Codes", href: "#" },
+        ]}
+        backHref="/settings"
+      />
 
       <ReasonCodeTableClient
         reasonCodes={reasonCodes}

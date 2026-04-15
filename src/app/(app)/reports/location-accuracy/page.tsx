@@ -1,11 +1,12 @@
-import { ChevronLeft, MapPin } from "lucide-react";
+import { MapPin, Gauge, CheckCircle } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
   TableBody,
@@ -61,21 +62,15 @@ export default async function LocationAccuracyReportPage() {
   if (stockCounts.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="space-y-1">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/reports">
-              <ChevronLeft className="h-4 w-4" />
-              Back to Reports
-            </Link>
-          </Button>
-          <div className="flex items-start gap-3">
-            <MapPin className="text-muted-foreground mt-1 h-5 w-5" />
-            <div>
-              <h1 className="text-2xl font-semibold">Location Accuracy Report</h1>
-              <p className="text-muted-foreground">Warehouse inventory accuracy metrics</p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Location Accuracy Report"
+          description="Warehouse inventory accuracy metrics"
+          backHref="/reports"
+          breadcrumb={[
+            { label: "Reports", href: "/reports" },
+            { label: "Location Accuracy Report" },
+          ]}
+        />
         <EmptyState
           icon={MapPin}
           title="No completed counts"
@@ -183,28 +178,41 @@ export default async function LocationAccuracyReportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            Back to Reports
-          </Link>
-        </Button>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <MapPin className="text-muted-foreground mt-1 h-5 w-5" />
-            <div>
-              <h1 className="text-2xl font-semibold">Location Accuracy Report</h1>
-              <p className="text-muted-foreground">Warehouse inventory accuracy metrics</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ExportButton href="/reports/location-accuracy/export">
-              Export CSV
-            </ExportButton>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Location Accuracy Report"
+        description="Warehouse inventory accuracy metrics"
+        backHref="/reports"
+        breadcrumb={[
+          { label: "Reports", href: "/reports" },
+          { label: "Location Accuracy Report" },
+        ]}
+        actions={
+          <ExportButton href="/reports/location-accuracy/export">
+            Export CSV
+          </ExportButton>
+        }
+      />
+
+      <ReportSummaryCard
+        metrics={[
+          {
+            label: "Average Accuracy",
+            value: `${formatNumber(avgAccuracy, region.numberLocale)}%`,
+            icon: Gauge,
+            trendDirection: avgAccuracy >= 95 ? "positive" : avgAccuracy >= 85 ? "neutral" : "negative",
+          },
+          {
+            label: "Locations Measured",
+            value: rows.length,
+            icon: MapPin,
+          },
+          {
+            label: "Accurate Lines",
+            value: rows.reduce((s, r) => s + r.accurateLines, 0),
+            icon: CheckCircle,
+          },
+        ]}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

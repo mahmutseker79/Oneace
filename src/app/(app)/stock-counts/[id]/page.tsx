@@ -7,6 +7,8 @@ import { StockCountCacheSync } from "@/components/offline/stock-count-cache-sync
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusTimeline } from "@/components/ui/status-timeline";
 import {
 	Table,
 	TableBody,
@@ -347,41 +349,42 @@ export default async function StockCountDetailPage({
 				rows={offlineRows}
 			/>
 
-			{/* Back button */}
-			<div className="flex items-center gap-2">
-				<Button variant="ghost" size="sm" asChild>
-					<Link href="/stock-counts">
-						<ArrowLeft className="h-4 w-4" />
-						{t.stockCounts.detail.backToList}
-					</Link>
-				</Button>
-			</div>
+			{/* God-Mode Design: PageHeader with breadcrumb + StatusTimeline */}
+			<PageHeader
+				title={count.name}
+				description={`${t.stockCounts.methodology[methodology]}${count.warehouse ? ` · ${count.warehouse.name}` : ""}`}
+				backHref="/stock-counts"
+				badge={stateBadge(state)}
+				breadcrumb={[
+					{ label: t.nav?.counts ?? "Stock Counts", href: "/stock-counts" },
+					{ label: count.name },
+				]}
+			/>
 
-			{/* Header + action cluster */}
-			<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<h1 className="text-2xl font-semibold">{count.name}</h1>
-						{stateBadge(state)}
-					</div>
-					<p className="text-sm text-muted-foreground">
-						{t.stockCounts.methodology[methodology]}
-						{count.warehouse ? ` · ${count.warehouse.name}` : null}
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
-					{canCancel(state) ? (
-						<CancelDialog countId={count.id} labels={cancelDialogLabels} />
-					) : null}
-					{canReconcile(state) ? (
-						<Button size="sm" asChild>
-							<Link href={`/stock-counts/${count.id}/reconcile`}>
-								<ClipboardCheck className="h-4 w-4" />
-								{t.stockCounts.detail.reconcileAction}
-							</Link>
-						</Button>
-					) : null}
-				</div>
+			{/* God-Mode Design: Visual workflow step indicator */}
+			<StatusTimeline
+				steps={[
+					{ label: "Create", completed: true },
+					{ label: "Count", completed: state !== "OPEN", active: state === "OPEN" || state === "IN_PROGRESS" },
+					{ label: "Reconcile", completed: state === "COMPLETED" || state === "CANCELLED", active: state === "IN_PROGRESS" },
+					{ label: "Approve", completed: state === "COMPLETED", active: state === "IN_PROGRESS" },
+				]}
+				className="mb-2"
+			/>
+
+			{/* Action cluster */}
+			<div className="flex items-center gap-2">
+				{canCancel(state) ? (
+					<CancelDialog countId={count.id} labels={cancelDialogLabels} />
+				) : null}
+				{canReconcile(state) ? (
+					<Button size="sm" asChild>
+						<Link href={`/stock-counts/${count.id}/reconcile`}>
+							<ClipboardCheck className="h-4 w-4" />
+							{t.stockCounts.detail.reconcileAction}
+						</Link>
+					</Button>
+				) : null}
 			</div>
 
 			{/* Phase 3 — progress indicator (only for IN_PROGRESS counts with snapshots) */}

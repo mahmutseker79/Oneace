@@ -133,19 +133,19 @@ export default async function LandingPage() {
 							Inventory management for SMBs
 						</Badge>
 
-						<h1 className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+						<h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
 							Your inventory,{" "}
-							<span className="text-primary">always in sync</span>
+							<span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">always in sync</span>
 						</h1>
 
-						<p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl">
+						<p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
 							Offline-first stock management with barcode scanning,
 							multi-warehouse tracking, and real-time stock counts. Built for
 							warehouse operators, not spreadsheet enthusiasts.
 						</p>
 
 						<div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-							<Button size="lg" asChild className="w-full sm:w-auto">
+							<Button size="lg" asChild className="w-full sm:w-auto font-medium shadow-sm">
 								<Link href="/register">
 									Get started free
 									<ArrowRight className="h-4 w-4" />
@@ -155,7 +155,7 @@ export default async function LandingPage() {
 								size="lg"
 								variant="outline"
 								asChild
-								className="w-full sm:w-auto"
+								className="w-full sm:w-auto font-medium"
 							>
 								<Link href="/login">Sign in to your account</Link>
 							</Button>

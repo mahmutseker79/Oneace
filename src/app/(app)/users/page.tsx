@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -97,10 +98,14 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{t.users.heading}</h1>
-        <p className="text-muted-foreground">{t.users.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.users.heading}
+        description={t.users.subtitle}
+        breadcrumb={[
+          { label: "Settings", href: "/settings" },
+          { label: t.users.heading },
+        ]}
+      />
 
       {/* Phase 15.3 — member limit nudge */}
       {showMemberLimitNudge && !memberLimitCheck.allowed ? (

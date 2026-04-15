@@ -6,14 +6,14 @@ export function MarketingFooter() {
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div className="flex flex-col gap-8 sm:flex-row sm:justify-between">
           {/* Brand */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-xs font-bold text-primary-foreground shadow-md">
                 O
               </div>
-              <span className="font-semibold">OneAce</span>
+              <span className="font-semibold tracking-tight">OneAce</span>
             </div>
-            <p className="max-w-xs text-xs text-muted-foreground">
+            <p className="max-w-xs text-xs text-muted-foreground leading-relaxed">
               Inventory management built for growing businesses. Offline-first, barcode-ready,
               multi-warehouse.
             </p>
@@ -22,50 +22,50 @@ export function MarketingFooter() {
           {/* Links */}
           <div className="flex gap-12 text-sm">
             <div className="space-y-3">
-              <p className="font-medium">Product</p>
+              <p className="font-semibold text-foreground">Product</p>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
-                  <Link href="/pricing" className="hover:text-foreground">
+                  <Link href="/pricing" className="transition-colors hover:text-foreground">
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link href="/docs" className="hover:text-foreground">
+                  <Link href="/docs" className="transition-colors hover:text-foreground">
                     Documentation
                   </Link>
                 </li>
                 <li>
-                  <Link href="/register" className="hover:text-foreground">
+                  <Link href="/register" className="transition-colors hover:text-foreground">
                     Get started
                   </Link>
                 </li>
               </ul>
             </div>
             <div className="space-y-3">
-              <p className="font-medium">Account</p>
+              <p className="font-semibold text-foreground">Account</p>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
-                  <Link href="/login" className="hover:text-foreground">
+                  <Link href="/login" className="transition-colors hover:text-foreground">
                     Sign in
                   </Link>
                 </li>
                 <li>
-                  <Link href="/register" className="hover:text-foreground">
+                  <Link href="/register" className="transition-colors hover:text-foreground">
                     Sign up
                   </Link>
                 </li>
               </ul>
             </div>
             <div className="space-y-3">
-              <p className="font-medium">Support</p>
+              <p className="font-semibold text-foreground">Support</p>
               <ul className="space-y-2 text-muted-foreground">
                 <li>
-                  <Link href="/docs" className="hover:text-foreground">
+                  <Link href="/docs" className="transition-colors hover:text-foreground">
                     Documentation
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:hello@oneace.app" className="hover:text-foreground">
+                  <a href="mailto:hello@oneace.app" className="transition-colors hover:text-foreground">
                     Contact us
                   </a>
                 </li>

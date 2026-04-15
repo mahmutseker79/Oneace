@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -140,8 +141,8 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t.movements.heading}</h1>
-          <p className="text-muted-foreground">{t.movements.subtitle}</p>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.movements.heading}</h1>
+          <p className="text-sm text-muted-foreground">{t.movements.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
           {canExport ? (
@@ -225,9 +226,8 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
           </div>
           <Card>
             <CardContent className="p-0">
-              {/* Phase 4.2 — Mobile card view (hidden md+) */}
-              <div className="divide-y md:hidden">
-                {pageMovements.map((m) => {
+              <ResponsiveTable
+                cardView={pageMovements.map((m) => {
                   const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
                   const qtyPrefix =
                     signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
@@ -237,35 +237,37 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                       ? `${m.warehouse.name} → ${m.toWarehouse.name}`
                       : m.warehouse.name;
                   return (
-                    <div key={m.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <Link
-                          href={`/items/${m.item.id}`}
-                          className="block truncate font-medium hover:underline"
-                        >
-                          {m.item.name}
-                        </Link>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {typeBadge(m.type as MovementType)}
-                          <span className="text-xs text-muted-foreground">{warehouseCell}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {dateFormatter.format(m.createdAt)}
-                        </p>
-                      </div>
-                      <span
-                        className={`shrink-0 font-mono font-medium tabular-nums ${signedQty >= 0 ? "text-emerald-600" : "text-destructive"}`}
-                      >
-                        {qtyPrefix}
-                        {absQty}
-                      </span>
-                    </div>
+                    <MobileCard
+                      key={m.id}
+                      href={`/movements/${m.id}`}
+                      title={m.item.name}
+                      subtitle={m.item.sku}
+                      badge={typeBadge(m.type as MovementType)}
+                      fields={[
+                        {
+                          label: t.movements.columnQuantity,
+                          value: (
+                            <span
+                              className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}
+                            >
+                              {qtyPrefix}
+                              {absQty} {m.item.unit}
+                            </span>
+                          ),
+                        },
+                        {
+                          label: t.movements.columnWarehouse,
+                          value: warehouseCell,
+                        },
+                        {
+                          label: t.movements.columnDate,
+                          value: dateFormatter.format(m.createdAt),
+                        },
+                      ]}
+                    />
                   );
                 })}
-              </div>
-
-              {/* Desktop table (hidden below md) */}
-              <div className="hidden overflow-x-auto md:block">
+              >
                 <Table className="min-w-[640px]">
                   <TableHeader>
                     <TableRow>
@@ -339,7 +341,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                     })}
                   </TableBody>
                 </Table>
-              </div>
+              </ResponsiveTable>
             </CardContent>
           </Card>
           {/* Sprint 4: cursor-based pagination — "Load more" link */}

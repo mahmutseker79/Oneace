@@ -1,18 +1,30 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 import { db } from "@/lib/db";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canRollback } from "@/lib/stockcount/machine";
+import { getMessages } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { RollbackForm } from "./rollback-form";
 
 /**
  * Rollback page. Allows rolling back a completed count.
  */
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const t = await getMessages();
+  return { title: t.stockCounts.rollback?.metaTitle || "Rollback" };
+}
+
 export default async function RollbackPage({
   params,
 }: {
@@ -20,6 +32,7 @@ export default async function RollbackPage({
 }) {
   const { membership } = await requireActiveMembership();
   const orgId = membership.organizationId;
+  const t = await getMessages();
 
   const canRollbackCount = hasCapability(membership.role, "stockCounts.rollback");
 
@@ -35,12 +48,21 @@ export default async function RollbackPage({
     notFound();
   }
 
+  const countLabel = count.name;
+
   if (!canRollback(count.state as any)) {
     return (
       <div className="space-y-6">
-        <Link href={`/stock-counts/${params.id}`} className="text-muted-foreground hover:underline">
-          {count.name}
-        </Link>
+        <PageHeader
+          title={t.stockCounts.rollback?.heading || "Rollback Count"}
+          description={t.stockCounts.rollback?.subtitle || "Reverse this completed count and revert stock adjustments"}
+          backHref={`/stock-counts/${params.id}`}
+          breadcrumb={[
+            { label: t.nav?.stockCounts ?? "Stock Counts", href: "/stock-counts" },
+            { label: countLabel },
+            { label: t.stockCounts.rollback?.heading || "Rollback Count" },
+          ]}
+        />
         <Card>
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">
@@ -54,13 +76,16 @@ export default async function RollbackPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/stock-counts/${params.id}`} className="text-muted-foreground hover:underline">
-          {count.name}
-        </Link>
-        <h1 className="text-3xl font-bold">Rollback Count</h1>
-        <p className="text-muted-foreground">Reverse this completed count and revert stock adjustments</p>
-      </div>
+      <PageHeader
+        title={t.stockCounts.rollback?.heading || "Rollback Count"}
+        description={t.stockCounts.rollback?.subtitle || "Reverse this completed count and revert stock adjustments"}
+        backHref={`/stock-counts/${params.id}`}
+        breadcrumb={[
+          { label: t.nav?.stockCounts ?? "Stock Counts", href: "/stock-counts" },
+          { label: countLabel },
+          { label: t.stockCounts.rollback?.heading || "Rollback Count" },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

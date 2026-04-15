@@ -64,6 +64,8 @@ import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency } from "@/lib/utils";
 
 import { CopyButton } from "@/components/ui/copy-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusTimeline } from "@/components/ui/status-timeline";
 
 import { CancelPoButton } from "./cancel-po-button";
 import { MarkSentButton } from "./mark-sent-button";
@@ -280,13 +282,33 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
 
   return (
     <div className="space-y-6">
+      {/* God-Mode Design: Breadcrumb navigation */}
+      <PageHeader
+        title={po.poNumber}
+        backHref="/purchase-orders"
+        breadcrumb={[
+          { label: t.purchaseOrders?.heading ?? "Purchase Orders", href: "/purchase-orders" },
+          { label: po.poNumber },
+        ]}
+      />
+      <StatusTimeline
+        steps={[
+          { label: "Draft", completed: po.status !== "DRAFT", active: po.status === "DRAFT" },
+          {
+            label: "Sent",
+            completed: ["PARTIALLY_RECEIVED", "RECEIVED"].includes(po.status),
+            active: po.status === "SENT",
+          },
+          {
+            label: "Partial",
+            completed: po.status === "RECEIVED",
+            active: po.status === "PARTIALLY_RECEIVED",
+          },
+          { label: "Received", completed: po.status === "RECEIVED", active: false },
+        ]}
+        className="mb-2"
+      />
       <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/purchase-orders">
-            <ChevronLeft className="h-4 w-4" />
-            {t.purchaseOrders.detail.backToList}
-          </Link>
-        </Button>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">

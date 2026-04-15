@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import {
 	Table,
 	TableBody,
@@ -72,20 +74,20 @@ export default async function PickTasksPage({ searchParams }: { searchParams?: S
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-				<div>
-					<h1 className="text-2xl font-semibold">Pick Tasks</h1>
-					<p className="text-muted-foreground">Manage warehouse picking operations</p>
-				</div>
-				{canCreate ? (
-					<Button asChild>
-						<Link href="/picks/new">
-							<Plus className="h-4 w-4" />
-							Create Pick Task
-						</Link>
-					</Button>
-				) : null}
-			</div>
+			<PageHeader
+				title="Pick Tasks"
+				description="Manage picking tasks"
+				actions={
+					canCreate ? (
+						<Button asChild>
+							<Link href="/picks/new">
+								<Plus className="h-4 w-4" />
+								Create Pick Task
+							</Link>
+						</Button>
+					) : null
+				}
+			/>
 
 			{/* Status tabs */}
 			<div className="flex gap-2 border-b">
@@ -130,7 +132,22 @@ export default async function PickTasksPage({ searchParams }: { searchParams?: S
 			) : (
 				<Card>
 					<CardContent className="p-0">
-						<div className="overflow-x-auto">
+						<ResponsiveTable
+							cardView={picks.map((pick) => (
+								<MobileCard
+									key={pick.id}
+									title={pick.item.name}
+									subtitle={pick.item.sku}
+									badge={statusBadge(pick.status as PickStatus)}
+									href={`/picks/${pick.id}`}
+									fields={[
+										{ label: "Warehouse", value: pick.warehouse.name },
+										{ label: "Qty", value: pick.quantity },
+										{ label: "Assigned To", value: pick.assignedToUser?.name || "—" },
+									]}
+								/>
+							))}
+						>
 							<Table className="min-w-[700px]">
 								<TableHeader>
 									<TableRow>
@@ -185,7 +202,7 @@ export default async function PickTasksPage({ searchParams }: { searchParams?: S
 									))}
 								</TableBody>
 							</Table>
-						</div>
+						</ResponsiveTable>
 					</CardContent>
 				</Card>
 			)}

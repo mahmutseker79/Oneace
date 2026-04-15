@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import {
 	Table,
 	TableBody,
@@ -72,20 +74,20 @@ export default async function SalesOrdersPage({ searchParams }: { searchParams?:
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-				<div>
-					<h1 className="text-2xl font-semibold">Sales Orders</h1>
-					<p className="text-muted-foreground">Manage customer orders and fulfillment</p>
-				</div>
-				{canCreate ? (
-					<Button asChild>
-						<Link href="/sales-orders/new">
-							<Plus className="h-4 w-4" />
-							New Order
-						</Link>
-					</Button>
-				) : null}
-			</div>
+			<PageHeader
+				title="Sales Orders"
+				description="Manage outbound sales orders"
+				actions={
+					canCreate ? (
+						<Button asChild>
+							<Link href="/sales-orders/new">
+								<Plus className="h-4 w-4" />
+								New Order
+							</Link>
+						</Button>
+					) : null
+				}
+			/>
 
 			{/* Status tabs */}
 			<div className="flex gap-2 border-b">
@@ -131,7 +133,24 @@ export default async function SalesOrdersPage({ searchParams }: { searchParams?:
 			) : (
 				<Card>
 					<CardContent className="p-0">
-						<div className="overflow-x-auto">
+						<ResponsiveTable
+							cardView={orders.map((order) => {
+								const totalQty = order.lines.reduce((sum, line) => sum + line.orderedQty, 0);
+								return (
+									<MobileCard
+										key={order.id}
+										title={order.orderNumber}
+										badge={statusBadge(order.status as SalesOrderStatus)}
+										href={`/sales-orders/${order.id}`}
+										fields={[
+											{ label: "Lines", value: order._count.lines },
+											{ label: "Total Qty", value: totalQty },
+											{ label: "Date", value: dateFormatter.format(order.orderDate) },
+										]}
+									/>
+								);
+							})}
+						>
 							<Table className="min-w-[700px]">
 								<TableHeader>
 									<TableRow>
@@ -188,7 +207,7 @@ export default async function SalesOrdersPage({ searchParams }: { searchParams?:
 									})}
 								</TableBody>
 							</Table>
-						</div>
+						</ResponsiveTable>
 					</CardContent>
 				</Card>
 			)}

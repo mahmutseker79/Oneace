@@ -1,6 +1,5 @@
 import {
   CalendarClock,
-  ChevronLeft,
   ChevronRight,
   ExternalLink,
   Pencil,
@@ -15,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -266,57 +266,34 @@ export default async function SupplierDetailPage({ params }: DetailPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="flex items-start gap-3">
-          <Truck className="text-muted-foreground mt-1 h-5 w-5" />
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold">{supplier.name}</h1>
-              {supplier.code ? (
-                <span className="flex items-center gap-1 text-muted-foreground font-mono text-sm">
-                  {supplier.code}
-                  {/* Phase 20 — copy supplier code */}
-                  <CopyButton text={supplier.code} label="Copy supplier code" />
-                </span>
-              ) : null}
-              {supplier.isActive ? (
-                <Badge>{t.suppliers.activeLabel}</Badge>
-              ) : (
-                <Badge variant="secondary">{t.suppliers.inactiveLabel}</Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {format(t.suppliers.detail.kpiAvgLeadTimeBody, {
-                count: String(leadTimeSampleDays.length),
-              })}
-            </p>
+      <PageHeader
+        title={supplier.name}
+        backHref="/suppliers"
+        breadcrumb={[
+          { label: "Suppliers", href: "/suppliers" },
+          { label: supplier.name },
+        ]}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {canEditSupplier ? (
+              <Button asChild variant="outline">
+                <Link href={`/suppliers/${supplier.id}/edit`}>
+                  <Pencil className="h-4 w-4" />
+                  {t.suppliers.detail.editCta}
+                </Link>
+              </Button>
+            ) : null}
+            {canCreatePO ? (
+              <Button asChild>
+                <Link href={`/purchase-orders/new?supplier=${supplier.id}`}>
+                  <Plus className="h-4 w-4" />
+                  {t.suppliers.detail.newPoCta}
+                </Link>
+              </Button>
+            ) : null}
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="ghost">
-            <Link href="/suppliers">
-              <ChevronLeft className="h-4 w-4" />
-              {t.suppliers.detail.backToList}
-            </Link>
-          </Button>
-          {canEditSupplier ? (
-            <Button asChild variant="outline">
-              <Link href={`/suppliers/${supplier.id}/edit`}>
-                <Pencil className="h-4 w-4" />
-                {t.suppliers.detail.editCta}
-              </Link>
-            </Button>
-          ) : null}
-          {canCreatePO ? (
-            <Button asChild>
-              <Link href={`/purchase-orders/new?supplier=${supplier.id}`}>
-                <Plus className="h-4 w-4" />
-                {t.suppliers.detail.newPoCta}
-              </Link>
-            </Button>
-          ) : null}
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

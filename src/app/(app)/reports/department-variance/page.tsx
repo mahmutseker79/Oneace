@@ -4,6 +4,7 @@ import { Download, Building2, AlertCircle, TrendingDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -116,13 +117,15 @@ export default function DepartmentVariancePage() {
 	if (!canViewReport) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-start gap-3">
-					<Building2 className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">Department Variance</h1>
-						<p className="text-muted-foreground">Variance by department</p>
-					</div>
-				</div>
+				<PageHeader
+					title="Department Variance"
+					description="Variance by department"
+					backHref="/reports"
+					breadcrumb={[
+						{ label: "Reports", href: "/reports" },
+						{ label: "Department Variance" },
+					]}
+				/>
 				<UpgradePrompt
 					reason="Reports are available on Pro and Business plans."
 					requiredPlan="PRO"
@@ -145,25 +148,24 @@ export default function DepartmentVariancePage() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between gap-3">
-				<div className="flex items-start gap-3">
-					<Building2 className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">Department Variance</h1>
-						<p className="text-muted-foreground">
-							Variance analysis by department
-						</p>
-					</div>
-				</div>
-				<div className="flex gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleExport("csv")}
-						disabled={exporting}
-					>
-						<Download className="h-4 w-4 mr-1" />
-						CSV
+			<PageHeader
+				title="Department Variance"
+				description="Variance analysis by department"
+				backHref="/reports"
+				breadcrumb={[
+					{ label: "Reports", href: "/reports" },
+					{ label: "Department Variance" },
+				]}
+				actions={
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleExport("csv")}
+							disabled={exporting}
+						>
+							<Download className="h-4 w-4 mr-1" />
+							CSV
 					</Button>
 					<Button
 						variant="outline"
@@ -175,7 +177,8 @@ export default function DepartmentVariancePage() {
 						XLSX
 					</Button>
 				</div>
-			</div>
+			}
+			/>
 
 			{error && (
 				<Alert variant="destructive">

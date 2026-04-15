@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
@@ -39,6 +40,8 @@ export default async function AttachmentsPage({ params }: PageProps) {
     notFound();
   }
 
+  const itemLabel = item.name;
+
   const attachments = await db.itemAttachment.findMany({
     where: { itemId: item.id },
     include: {
@@ -70,21 +73,16 @@ export default async function AttachmentsPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/items/${item.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-            {item.name}
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{t.items.attachments?.heading || "Attachments"}</h1>
-          <p className="text-muted-foreground">{t.items.attachments?.subtitle || "Documents and media files"}</p>
-        </div>
-      </div>
+      <PageHeader
+        title={t.items.attachments?.heading || "Attachments"}
+        description={t.items.attachments?.subtitle || "Documents and media files"}
+        backHref={`/items/${item.id}`}
+        breadcrumb={[
+          { label: t.nav?.items ?? "Items", href: "/items" },
+          { label: itemLabel },
+          { label: t.items.attachments?.heading || "Attachments" },
+        ]}
+      />
 
       {attachments.length === 0 ? (
         <Card>

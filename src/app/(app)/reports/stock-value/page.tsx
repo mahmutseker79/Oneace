@@ -1,4 +1,4 @@
-import { ChevronLeft, DollarSign, Download, PackageOpen } from "lucide-react";
+import { ChevronLeft, DollarSign, Download, PackageOpen, Warehouse } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
   TableBody,
@@ -145,21 +147,16 @@ export default async function StockValueReportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            {t.reports.stockValue.backToReports}
-          </Link>
-        </Button>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <DollarSign className="text-muted-foreground mt-1 h-5 w-5" />
-            <div>
-              <h1 className="text-2xl font-semibold">{t.reports.stockValue.heading}</h1>
-              <p className="text-muted-foreground">{t.reports.stockValue.subtitle}</p>
-            </div>
-          </div>
+      {/* God-Mode Design: Premium PageHeader with breadcrumb */}
+      <PageHeader
+        title={t.reports.stockValue.heading}
+        description={t.reports.stockValue.subtitle}
+        backHref="/reports"
+        breadcrumb={[
+          { label: t.reports?.heading ?? "Reports", href: "/reports" },
+          { label: t.reports.stockValue.heading },
+        ]}
+        actions={
           <div className="flex items-center gap-2">
             <ExportButton href="/reports/stock-value/pdf">
               {t.common.downloadPdf}
@@ -169,8 +166,8 @@ export default async function StockValueReportPage() {
             </ExportButton>
             <ExportButton href="/reports/stock-value/export">{t.common.exportCsv}</ExportButton>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {rows.length === 0 ? (
         <EmptyState
@@ -180,6 +177,29 @@ export default async function StockValueReportPage() {
         />
       ) : (
         <>
+          <ReportSummaryCard
+            metrics={[
+              {
+                label: t.reports.stockValue.totalValueLabel,
+                value: formatCurrency(grandTotalValue, {
+                  currency: region.currency,
+                  locale: region.numberLocale,
+                }),
+                icon: DollarSign,
+              },
+              {
+                label: t.reports.stockValue.distinctItemsLabel,
+                value: formatNumber(distinctItems, region.numberLocale),
+                icon: PackageOpen,
+              },
+              {
+                label: "Warehouses",
+                value: formatNumber(groups.length, region.numberLocale),
+                icon: Warehouse,
+              },
+            ]}
+          />
+
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader>

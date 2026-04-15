@@ -189,14 +189,34 @@ export default async function ReportsPage() {
 
   const reports = [...coreReports, ...conditionalReports, ...advancedReports];
 
+  // Helper for premium report card rendering
+  function renderReportCard(report: { href: string; icon: typeof AlertTriangle; title: string; description: string }) {
+    const Icon = report.icon;
+    return (
+      <Link key={report.href} href={report.href} className="group block">
+        <Card className="h-full card-interactive overflow-hidden border-transparent hover:border-border/60">
+          <CardHeader className="pb-3">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/8 text-primary group-hover:bg-primary/12 transition-colors">
+                <Icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-sm font-semibold leading-tight">{report.title}</CardTitle>
+                <CardDescription className="text-xs mt-1 line-clamp-2">{report.description}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      <div className="flex items-start gap-3">
-        <FileBarChart className="text-muted-foreground mt-1 h-5 w-5" />
-        <div>
-          <h1 className="text-2xl font-semibold">{t.reports.heading}</h1>
-          <p className="text-muted-foreground">{t.reports.subtitle}</p>
-        </div>
+      {/* Page Header */}
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.reports.heading}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t.reports.subtitle}</p>
       </div>
 
       {/* Phase 15.2 — exports upgrade prompt for FREE users */}
@@ -210,79 +230,40 @@ export default async function ReportsPage() {
       ) : null}
 
       {/* Core Reports */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Core Reports</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          {coreReports.map((report) => {
-            const Icon = report.icon;
-            return (
-              <Link key={report.href} href={report.href} className="group block">
-                <Card className="h-full transition-colors group-hover:border-foreground/20">
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <Icon className="text-muted-foreground h-4 w-4" />
-                      <CardTitle>{report.title}</CardTitle>
-                    </div>
-                    <CardDescription>{report.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent />
-                </Card>
-              </Link>
-            );
-          })}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-sm font-semibold text-foreground">Core Reports</h2>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">{coreReports.length}</span>
         </div>
-      </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {coreReports.map(renderReportCard)}
+        </div>
+      </section>
 
       {/* Conditional Reports */}
       {conditionalReports.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Movement & Warehouse Reports</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {conditionalReports.map((report) => {
-              const Icon = report.icon;
-              return (
-                <Link key={report.href} href={report.href} className="group block">
-                  <Card className="h-full transition-colors group-hover:border-foreground/20">
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Icon className="text-muted-foreground h-4 w-4" />
-                        <CardTitle>{report.title}</CardTitle>
-                      </div>
-                      <CardDescription>{report.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent />
-                  </Card>
-                </Link>
-              );
-            })}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-foreground">Movement & Warehouse</h2>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">{conditionalReports.length}</span>
           </div>
-        </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {conditionalReports.map(renderReportCard)}
+          </div>
+        </section>
       )}
 
       {/* Advanced Reports */}
       {advancedReports.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Advanced Reports</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {advancedReports.map((report) => {
-              const Icon = report.icon;
-              return (
-                <Link key={report.href} href={report.href} className="group block">
-                  <Card className="h-full transition-colors group-hover:border-foreground/20">
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Icon className="text-muted-foreground h-4 w-4" />
-                        <CardTitle>{report.title}</CardTitle>
-                      </div>
-                      <CardDescription>{report.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent />
-                  </Card>
-                </Link>
-              );
-            })}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-foreground">Advanced Reports</h2>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">{advancedReports.length}</span>
           </div>
-        </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {advancedReports.map(renderReportCard)}
+          </div>
+        </section>
       )}
     </div>
   );

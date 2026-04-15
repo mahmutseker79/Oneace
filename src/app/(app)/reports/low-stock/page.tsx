@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronLeft, Download, ShoppingCart } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, Download, Package, ShoppingCart, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
   TableBody,
@@ -124,24 +126,22 @@ export default async function LowStockReportPage() {
   const groups = groupBySupplier(lowStockItems);
   const supplierGroups = groups.filter((g) => g.supplier !== null);
 
+  // Calculate summary metrics for the report header
+  const totalShortfall = lowStockItems.reduce((sum, item) => sum + Math.max(0, item.reorderPoint - item.onHand), 0);
+  const criticalCount = lowStockItems.filter((item) => item.onHand === 0).length;
+
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            {t.reports.lowStock.backToReports}
-          </Link>
-        </Button>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="text-muted-foreground mt-1 h-5 w-5" />
-            <div>
-              <h1 className="text-2xl font-semibold">{t.reports.lowStock.heading}</h1>
-              <p className="text-muted-foreground">{t.reports.lowStock.subtitle}</p>
-            </div>
-          </div>
-          {/* Phase 5.5 — ExportButton shows loading state while download starts */}
+      {/* God-Mode Design: Premium PageHeader with breadcrumb */}
+      <PageHeader
+        title={t.reports.lowStock.heading}
+        description={t.reports.lowStock.subtitle}
+        backHref="/reports"
+        breadcrumb={[
+          { label: t.reports?.heading ?? "Reports", href: "/reports" },
+          { label: t.reports.lowStock.heading },
+        ]}
+        actions={
           <div className="flex items-center gap-2">
             <ExportButton href="/reports/low-stock/pdf">
               {t.common.downloadPdf}
@@ -151,8 +151,8 @@ export default async function LowStockReportPage() {
             </ExportButton>
             <ExportButton href="/reports/low-stock/export">{t.common.exportCsv}</ExportButton>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {lowStockItems.length === 0 ? (
         <EmptyState
@@ -162,15 +162,29 @@ export default async function LowStockReportPage() {
         />
       ) : (
         <>
-          <p className="text-muted-foreground text-sm">
-            {format(t.reports.lowStock.totalItems, {
-              count: String(lowStockItems.length),
-            })}
-            {" · "}
-            {format(t.reports.lowStock.totalSuppliers, {
-              count: String(supplierGroups.length),
-            })}
-          </p>
+          {/* God-Mode Design: Report KPI summary bar */}
+          <ReportSummaryCard
+            metrics={[
+              {
+                label: "Low Stock Items",
+                value: lowStockItems.length,
+                icon: Package,
+                trend: criticalCount > 0 ? `${criticalCount} out of stock` : undefined,
+                trendDirection: criticalCount > 0 ? "negative" : "neutral",
+              },
+              {
+                label: "Suppliers Affected",
+                value: supplierGroups.length,
+                icon: Truck,
+              },
+              {
+                label: "Total Shortfall",
+                value: totalShortfall.toLocaleString(),
+                icon: AlertTriangle,
+                trendDirection: "negative",
+              },
+            ]}
+          />
 
           {groups.map((group) => {
             const supplier = group.supplier;

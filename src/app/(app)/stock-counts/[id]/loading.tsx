@@ -5,33 +5,35 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function StockCountDetailLoading() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-7 w-44" />
-          <div className="flex gap-2">
-            <Skeleton className="h-5 w-20" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-24" />
-        </div>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5">
+        <Skeleton className="h-3.5 w-16" />
+        <Skeleton className="h-3.5 w-3.5" />
+        <Skeleton className="h-3.5 w-24" />
       </div>
 
-      {/* Progress bar */}
+      {/* Title + badge */}
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-8 w-8 rounded-lg" /> {/* back button */}
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
+
+      {/* Status Timeline placeholder (4 circles connected by lines) */}
       <Card>
-        <CardContent className="pt-6 space-y-3">
-          <div className="flex justify-between">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-4 w-16" />
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                {i < 3 && <Skeleton className="h-0.5 w-8 -mt-1" />}
+              </div>
+            ))}
           </div>
-          <Skeleton className="h-2 w-full rounded-full" />
         </CardContent>
       </Card>
 
-      {/* Entry form placeholder */}
+      {/* Entry form skeleton */}
       <Card>
         <CardHeader>
           <Skeleton className="h-5 w-28" />

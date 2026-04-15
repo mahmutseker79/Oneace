@@ -167,7 +167,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         <div className="flex justify-end px-4 pt-2 lg:px-6">
           <InstallAppButton labels={{ install: t.pwa.install.cta }} />
         </div>
-        <main id="main-content" className="p-4 lg:p-6">
+        <main id="main-content" className="p-4 sm:p-5 lg:p-6 max-w-[1400px]">
           {children}
         </main>
       </div>

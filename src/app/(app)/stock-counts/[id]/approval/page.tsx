@@ -1,16 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 import { db } from "@/lib/db";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
+import { getMessages } from "@/lib/i18n";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { ApprovalForm } from "./approval-form";
 
 /**
  * Stock count approval page. Shows approval details and allows approve/reject.
  */
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const t = await getMessages();
+  return { title: "Approval — Stock Counts" };
+}
+
 export default async function ApprovalPage({
   params,
 }: {
@@ -18,6 +30,7 @@ export default async function ApprovalPage({
 }) {
   const { membership } = await requireActiveMembership();
   const orgId = membership.organizationId;
+  const t = await getMessages();
 
   const canApprove = hasCapability(membership.role, "stockCounts.approve");
   const canReject = hasCapability(membership.role, "stockCounts.reject");
@@ -40,12 +53,21 @@ export default async function ApprovalPage({
     notFound();
   }
 
+  const countLabel = count.name;
+
   if (!count.approval) {
     return (
       <div className="space-y-6">
-        <Link href={`/stock-counts/${params.id}`} className="text-muted-foreground hover:underline">
-          {count.name}
-        </Link>
+        <PageHeader
+          title={"Approval"}
+          description={"Review and approve this stock count"}
+          backHref={`/stock-counts/${params.id}`}
+          breadcrumb={[
+            { label: t.nav?.counts ?? "Stock Counts", href: "/stock-counts" },
+            { label: countLabel },
+            { label: "Approval" },
+          ]}
+        />
         <Card>
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">No approval record found</p>
@@ -57,13 +79,16 @@ export default async function ApprovalPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/stock-counts/${params.id}`} className="text-muted-foreground hover:underline">
-          {count.name}
-        </Link>
-        <h1 className="text-3xl font-bold">Approval</h1>
-        <p className="text-muted-foreground">Review and approve this count</p>
-      </div>
+      <PageHeader
+        title={"Approval"}
+        description={"Review and approve this stock count"}
+        backHref={`/stock-counts/${params.id}`}
+        breadcrumb={[
+          { label: t.nav?.counts ?? "Stock Counts", href: "/stock-counts" },
+          { label: countLabel },
+          { label: "Approval" },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

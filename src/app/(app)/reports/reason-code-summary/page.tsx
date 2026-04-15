@@ -1,7 +1,7 @@
-import { ChevronLeft, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -74,21 +74,15 @@ export default async function ReasonCodeSummaryReportPage() {
   if (movements.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="space-y-1">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/reports">
-              <ChevronLeft className="h-4 w-4" />
-              Back to Reports
-            </Link>
-          </Button>
-          <div className="flex items-start gap-3">
-            <Tag className="text-muted-foreground mt-1 h-5 w-5" />
-            <div>
-              <h1 className="text-2xl font-semibold">Reason Code Summary</h1>
-              <p className="text-muted-foreground">Track inventory adjustments by reason code</p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Reason Code Summary"
+          description="Track inventory adjustments by reason code"
+          backHref="/reports"
+          breadcrumb={[
+            { label: "Reports", href: "/reports" },
+            { label: "Reason Code Summary" },
+          ]}
+        />
         <EmptyState
           icon={Tag}
           title="No reason codes recorded"
@@ -144,28 +138,20 @@ export default async function ReasonCodeSummaryReportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            Back to Reports
-          </Link>
-        </Button>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <Tag className="text-muted-foreground mt-1 h-5 w-5" />
-            <div>
-              <h1 className="text-2xl font-semibold">Reason Code Summary</h1>
-              <p className="text-muted-foreground">Track inventory adjustments by reason code</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ExportButton href="/reports/reason-code-summary/export">
-              Export CSV
-            </ExportButton>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Reason Code Summary"
+        description="Track inventory adjustments by reason code"
+        backHref="/reports"
+        breadcrumb={[
+          { label: "Reports", href: "/reports" },
+          { label: "Reason Code Summary" },
+        ]}
+        actions={
+          <ExportButton href="/reports/reason-code-summary/export">
+            Export CSV
+          </ExportButton>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

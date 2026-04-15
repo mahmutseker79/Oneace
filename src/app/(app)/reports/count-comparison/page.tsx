@@ -1,8 +1,9 @@
 "use client";
 
-import { Download, CompareIcon, AlertCircle } from "lucide-react";
+import { Download, GitCompareIcon as CompareIcon, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -167,13 +168,15 @@ export default function CountComparisonPage() {
 	if (!canViewReport) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-start gap-3">
-					<CompareIcon className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">Count Comparison</h1>
-						<p className="text-muted-foreground">Compare two stock counts side-by-side</p>
-					</div>
-				</div>
+				<PageHeader
+					title="Count Comparison"
+					description="Compare two stock counts side-by-side"
+					backHref="/reports"
+					breadcrumb={[
+						{ label: "Reports", href: "/reports" },
+						{ label: "Count Comparison" },
+					]}
+				/>
 				<UpgradePrompt
 					reason="Reports are available on Pro and Business plans."
 					requiredPlan="PRO"
@@ -197,15 +200,15 @@ export default function CountComparisonPage() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start gap-3">
-				<CompareIcon className="text-muted-foreground mt-1 h-5 w-5" />
-				<div>
-					<h1 className="text-2xl font-semibold">Count Comparison</h1>
-					<p className="text-muted-foreground">
-						Compare two stock counts side-by-side
-					</p>
-				</div>
-			</div>
+			<PageHeader
+				title="Count Comparison"
+				description="Compare two stock counts side-by-side"
+				backHref="/reports"
+				breadcrumb={[
+					{ label: "Reports", href: "/reports" },
+					{ label: "Count Comparison" },
+				]}
+			/>
 
 			{error && (
 				<Alert variant="destructive">

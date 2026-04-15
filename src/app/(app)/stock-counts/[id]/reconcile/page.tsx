@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -62,6 +63,7 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
   }
 
   const state = count.state as CountState;
+  const countLabel = count.name;
 
   // Resolve item + warehouse labels in bulk — same approach as detail
   // page, keeps the query plan flat.
@@ -127,22 +129,16 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      {/* Back button */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/stock-counts/${count.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-            {t.stockCounts.reconcile.backToDetail}
-          </Link>
-        </Button>
-      </div>
-
-      {/* Heading */}
-      <div>
-        <h1 className="text-2xl font-semibold">{t.stockCounts.reconcile.heading}</h1>
-        <p className="text-muted-foreground">{t.stockCounts.reconcile.subtitle}</p>
-        <p className="mt-2 text-sm text-muted-foreground">{count.name}</p>
-      </div>
+      <PageHeader
+        title={t.stockCounts.reconcile.heading}
+        description={t.stockCounts.reconcile.subtitle}
+        backHref={`/stock-counts/${count.id}`}
+        breadcrumb={[
+          { label: t.nav?.counts ?? "Stock Counts", href: "/stock-counts" },
+          { label: countLabel },
+          { label: t.stockCounts.reconcile.heading },
+        ]}
+      />
 
       {/* Summary tiles */}
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">

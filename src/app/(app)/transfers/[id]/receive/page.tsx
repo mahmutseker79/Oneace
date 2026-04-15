@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
 import { ReceiveForm } from "./receive-form";
@@ -15,12 +17,14 @@ type PageProps = {
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  return { title: "Receive Transfer" };
+  const t = await getMessages();
+  return { title: t.transfers?.receive?.metaTitle || "Receive Transfer" };
 }
 
 export default async function ReceivePage({ params }: PageProps) {
   const { id } = await params;
   const { membership } = await requireActiveMembership();
+  const t = await getMessages();
 
   // Verify transfer exists and is IN_TRANSIT
   const transfer = await db.stockTransfer.findFirst({
@@ -44,16 +48,21 @@ export default async function ReceivePage({ params }: PageProps) {
     notFound();
   }
 
+  const transferLabel = transfer.transferNumber;
+
   if (transfer.status !== "IN_TRANSIT") {
     return (
-      <div className="space-y-4">
-        <Link href={`/transfers/${id}`}>
-          <Button variant="ghost" size="sm">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-
+      <div className="space-y-6">
+        <PageHeader
+          title={t.transfers?.receive?.heading || "Receive Transfer"}
+          description={t.transfers?.receive?.subtitle || ""}
+          backHref={`/transfers/${id}`}
+          breadcrumb={[
+            { label: t.nav?.transfers ?? "Transfers", href: "/transfers" },
+            { label: transferLabel },
+            { label: t.transfers?.receive?.heading || "Receive Transfer" },
+          ]}
+        />
         <Card className="border-orange-200 bg-orange-50">
           <CardContent className="pt-6">
             <p className="text-sm text-orange-800">
@@ -66,22 +75,20 @@ export default async function ReceivePage({ params }: PageProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <Link href={`/transfers/${id}`}>
-        <Button variant="ghost" size="sm">
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Transfer
-        </Button>
-      </Link>
+    <div className="space-y-6">
+      <PageHeader
+        title={t.transfers?.receive?.heading || "Receive Transfer"}
+        description={`From ${transfer.fromWarehouse.name} to ${transfer.toWarehouse.name}`}
+        backHref={`/transfers/${id}`}
+        breadcrumb={[
+          { label: t.nav?.transfers ?? "Transfers", href: "/transfers" },
+          { label: transferLabel },
+          { label: t.transfers?.receive?.heading || "Receive Transfer" },
+        ]}
+      />
 
       <Card>
-        <CardHeader>
-          <CardTitle>Receive {transfer.transferNumber}</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            From {transfer.fromWarehouse.name} to {transfer.toWarehouse.name}
-          </p>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <ReceiveForm transferId={id} lines={transfer.lines} />
         </CardContent>
       </Card>

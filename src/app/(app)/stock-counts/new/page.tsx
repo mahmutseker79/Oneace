@@ -1,8 +1,7 @@
-import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -41,14 +40,14 @@ export default async function NewStockCountPage() {
   if (items.length === 0 || warehouses.length === 0) {
     return (
       <div className="space-y-6 max-w-2xl">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/stock-counts">
-              <ArrowLeft className="h-4 w-4" />
-              {t.common.back}
-            </Link>
-          </Button>
-        </div>
+        <PageHeader
+          title={t.stockCounts.createHeading}
+          breadcrumb={[
+            { label: t.stockCounts.metaTitle, href: "/stock-counts" },
+            { label: t.stockCounts.createHeading },
+          ]}
+          backHref="/stock-counts"
+        />
         <Card>
           <CardHeader>
             <CardTitle>{t.stockCounts.createHeading}</CardTitle>
@@ -125,19 +124,15 @@ export default async function NewStockCountPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/stock-counts">
-            <ArrowLeft className="h-4 w-4" />
-            {t.common.back}
-          </Link>
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-2xl font-semibold">{t.stockCounts.createHeading}</h1>
-        <p className="text-muted-foreground">{t.stockCounts.createSubtitle}</p>
-      </div>
+      <PageHeader
+        title={t.stockCounts.createHeading}
+        description={t.stockCounts.createSubtitle}
+        breadcrumb={[
+          { label: t.stockCounts.metaTitle, href: "/stock-counts" },
+          { label: t.stockCounts.createHeading },
+        ]}
+        backHref="/stock-counts"
+      />
 
       <Card>
         <CardContent className="pt-6">

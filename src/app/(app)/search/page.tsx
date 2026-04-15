@@ -124,8 +124,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <div className="flex items-start gap-3">
           <SearchIcon className="text-muted-foreground mt-1 h-5 w-5" />
           <div>
-            <h1 className="text-2xl font-semibold">{t.search.heading}</h1>
-            <p className="text-muted-foreground">{t.search.subtitle}</p>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.search.heading}</h1>
+            <p className="text-sm text-muted-foreground">{t.search.subtitle}</p>
           </div>
         </div>
       </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
-import { ArrowUpRight, ArrowDownRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Card } from "./card";
+import { ArrowDownRight, ArrowUpRight, type LucideIcon, Minus } from "lucide-react";
+import Link from "next/link";
+import React from "react";
 import { Badge } from "./badge";
+import { Card } from "./card";
 
 interface KpiCardProps {
   title: string;
@@ -30,45 +30,55 @@ export function KpiCard({
   href,
 }: KpiCardProps) {
   const content = (
-    <div className={cn("space-y-4", className)}>
-      {Icon && (
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-          <Icon className="h-5 w-5" />
-        </div>
-      )}
-
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {title}
-        </p>
-        <p className="text-2xl font-bold">{value}</p>
+    <div className={cn("relative p-5", className)}>
+      {/* Header: Icon + Title */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-overline text-muted-foreground">{title}</p>
+        {Icon && (
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/8 text-primary">
+            <Icon className="h-4.5 w-4.5" />
+          </div>
+        )}
       </div>
 
+      {/* Value — premium metric display */}
+      <p className="text-metric-sm text-foreground mb-1">{value}</p>
+
+      {/* Trend + Description */}
       {(trend || description) && (
-        <div className="flex items-center justify-between">
-          {trend && (
-            <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-3">
+          {trend && trend.value !== 0 && (
+            <>
               {trend.value > 0 ? (
-                <Badge variant="success" className="flex items-center gap-1 text-xs">
+                <Badge
+                  variant="success"
+                  className="flex items-center gap-0.5 text-xs px-1.5 py-0.5"
+                >
                   <ArrowUpRight className="h-3 w-3" />
                   {trend.value}%
                 </Badge>
-              ) : trend.value < 0 ? (
-                <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+              ) : (
+                <Badge
+                  variant="destructive"
+                  className="flex items-center gap-0.5 text-xs px-1.5 py-0.5"
+                >
                   <ArrowDownRight className="h-3 w-3" />
                   {Math.abs(trend.value)}%
                 </Badge>
-              ) : (
-                <Badge variant="secondary" className="text-xs">
-                  {trend.label}
-                </Badge>
               )}
+              <span className="text-xs text-muted-foreground truncate">{trend.label}</span>
+            </>
+          )}
+
+          {trend && trend.value === 0 && (
+            <div className="flex items-center gap-1.5">
+              <Minus className="h-3 w-3 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">{trend.label}</span>
             </div>
           )}
 
           {description && !trend && (
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
           )}
         </div>
       )}
@@ -77,13 +87,13 @@ export function KpiCard({
 
   if (href) {
     return (
-      <Link href={href}>
-        <Card className="cursor-pointer transition-all hover:shadow-lg hover:shadow-card-hover">
+      <Link href={href} className="group block">
+        <Card className="card-interactive overflow-hidden border-transparent hover:border-border/60">
           {content}
         </Card>
       </Link>
     );
   }
 
-  return <Card>{content}</Card>;
+  return <Card className="overflow-hidden">{content}</Card>;
 }

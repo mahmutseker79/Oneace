@@ -1,8 +1,6 @@
-import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
@@ -43,15 +41,14 @@ export default async function NewItemPage({
 		if (currentCount >= itemLimit) {
 			return (
 				<div className="space-y-6">
-					<div className="space-y-1">
-						<Button variant="ghost" size="sm" asChild className="-ml-2">
-							<Link href="/items">
-								<ChevronLeft className="h-4 w-4" />
-								{t.items.backToList}
-							</Link>
-						</Button>
-						<h1 className="text-2xl font-semibold">{t.items.newItemHeading}</h1>
-					</div>
+					<PageHeader
+						title={t.items.newItemHeading}
+						breadcrumb={[
+							{ label: t.items.metaTitle, href: "/items" },
+							{ label: t.items.newItem },
+						]}
+						backHref="/items"
+					/>
 					<UpgradePrompt
 						reason={`You've reached the ${itemLimit}-item limit on the Free plan. You currently have ${currentCount} items.`}
 						requiredPlan="PRO"
@@ -95,16 +92,15 @@ export default async function NewItemPage({
 
 	return (
 		<div className="space-y-6">
-			<div className="space-y-1">
-				<Button variant="ghost" size="sm" asChild className="-ml-2">
-					<Link href="/items">
-						<ChevronLeft className="h-4 w-4" />
-						{t.items.backToList}
-					</Link>
-				</Button>
-				<h1 className="text-2xl font-semibold">{t.items.newItemHeading}</h1>
-				<p className="text-muted-foreground">{t.items.newItemSubtitle}</p>
-			</div>
+			<PageHeader
+				title={t.items.newItemHeading}
+				description={t.items.newItemSubtitle}
+				breadcrumb={[
+					{ label: t.items.metaTitle, href: "/items" },
+					{ label: t.items.newItem },
+				]}
+				backHref="/items"
+			/>
 
 			<ItemForm
 				labels={labels}

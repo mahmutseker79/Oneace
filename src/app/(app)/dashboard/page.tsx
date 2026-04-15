@@ -25,6 +25,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { ChartCard } from "@/components/ui/chart-card";
+import { KpiCard } from "@/components/ui/kpi-card";
 import {
 	Table,
 	TableBody,
@@ -356,8 +358,8 @@ export default async function DashboardPage() {
 		<div className="space-y-6">
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold">{greeting}</h1>
-					<p className="text-muted-foreground">
+					<h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{greeting}</h1>
+					<p className="text-sm text-muted-foreground mt-0.5">
 						<span className="text-foreground font-medium">
 							{membership.organization.name}
 						</span>
@@ -403,10 +405,9 @@ export default async function DashboardPage() {
 				</div>
 			</div>
 
-			{/* KPI cards — every card links to its drill-down */}
-			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+			{/* KPI cards — premium design with KpiCard component */}
+			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 				{kpis.map((kpi, idx) => {
-					const Icon = kpi.icon;
 					// P9.3b — Determine trend for this KPI
 					let trendValue = 0;
 					let trendLabel: string = t.dashboard.kpi.noChange;
@@ -470,42 +471,18 @@ export default async function DashboardPage() {
 					}
 
 					return (
-						<Link key={kpi.label} href={kpi.href} className="group block">
-							<Card className="transition-shadow duration-200 group-hover:shadow-md">
-								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-									<CardTitle className="text-muted-foreground text-sm font-medium">
-										{kpi.label}
-									</CardTitle>
-									<div className="flex items-center gap-2">
-										{/* P9.3b — Sparkline SVG */}
-										<svg width={sparkWidth} height={sparkHeight} className="overflow-visible">
-											<polyline
-												points={points}
-												fill="none"
-												stroke="hsl(221, 83%, 53%)"
-												strokeWidth="1.5"
-												vectorEffect="non-scaling-stroke"
-											/>
-										</svg>
-										<Icon className="text-muted-foreground h-4 w-4" />
-									</div>
-								</CardHeader>
-								<CardContent>
-									<div className="text-2xl font-semibold tabular-nums">{kpi.value}</div>
-									<div className="flex items-center gap-1 mt-1">
-										<p className="text-muted-foreground text-xs">
-											{kpi.caption}
-										</p>
-										{/* P9.3b — Trend indicator */}
-										{trendValue !== 0 && (
-											<span className="text-xs font-medium" style={{ color: trendColor }}>
-												{trendValue > 0 ? "+" : ""}{Math.abs(Math.round(trendValue))} {t.dashboard.kpi.vsLastWeek}
-											</span>
-										)}
-									</div>
-								</CardContent>
-							</Card>
-						</Link>
+						<KpiCard
+							key={kpi.label}
+							title={kpi.label}
+							value={kpi.value}
+							description={kpi.caption}
+							icon={kpi.icon}
+							href={kpi.href}
+							trend={trendValue !== 0 ? {
+								value: Math.round(trendValue),
+								label: `${t.dashboard.kpi.vsLastWeek}`,
+							} : undefined}
+						/>
 					);
 				})}
 			</div>
@@ -550,23 +527,25 @@ export default async function DashboardPage() {
 				const completedCount = steps.filter((s) => s.complete).length;
 
 				return (
-					<Card className="border-primary/20 bg-primary/5">
-						<CardHeader>
-							<div className="flex items-center justify-between">
-								<div>
-									<CardTitle className="text-base">🚀 Get started with OneAce</CardTitle>
+					<Card className="border-primary/20 overflow-hidden">
+						{/* Premium gradient top border */}
+						<div className="h-1 w-full" style={{ background: "var(--gradient-primary)" }} />
+						<CardHeader className="pb-3">
+							<div className="flex items-center justify-between gap-4">
+								<div className="min-w-0 flex-1">
+									<CardTitle className="text-sm font-semibold">Get started with OneAce</CardTitle>
 									<CardDescription>
-										Complete these steps to unlock the full power of your inventory system
+										{completedCount === 0 ? "Complete these steps to set up your inventory" : completedCount + " of " + steps.length + " steps complete"}
 									</CardDescription>
 								</div>
-								<div className="text-right">
-									<p className="text-xs font-semibold text-primary">
-										{completedCount} of {steps.length}
-									</p>
-									<div className="mt-1 h-1.5 w-12 overflow-hidden rounded-full bg-muted">
+								<div className="flex items-center gap-2.5">
+									<span className="text-xs font-semibold text-primary tabular-nums">
+										{Math.round((completedCount / steps.length) * 100)}%
+									</span>
+									<div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
 										<div
-											className="h-full rounded-full bg-primary transition-all duration-300"
-											style={{ width: `${(completedCount / steps.length) * 100}%` }}
+											className="h-full rounded-full transition-all duration-500"
+											style={{ width: `${(completedCount / steps.length) * 100}%`, background: 'var(--gradient-primary)' }}
 										/>
 									</div>
 								</div>
@@ -615,76 +594,50 @@ export default async function DashboardPage() {
 			})()}
 
 			{/* Movement trend chart — last 14 days */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-base">
-						{t.dashboard.trendChart.title}
-					</CardTitle>
-					<CardDescription>{t.dashboard.trendChart.subtitle}</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<LazyTrendChart
-						data={data.trendData}
-						labels={{
-							receipts: t.movements.types.RECEIPT,
-							issues: t.movements.types.ISSUE,
-							other: t.dashboard.trendChart.otherLabel,
-						}}
-					/>
-				</CardContent>
-			</Card>
+			<ChartCard
+				title={t.dashboard.trendChart.title}
+				description={t.dashboard.trendChart.subtitle}
+			>
+				<LazyTrendChart
+					data={data.trendData}
+					labels={{
+						receipts: t.movements.types.RECEIPT,
+						issues: t.movements.types.ISSUE,
+						other: t.dashboard.trendChart.otherLabel,
+					}}
+				/>
+			</ChartCard>
 
 			{/* P9.3a — Top 10 Most-Moved Items chart */}
 			{data.topItemsData.length > 0 && (
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base">
-							{t.dashboard.topItemsChart.title}
-						</CardTitle>
-						<CardDescription>
-							{t.dashboard.topItemsChart.subtitle}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<LazyTopItemsChart data={data.topItemsData} />
-					</CardContent>
-				</Card>
+				<ChartCard
+					title={t.dashboard.topItemsChart.title}
+					description={t.dashboard.topItemsChart.subtitle}
+				>
+					<LazyTopItemsChart data={data.topItemsData} />
+				</ChartCard>
 			)}
 
 			{/* P9.3a — Stock Value by Category and Low Stock Trend charts */}
 			<div className="grid gap-6 lg:grid-cols-2">
 				{/* Stock Value by Category */}
 				{data.categoryValueData.length > 0 && (
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">
-								{t.dashboard.categoryValueChart.title}
-							</CardTitle>
-							<CardDescription>
-								{t.dashboard.categoryValueChart.subtitle}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<LazyCategoryValueChart data={data.categoryValueData} />
-						</CardContent>
-					</Card>
+					<ChartCard
+						title={t.dashboard.categoryValueChart.title}
+						description={t.dashboard.categoryValueChart.subtitle}
+					>
+						<LazyCategoryValueChart data={data.categoryValueData} />
+					</ChartCard>
 				)}
 
 				{/* Low Stock Trend */}
 				{data.lowStockTrendData.length > 0 && (
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">
-								{t.dashboard.lowStockTrendChart.title}
-							</CardTitle>
-							<CardDescription>
-								{t.dashboard.lowStockTrendChart.subtitle}
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<LazyLowStockTrendChart data={data.lowStockTrendData} />
-						</CardContent>
-					</Card>
+					<ChartCard
+						title={t.dashboard.lowStockTrendChart.title}
+						description={t.dashboard.lowStockTrendChart.subtitle}
+					>
+						<LazyLowStockTrendChart data={data.lowStockTrendData} />
+					</ChartCard>
 				)}
 			</div>
 

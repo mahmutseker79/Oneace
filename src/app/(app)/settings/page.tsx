@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getLocale, getMessages, getRegion } from "@/lib/i18n";
 import { SUPPORTED_LOCALES, SUPPORTED_REGIONS } from "@/lib/i18n/config";
@@ -90,10 +91,13 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{t.settings.heading}</h1>
-        <p className="text-muted-foreground">{t.settings.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.settings.heading}
+        description={t.settings.subtitle}
+        breadcrumb={[
+          { label: t.settings?.heading ?? "Settings" },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

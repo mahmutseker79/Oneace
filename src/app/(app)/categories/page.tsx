@@ -87,8 +87,8 @@ export default async function CategoriesPage() {
       <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
       <div>
-        <h1 className="text-2xl font-semibold">{t.categories.heading}</h1>
-        <p className="text-muted-foreground">{t.categories.subtitle}</p>
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.categories.heading}</h1>
+        <p className="text-sm text-muted-foreground">{t.categories.subtitle}</p>
       </div>
 
       {canCreate ? (

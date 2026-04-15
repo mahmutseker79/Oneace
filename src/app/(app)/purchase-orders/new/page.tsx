@@ -1,7 +1,7 @@
-import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
@@ -83,15 +83,14 @@ export default async function NewPurchaseOrderPage({
   if (missing) {
     return (
       <div className="space-y-6">
-        <div className="space-y-1">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href="/purchase-orders">
-              <ChevronLeft className="h-4 w-4" />
-              {t.purchaseOrders.backToList}
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-semibold">{t.purchaseOrders.newPurchaseOrderHeading}</h1>
-        </div>
+        <PageHeader
+          title={t.purchaseOrders.newPurchaseOrderHeading}
+          breadcrumb={[
+            { label: t.purchaseOrders.metaTitle, href: "/purchase-orders" },
+            { label: t.purchaseOrders.newPurchaseOrder },
+          ]}
+          backHref="/purchase-orders"
+        />
         <Card>
           <CardHeader>
             <CardTitle>{t.purchaseOrders.emptyTitle}</CardTitle>
@@ -166,16 +165,15 @@ export default async function NewPurchaseOrderPage({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/purchase-orders">
-            <ChevronLeft className="h-4 w-4" />
-            {t.purchaseOrders.backToList}
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">{t.purchaseOrders.newPurchaseOrderHeading}</h1>
-        <p className="text-muted-foreground">{t.purchaseOrders.newPurchaseOrderSubtitle}</p>
-      </div>
+      <PageHeader
+        title={t.purchaseOrders.newPurchaseOrderHeading}
+        description={t.purchaseOrders.newPurchaseOrderSubtitle}
+        breadcrumb={[
+          { label: t.purchaseOrders.metaTitle, href: "/purchase-orders" },
+          { label: t.purchaseOrders.newPurchaseOrder },
+        ]}
+        backHref="/purchase-orders"
+      />
 
       <PurchaseOrderForm
         labels={labels}

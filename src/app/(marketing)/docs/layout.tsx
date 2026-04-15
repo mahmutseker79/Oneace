@@ -22,12 +22,12 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         {/* Sidebar */}
         <aside className="shrink-0 lg:w-52">
           <div className="sticky top-20 space-y-1">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Documentation
             </p>
             <Link
               href="/docs"
-              className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               Overview
             </Link>
@@ -35,7 +35,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={link.href}
                 href={link.href}
-                className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="block rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 {link.label}
               </Link>

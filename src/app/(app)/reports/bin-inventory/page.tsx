@@ -1,7 +1,8 @@
-import { ChevronLeft, Download, Grid3X3 } from "lucide-react";
+import { Download, Grid3X3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -152,28 +153,25 @@ export default async function BinInventoryReportPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            {t.reports.binInventory.backToReports}
-          </Link>
-        </Button>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">{t.reports.binInventory.heading}</h1>
-            <p className="text-sm text-muted-foreground">{t.reports.binInventory.subtitle}</p>
-          </div>
-          {canExport && warehouses.length > 0 ? (
+      <PageHeader
+        title={t.reports.binInventory.heading}
+        description={t.reports.binInventory.subtitle}
+        backHref="/reports"
+        breadcrumb={[
+          { label: "Reports", href: "/reports" },
+          { label: t.reports.binInventory.heading },
+        ]}
+        actions={
+          canExport && warehouses.length > 0 ? (
             <div className="flex items-center gap-2">
               <ExportButton href="/reports/bin-inventory/pdf">
                 {t.common.downloadPdf}
               </ExportButton>
               <ExportButton href="/reports/bin-inventory/export">Export CSV</ExportButton>
             </div>
-          ) : null}
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
       {/* Empty states */}
       {binCount === 0 ? (

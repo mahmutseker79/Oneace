@@ -1,6 +1,7 @@
 import { Download, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
@@ -30,12 +31,15 @@ export default async function PrivacyPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{t.privacy?.heading || "Privacy & Data"}</h1>
-        <p className="text-muted-foreground">
-          {t.privacy?.subtitle || "Manage your personal data and account settings"}
-        </p>
-      </div>
+      <PageHeader
+        title={t.privacy?.heading || "Privacy & Data"}
+        description={t.privacy?.subtitle || "Manage your personal data and account settings"}
+        breadcrumb={[
+          { label: "Settings", href: "/settings" },
+          { label: "Privacy", href: "#" },
+        ]}
+        backHref="/settings"
+      />
 
       <div className="space-y-6">
         {/* Data Export Card */}

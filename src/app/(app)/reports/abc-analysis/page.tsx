@@ -6,6 +6,8 @@ import {
 	BarChart3,
 	Zap,
 	TrendingUp,
+	Package,
+	DollarSign,
 } from "lucide-react";
 import type { Metadata } from "next";
 import { useEffect, useState } from "react";
@@ -13,6 +15,8 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
 	Card,
 	CardContent,
@@ -173,13 +177,15 @@ export default function ABCAnalysisPage() {
 	if (!canViewReport) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-start gap-3">
-					<BarChart3 className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">ABC Analysis</h1>
-						<p className="text-muted-foreground">Pareto analysis of your inventory</p>
-					</div>
-				</div>
+				<PageHeader
+					title="ABC Analysis"
+					description="Pareto analysis of your inventory"
+					backHref="/reports"
+					breadcrumb={[
+						{ label: "Reports", href: "/reports" },
+						{ label: "ABC Analysis" },
+					]}
+				/>
 				<UpgradePrompt
 					reason="ABC analysis is available on Pro and Business plans."
 					requiredPlan="PRO"
@@ -227,46 +233,46 @@ export default function ABCAnalysisPage() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between gap-3">
-				<div className="flex items-start gap-3">
-					<BarChart3 className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">ABC Analysis</h1>
-						<p className="text-muted-foreground">
-							Pareto analysis of your inventory value distribution
-						</p>
+			<PageHeader
+				title="ABC Analysis"
+				description="Pareto analysis of your inventory value distribution"
+				backHref="/reports"
+				breadcrumb={[
+					{ label: "Reports", href: "/reports" },
+					{ label: "ABC Analysis" },
+				]}
+				actions={
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleExport("csv")}
+							disabled={exporting}
+						>
+							<Download className="h-4 w-4 mr-1" />
+							CSV
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleExport("xlsx")}
+							disabled={exporting}
+						>
+							<Download className="h-4 w-4 mr-1" />
+							XLSX
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleExport("pdf")}
+							disabled={exporting}
+						>
+							<Download className="h-4 w-4 mr-1" />
+							PDF
+						</Button>
 					</div>
-				</div>
-				<div className="flex gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleExport("csv")}
-						disabled={exporting}
-					>
-						<Download className="h-4 w-4 mr-1" />
-						CSV
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleExport("xlsx")}
-						disabled={exporting}
-					>
-						<Download className="h-4 w-4 mr-1" />
-						XLSX
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleExport("pdf")}
-						disabled={exporting}
-					>
-						<Download className="h-4 w-4 mr-1" />
-						PDF
-					</Button>
-				</div>
-			</div>
+				}
+			/>
 
 			{error && (
 				<Alert variant="destructive">
@@ -277,56 +283,32 @@ export default function ABCAnalysisPage() {
 			)}
 
 			{/* Summary KPIs */}
-			<div className="grid gap-4 md:grid-cols-4">
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Total Items
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">{data.length}</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Total Value
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">
-							{region && formatCurrency(totalValue, { currency: region.currency })}
-						</div>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Class A Items
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">{classA.length}</div>
-						<p className="text-xs text-muted-foreground mt-1">
-							{((classA.reduce((s, d) => s + d.totalValue, 0) / totalValue) * 100).toFixed(1)}% value
-						</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium text-muted-foreground">
-							Class B Items
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-2xl font-bold">{classB.length}</div>
-						<p className="text-xs text-muted-foreground mt-1">
-							{((classB.reduce((s, d) => s + d.totalValue, 0) / totalValue) * 100).toFixed(1)}% value
-						</p>
-					</CardContent>
-				</Card>
-			</div>
+			<ReportSummaryCard
+				metrics={[
+					{
+						label: "Total Items",
+						value: data.length,
+						icon: Package,
+					},
+					{
+						label: "Total Value",
+						value: region ? formatCurrency(totalValue, { currency: region.currency }) : "—",
+						icon: DollarSign,
+					},
+					{
+						label: "Class A Items",
+						value: classA.length,
+						trend: `${((classA.reduce((s, d) => s + d.totalValue, 0) / totalValue) * 100).toFixed(1)}% value`,
+						trendDirection: "positive",
+					},
+					{
+						label: "Class B Items",
+						value: classB.length,
+						trend: `${((classB.reduce((s, d) => s + d.totalValue, 0) / totalValue) * 100).toFixed(1)}% value`,
+						trendDirection: "neutral",
+					},
+				]}
+			/>
 
 			{/* Auto-Classify Button */}
 			<div>

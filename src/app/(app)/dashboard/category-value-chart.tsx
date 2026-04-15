@@ -2,17 +2,18 @@
 
 import { Cell, PieChart, Pie, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
+// Premium color palette — harmonious, accessible, dark-mode friendly
 const COLORS = [
-  "hsl(221, 83%, 53%)",  // blue
-  "hsl(142, 71%, 45%)",  // green
-  "hsl(0, 84%, 60%)",    // red
-  "hsl(38, 92%, 50%)",   // amber
-  "hsl(270, 70%, 50%)",  // purple
-  "hsl(180, 60%, 50%)",  // cyan
-  "hsl(25, 95%, 53%)",   // orange
-  "hsl(340, 82%, 52%)",  // pink
-  "hsl(45, 93%, 51%)",   // yellow
-  "hsl(200, 100%, 50%)", // light blue
+  "var(--chart-info, #3b82f6)",
+  "var(--chart-success, #10b981)",
+  "var(--chart-danger, #ef4444)",
+  "var(--chart-warning, #f59e0b)",
+  "#8b5cf6", // violet
+  "#06b6d4", // cyan
+  "#f97316", // orange
+  "#ec4899", // pink
+  "#eab308", // yellow
+  "#14b8a6", // teal
 ];
 
 export type CategoryValueData = {
@@ -24,20 +25,23 @@ type CategoryValueChartProps = {
   data: CategoryValueData[];
 };
 
+const tooltipStyle = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: 10,
+  fontSize: 12,
+  padding: "10px 14px",
+  boxShadow: "var(--shadow-elevated)",
+};
+
 export function CategoryValueChart({ data }: CategoryValueChartProps) {
   if (data.length === 0) return null;
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Tooltip
-          contentStyle={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: 8,
-            fontSize: 12,
-            padding: "8px 12px",
-          }}
+          contentStyle={tooltipStyle}
           formatter={(value) => {
             if (typeof value === "number") {
               return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -46,26 +50,28 @@ export function CategoryValueChart({ data }: CategoryValueChartProps) {
           }}
         />
         <Legend
-          wrapperStyle={{ fontSize: 12 }}
+          wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
           verticalAlign="bottom"
           height={36}
           iconType="circle"
+          iconSize={8}
         />
         <Pie
           data={data}
           cx="50%"
-          cy="50%"
-          innerRadius={60}
-          outerRadius={100}
-          paddingAngle={1}
+          cy="45%"
+          innerRadius="45%"
+          outerRadius="75%"
+          paddingAngle={2}
           dataKey="value"
           nameKey="category"
           label={(entry: any) => {
             const percent = entry.percent ?? 0;
-            return `${(percent * 100).toFixed(0)}%`;
+            return percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : "";
           }}
-          strokeWidth={1}
-          stroke="hsl(var(--card))"
+          labelLine={false}
+          strokeWidth={2}
+          stroke="var(--card)"
         >
           {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

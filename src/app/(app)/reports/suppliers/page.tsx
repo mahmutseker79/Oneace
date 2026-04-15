@@ -1,7 +1,7 @@
-import { ChevronLeft, Download, Truck, TruckIcon } from "lucide-react";
+import { Download, Truck, TruckIcon } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -189,30 +189,20 @@ export default async function SupplierPerformancePage() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between gap-3">
-				<div className="flex items-start gap-3">
-					<Truck className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">
-							{t.reports.supplierPerformance.heading}
-						</h1>
-						<p className="text-muted-foreground">
-							{t.reports.supplierPerformance.subtitle}
-						</p>
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button asChild variant="ghost">
-						<Link href="/reports">
-							<ChevronLeft className="h-4 w-4" />
-							{t.reports.supplierPerformance.backToReports}
-						</Link>
-					</Button>
+			<PageHeader
+				title={t.reports.supplierPerformance.heading}
+				description={t.reports.supplierPerformance.subtitle}
+				backHref="/reports"
+				breadcrumb={[
+					{ label: "Reports", href: "/reports" },
+					{ label: t.reports.supplierPerformance.heading },
+				]}
+				actions={
 					<ExportButton href="/reports/suppliers/export">
 						{t.common.exportCsv}
 					</ExportButton>
-				</div>
-			</div>
+				}
+			/>
 
 			{!hasAnyData ? (
 				<EmptyState

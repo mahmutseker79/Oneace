@@ -12,11 +12,13 @@
  * - Optional filters
  */
 
-import { Download, ScanLine } from "lucide-react";
+import { Download, ScanLine, CheckCircle2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
   TableBody,
@@ -64,31 +66,74 @@ export default function ScanActivityReportPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Calculate metrics
+  const foundCount = entries.filter((e) => e.found).length;
+  const notFoundCount = entries.filter((e) => !e.found).length;
+  const successRate = entries.length > 0 ? Math.round((foundCount / entries.length) * 100) : 0;
+
   if (!mounted) {
     return (
       <div className="space-y-6">
-        <div className="flex items-start gap-3">
-          <ScanLine className="text-muted-foreground mt-1 h-5 w-5" />
-          <div>
-            <h1 className="text-2xl font-semibold">Scan Activity</h1>
-            <p className="text-muted-foreground">Loading scan history...</p>
-          </div>
-        </div>
+        <PageHeader
+          title="Scan Activity"
+          description="Loading scan history..."
+          backHref="/reports"
+          breadcrumb={[
+            { label: "Reports", href: "/reports" },
+            { label: "Scan Activity" },
+          ]}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <ScanLine className="text-muted-foreground mt-1 h-5 w-5" />
-        <div>
-          <h1 className="text-2xl font-semibold">Scan Activity</h1>
-          <p className="text-muted-foreground">
-            Recent barcode scans and their results ({entries.length} total)
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Scan Activity"
+        description={`Recent barcode scans and their results (${entries.length} total)`}
+        backHref="/reports"
+        breadcrumb={[
+          { label: "Reports", href: "/reports" },
+          { label: "Scan Activity" },
+        ]}
+        actions={
+          entries.length > 0 ? (
+            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          ) : undefined
+        }
+      />
+
+      {entries.length > 0 && (
+        <ReportSummaryCard
+          metrics={[
+            {
+              label: "Total Scans",
+              value: entries.length,
+              icon: ScanLine,
+            },
+            {
+              label: "Found",
+              value: foundCount,
+              icon: CheckCircle2,
+              trendDirection: "positive",
+            },
+            {
+              label: "Not Found",
+              value: notFoundCount,
+              icon: XCircle,
+              trendDirection: notFoundCount > 0 ? "negative" : "neutral",
+            },
+            {
+              label: "Success Rate",
+              value: `${successRate}%`,
+            },
+          ]}
+        />
+      )}
 
       {entries.length === 0 ? (
         <Card>
@@ -101,12 +146,6 @@ export default function ScanActivityReportPage() {
         </Card>
       ) : (
         <>
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={handleExportCsv}>
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-          </div>
 
           <Card>
             <CardHeader>

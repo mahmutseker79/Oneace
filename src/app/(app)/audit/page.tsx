@@ -26,6 +26,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
 	Card,
 	CardContent,
@@ -135,10 +136,14 @@ export default async function AuditPage({
 	if (!hasPlanCapability(auditPlan, "auditLog")) {
 		return (
 			<div className="space-y-6">
-				<div className="space-y-1">
-					<h1 className="text-2xl font-semibold">{t.audit.heading}</h1>
-					<p className="text-muted-foreground">{t.audit.subtitle}</p>
-				</div>
+				<PageHeader
+					title={t.audit.heading}
+					description={t.audit.subtitle}
+					breadcrumb={[
+						{ label: "Settings", href: "/settings" },
+						{ label: t.audit.heading },
+					]}
+				/>
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
 						The audit log is available on the Business plan. Upgrade to access
@@ -159,10 +164,14 @@ export default async function AuditPage({
 	if (membership.role !== Role.OWNER && membership.role !== Role.ADMIN) {
 		return (
 			<div className="space-y-6">
-				<div className="space-y-1">
-					<h1 className="text-2xl font-semibold">{t.audit.heading}</h1>
-					<p className="text-muted-foreground">{t.audit.subtitle}</p>
-				</div>
+				<PageHeader
+					title={t.audit.heading}
+					description={t.audit.subtitle}
+					breadcrumb={[
+						{ label: "Settings", href: "/settings" },
+						{ label: t.audit.heading },
+					]}
+				/>
 				<Card>
 					<CardContent className="pt-6 text-sm text-muted-foreground">
 						{t.audit.forbidden}

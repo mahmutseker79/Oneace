@@ -179,9 +179,9 @@ function FeatureCell({ value }: { value: FeatureValue }) {
     return <Minus className="mx-auto h-4 w-4 text-muted-foreground/40" />;
   }
   if (value === true) {
-    return <Check className="mx-auto h-4 w-4 text-primary" />;
+    return <Check className="mx-auto h-4 w-4 text-primary font-semibold" />;
   }
-  return <span className="text-sm text-muted-foreground">{value}</span>;
+  return <span className="text-sm font-medium text-foreground">{value}</span>;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,10 +197,10 @@ export default function PricingPage() {
           <Badge variant="secondary" className="px-3 py-1 text-xs">
             Transparent pricing
           </Badge>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
             Full warehouse ops. Not full Sortly pricing.
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             OneAce Pro includes everything Sortly Ultra does — bins, purchase orders, unlimited
             items — for{" "}
             <span className="font-semibold text-foreground">$29/month instead of $149</span>.
@@ -219,10 +219,10 @@ export default function PricingPage() {
       <Separator />
 
       {/* Competitor comparison */}
-      <section className="px-4 py-12 sm:px-6">
+      <section className="px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-4xl space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="text-xl font-semibold">How OneAce compares</h2>
+          <div className="space-y-2 text-center">
+            <h2 className="text-2xl font-semibold tracking-tight">How OneAce compares</h2>
             <p className="text-sm text-muted-foreground">
               Same warehouse operations. Dramatically lower price.
             </p>
@@ -307,9 +307,9 @@ export default function PricingPage() {
       <Separator />
 
       {/* Full feature comparison */}
-      <section className="px-4 py-12 sm:px-6">
+      <section className="px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-4xl space-y-6">
-          <h2 className="text-center text-xl font-semibold">Full feature comparison</h2>
+          <h2 className="text-center text-2xl font-semibold tracking-tight">Full feature comparison</h2>
 
           <div className="overflow-x-auto rounded-lg border border-border/60">
             <table className="w-full text-sm">
@@ -346,9 +346,9 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="border-t border-border/60 bg-muted/20 px-4 py-12 sm:px-6">
+      <section className="border-t border-border/60 bg-muted/20 px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-3xl space-y-6">
-          <h2 className="text-center text-xl font-semibold">Common questions</h2>
+          <h2 className="text-center text-2xl font-semibold tracking-tight">Common questions</h2>
           <div className="grid gap-6 sm:grid-cols-2">
             {[
               {
@@ -388,13 +388,13 @@ export default function PricingPage() {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-border/60 px-4 py-12 text-center sm:px-6">
+      <section className="border-t border-border/60 px-4 py-12 text-center sm:px-6 sm:py-16">
         <div className="mx-auto max-w-md space-y-4">
-          <h2 className="text-xl font-semibold">Ready to get started?</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Ready to get started?</h2>
           <p className="text-sm text-muted-foreground">
             Free account in 60 seconds. 14-day Pro trial included.
           </p>
-          <Button size="lg" asChild className="w-full sm:w-auto">
+          <Button size="lg" asChild className="w-full sm:w-auto shadow-sm">
             <Link href="/register">
               Create a free account
               <ArrowRight className="h-4 w-4" />

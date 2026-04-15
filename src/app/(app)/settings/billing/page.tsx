@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -54,8 +55,18 @@ export default async function BillingSettingsPage({
   const sp = (await searchParams) ?? {};
 
   return (
-    <div className="max-w-2xl space-y-6 px-4 py-6 sm:px-6">
-      <BillingPage
+    <div className="space-y-6">
+      <PageHeader
+        title="Billing"
+        description="Manage your subscription and billing information"
+        breadcrumb={[
+          { label: "Settings", href: "/settings" },
+          { label: "Billing", href: "#" },
+        ]}
+        backHref="/settings"
+      />
+      <div className="max-w-2xl space-y-6 px-4 py-6 sm:px-6">
+        <BillingPage
         plan={(org?.plan ?? "FREE") as "FREE" | "PRO" | "BUSINESS"}
         canManageBilling={hasCapability(membership.role, "org.billing")}
         hasStripe={hasStripe}
@@ -77,6 +88,7 @@ export default async function BillingSettingsPage({
         cancelAtPeriodEnd={org?.cancelAtPeriodEnd ?? false}
         cancelAt={org?.cancelAt?.toISOString() ?? null}
       />
+      </div>
     </div>
   );
 }

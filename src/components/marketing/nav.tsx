@@ -8,10 +8,10 @@ export function MarketingNav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-sm font-bold text-primary-foreground shadow-md">
             O
           </div>
-          <span className="text-lg font-semibold tracking-tight">OneAce</span>
+          <span className="font-semibold tracking-tight text-foreground">OneAce</span>
         </Link>
 
         {/* Nav links */}
@@ -31,11 +31,11 @@ export function MarketingNav() {
         </nav>
 
         {/* CTAs */}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className="font-medium" asChild>
             <Link href="/login">Sign in</Link>
           </Button>
-          <Button size="sm" asChild>
+          <Button size="sm" className="font-medium shadow-sm" asChild>
             <Link href="/register">Get started free</Link>
           </Button>
         </div>

@@ -1,4 +1,5 @@
 import { CopyButton } from "@/components/ui/copy-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -118,22 +119,20 @@ export default async function ItemDetailPage({ params, searchParams }: PageProps
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/items">
-            <ArrowLeft className="h-4 w-4" />
-            {t.itemDetail.backToItems}
-          </Link>
-        </Button>
-      </div>
+      {/* Header — God-Mode Design: PageHeader with breadcrumb + back + badge */}
+      <PageHeader
+        title={item.name}
+        description={item.sku}
+        backHref="/items"
+        badge={statusBadge(item.status)}
+        breadcrumb={[
+          { label: t.nav?.items ?? "Items", href: "/items" },
+          { label: item.name },
+        ]}
+      />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{item.name}</h1>
-            {statusBadge(item.status)}
-          </div>
           <div className="flex items-center gap-1.5">
             <p className="font-mono text-sm text-muted-foreground">{item.sku}</p>
             {/* Phase 18 — copy SKU shortcut */}

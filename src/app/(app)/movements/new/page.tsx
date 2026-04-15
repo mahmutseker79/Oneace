@@ -1,8 +1,7 @@
-import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -108,14 +107,14 @@ export default async function NewMovementPage({ searchParams }: PageProps) {
 	if (items.length === 0 || warehouses.length === 0) {
 		return (
 			<div className="space-y-6 max-w-2xl">
-				<div className="flex items-center gap-2">
-					<Button variant="ghost" size="sm" asChild>
-						<Link href="/movements">
-							<ArrowLeft className="h-4 w-4" />
-							{t.common.back}
-						</Link>
-					</Button>
-				</div>
+				<PageHeader
+					title={t.movements.newMovementHeading}
+					breadcrumb={[
+						{ label: t.movements.metaTitle, href: "/movements" },
+						{ label: t.movements.newMovement },
+					]}
+					backHref="/movements"
+				/>
 				<Card>
 					<CardHeader>
 						<CardTitle>{t.movements.newMovementHeading}</CardTitle>
@@ -151,23 +150,15 @@ export default async function NewMovementPage({ searchParams }: PageProps) {
 
 	return (
 		<div className="space-y-6 max-w-2xl">
-			<div className="flex items-center gap-2">
-				<Button variant="ghost" size="sm" asChild>
-					<Link href="/movements">
-						<ArrowLeft className="h-4 w-4" />
-						{t.common.back}
-					</Link>
-				</Button>
-			</div>
-
-			<div>
-				<h1 className="text-2xl font-semibold">
-					{t.movements.newMovementHeading}
-				</h1>
-				<p className="text-muted-foreground">
-					{t.movements.newMovementSubtitle}
-				</p>
-			</div>
+			<PageHeader
+				title={t.movements.newMovementHeading}
+				description={t.movements.newMovementSubtitle}
+				breadcrumb={[
+					{ label: t.movements.metaTitle, href: "/movements" },
+					{ label: t.movements.newMovement },
+				]}
+				backHref="/movements"
+			/>
 
 			<Card>
 				<CardContent className="pt-6">

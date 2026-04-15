@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
   TableBody,
@@ -114,97 +115,82 @@ export default async function TransfersPage() {
         )}
       </div>
 
-      <>
-        {/* Phase 7B: Desktop table */}
-        <div className="hidden md:block">
-          <Card>
-            <CardContent className="pt-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Transfer #</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>To</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Items</TableHead>
-                    <TableHead>Shipped</TableHead>
-                    <TableHead>Received</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transfers.map((transfer) => (
-                    <TableRow key={transfer.id}>
-                      <TableCell>
-                        <Link
-                          href={`/transfers/${transfer.id}`}
-                          className="font-mono font-semibold hover:underline"
-                        >
-                          {transfer.transferNumber}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{transfer.fromWarehouse.name}</TableCell>
-                      <TableCell>{transfer.toWarehouse.name}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusBadgeVariant(transfer.status) as any}>
-                          {statusLabel(transfer.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{transfer.lines.length}</TableCell>
-                      <TableCell>{fmtDate(transfer.shippedAt, region)}</TableCell>
-                      <TableCell>{fmtDate(transfer.receivedAt, region)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Phase 7B: Mobile card view */}
-        <div className="space-y-3 md:hidden">
-          {transfers.map((transfer) => (
-            <Card key={transfer.id} className="p-4">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <Link
+      <Card>
+        <CardContent className="p-0">
+          <ResponsiveTable
+            cardView={
+              <>
+                {transfers.map((transfer) => (
+                  <MobileCard
+                    key={transfer.id}
                     href={`/transfers/${transfer.id}`}
-                    className="text-base font-semibold font-mono hover:underline"
-                  >
-                    {transfer.transferNumber}
-                  </Link>
-                  <Badge variant={statusBadgeVariant(transfer.status) as any}>
-                    {statusLabel(transfer.status)}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">From</p>
-                    <p className="font-medium">{transfer.fromWarehouse.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">To</p>
-                    <p className="font-medium">{transfer.toWarehouse.name}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground">
-                  <div>
-                    <p className="text-xs">Items</p>
-                    <p className="font-medium text-foreground">{transfer.lines.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs">Shipped</p>
-                    <p className="font-medium text-foreground">{fmtDate(transfer.shippedAt, region)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs">Received</p>
-                    <p className="font-medium text-foreground">{fmtDate(transfer.receivedAt, region)}</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </>
+                    title={transfer.transferNumber}
+                    badge={<Badge variant={statusBadgeVariant(transfer.status) as any}>
+                      {statusLabel(transfer.status)}
+                    </Badge>}
+                    fields={[
+                      {
+                        label: "From",
+                        value: transfer.fromWarehouse.name,
+                      },
+                      {
+                        label: "To",
+                        value: transfer.toWarehouse.name,
+                      },
+                      {
+                        label: "Date",
+                        value: fmtDate(transfer.createdAt, region),
+                      },
+                      {
+                        label: "Items",
+                        value: transfer.lines.length,
+                      },
+                    ]}
+                  />
+                ))}
+              </>
+            }
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Transfer #</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Items</TableHead>
+                  <TableHead>Shipped</TableHead>
+                  <TableHead>Received</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transfers.map((transfer) => (
+                  <TableRow key={transfer.id}>
+                    <TableCell>
+                      <Link
+                        href={`/transfers/${transfer.id}`}
+                        className="font-mono font-semibold hover:underline"
+                      >
+                        {transfer.transferNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{transfer.fromWarehouse.name}</TableCell>
+                    <TableCell>{transfer.toWarehouse.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={statusBadgeVariant(transfer.status) as any}>
+                        {statusLabel(transfer.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">{transfer.lines.length}</TableCell>
+                    <TableCell>{fmtDate(transfer.shippedAt, region)}</TableCell>
+                    <TableCell>{fmtDate(transfer.receivedAt, region)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ResponsiveTable>
+        </CardContent>
+      </Card>
     </div>
   );
 }

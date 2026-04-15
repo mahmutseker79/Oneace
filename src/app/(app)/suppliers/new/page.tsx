@@ -1,8 +1,6 @@
-import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -34,16 +32,15 @@ export default async function NewSupplierPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/suppliers">
-            <ChevronLeft className="h-4 w-4" />
-            {t.suppliers.backToList}
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">{t.suppliers.newSupplierHeading}</h1>
-        <p className="text-muted-foreground">{t.suppliers.newSupplierSubtitle}</p>
-      </div>
+      <PageHeader
+        title={t.suppliers.newSupplierHeading}
+        description={t.suppliers.newSupplierSubtitle}
+        breadcrumb={[
+          { label: t.suppliers.metaTitle, href: "/suppliers" },
+          { label: t.suppliers.newSupplier },
+        ]}
+        backHref="/suppliers"
+      />
 
       <SupplierForm labels={labels} mode="create" />
     </div>

@@ -2,9 +2,8 @@
 
 // Phase 2 UX — Sidebar now includes Operations group:
 //   Movements | Purchase Orders | Scan | Suppliers | Categories
-// Previously PO, Suppliers, Categories, and Scan were only reachable
-// via dashboard shortcuts or direct navigation. They now have persistent
-// nav entries so they're always one click away.
+// God-Mode Design v1 — Premium sidebar with refined grouping,
+// better active states, visual hierarchy, and plan badge.
 
 import { useState } from "react";
 
@@ -14,11 +13,11 @@ import {
   BarChart3,
   ChevronDown,
   ClipboardList,
-  Download,
   FileDown,
   FileUp,
   FolderOpen,
   History,
+  LayoutDashboard,
   Package,
   ScanLine,
   Settings,
@@ -63,6 +62,8 @@ export type SidebarLabels = {
     picks?: string;
     import?: string;
     export?: string;
+    // God-Mode — dashboard nav item
+    dashboard?: string;
   };
   // P8.2 — optional badge counts passed from the layout
   badges?: {
@@ -70,6 +71,8 @@ export type SidebarLabels = {
   };
   // P10.1 — hide admin section for roles without admin capabilities
   showAdmin?: boolean;
+  // Plan badge for sidebar footer
+  planLabel?: string;
 };
 
 type NavItem = {
@@ -82,6 +85,8 @@ type NavItem = {
 type NavGroup = {
   heading?: string;
   items: NavItem[];
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 };
 
 export function Sidebar({ labels }: { labels: SidebarLabels }) {
@@ -92,11 +97,20 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
   const isOnAdminPage = adminPaths.some((p) => pathname.startsWith(p));
   const [adminOpen, setAdminOpen] = useState(isOnAdminPage);
 
+  // Warehouse & Commerce collapsed by default unless user is on those pages
+  const warehousePaths = ["/transfers", "/departments"];
+  const commercePaths = ["/sales-orders", "/kits", "/picks"];
+  const isOnWarehousePage = warehousePaths.some((p) => pathname.startsWith(p));
+  const isOnCommercePage = commercePaths.some((p) => pathname.startsWith(p));
+  const [warehouseOpen, setWarehouseOpen] = useState(isOnWarehousePage);
+  const [commerceOpen, setCommerceOpen] = useState(isOnCommercePage);
+
   const groups: NavGroup[] = [
     {
       // Core — no heading, always visible. The primary first-run flow:
-      // Items → Locations → Stock Counts.
+      // Dashboard → Items → Locations → Stock Counts.
       items: [
+        { label: labels.nav.dashboard ?? "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { label: labels.nav.items, href: "/items", icon: Package, badge: labels.badges?.items },
         { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
         { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
@@ -114,34 +128,27 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       ],
     },
     {
-      // Warehouse — transfers and departments
-      heading: labels.nav.warehouse ?? "Warehouse",
-      items: [
-        { label: labels.nav.transfers ?? "Transfers", href: "/transfers", icon: ArrowLeftRight },
-        { label: labels.nav.departments ?? "Departments", href: "/departments", icon: Warehouse },
-      ],
-    },
-    {
-      // Commerce — sales orders, kits, picks
-      heading: labels.nav.commerce ?? "Commerce",
-      items: [
-        { label: labels.nav.salesOrders ?? "Sales Orders", href: "/sales-orders", icon: ShoppingCart },
-        { label: labels.nav.kits ?? "Kits", href: "/kits", icon: Package },
-        { label: labels.nav.picks ?? "Picks", href: "/picks", icon: ClipboardList },
-      ],
-    },
-    {
-      // Utilities — import/export
-      heading: undefined,
-      items: [
-        { label: labels.nav.import ?? "Import", href: "/import", icon: FileUp },
-        { label: labels.nav.export ?? "Export", href: "/export", icon: FileDown },
-      ],
-    },
-    {
       heading: labels.nav.analytics,
-      items: [{ label: labels.nav.reports, href: "/reports", icon: BarChart3 }],
+      items: [
+        { label: labels.nav.reports, href: "/reports", icon: BarChart3 },
+      ],
     },
+  ];
+
+  const warehouseItems: NavItem[] = [
+    { label: labels.nav.transfers ?? "Transfers", href: "/transfers", icon: ArrowLeftRight },
+    { label: labels.nav.departments ?? "Departments", href: "/departments", icon: Warehouse },
+  ];
+
+  const commerceItems: NavItem[] = [
+    { label: labels.nav.salesOrders ?? "Sales Orders", href: "/sales-orders", icon: ShoppingCart },
+    { label: labels.nav.kits ?? "Kits", href: "/kits", icon: Package },
+    { label: labels.nav.picks ?? "Picks", href: "/picks", icon: ClipboardList },
+  ];
+
+  const utilityItems: NavItem[] = [
+    { label: labels.nav.import ?? "Import", href: "/import", icon: FileUp },
+    { label: labels.nav.export ?? "Export", href: "/export", icon: FileDown },
   ];
 
   const adminItems: NavItem[] = [
@@ -151,10 +158,6 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
   ];
 
   function renderItem(item: NavItem) {
-    // Active when the current pathname starts with the item href.
-    // Exception: /items should not match /items/import or /items/new
-    // when those are deeper — but startsWith is correct here because
-    // /items IS a prefix of /items/new (both should highlight "Items").
     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
     const Icon = item.icon;
     return (
@@ -162,16 +165,16 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
         key={item.href}
         href={item.href}
         className={cn(
-          "flex items-center gap-3 rounded-md border-l-2 px-3 py-2 text-sm font-medium transition-colors duration-150",
+          "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
           isActive
-            ? "border-l-primary bg-sidebar-accent text-sidebar-accent-foreground"
-            : "border-l-transparent text-sidebar-foreground hover:bg-sidebar-accent/60",
+            ? "bg-primary/10 text-primary border-l-2 border-l-primary -ml-[2px] pl-[14px]"
+            : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
         )}
       >
-        <Icon className="h-4 w-4 shrink-0" />
+        <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-accent-foreground")} />
         <span className="truncate">{item.label}</span>
         {item.badge ? (
-          <span className="ml-auto shrink-0 rounded-full bg-sidebar-primary px-2 py-0.5 text-xs text-sidebar-primary-foreground">
+          <span className="ml-auto shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground tabular-nums">
             {item.badge}
           </span>
         ) : null}
@@ -179,47 +182,99 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     );
   }
 
+  function renderCollapsibleGroup(
+    heading: string,
+    items: NavItem[],
+    open: boolean,
+    setOpen: (v: boolean | ((v: boolean) => boolean)) => void,
+  ) {
+    return (
+      <div className="mt-4">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center justify-between px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-sidebar-foreground transition-colors rounded-md"
+        >
+          <span>{heading}</span>
+          <ChevronDown
+            className={cn("h-3.5 w-3.5 transition-transform duration-200", open && "rotate-180")}
+          />
+        </button>
+        <div className={cn("mt-1 space-y-0.5 overflow-hidden transition-all duration-200", open ? "max-h-96 opacity-100" : "max-h-0 opacity-0")}>
+          {items.map(renderItem)}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-30 border-r bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold">
+    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-[var(--z-sidebar)] border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      {/* Brand Header */}
+      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold shadow-sm">
           O
         </div>
-        <span className="truncate text-lg font-semibold">{labels.brand}</span>
+        <div className="flex flex-col min-w-0">
+          <span className="truncate text-sm font-semibold tracking-tight">{labels.brand}</span>
+          {labels.planLabel && (
+            <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
+              {labels.planLabel}
+            </span>
+          )}
+        </div>
       </div>
-      <nav className="flex-1 overflow-y-auto p-4">
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4">
+        {/* Main groups */}
         {groups.map((group, gi) => (
-          <div key={gi} className={gi === 0 ? undefined : gi === 1 ? "mt-6" : "mt-4"}>
+          <div key={gi} className={gi === 0 ? undefined : "mt-5"}>
             {group.heading ? (
-              <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {group.heading}
               </p>
             ) : null}
-            <div className="space-y-1">{group.items.map(renderItem)}</div>
+            <div className="space-y-0.5">{group.items.map(renderItem)}</div>
           </div>
         ))}
 
+        {/* Warehouse — collapsible */}
+        {renderCollapsibleGroup(
+          labels.nav.warehouse ?? "Warehouse",
+          warehouseItems,
+          warehouseOpen,
+          setWarehouseOpen,
+        )}
+
+        {/* Commerce — collapsible */}
+        {renderCollapsibleGroup(
+          labels.nav.commerce ?? "Commerce",
+          commerceItems,
+          commerceOpen,
+          setCommerceOpen,
+        )}
+
+        {/* Utilities — small, subtle */}
+        <div className="mt-4 pt-3 border-t border-sidebar-border/50">
+          <div className="space-y-0.5">{utilityItems.map(renderItem)}</div>
+        </div>
+
         {/* Admin — collapsible group (P10.1: hidden for non-admin roles) */}
-        {labels.showAdmin !== false ? (
-          <div className="mt-4">
-            <button
-              type="button"
-              aria-expanded={adminOpen}
-              onClick={() => setAdminOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-3 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-sidebar-foreground transition-colors"
-            >
-              <span>{labels.nav.admin}</span>
-              <ChevronDown
-                className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")}
-              />
-            </button>
-            {adminOpen ? <div className="mt-1 space-y-1">{adminItems.map(renderItem)}</div> : null}
-          </div>
-        ) : null}
+        {labels.showAdmin !== false
+          ? renderCollapsibleGroup(
+              labels.nav.admin,
+              adminItems,
+              adminOpen,
+              setAdminOpen,
+            )
+          : null}
       </nav>
-      <div className="border-t border-sidebar-border p-4 text-xs text-muted-foreground">
-        <p>{labels.versionLine}</p>
-        <p>{labels.statusLine}</p>
+
+      {/* Footer */}
+      <div className="border-t border-sidebar-border px-5 py-3">
+        <p className="text-[11px] text-muted-foreground">{labels.versionLine}</p>
+        <p className="text-[10px] text-muted-foreground/70">{labels.statusLine}</p>
       </div>
     </aside>
   );

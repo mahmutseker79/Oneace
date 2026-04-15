@@ -1,6 +1,5 @@
 // Phase 4.1 — Multi-step onboarding wizard page.
-// The single org-name form is replaced by a 3-step wizard (OnboardingForm).
-// Route protection and existing-membership redirect are unchanged.
+// God-Mode Design v1 — Premium onboarding with visual guidance.
 
 import type { Metadata } from "next";
 
@@ -25,21 +24,33 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md py-12">
-      <div className="mb-6 space-y-1">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary font-bold text-primary-foreground">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-lg">
+        {/* Brand header */}
+        <div className="mb-8 text-center">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-lg font-bold shadow-sm mb-4">
             O
           </div>
-          <span className="text-lg font-semibold">OneAce</span>
+          <h1 className="text-xl font-semibold tracking-tight">Welcome to OneAce</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Let&apos;s get your workspace set up in under a minute.
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Let&apos;s get your workspace set up in under a minute.
-        </p>
-      </div>
 
-      {/* OnboardingForm manages its own step/label state internally */}
-      <OnboardingForm labels={{}} />
+        {/* Premium card wrapper */}
+        <div className="rounded-2xl border bg-card p-6 sm:p-8 shadow-[var(--shadow-elevated)]">
+          <OnboardingForm labels={{}} />
+        </div>
+
+        {/* Trust signals */}
+        <div className="mt-6 flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+          <span>256-bit encryption</span>
+          <span className="text-border">•</span>
+          <span>No credit card required</span>
+          <span className="text-border">•</span>
+          <span>Free forever plan</span>
+        </div>
+      </div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
 	Table,
 	TableBody,
@@ -85,8 +86,8 @@ export default async function WarehousesPage() {
 		<div className="space-y-6">
 			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold">{t.warehouses.heading}</h1>
-					<p className="text-muted-foreground">{t.warehouses.subtitle}</p>
+					<h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.warehouses.heading}</h1>
+					<p className="text-sm text-muted-foreground">{t.warehouses.subtitle}</p>
 				</div>
 				{canCreate && whLimit === UNLIMITED ? (
 					<Button asChild>
@@ -143,68 +144,98 @@ export default async function WarehousesPage() {
 			) : (
 				<Card>
 					<CardContent className="p-0">
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t.warehouses.columnName}</TableHead>
-									{/* Phase 5.3 — added tooltip explaining what Code is used for */}
-									<TableHead title="Short identifier used in barcode labels, reports, and transfers">
-										{t.warehouses.columnCode}
-									</TableHead>
-									<TableHead>{t.warehouses.columnLocation}</TableHead>
-									{/* Default column: badge + explanation on hover */}
-									<TableHead title="New movements and items default to this location">
-										{t.warehouses.columnDefault}
-									</TableHead>
-									<TableHead className="w-36 text-right">
-										{t.warehouses.columnActions}
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{warehouses.map((w) => (
-									<TableRow key={w.id} className="hover:bg-muted/50 transition-colors">
-										<TableCell className="font-medium">{w.name}</TableCell>
-										<TableCell className="font-mono text-xs">
-											{w.code}
-										</TableCell>
-										<TableCell className="text-muted-foreground">
-											{formatLocation(
-												[w.city, w.region, w.country],
-												t.common.none,
-											)}
-										</TableCell>
-										<TableCell>
-											{w.isDefault ? <Badge variant="info">{t.common.yes}</Badge> : null}
-										</TableCell>
-										<TableCell className="text-right">
-											<div className="flex items-center justify-end gap-1">
-												{canEdit ? (
-													<Button variant="ghost" size="sm" asChild>
-														<Link href={`/warehouses/${w.id}/edit`}>
-															{t.common.edit}
-														</Link>
-													</Button>
-												) : null}
-												{canDelete ? (
-													<DeleteButton
-														labels={{
-															trigger: t.common.delete,
-															title: t.warehouses.deleteConfirmTitle,
-															body: t.warehouses.deleteConfirmBody,
-															cancel: t.common.cancel,
-															confirm: t.common.delete,
-														}}
-														action={deleteWarehouseAction.bind(null, w.id)}
-														iconOnly
-													/>
-												) : null}
-											</div>
-										</TableCell>
+						<ResponsiveTable
+							cardView={
+								<>
+									{warehouses.map((w) => (
+										<MobileCard
+											key={w.id}
+											href={`/warehouses/${w.id}`}
+											title={w.name}
+											subtitle={w.code}
+											badge={w.isDefault ? <Badge variant="info">{t.common.yes}</Badge> : null}
+											fields={[
+												{
+													label: "City",
+													value: w.city || t.common.none,
+												},
+												{
+													label: "Country",
+													value: w.country || t.common.none,
+												},
+												{
+													label: "Status",
+													value: w.isDefault ? "Default" : "Secondary",
+												},
+											]}
+										/>
+									))}
+								</>
+							}
+						>
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>{t.warehouses.columnName}</TableHead>
+										{/* Phase 5.3 — added tooltip explaining what Code is used for */}
+										<TableHead title="Short identifier used in barcode labels, reports, and transfers">
+											{t.warehouses.columnCode}
+										</TableHead>
+										<TableHead>{t.warehouses.columnLocation}</TableHead>
+										{/* Default column: badge + explanation on hover */}
+										<TableHead title="New movements and items default to this location">
+											{t.warehouses.columnDefault}
+										</TableHead>
+										<TableHead className="w-36 text-right">
+											{t.warehouses.columnActions}
+										</TableHead>
 									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+								</TableHeader>
+								<TableBody>
+									{warehouses.map((w) => (
+										<TableRow key={w.id} className="hover:bg-muted/50 transition-colors">
+											<TableCell className="font-medium">{w.name}</TableCell>
+											<TableCell className="font-mono text-xs">
+												{w.code}
+											</TableCell>
+											<TableCell className="text-muted-foreground">
+												{formatLocation(
+													[w.city, w.region, w.country],
+													t.common.none,
+												)}
+											</TableCell>
+											<TableCell>
+												{w.isDefault ? <Badge variant="info">{t.common.yes}</Badge> : null}
+											</TableCell>
+											<TableCell className="text-right">
+												<div className="flex items-center justify-end gap-1">
+													{canEdit ? (
+														<Button variant="ghost" size="sm" asChild>
+															<Link href={`/warehouses/${w.id}/edit`}>
+																{t.common.edit}
+															</Link>
+														</Button>
+													) : null}
+													{canDelete ? (
+														<DeleteButton
+															labels={{
+																trigger: t.common.delete,
+																title: t.warehouses.deleteConfirmTitle,
+																body: t.warehouses.deleteConfirmBody,
+																cancel: t.common.cancel,
+																confirm: t.common.delete,
+															}}
+															action={deleteWarehouseAction.bind(null, w.id)}
+															iconOnly
+														/>
+													) : null}
+												</div>
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</ResponsiveTable>
 					</CardContent>
 				</Card>
 			)}

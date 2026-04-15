@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import { Eye } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -214,96 +215,113 @@ export function ItemsTable({ items, canEdit, canDelete, labels, deleteButton }: 
     return <Badge variant="secondary">{labels.archived}</Badge>;
   }
 
+  // Build mobile card view from items
+  const cardView = items.map((item) => (
+    <MobileCard
+      key={item.id}
+      title={item.name}
+      subtitle={item.sku}
+      fields={[
+        { label: "Category", value: item.categoryName ?? labels.none },
+        { label: "On Hand", value: `${item.onHand} ${item.unit}` },
+      ]}
+      badge={statusBadge(item.status)}
+      href={`/items/${item.id}`}
+    />
+  ));
+
   return (
     <>
       {actionError ? <p className="mb-2 text-xs text-destructive">{actionError}</p> : null}
 
-      <div className="overflow-x-auto">
-        <Table className="min-w-[560px]">
-          <TableHeader>
-            <TableRow>
-              {/* Bulk select checkbox */}
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                  onCheckedChange={toggleAll}
-                  aria-label="Select all items on this page"
-                />
-              </TableHead>
-              <TableHead>{labels.columnSku}</TableHead>
-              <TableHead>{labels.columnName}</TableHead>
-              <TableHead>{labels.columnCategory}</TableHead>
-              <TableHead className="text-right">{labels.columnStock}</TableHead>
-              <TableHead>{labels.columnStatus}</TableHead>
-              <TableHead className="w-36 text-right">{labels.columnActions}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => {
-              const isSelected = selected.has(item.id);
-              return (
-                <TableRow key={item.id} data-selected={isSelected || undefined} className="hover:bg-muted/50 transition-colors">
-                  <TableCell>
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggle(item.id)}
-                      aria-label={`Select ${item.name}`}
-                    />
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{item.sku}</TableCell>
-                  <TableCell>
-                    <Link href={`/items/${item.id}`} className="font-medium hover:underline">
-                      {item.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {item.categoryName ?? labels.none}
-                  </TableCell>
-                  {/* Phase 16.1 — amber colour + dot when at/below reorder point */}
-                  <TableCell className="text-right tabular-nums">
-                    <span
-                      className={
-                        item.reorderPoint > 0 && item.onHand <= item.reorderPoint
-                          ? "font-medium text-amber-600"
-                          : undefined
-                      }
-                      title={
-                        item.reorderPoint > 0 && item.onHand <= item.reorderPoint
-                          ? `Below reorder point (${item.reorderPoint})`
-                          : undefined
-                      }
-                    >
-                      {item.onHand} {item.unit}
-                      {item.reorderPoint > 0 && item.onHand <= item.reorderPoint ? (
-                        <span
-                          className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-500 align-middle"
-                          aria-label="Below reorder point"
-                        />
-                      ) : null}
-                    </span>
-                  </TableCell>
-                  <TableCell>{statusBadge(item.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/items/${item.id}`} aria-label={labels.search}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      {canEdit ? (
+      <ResponsiveTable cardView={cardView}>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[560px]">
+            <TableHeader>
+              <TableRow>
+                {/* Bulk select checkbox */}
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all items on this page"
+                  />
+                </TableHead>
+                <TableHead>{labels.columnSku}</TableHead>
+                <TableHead>{labels.columnName}</TableHead>
+                <TableHead>{labels.columnCategory}</TableHead>
+                <TableHead className="text-right">{labels.columnStock}</TableHead>
+                <TableHead>{labels.columnStatus}</TableHead>
+                <TableHead className="w-36 text-right">{labels.columnActions}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => {
+                const isSelected = selected.has(item.id);
+                return (
+                  <TableRow key={item.id} data-selected={isSelected || undefined} className="hover:bg-muted/50 transition-colors">
+                    <TableCell>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggle(item.id)}
+                        aria-label={`Select ${item.name}`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                    <TableCell>
+                      <Link href={`/items/${item.id}`} className="font-medium hover:underline">
+                        {item.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.categoryName ?? labels.none}
+                    </TableCell>
+                    {/* Phase 16.1 — amber colour + dot when at/below reorder point */}
+                    <TableCell className="text-right tabular-nums">
+                      <span
+                        className={
+                          item.reorderPoint > 0 && item.onHand <= item.reorderPoint
+                            ? "font-medium text-amber-600"
+                            : undefined
+                        }
+                        title={
+                          item.reorderPoint > 0 && item.onHand <= item.reorderPoint
+                            ? `Below reorder point (${item.reorderPoint})`
+                            : undefined
+                        }
+                      >
+                        {item.onHand} {item.unit}
+                        {item.reorderPoint > 0 && item.onHand <= item.reorderPoint ? (
+                          <span
+                            className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-500 align-middle"
+                            aria-label="Below reorder point"
+                          />
+                        ) : null}
+                      </span>
+                    </TableCell>
+                    <TableCell>{statusBadge(item.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/items/${item.id}/edit`}>{labels.edit}</Link>
+                          <Link href={`/items/${item.id}`} aria-label={labels.search}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
                         </Button>
-                      ) : null}
-                      {canDelete ? deleteButton(item.id) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+                        {canEdit ? (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/items/${item.id}/edit`}>{labels.edit}</Link>
+                          </Button>
+                        ) : null}
+                        {canDelete ? deleteButton(item.id) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </ResponsiveTable>
 
       {selected.size > 0 ? (
         <BulkBar

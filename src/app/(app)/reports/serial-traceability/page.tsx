@@ -1,7 +1,7 @@
-import { ChevronLeft, Barcode } from "lucide-react";
+import { Barcode } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -123,21 +123,15 @@ export default async function SerialTraceabilityReportPage({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            Back to Reports
-          </Link>
-        </Button>
-        <div className="flex items-start gap-3">
-          <Barcode className="text-muted-foreground mt-1 h-5 w-5" />
-          <div>
-            <h1 className="text-2xl font-semibold">Serial Traceability</h1>
-            <p className="text-muted-foreground">Track serial number lifecycle and movements</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Serial Traceability"
+        description="Track serial number lifecycle and movements"
+        backHref="/reports"
+        breadcrumb={[
+          { label: "Reports", href: "/reports" },
+          { label: "Serial Traceability" },
+        ]}
+      />
 
       <form method="get" className="flex gap-2">
         <Input

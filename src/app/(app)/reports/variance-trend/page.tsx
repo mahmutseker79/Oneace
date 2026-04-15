@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
@@ -93,13 +94,15 @@ export default function VarianceTrendPage() {
 	if (!canViewReport) {
 		return (
 			<div className="space-y-6">
-				<div className="flex items-start gap-3">
-					<LineChartIcon className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">Variance Trend</h1>
-						<p className="text-muted-foreground">Variance over time</p>
-					</div>
-				</div>
+				<PageHeader
+					title="Variance Trend"
+					description="Variance over time"
+					backHref="/reports"
+					breadcrumb={[
+						{ label: "Reports", href: "/reports" },
+						{ label: "Variance Trend" },
+					]}
+				/>
 				<UpgradePrompt
 					reason="Reports are available on Pro and Business plans."
 					requiredPlan="PRO"
@@ -120,37 +123,37 @@ export default function VarianceTrendPage() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between gap-3">
-				<div className="flex items-start gap-3">
-					<LineChartIcon className="text-muted-foreground mt-1 h-5 w-5" />
-					<div>
-						<h1 className="text-2xl font-semibold">Variance Trend</h1>
-						<p className="text-muted-foreground">
-							Inventory variance over time
-						</p>
+			<PageHeader
+				title="Variance Trend"
+				description="Inventory variance over time"
+				backHref="/reports"
+				breadcrumb={[
+					{ label: "Reports", href: "/reports" },
+					{ label: "Variance Trend" },
+				]}
+				actions={
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleExport("csv")}
+							disabled={exporting}
+						>
+							<Download className="h-4 w-4 mr-1" />
+							CSV
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => handleExport("xlsx")}
+							disabled={exporting}
+						>
+							<Download className="h-4 w-4 mr-1" />
+							XLSX
+						</Button>
 					</div>
-				</div>
-				<div className="flex gap-2">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleExport("csv")}
-						disabled={exporting}
-					>
-						<Download className="h-4 w-4 mr-1" />
-						CSV
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => handleExport("xlsx")}
-						disabled={exporting}
-					>
-						<Download className="h-4 w-4 mr-1" />
-						XLSX
-					</Button>
-				</div>
-			</div>
+				}
+			/>
 
 			{error && (
 				<Alert variant="destructive">

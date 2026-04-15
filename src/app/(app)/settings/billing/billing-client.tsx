@@ -126,9 +126,14 @@ function LimitBar({
 }) {
   if (max === null) {
     return (
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{current.toLocaleString()} / Unlimited</span>
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">{label}</span>
+          <span className="font-medium tabular-nums">{current.toLocaleString()}<span className="text-muted-foreground font-normal"> / ∞</span></span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary/30 w-[15%]" />
+        </div>
       </div>
     );
   }
@@ -138,21 +143,22 @@ function LimitBar({
   const isAt = current >= max;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span
-          className={`font-medium ${isAt ? "text-destructive" : isNear ? "text-amber-600" : ""}`}
+          className={`font-medium tabular-nums ${isAt ? "text-destructive" : isNear ? "text-amber-600 dark:text-amber-400" : ""}`}
         >
-          {current} / {max} ({Math.round(pct)}%)
+          {current}<span className="text-muted-foreground font-normal"> / {max}</span>
+          {isAt && <span className="ml-1 text-xs">⚠</span>}
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div
-          className={`h-full rounded-full transition-all ${
-            isAt ? "bg-gradient-to-r from-destructive to-destructive/80" : isNear ? "bg-gradient-to-r from-amber-500 to-amber-400" : "bg-gradient-to-r from-primary to-primary/80"
+          className={`h-full rounded-full transition-all duration-500 ${
+            isAt ? "bg-destructive" : isNear ? "bg-amber-500" : "bg-primary"
           }`}
-          style={{ width: `${pct}%` }}
+          style={{ width: `${Math.max(pct, 3)}%` }}
         />
       </div>
     </div>
@@ -230,8 +236,8 @@ export function BillingPage({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Billing &amp; Plan</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="text-xl font-semibold tracking-tight">Billing &amp; Plan</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Manage your subscription and billing details.
         </p>
       </div>
@@ -325,22 +331,25 @@ export function BillingPage({
             ))}
           </div>
 
-          {/* Usage indicators — shown for FREE plan only */}
-          {plan === "FREE" ? (
-            <div className="space-y-3 rounded-md border bg-muted/20 p-3">
-              <p className="text-xs font-medium text-muted-foreground">Usage</p>
-              <LimitBar label="Items" current={currentItems} max={100} />
-              <LimitBar label="Warehouse locations" current={currentWarehouses} max={1} />
-              <LimitBar label="Team members" current={currentMembers} max={3} />
-            </div>
-          ) : plan === "PRO" ? (
-            <div className="space-y-3 rounded-md border bg-muted/20 p-3">
-              <p className="text-xs font-medium text-muted-foreground">Usage</p>
-              <LimitBar label="Items" current={currentItems} max={null} />
-              <LimitBar label="Warehouse locations" current={currentWarehouses} max={null} />
-              <LimitBar label="Team members" current={currentMembers} max={10} />
-            </div>
-          ) : null}
+          {/* Usage indicators — shown for all plans */}
+          <div className="space-y-3 rounded-xl border bg-surface-sunken p-4">
+            <p className="text-overline text-muted-foreground">Resource Usage</p>
+            <LimitBar
+              label="Items"
+              current={currentItems}
+              max={plan === "FREE" ? 100 : null}
+            />
+            <LimitBar
+              label="Warehouse locations"
+              current={currentWarehouses}
+              max={plan === "FREE" ? 1 : null}
+            />
+            <LimitBar
+              label="Team members"
+              current={currentMembers}
+              max={plan === "FREE" ? 3 : plan === "PRO" ? 10 : null}
+            />
+          </div>
         </CardContent>
 
         {/* Billing actions */}

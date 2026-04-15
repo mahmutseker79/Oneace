@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import {
 	Table,
 	TableBody,
@@ -49,20 +51,20 @@ export default async function KitsPage() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-				<div>
-					<h1 className="text-2xl font-semibold">Kits & Bundles</h1>
-					<p className="text-muted-foreground">Manage kit and bundle definitions</p>
-				</div>
-				{canCreate ? (
-					<Button asChild>
-						<Link href="/kits/new">
-							<Plus className="h-4 w-4" />
-							Create Kit
-						</Link>
-					</Button>
-				) : null}
-			</div>
+			<PageHeader
+				title="Kits & Bundles"
+				description="Manage kit and bundle definitions"
+				actions={
+					canCreate ? (
+						<Button asChild>
+							<Link href="/kits/new">
+								<Plus className="h-4 w-4" />
+								Create Kit
+							</Link>
+						</Button>
+					) : null
+				}
+			/>
 
 			{kits.length === 0 ? (
 				<EmptyState
@@ -84,7 +86,22 @@ export default async function KitsPage() {
 			) : (
 				<Card>
 					<CardContent className="p-0">
-						<div className="overflow-x-auto">
+						<ResponsiveTable
+							cardView={kits.map((kit) => (
+								<MobileCard
+									key={kit.id}
+									title={kit.name}
+									subtitle={kit.parentItem.sku}
+									badge={typeBadge(kit.type as KitType)}
+									href={`/kits/${kit.id}`}
+									fields={[
+										{ label: "Parent Item", value: kit.parentItem.name },
+										{ label: "Components", value: kit._count.components },
+										{ label: "Status", value: "Active" },
+									]}
+								/>
+							))}
+						>
 							<Table className="min-w-[640px]">
 								<TableHeader>
 									<TableRow>
@@ -129,7 +146,7 @@ export default async function KitsPage() {
 									))}
 								</TableBody>
 							</Table>
-						</div>
+						</ResponsiveTable>
 					</CardContent>
 				</Card>
 			)}

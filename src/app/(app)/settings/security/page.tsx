@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,10 +55,15 @@ export default async function SecuritySettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{labels.heading}</h1>
-        <p className="text-muted-foreground">{labels.subtitle}</p>
-      </div>
+      <PageHeader
+        title={labels.heading}
+        description={labels.subtitle}
+        breadcrumb={[
+          { label: "Settings", href: "/settings" },
+          { label: "Security", href: "#" },
+        ]}
+        backHref="/settings"
+      />
 
       <div className="max-w-2xl">
         <TwoFactorCard userId={session.user.id} labels={labels.twoFactor} />

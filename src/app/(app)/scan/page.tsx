@@ -32,8 +32,8 @@ export default async function ScanPage({
 			<AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
 			<div className="space-y-1">
-				<h1 className="text-2xl font-semibold">{t.scan.heading}</h1>
-				<p className="text-muted-foreground">{t.scan.subtitle}</p>
+				<h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.scan.heading}</h1>
+				<p className="text-sm text-muted-foreground">{t.scan.subtitle}</p>
 			</div>
 
 			{/* Phase 5.4 — Browser compatibility notice.

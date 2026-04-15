@@ -8,6 +8,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { requireActiveMembership } from "@/lib/session";
 import { getMessages } from "@/lib/i18n";
@@ -75,12 +76,15 @@ export default async function IntegrationsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Integrations</h1>
-        <p className="text-muted-foreground mt-2">
-          Connect OneAce with external systems to sync data automatically.
-        </p>
-      </div>
+      <PageHeader
+        title="Integrations"
+        description="Connect OneAce with external systems to sync data automatically."
+        breadcrumb={[
+          { label: "Settings", href: "/settings" },
+          { label: "Integrations", href: "#" },
+        ]}
+        backHref="/settings"
+      />
 
       <div className="grid gap-6 md:grid-cols-2">
         {availableIntegrations.map((integration) => (

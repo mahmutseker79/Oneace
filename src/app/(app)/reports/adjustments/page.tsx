@@ -1,7 +1,7 @@
-import { ChevronLeft, Wrench, Download } from "lucide-react";
+import { Wrench, Download } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -190,28 +190,20 @@ export default async function AdjustmentReportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/reports">
-            <ChevronLeft className="h-4 w-4" />
-            Back to Reports
-          </Link>
-        </Button>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <Wrench className="text-muted-foreground mt-1 h-5 w-5" />
-            <div>
-              <h1 className="text-2xl font-semibold">Adjustment Report</h1>
-              <p className="text-muted-foreground">Track inventory adjustments and reconciliation</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ExportButton href="/reports/adjustments/export">
-              {t.common.exportCsv}
-            </ExportButton>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Adjustment Report"
+        description="Track inventory adjustments and reconciliation"
+        backHref="/reports"
+        breadcrumb={[
+          { label: "Reports", href: "/reports" },
+          { label: "Adjustment Report" },
+        ]}
+        actions={
+          <ExportButton href="/reports/adjustments/export">
+            {t.common.exportCsv}
+          </ExportButton>
+        }
+      />
 
       {rows.length === 0 ? (
         <EmptyState

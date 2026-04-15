@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowLeftRight, Package } from "lucide-react";
+import { ArrowLeftRight, Package } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -62,26 +63,14 @@ export default async function MovementDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/movements">
-            <ArrowLeft className="h-4 w-4" />
-            {t.movements.detail.backToList}
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{t.movements.detail.summaryHeading}</h1>
-            {typeBadge(type, t.movements.types[type])}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {dateFormatter.format(movement.createdAt)}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={t.movements.detail.summaryHeading}
+        backHref="/movements"
+        breadcrumb={[
+          { label: "Movements", href: "/movements" },
+          { label: t.movements.detail.summaryHeading },
+        ]}
+      />
 
       <Card>
         <CardContent className="grid gap-4 pt-6 text-sm md:grid-cols-2">

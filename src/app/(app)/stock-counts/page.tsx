@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -81,48 +82,70 @@ export default async function StockCountsPage() {
     if (rows.length === 0) {
       return <p className="px-6 pb-6 text-sm text-muted-foreground">{emptyLabel}</p>;
     }
+
+    const cardView = rows.map((count) => (
+      <MobileCard
+        key={count.id}
+        href={`/stock-counts/${count.id}`}
+        title={count.name}
+        badge={stateBadge(count.state as CountState)}
+        fields={[
+          {
+            label: t.stockCounts.columnMethodology,
+            value: t.stockCounts.methodology[count.methodology as Methodology],
+          },
+          {
+            label: t.stockCounts.columnCreated,
+            value: dateFormatter.format(count.createdAt),
+          },
+        ]}
+      />
+    ));
+
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t.stockCounts.columnName}</TableHead>
-            <TableHead>{t.stockCounts.columnState}</TableHead>
-            <TableHead>{t.stockCounts.columnMethodology}</TableHead>
-            <TableHead>{t.stockCounts.columnCreated}</TableHead>
-            <TableHead className="text-right">{t.stockCounts.columnProgress}</TableHead>
-            <TableHead>{t.stockCounts.columnCreatedBy}</TableHead>
-            <TableHead className="w-20 text-right">{t.stockCounts.columnAction}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((count) => (
-            <TableRow key={count.id} className="hover:bg-muted/50 transition-colors">
-              <TableCell>
-                <Link href={`/stock-counts/${count.id}`} className="font-medium hover:underline">
-                  {count.name}
-                </Link>
-                {count.warehouse ? (
-                  <div className="text-xs text-muted-foreground">{count.warehouse.name}</div>
-                ) : null}
-              </TableCell>
-              <TableCell>{stateBadge(count.state as CountState)}</TableCell>
-              <TableCell>{methodologyBadge(count.methodology as Methodology)}</TableCell>
-              <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                {dateFormatter.format(count.createdAt)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">{count._count.entries}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">
-                {count.createdBy?.name ?? count.createdBy?.email ?? t.movements.unknownUser}
-              </TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/stock-counts/${count.id}`}>{t.stockCounts.openAction}</Link>
-                </Button>
-              </TableCell>
+      <ResponsiveTable cardView={cardView}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t.stockCounts.columnName}</TableHead>
+              <TableHead>{t.stockCounts.columnState}</TableHead>
+              <TableHead>{t.stockCounts.columnMethodology}</TableHead>
+              <TableHead>{t.stockCounts.columnCreated}</TableHead>
+              <TableHead className="text-right">{t.stockCounts.columnProgress}</TableHead>
+              <TableHead>{t.stockCounts.columnCreatedBy}</TableHead>
+              <TableHead className="w-20 text-right">{t.stockCounts.columnAction}</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {rows.map((count) => (
+              <TableRow key={count.id} className="hover:bg-muted/50 transition-colors">
+                <TableCell>
+                  <Link href={`/stock-counts/${count.id}`} className="font-medium hover:underline">
+                    {count.name}
+                  </Link>
+                  {count.warehouse ? (
+                    <div className="text-xs text-muted-foreground">{count.warehouse.name}</div>
+                  ) : null}
+                </TableCell>
+                <TableCell>{stateBadge(count.state as CountState)}</TableCell>
+                <TableCell>{methodologyBadge(count.methodology as Methodology)}</TableCell>
+                <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                  {dateFormatter.format(count.createdAt)}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{count._count.entries}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {count.createdBy?.name ?? count.createdBy?.email ?? t.movements.unknownUser}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/stock-counts/${count.id}`}>{t.stockCounts.openAction}</Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ResponsiveTable>
     );
   }
 
@@ -130,8 +153,8 @@ export default async function StockCountsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t.stockCounts.heading}</h1>
-          <p className="text-muted-foreground">{t.stockCounts.subtitle}</p>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.stockCounts.heading}</h1>
+          <p className="text-sm text-muted-foreground">{t.stockCounts.subtitle}</p>
         </div>
         {canCreate ? (
           <Button asChild>

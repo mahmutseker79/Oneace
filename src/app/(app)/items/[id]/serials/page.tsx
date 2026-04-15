@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -57,6 +58,8 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
     notFound();
   }
 
+  const itemLabel = item.name;
+
   // Fetch serials, optionally filtered by status
   const serials = await db.serialNumber.findMany({
     where: {
@@ -92,37 +95,34 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/items/${item.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-            {item.name}
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{t.serials.heading || "Serial Numbers"}</h1>
-          <p className="text-muted-foreground">{t.serials.subtitle || "Track individual serial numbers"}</p>
-        </div>
-        {canCreateSerial ? (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link href={`/items/${item.id}/serials/new`}>
-                <Plus className="h-4 w-4" />
-                {t.serials.addSerial || "Add Serial"}
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href={`/items/${item.id}/serials/bulk`}>
-                <Plus className="h-4 w-4" />
-                {t.serials.bulkGenerate || "Bulk Generate"}
-              </Link>
-            </Button>
-          </div>
-        ) : null}
-      </div>
+      <PageHeader
+        title={t.serials.heading || "Serial Numbers"}
+        description={t.serials.subtitle || "Track individual serial numbers"}
+        backHref={`/items/${item.id}`}
+        breadcrumb={[
+          { label: t.nav?.items ?? "Items", href: "/items" },
+          { label: itemLabel },
+          { label: t.serials.heading || "Serial Numbers" },
+        ]}
+        actions={
+          canCreateSerial ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/items/${item.id}/serials/new`}>
+                  <Plus className="h-4 w-4" />
+                  {t.serials.addSerial || "Add Serial"}
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/items/${item.id}/serials/bulk`}>
+                  <Plus className="h-4 w-4" />
+                  {t.serials.bulkGenerate || "Bulk Generate"}
+                </Link>
+              </Button>
+            </div>
+          ) : undefined
+        }
+      />
 
       {serials.length === 0 ? (
         <Card>

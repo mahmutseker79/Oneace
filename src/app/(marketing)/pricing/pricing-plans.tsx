@@ -162,13 +162,13 @@ function IntervalToggle({
 	if (!showAnnual) return null;
 
 	return (
-		<div className="flex items-center justify-center gap-3">
+		<div className="flex items-center justify-center gap-2 rounded-full bg-muted p-1">
 			<button
 				type="button"
 				onClick={() => onChange("month")}
-				className={`text-sm font-medium transition-colors ${
+				className={`px-4 py-2 text-sm font-medium transition-all rounded-full ${
 					interval === "month"
-						? "text-foreground"
+						? "bg-background text-foreground shadow-sm"
 						: "text-muted-foreground hover:text-foreground"
 				}`}
 			>
@@ -176,24 +176,10 @@ function IntervalToggle({
 			</button>
 			<button
 				type="button"
-				onClick={() => onChange(interval === "month" ? "year" : "month")}
-				className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-					interval === "year" ? "bg-primary" : "bg-muted"
-				}`}
-				aria-label="Toggle annual billing"
-			>
-				<span
-					className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-						interval === "year" ? "translate-x-6" : "translate-x-1"
-					}`}
-				/>
-			</button>
-			<button
-				type="button"
 				onClick={() => onChange("year")}
-				className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+				className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-all rounded-full ${
 					interval === "year"
-						? "text-foreground"
+						? "bg-background text-foreground shadow-sm"
 						: "text-muted-foreground hover:text-foreground"
 				}`}
 			>
@@ -221,7 +207,7 @@ export function PricingPlans({ showAnnual }: { showAnnual: boolean }) {
 				showAnnual={showAnnual}
 			/>
 
-			<div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-3">
+			<div className="mx-auto grid max-w-5xl gap-6 grid-cols-1 md:grid-cols-3">
 				{PLAN_CARDS.map((plan) => {
 					const pricing = planPrice(plan.id, interval);
 					const cta = planCta(plan.id, interval);
@@ -235,10 +221,10 @@ export function PricingPlans({ showAnnual }: { showAnnual: boolean }) {
 					return (
 						<Card
 							key={plan.id}
-							className={`relative flex flex-col ${
+							className={`relative flex flex-col transition-all ${
 								plan.featured
-									? "border-primary shadow-md ring-1 ring-primary/20"
-									: "border-border/60"
+									? "border border-primary shadow-lg ring-2 ring-primary/30 md:scale-105"
+									: "border border-border/60"
 							}`}
 						>
 							{plan.badge ? (
@@ -292,7 +278,7 @@ export function PricingPlans({ showAnnual }: { showAnnual: boolean }) {
 							<CardFooter className="pt-4">
 								<Button
 									asChild
-									className="w-full"
+									className={`w-full ${plan.featured ? "shadow-sm" : ""}`}
 									variant={plan.featured ? "default" : "outline"}
 									size="lg"
 								>

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -51,6 +52,8 @@ export default async function BinsPage({ params }: PageProps) {
     notFound();
   }
 
+  const warehouseLabel = warehouse.name;
+
   const [bins, items] = await Promise.all([
     db.bin.findMany({
       where: { warehouseId },
@@ -77,58 +80,55 @@ export default async function BinsPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/warehouses/${warehouseId}`}>
-            <ArrowLeft className="h-4 w-4" />
-            {warehouse.name}
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t.bins.heading}</h1>
-          <p className="text-muted-foreground">{t.bins.subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {bins.length > 0 ? (
-            <>
-              <Button variant="outline" asChild>
-                <a
-                  href={`/api/labels/bin-labels/pdf?warehouseId=${warehouseId}`}
-                  download={`bin-labels-${warehouse.name.replace(/\s+/g, "-")}.pdf`}
-                >
-                  <Printer className="h-4 w-4" />
-                  {t.labels.printLabels}
-                </a>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href={`/warehouses/${warehouseId}/bins/print`} target="_blank">
-                  <Printer className="h-4 w-4" />
-                  View Labels
-                </Link>
-              </Button>
-            </>
-          ) : null}
-          <BinTransferDialog
-            warehouseId={warehouseId}
-            labels={{
-              title: t.bins.transfer.title,
-              trigger: t.bins.transfer.trigger,
-              item: t.bins.transfer.item,
-              fromBin: t.bins.transfer.fromBin,
-              toBin: t.bins.transfer.toBin,
-              quantity: t.bins.transfer.quantity,
-              submit: t.bins.transfer.submit,
-              cancel: t.common.cancel,
-            }}
-            bins={bins.map((b) => ({ id: b.id, code: b.code, label: b.label }))}
-            items={items}
-          />
-          <BinFormDialog warehouseId={warehouseId} labels={formLabels} mode="create" />
-        </div>
-      </div>
+      <PageHeader
+        title={t.bins.heading}
+        description={t.bins.subtitle}
+        backHref={`/warehouses/${warehouseId}`}
+        breadcrumb={[
+          { label: t.nav?.warehouses ?? "Warehouses", href: "/warehouses" },
+          { label: warehouseLabel },
+          { label: t.bins.heading },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            {bins.length > 0 ? (
+              <>
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={`/api/labels/bin-labels/pdf?warehouseId=${warehouseId}`}
+                    download={`bin-labels-${warehouse.name.replace(/\s+/g, "-")}.pdf`}
+                  >
+                    <Printer className="h-4 w-4" />
+                    {t.labels.printLabels}
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/warehouses/${warehouseId}/bins/print`} target="_blank">
+                    <Printer className="h-4 w-4" />
+                    View Labels
+                  </Link>
+                </Button>
+              </>
+            ) : null}
+            <BinTransferDialog
+              warehouseId={warehouseId}
+              labels={{
+                title: t.bins.transfer.title,
+                trigger: t.bins.transfer.trigger,
+                item: t.bins.transfer.item,
+                fromBin: t.bins.transfer.fromBin,
+                toBin: t.bins.transfer.toBin,
+                quantity: t.bins.transfer.quantity,
+                submit: t.bins.transfer.submit,
+                cancel: t.common.cancel,
+              }}
+              bins={bins.map((b) => ({ id: b.id, code: b.code, label: b.label }))}
+              items={items}
+            />
+            <BinFormDialog warehouseId={warehouseId} labels={formLabels} mode="create" />
+          </div>
+        }
+      />
 
       {/* Phase 15.2 — bins plan gate banner for FREE users */}
       {!canUseBins ? (

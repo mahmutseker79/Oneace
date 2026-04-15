@@ -12,6 +12,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import {
 	Table,
 	TableBody,
@@ -103,20 +104,13 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center gap-2">
-				<Button variant="ghost" size="sm" asChild>
-					<Link href="/warehouses">
-						<ArrowLeft className="h-4 w-4" />
-						{t.warehouses.backToList}
-					</Link>
-				</Button>
-			</div>
-
-			<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<WarehouseIcon className="h-6 w-6 text-muted-foreground" />
-						<h1 className="text-2xl font-semibold">{warehouse.name}</h1>
+			{/* God-Mode Design: Breadcrumb + back button via PageHeader */}
+			<PageHeader
+				title={warehouse.name}
+				description={warehouse.code}
+				backHref="/warehouses"
+				badge={
+					<>
 						{warehouse.isDefault ? (
 							<Badge variant="outline">
 								{t.warehouses.detail.defaultBadge}
@@ -127,11 +121,15 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
 								{t.warehouses.detail.archivedBadge}
 							</Badge>
 						) : null}
-					</div>
-					<p className="font-mono text-sm text-muted-foreground">
-						{warehouse.code}
-					</p>
-				</div>
+					</>
+				}
+				breadcrumb={[
+					{ label: t.nav?.warehouses ?? "Warehouses", href: "/warehouses" },
+					{ label: warehouse.name },
+				]}
+			/>
+
+			<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 				<div className="flex items-center gap-2">
 					<Button asChild variant="outline" size="sm">
 						<Link href={`/warehouses/${warehouse.id}/bins`}>
