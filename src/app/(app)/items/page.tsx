@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { formatRelative } from "@/lib/format-relative";
 import { getMessages, getRegion } from "@/lib/i18n";
@@ -135,12 +136,13 @@ export default async function ItemsPage({
 
   const isSearchMode = searchQuery.length > 0;
 
+  // Sprint 4 optimization: removed stockLevels include (was fetching
+  // 50 items × 5 warehouses = 250 rows). Now uses a single GROUP BY
+  // query after the main fetch to pre-aggregate stock totals.
   const items = await db.item.findMany({
     where: baseWhere,
     include: {
       category: { select: { id: true, name: true } },
-      stockLevels: { select: { quantity: true } },
-      // P8.4 — needed for low-stock → PO shortcut (indexed column, negligible cost)
       preferredSupplier: { select: { id: true, name: true } },
     },
     orderBy,
@@ -152,6 +154,19 @@ export default async function ItemsPage({
   const hasNextPage = !isSearchMode && items.length > PAGE_SIZE;
   const pageItems = hasNextPage ? items.slice(0, PAGE_SIZE) : items;
   const nextCursor = hasNextPage ? pageItems[pageItems.length - 1]?.id : null;
+
+  // Pre-aggregate stock quantities: 1 GROUP BY query replaces N×M includes.
+  const allItemIds = items.map((i) => i.id);
+  const stockTotals = allItemIds.length > 0
+    ? await db.$queryRaw<Array<{ itemId: string; total: number }>>`
+        SELECT "itemId", COALESCE(SUM(quantity), 0)::int as total
+        FROM "StockLevel"
+        WHERE "itemId" IN (${Prisma.join(allItemIds)})
+          AND "organizationId" = ${membership.organizationId}
+        GROUP BY "itemId"
+      `
+    : [];
+  const stockMap = new Map(stockTotals.map((s) => [s.itemId, s.total]));
 
   // Phase 2 — client-side text filter (search mode only, PAGE_SIZE or fewer rows).
   const q = searchQuery.toLowerCase();
@@ -224,7 +239,6 @@ export default async function ItemsPage({
             where: { organizationId: membership.organizationId },
             include: {
               category: { select: { id: true, name: true } },
-              stockLevels: { select: { quantity: true } },
               preferredSupplier: { select: { id: true, name: true } },
             },
             orderBy: { createdAt: "desc" },
@@ -246,7 +260,7 @@ export default async function ItemsPage({
   const lowStockItems = setupComplete
     ? items.filter((item) => {
         if (item.reorderPoint <= 0) return false;
-        const onHand = item.stockLevels.reduce((sum, l) => sum + l.quantity, 0);
+        const onHand = stockMap.get(item.id) ?? 0;
         return onHand <= item.reorderPoint;
       })
     : [];
@@ -362,7 +376,7 @@ export default async function ItemsPage({
     categoryName: item.category?.name ?? null,
     salePrice: item.salePrice ? item.salePrice.toString() : null,
     currency: item.currency,
-    onHand: item.stockLevels.reduce((sum, level) => sum + level.quantity, 0),
+    onHand: stockMap.get(item.id) ?? 0,
   }));
 
   return (
@@ -802,7 +816,7 @@ export default async function ItemsPage({
                       barcode: item.barcode ?? null,
                       categoryName: item.category?.name ?? null,
                       status: item.status as "ACTIVE" | "ARCHIVED" | "DRAFT",
-                      onHand: item.stockLevels.reduce((sum, l) => sum + l.quantity, 0),
+                      onHand: stockMap.get(item.id) ?? 0,
                       unit: item.unit,
                       salePrice: item.salePrice?.toString() ?? null,
                       currency: item.currency,
