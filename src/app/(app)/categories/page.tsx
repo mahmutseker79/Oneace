@@ -176,7 +176,7 @@ export default async function CategoriesPage() {
                 </TableHeader>
                 <TableBody>
                   {categories.map((c) => (
-                    <TableRow key={c.id}>
+                    <TableRow key={c.id} className="hover:bg-muted/50 transition-colors">
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {c.parent?.name ?? t.common.none}

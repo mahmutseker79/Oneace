@@ -119,6 +119,24 @@
   --sidebar-accent-foreground: #4b5563;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #c7d2fe;
+
+  /* Premium shadow scale */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-popover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+
+  /* Gradient tokens */
+  --gradient-card: linear-gradient(to bottom right, var(--card), hsl(from var(--muted) h s l / 0.3));
+  --gradient-accent: linear-gradient(135deg, var(--primary), hsl(from var(--primary) h s calc(l + 15)));
+
+  /* Transition tokens */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Font tokens */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 .dark {
@@ -228,6 +246,24 @@
   --sidebar-accent-foreground: #f1f5f9;
   --sidebar-border: #475569;
   --sidebar-ring: #6366f1;
+
+  /* Premium shadow scale - Dark */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.15), 0 1px 1px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.15);
+  --shadow-popover: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+
+  /* Gradient tokens - Dark */
+  --gradient-card: linear-gradient(to bottom right, var(--card), hsl(from var(--muted) h s calc(l - 5)));
+  --gradient-accent: linear-gradient(135deg, var(--primary), hsl(from var(--primary) h s calc(l - 10)));
+
+  /* Transition tokens */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Font tokens */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme inline {

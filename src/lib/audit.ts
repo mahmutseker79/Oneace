@@ -70,6 +70,13 @@ export type AuditAction =
   | "bin.created"
   | "bin.updated"
   | "bin.deleted"
+  // --- Location barcodes (Phase C) ------------------------------------------
+  | "warehouse.barcode_assigned"
+  | "bin.barcode_assigned"
+  // --- Label templates (Phase C) -------------------------------------------
+  | "label_template.created"
+  | "label_template.updated"
+  | "label_template.deleted"
   // --- Billing lifecycle (Phase 14.1) ------------------------------------
   // Emitted by Stripe webhook handlers so OWNER/ADMIN can see plan changes
   // in the audit log. actorId is null (system-initiated).
@@ -88,7 +95,69 @@ export type AuditAction =
   | "ui.reorder_config_save"
   // --- Account lifecycle (GDPR) -------------------------------------------
   | "account.data_export"
-  | "account.deleted";
+  | "account.deleted"
+  // --- Phase B: Counting Core Expansion ----------------------------------
+  // Department lifecycle
+  | "department.created"
+  | "department.updated"
+  | "department.deleted"
+  // Stock count approval workflow
+  | "stock_count.submitted_for_approval"
+  | "stock_count.approved"
+  | "stock_count.rejected"
+  | "stock_count.rolled_back"
+  // Count assignments
+  | "count_assignment.created"
+  | "count_assignment.removed"
+  // Count templates
+  | "count_template.created"
+  | "count_template.updated"
+  | "count_template.deleted"
+  // --- Phase E: Integration & Import/Export --------------------------------
+  // Integration lifecycle
+  | "integration.connected"
+  | "integration.disconnected"
+  | "integration.synced"
+  // Import job lifecycle
+  | "import_job.started"
+  | "import_job.completed"
+  | "import_job.failed"
+  | "import_job.cancelled"
+  // Import template lifecycle
+  | "import_template.created"
+  | "import_template.updated"
+  | "import_template.deleted"
+  // Webhook lifecycle
+  | "webhook.created"
+  | "webhook.updated"
+  | "webhook.deleted"
+  | "webhook.tested"
+  // --- Phase V4: Reason Codes -----------------------------------------------
+  | "reason_code.created"
+  | "reason_code.updated"
+  | "reason_code.toggled"
+  | "reason_code.seeded"
+  // --- Phase V4: Stock Status Management ------------------------------------
+  | "stock.status_changed"
+  // --- Phase L: Sales Orders, Kits, Pick Tasks ------------------------------
+  | "sales_order.created"
+  | "sales_order.line_added"
+  | "sales_order.line_removed"
+  | "sales_order.confirmed"
+  | "sales_order.allocated"
+  | "sales_order.shipped"
+  | "sales_order.cancelled"
+  | "kit.created"
+  | "kit.component_added"
+  | "kit.component_removed"
+  | "kit.assembled"
+  | "kit.disassembled"
+  | "pick_task.created"
+  | "pick_task.generated_from_so"
+  | "pick_task.assigned"
+  | "pick_task.started"
+  | "pick_task.completed"
+  | "pick_task.verified";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
@@ -107,10 +176,28 @@ export type AuditEntityType =
   | "stock_movement"
   // P9.2 — bin sub-locations
   | "bin"
+  // Phase C — location barcode and label templates
+  | "label_template"
   // Phase 8 — UI interaction tracking
   | "ui_interaction"
   // Phase 14.1 — billing events
-  | "billing";
+  | "billing"
+  // Phase B: Counting Core Expansion
+  | "department"
+  | "count_assignment"
+  | "count_approval"
+  | "count_template"
+  // Phase E: Integration & Import/Export
+  | "integration"
+  | "import_job"
+  | "import_template"
+  | "webhook"
+  // Phase V4: Reason Codes
+  | "reason_code"
+  // Phase L: Sales Orders, Kits, Pick Tasks
+  | "sales_order"
+  | "kit"
+  | "pick_task";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so

@@ -8,6 +8,7 @@ import { buildWelcomeEmail } from "@/lib/mail/templates/welcome-email";
 // Phase 6A / P2 — narrow rate-limit surface for org create. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";
+import { seedOrganization } from "@/lib/org-setup/seed";
 import { slugify } from "@/lib/utils";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
@@ -108,6 +109,10 @@ export async function POST(request: Request) {
       },
     });
   }
+
+  // Phase L9 — Seed default org configuration (fire-and-forget, soft failure)
+  // Seed failure does not block org creation.
+  void seedOrganization(org.id);
 
   // Phase 15.4 — send welcome email (fire-and-forget, soft failure)
   void (async () => {

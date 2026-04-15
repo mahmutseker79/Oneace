@@ -163,7 +163,7 @@ export default async function WarehousesPage() {
 							</TableHeader>
 							<TableBody>
 								{warehouses.map((w) => (
-									<TableRow key={w.id}>
+									<TableRow key={w.id} className="hover:bg-muted/50 transition-colors">
 										<TableCell className="font-medium">{w.name}</TableCell>
 										<TableCell className="font-mono text-xs">
 											{w.code}
@@ -175,7 +175,7 @@ export default async function WarehousesPage() {
 											)}
 										</TableCell>
 										<TableCell>
-											{w.isDefault ? <Badge>{t.common.yes}</Badge> : null}
+											{w.isDefault ? <Badge variant="info">{t.common.yes}</Badge> : null}
 										</TableCell>
 										<TableCell className="text-right">
 											<div className="flex items-center justify-end gap-1">

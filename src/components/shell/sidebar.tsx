@@ -14,6 +14,9 @@ import {
   BarChart3,
   ChevronDown,
   ClipboardList,
+  Download,
+  FileDown,
+  FileUp,
   FolderOpen,
   History,
   Package,
@@ -50,6 +53,16 @@ export type SidebarLabels = {
     suppliers: string;
     categories: string;
     scan: string;
+    // Phase 2A — Warehouse and Commerce groups
+    warehouse?: string;
+    transfers?: string;
+    departments?: string;
+    commerce?: string;
+    salesOrders?: string;
+    kits?: string;
+    picks?: string;
+    import?: string;
+    export?: string;
   };
   // P8.2 — optional badge counts passed from the layout
   badges?: {
@@ -101,6 +114,31 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       ],
     },
     {
+      // Warehouse — transfers and departments
+      heading: labels.nav.warehouse ?? "Warehouse",
+      items: [
+        { label: labels.nav.transfers ?? "Transfers", href: "/transfers", icon: ArrowLeftRight },
+        { label: labels.nav.departments ?? "Departments", href: "/departments", icon: Warehouse },
+      ],
+    },
+    {
+      // Commerce — sales orders, kits, picks
+      heading: labels.nav.commerce ?? "Commerce",
+      items: [
+        { label: labels.nav.salesOrders ?? "Sales Orders", href: "/sales-orders", icon: ShoppingCart },
+        { label: labels.nav.kits ?? "Kits", href: "/kits", icon: Package },
+        { label: labels.nav.picks ?? "Picks", href: "/picks", icon: ClipboardList },
+      ],
+    },
+    {
+      // Utilities — import/export
+      heading: undefined,
+      items: [
+        { label: labels.nav.import ?? "Import", href: "/import", icon: FileUp },
+        { label: labels.nav.export ?? "Export", href: "/export", icon: FileDown },
+      ],
+    },
+    {
       heading: labels.nav.analytics,
       items: [{ label: labels.nav.reports, href: "/reports", icon: BarChart3 }],
     },
@@ -124,10 +162,10 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
         key={item.href}
         href={item.href}
         className={cn(
-          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+          "flex items-center gap-3 rounded-md border-l-2 px-3 py-2 text-sm font-medium transition-colors duration-150",
           isActive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-sidebar-foreground hover:bg-sidebar-accent/60",
+            ? "border-l-primary bg-sidebar-accent text-sidebar-accent-foreground"
+            : "border-l-transparent text-sidebar-foreground hover:bg-sidebar-accent/60",
         )}
       >
         <Icon className="h-4 w-4 shrink-0" />
@@ -151,7 +189,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       </div>
       <nav className="flex-1 overflow-y-auto p-4">
         {groups.map((group, gi) => (
-          <div key={gi} className={gi > 0 ? "mt-4" : undefined}>
+          <div key={gi} className={gi === 0 ? undefined : gi === 1 ? "mt-6" : "mt-4"}>
             {group.heading ? (
               <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {group.heading}

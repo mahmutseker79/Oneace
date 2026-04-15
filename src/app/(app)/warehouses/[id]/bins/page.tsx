@@ -1,4 +1,4 @@
-import { ArrowLeft, Grid3X3, Plus, Printer } from "lucide-react";
+import { ArrowLeft, Grid3X3, Plus, Printer, Barcode } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -160,6 +160,7 @@ export default async function BinsPage({ params }: PageProps) {
                 <TableRow>
                   <TableHead>{t.bins.columnCode}</TableHead>
                   <TableHead>{t.bins.columnLabel}</TableHead>
+                  <TableHead>{"Code"}</TableHead>
                   <TableHead className="w-36 text-right">{t.bins.columnActions}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -168,6 +169,13 @@ export default async function BinsPage({ params }: PageProps) {
                   <TableRow key={bin.id}>
                     <TableCell className="font-mono text-xs">{bin.code}</TableCell>
                     <TableCell className="text-muted-foreground">{bin.label || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-muted-foreground">
+                          {bin.barcodeValue ? bin.barcodeValue : "—"}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <BinFormDialog

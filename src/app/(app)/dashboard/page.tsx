@@ -471,7 +471,7 @@ export default async function DashboardPage() {
 
 					return (
 						<Link key={kpi.label} href={kpi.href} className="group block">
-							<Card className="transition-colors group-hover:border-foreground/20">
+							<Card className="transition-shadow duration-200 group-hover:shadow-md">
 								<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 									<CardTitle className="text-muted-foreground text-sm font-medium">
 										{kpi.label}
@@ -491,7 +491,7 @@ export default async function DashboardPage() {
 									</div>
 								</CardHeader>
 								<CardContent>
-									<div className="text-2xl font-semibold">{kpi.value}</div>
+									<div className="text-2xl font-semibold tabular-nums">{kpi.value}</div>
 									<div className="flex items-center gap-1 mt-1">
 										<p className="text-muted-foreground text-xs">
 											{kpi.caption}
@@ -581,10 +581,10 @@ export default async function DashboardPage() {
 											key={step.id}
 											href={step.href}
 											className={cn(
-												"flex items-center gap-3 rounded-md border px-3 py-2 transition-colors",
+												"flex items-center gap-3 rounded-md border px-3 py-2 transition-colors cursor-pointer",
 												step.complete
-													? "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-900/30 dark:bg-green-950/20"
-													: "border-border bg-background/80 hover:border-primary/40 hover:bg-background",
+													? "border-green-200 bg-green-50/50 hover:bg-green-100/50 dark:border-green-900/30 dark:bg-green-950/20"
+													: "border-border bg-background/80 hover:border-primary/40 hover:bg-background hover:shadow-sm",
 											)}
 										>
 											{step.complete ? (

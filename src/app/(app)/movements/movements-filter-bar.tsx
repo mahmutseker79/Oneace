@@ -129,7 +129,7 @@ export function MovementsFilterBar({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-card flex flex-col gap-3 rounded-lg border p-4"
+      className="bg-muted/30 flex flex-col gap-3 rounded-lg p-3"
       aria-label={labels.heading}
     >
       <div className="flex items-center gap-2 text-sm font-medium">

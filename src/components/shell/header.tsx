@@ -103,7 +103,7 @@ export function Header({
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur lg:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border/50 bg-background/80 px-4 backdrop-blur lg:px-6">
       <Button
         variant="ghost"
         size="icon"
@@ -114,7 +114,7 @@ export function Header({
         <Menu className="h-5 w-5" />
       </Button>
 
-      <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-xl">
+      <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-xl lg:min-w-[280px]">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           ref={searchInputRef}
@@ -122,8 +122,8 @@ export function Header({
           name="q"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder={labels.searchPlaceholder}
-          className="pl-9 pr-16"
+          placeholder="Search items, locations..."
+          className="border-border/50 bg-muted/50 pl-9 pr-16 rounded-lg"
           aria-label={labels.searchLabel}
         />
         {/* Phase 13.1 — keyboard shortcut hint badge */}

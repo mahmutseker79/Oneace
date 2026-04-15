@@ -56,7 +56,10 @@ export type PlanCapability =
   | "reports" // stock value, movement history, bin inventory, supplier reports
   | "transfers" // inter-warehouse transfer wizard
   | "auditLog" // access to the audit log page
-  | "lowStockAlerts"; // low-stock alert notifications
+  | "lowStockAlerts" // low-stock alert notifications
+  | "labels" // label template creation and customization
+  | "abcAnalysis" // ABC classification and analysis reports
+  | "scheduledReports"; // automated scheduled report delivery
 
 /**
  * Capability map — explicit for every plan/capability combination so
@@ -71,6 +74,9 @@ const CAPABILITIES: Record<Plan, Record<PlanCapability, boolean>> = {
     transfers: false,
     auditLog: false,
     lowStockAlerts: false,
+    labels: false,
+    abcAnalysis: false,
+    scheduledReports: false,
   },
   PRO: {
     bins: true,
@@ -80,6 +86,9 @@ const CAPABILITIES: Record<Plan, Record<PlanCapability, boolean>> = {
     transfers: true,
     auditLog: false,
     lowStockAlerts: true,
+    labels: true,
+    abcAnalysis: true,
+    scheduledReports: false,
   },
   BUSINESS: {
     bins: true,
@@ -89,6 +98,9 @@ const CAPABILITIES: Record<Plan, Record<PlanCapability, boolean>> = {
     transfers: true,
     auditLog: true,
     lowStockAlerts: true,
+    labels: true,
+    abcAnalysis: true,
+    scheduledReports: true,
   },
 };
 
@@ -192,6 +204,12 @@ export function planCapabilityError(capability: PlanCapability): string {
       return "The audit log is available on the Business plan. Upgrade to access your full activity history.";
     case "lowStockAlerts":
       return "Low-stock alerts are available on Pro and Business plans. Upgrade to enable notifications.";
+    case "labels":
+      return "Label customization is available on Pro and Business plans. Upgrade to continue.";
+    case "abcAnalysis":
+      return "ABC analysis and classification are available on Pro and Business plans. Upgrade to access.";
+    case "scheduledReports":
+      return "Scheduled reports are available on the Business plan. Upgrade to automate report delivery.";
   }
 }
 
@@ -218,6 +236,6 @@ export function planLimitError(
  * Used by upgrade prompt copy.
  */
 export function requiredPlanFor(capability: PlanCapability): Exclude<Plan, "FREE"> {
-  if (capability === "auditLog") return "BUSINESS";
+  if (capability === "auditLog" || capability === "scheduledReports") return "BUSINESS";
   return "PRO";
 }

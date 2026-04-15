@@ -8,6 +8,10 @@
 //           workflow with a variance preview, six methodologies, and an
 //           honest audit trail.
 // Later sprints expand this — see OneAce_Roadmap.md for the full model outline.
+// Phase 17+: Mega expansion — departments, multi-counter, approval workflow,
+//            label templates, import/export integrations, scheduled reports,
+//            ABC analysis, and advanced reporting. All new models and fields
+//            below are additive and backward-compatible.
 
 generator client {
   provider = "prisma-client-js"
@@ -75,6 +79,36 @@ model Organization {
   // P10.2: alerts and notifications scoped to this org.
   alerts             Alert[]
   notifications      Notification[]
+  // Phase 17+: mega expansion relations
+  departments        Department[]
+  countAssignments   CountAssignment[]
+  countApprovals     CountApproval[]
+  countTemplates     CountTemplate[]
+  labelTemplates     LabelTemplate[]
+  importTemplates    ImportTemplate[]
+  importJobs         ImportJob[]
+  integrations       Integration[]
+  scheduledReports   ScheduledReport[]
+  // Phase V4: new organization relations
+  reasonCodes        ReasonCode[]
+  serialNumbers      SerialNumber[]
+  itemAttachments    ItemAttachment[]
+  savedViews         SavedView[]
+  locationLevels     LocationLevel[]
+  stockTransfers     StockTransfer[]
+  salesOrders        SalesOrder[]
+  kits               Kit[]
+  pickTasks          PickTask[]
+  orgSettings        OrgSettings?
+  itemOptionGroups   ItemOptionGroup[]
+  itemVariants       ItemVariant[]
+  itemBarcodes       ItemBarcode[]
+  variantStockLevels VariantStockLevel[]
+  variantMovements   VariantStockMovement[]
+  fixedAssets        FixedAsset[]
+  itemBatches        ItemBatch[]
+  countZones         CountZone[]
+  migrationJobs      MigrationJob[]
 
   @@index([slug])
 }
@@ -163,6 +197,8 @@ enum Role {
   MANAGER
   MEMBER
   VIEWER
+  APPROVER
+  COUNTER
 }
 
 // =========================
@@ -196,6 +232,19 @@ model User {
   notifications       Notification[]
   // Sprint 38+: TOTP-based 2FA for account security
   twoFactorAuth       TwoFactorAuth?
+  // Phase 17+: mega expansion relations
+  managedDepartments  Department[]
+  countAssignments    CountAssignment[]
+  approvalRequests    CountApproval[]    @relation("ApprovalRequester")
+  approvalReviews     CountApproval[]    @relation("ApprovalReviewer")
+  importJobs          ImportJob[]
+  // Phase V4: new user relations
+  savedViews          SavedView[]
+  assignedAssets      FixedAsset[]       @relation("AssignedTo")
+  uploadedAttachments ItemAttachment[]   @relation("UploadedBy")
+  createdZones        CountZone[]        @relation("ZoneCreatedBy")
+  printedLabels       ZoneLabel[]        @relation("PrintedBy")
+  createdMigrations   MigrationJob[]     @relation("MigrationCreatedBy")
 
   @@index([email])
 }
@@ -261,6 +310,9 @@ model Warehouse {
   country             String?
   isDefault           Boolean         @default(false)
   isArchived          Boolean         @default(false)
+  // Phase 17+: location barcode and label template
+  barcodeValue        String?
+  labelTemplateId     String?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
   organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -272,6 +324,15 @@ model Warehouse {
   countSnapshots      CountSnapshot[]
   countEntries        CountEntry[]
   purchaseOrders      PurchaseOrder[]
+  // Phase 17+: mega expansion relations
+  departments         Department[]
+  countTemplates      CountTemplate[]
+  // Phase V4: new warehouse relations
+  fixedAssets         FixedAsset[]
+  variantStockLevels  VariantStockLevel[]
+  batches             ItemBatch[]
+  locationLevels      LocationLevel[]
+  countZones          CountZone[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -296,6 +357,10 @@ model Bin {
   label         String?
   description   String?
   isArchived    Boolean       @default(false)
+  // Phase 17+: location barcode, display name, label template
+  barcodeValue  String?
+  displayName   String?
+  labelTemplateId String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   warehouse     Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
@@ -344,11 +409,26 @@ model Item {
   reorderQty          Int                 @default(0)
   status              ItemStatus          @default(ACTIVE)
   imageUrl            String?
+  // Phase 17+: ABC classification, department, count frequency tracking
+  abcClass            String?             @default("C")
+  departmentId        String?
+  lastCountedAt       DateTime?
+  countFrequency      Int?                // in days
+  // Phase V4: variant, expiry, serial, fixed asset, order, and lead time tracking
+  hasVariants         Boolean             @default(false)
+  trackExpiry         Boolean             @default(false)
+  trackSerialNumbers  Boolean             @default(false)
+  defaultExpiryDays   Int?
+  isFixedAsset        Boolean             @default(false)
+  minOrderQty         Int?
+  maxOrderQty         Int?
+  leadTimeDays        Int?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
   organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   category            Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   preferredSupplier   Supplier?           @relation("ItemPreferredSupplier", fields: [preferredSupplierId], references: [id], onDelete: SetNull)
+  department          Department?         @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   stockLevels         StockLevel[]
   movements           StockMovement[]
   countSnapshots      CountSnapshot[]
@@ -356,6 +436,15 @@ model Item {
   purchaseOrderLines  PurchaseOrderLine[]
   // P10.2: low-stock alerts for this item
   alerts              Alert[]
+  // Phase V4: new relations
+  optionGroups        ItemOptionGroup[]
+  variants            ItemVariant[]
+  barcodes            ItemBarcode[]
+  batches             ItemBatch[]
+  fixedAssets         FixedAsset[]
+  serialNumbers       SerialNumber[]
+  attachments         ItemAttachment[]
+  kits                Kit[]
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -381,6 +470,9 @@ model StockLevel {
   binId          String?
   quantity       Int          @default(0)
   reservedQty    Int          @default(0)
+  // Phase V4: stock status and location level tracking
+  stockStatus    StockStatus  @default(AVAILABLE)
+  locationLevelId String?
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   item           Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
@@ -458,6 +550,10 @@ model StockMovement {
   //     manual adjustment from a reconcile-generated one.
   purchaseOrderLineId String?
   stockCountId        String?
+  // Phase V4: reason, serial, and batch tracking
+  reasonCodeId        String?
+  serialNumberId      String?
+  batchId             String?
   createdAt           DateTime           @default(now())
   createdByUserId     String?
   organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -520,6 +616,15 @@ model StockCount {
   name            String
   state           StockCountState  @default(OPEN)
   methodology     CountMethodology @default(CYCLE)
+  // Phase 17+: scope, department, partial count linkage, template, approval
+  scope             CountScope       @default(FULL)
+  departmentId      String?
+  parentCountId     String?
+  templateId        String?
+  requiresApproval  Boolean          @default(false)
+  approvalStatus    ApprovalStatus?
+  lockedAt          DateTime?
+  lockedByUserId    String?
   startedAt       DateTime?
   completedAt     DateTime?
   cancelledAt     DateTime?
@@ -530,15 +635,22 @@ model StockCount {
   organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   warehouse       Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
   createdBy       User?            @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  department      Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   snapshots       CountSnapshot[]
   entries         CountEntry[]
   // Phase 5A — back-relation for the `stockCountId` FK on StockMovement.
   // Populated only from `completeStockCountAction` reconcile path.
   movements       StockMovement[]
+  // Phase 17+: mega expansion relations
+  assignments     CountAssignment[]
+  approval        CountApproval?
+  // Phase V4: new count relations
+  zones           CountZone[]
 
   @@index([organizationId, state])
   @@index([organizationId, createdAt])
   @@index([warehouseId])
+  @@index([departmentId])
 }
 
 // One row per (count, item, warehouse) frozen at create time. The
@@ -582,6 +694,18 @@ model CountEntry {
   countedQuantity Int
   counterTag      String?
   note            String?
+  // Phase 17+: department, assignment, photo documentation, GPS
+  departmentId    String?
+  assignmentId    String?
+  photoUrl        String?
+  gpsLat          Float?
+  gpsLng          Float?
+  // Phase V4: reason, serial, variant, batch, zone tracking
+  reasonCodeId    String?
+  serialNumberId  String?
+  variantId       String?
+  batchId         String?
+  zoneId          String?
   countedAt       DateTime      @default(now())
   countedByUserId String?
   // Sprint 27 (PWA Sprint 4 follow-on): client-generated UUID v4 used as a
@@ -595,6 +719,7 @@ model CountEntry {
   warehouse       Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   bin             Bin?          @relation(fields: [binId], references: [id], onDelete: SetNull)
   countedBy       User?         @relation(fields: [countedByUserId], references: [id], onDelete: SetNull)
+  zone            CountZone?    @relation(fields: [zoneId], references: [id], onDelete: SetNull)
   // Phase 5A — composite FK to the owning CountSnapshot row. This is
   // a SECOND FK over the same three scalar fields (Postgres happily
   // supports multiple FKs on the same column), using the
@@ -615,6 +740,12 @@ enum StockCountState {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  // Phase 17+: approval workflow states
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ROLLED_BACK
+  REQUIRES_RECOUNT
 }
 
 enum CountMethodology {
@@ -624,6 +755,8 @@ enum CountMethodology {
   BLIND
   DOUBLE_BLIND
   DIRECTED
+  // Phase 17+: partial count methodology
+  PARTIAL
 }
 
 // =========================
@@ -938,4 +1071,1250 @@ enum AlertStatus {
   ACTIVE
   RESOLVED
   DISMISSED
+}
+
+// =========================
+// Phase 17+: New Enums
+// =========================
+
+enum CountRole {
+  COUNTER
+  VERIFIER
+  SUPERVISOR
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CountScope {
+  FULL
+  PARTIAL
+  DEPARTMENT
+}
+
+enum LabelType {
+  BIN
+  ITEM
+  WAREHOUSE
+  CUSTOM
+}
+
+enum BarcodeFormat {
+  CODE128
+  EAN13
+  QR
+  CODE39
+  UPC_A
+  ITF14
+}
+
+enum ImportSource {
+  CSV
+  EXCEL
+  QUICKBOOKS_ONLINE
+  QUICKBOOKS_DESKTOP
+  SHOPIFY
+  WOOCOMMERCE
+  XERO
+  AMAZON
+  CUSTOM_API
+  MANUAL
+}
+
+enum ImportEntity {
+  ITEM
+  STOCK_LEVEL
+  SUPPLIER
+  PURCHASE_ORDER
+  CATEGORY
+  WAREHOUSE
+  CUSTOMER
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum IntegrationProvider {
+  QUICKBOOKS_ONLINE
+  QUICKBOOKS_DESKTOP
+  SHOPIFY
+  WOOCOMMERCE
+  XERO
+  AMAZON
+  CUSTOM_WEBHOOK
+  BIGCOMMERCE
+  MAGENTO
+  WIX
+  ODOO
+  ZOHO_INVENTORY
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  SYNCING
+}
+
+enum SyncDirection {
+  INBOUND
+  OUTBOUND
+  BIDIRECTIONAL
+}
+
+enum ReportType {
+  STOCK_VALUE
+  LOW_STOCK
+  COUNT_VARIANCE
+  MOVEMENT_HISTORY
+  ABC_ANALYSIS
+  DEPARTMENT_VARIANCE
+  COUNT_COMPARISON
+  STOCK_AGING
+  SUPPLIER_PERFORMANCE
+  SCAN_ACTIVITY
+}
+
+enum ExportFormat {
+  PDF
+  XLSX
+  CSV
+}
+
+// =========================
+// Phase V4: New Enums
+// =========================
+
+enum ReasonCategory {
+  VARIANCE
+  ADJUSTMENT
+  TRANSFER
+  RETURN
+  DISPOSAL
+  COUNT
+  OTHER
+}
+
+enum SerialStatus {
+  IN_STOCK
+  ISSUED
+  IN_TRANSIT
+  SOLD
+  RETURNED
+  DISPOSED
+  LOST
+}
+
+enum SerialAction {
+  RECEIVED
+  MOVED
+  ISSUED
+  RETURNED
+  COUNTED
+  DISPOSED
+}
+
+enum AttachmentType {
+  IMAGE
+  DOCUMENT
+  DATASHEET
+  CERTIFICATE
+  OTHER
+}
+
+enum LocationType {
+  ZONE
+  AISLE
+  RACK
+  SHELF
+  BAY
+  FLOOR
+}
+
+enum TransferStatus {
+  DRAFT
+  SHIPPED
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  CONFIRMED
+  ALLOCATED
+  PARTIALLY_SHIPPED
+  SHIPPED
+  CANCELLED
+}
+
+enum KitType {
+  BUNDLE
+  KIT
+  ASSEMBLY
+}
+
+enum PickStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  PICKED
+  VERIFIED
+}
+
+enum StockStatus {
+  AVAILABLE
+  HOLD
+  DAMAGED
+  QUARANTINE
+  EXPIRED
+  IN_TRANSIT
+  RESERVED
+}
+
+enum BarcodeType {
+  PRIMARY
+  ALTERNATE
+  CASE
+  INNER
+  PALLET
+  SUPPLIER
+  CUSTOM
+}
+
+enum AssetCategory {
+  EQUIPMENT
+  FURNITURE
+  ELECTRONICS
+  VEHICLE
+  BUILDING
+  IT_HARDWARE
+  SOFTWARE
+  OTHER
+}
+
+enum AssetStatus {
+  ACTIVE
+  IN_STORAGE
+  IN_MAINTENANCE
+  DISPOSED
+  LOST
+}
+
+enum AssetAction {
+  ASSIGNED
+  RETURNED
+  MOVED
+  AUDITED
+  MAINTAINED
+  DISPOSED
+  VALUE_ADJUSTED
+}
+
+enum BatchStatus {
+  AVAILABLE
+  QUARANTINE
+  EXPIRED
+  RECALLED
+  CONSUMED
+}
+
+enum MigrationSource {
+  SORTLY
+  INFLOW
+  ODOO
+  ZOHO_INVENTORY
+  FISHBOWL
+  CIN7
+  KATANA
+  LIGHTSPEED
+  QUICKBOOKS_COMMERCE
+  DEAR_SYSTEMS
+  GENERIC_CSV
+}
+
+enum MigrationStatus {
+  PENDING
+  FILES_UPLOADED
+  MAPPING_REVIEW
+  VALIDATING
+  VALIDATED
+  IMPORTING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// =========================
+// Phase 17+: Department
+// =========================
+//
+// A department is an organizational unit that can own items and be
+// assigned to stock counts. This is a first-mover feature — no
+// competitor offers department-based counting.
+
+model Department {
+  id               String   @id @default(cuid())
+  organizationId   String
+  name             String
+  code             String?
+  color            String?
+  managerId        String?
+  warehouseId      String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager          User?            @relation(fields: [managerId], references: [id], onDelete: SetNull)
+  warehouse        Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  stockCounts      StockCount[]
+  countAssignments CountAssignment[]
+  countTemplates   CountTemplate[]
+  items            Item[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
+}
+
+// =========================
+// Phase 17+: Count Assignment (Multi-Counter)
+// =========================
+//
+// Assigns a user to a specific count with a role (COUNTER, VERIFIER,
+// SUPERVISOR). Enables concurrent multi-counter workflows where
+// multiple people work on the same count simultaneously.
+
+model CountAssignment {
+  id               String           @id @default(cuid())
+  organizationId   String
+  countId          String
+  userId           String
+  departmentId     String?
+  warehouseId      String?
+  role             CountRole        @default(COUNTER)
+  status           AssignmentStatus @default(PENDING)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  itemsCounted     Int              @default(0)
+  createdAt        DateTime         @default(now())
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  count            StockCount   @relation(fields: [countId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department       Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@unique([countId, userId])
+  @@index([organizationId, countId])
+  @@index([userId, status])
+}
+
+// =========================
+// Phase 17+: Count Approval
+// =========================
+//
+// Approval workflow for stock counts. When a count requires approval,
+// it transitions to PENDING_APPROVAL after counting is complete, and
+// a supervisor must approve or reject before stock is adjusted.
+
+model CountApproval {
+  id               String         @id @default(cuid())
+  organizationId   String
+  countId          String         @unique
+  requestedById    String
+  reviewedById     String?
+  status           ApprovalStatus @default(PENDING)
+  comment          String?
+  requestedAt      DateTime       @default(now())
+  reviewedAt       DateTime?
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  count            StockCount   @relation(fields: [countId], references: [id], onDelete: Cascade)
+  requestedBy      User         @relation("ApprovalRequester", fields: [requestedById], references: [id])
+  reviewedBy       User?        @relation("ApprovalReviewer", fields: [reviewedById], references: [id])
+
+  @@index([organizationId, status])
+}
+
+// =========================
+// Phase 17+: Count Template
+// =========================
+//
+// Reusable templates for creating stock counts with pre-configured
+// scope, methodology, and schedule. Supports recurring counts via
+// cron expressions.
+
+model CountTemplate {
+  id               String          @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  methodology      CountMethodology
+  scope            CountScope      @default(FULL)
+  warehouseId      String?
+  departmentId     String?
+  categoryIds      String[]
+  itemFilter       Json?
+  isRecurring      Boolean         @default(false)
+  cronExpression   String?
+  nextScheduledAt  DateTime?
+  lastUsedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  warehouse        Warehouse?   @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  department       Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([isRecurring, nextScheduledAt])
+}
+
+// =========================
+// Phase 17+: Label Template
+// =========================
+//
+// Customizable label templates for printing bin, item, and warehouse
+// labels. Layout is stored as JSON with field positions and sizes.
+
+model LabelTemplate {
+  id               String        @id @default(cuid())
+  organizationId   String
+  name             String
+  type             LabelType
+  width            Float
+  height           Float
+  layout           Json
+  barcodeFormat    BarcodeFormat @default(CODE128)
+  isDefault        Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Phase V4: new zone label relation
+  zoneLabels       ZoneLabel[]
+
+  @@index([organizationId, type])
+}
+
+// =========================
+// Phase 17+: Import Template
+// =========================
+//
+// Reusable field mapping templates for importing data from external
+// sources. Stores source-to-target field mappings and transform rules.
+
+model ImportTemplate {
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String
+  source           ImportSource
+  entityType       ImportEntity
+  fieldMapping     Json
+  transformRules   Json?
+  isDefault        Boolean      @default(false)
+  lastUsedAt       DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobs             ImportJob[]
+
+  @@index([organizationId, source])
+}
+
+// =========================
+// Phase 17+: Import Job
+// =========================
+//
+// Tracks the progress and results of an import operation. Stores
+// row-level error details for user review.
+
+model ImportJob {
+  id               String       @id @default(cuid())
+  organizationId   String
+  templateId       String?
+  source           ImportSource
+  entityType       ImportEntity
+  status           ImportStatus @default(PENDING)
+  fileName         String?
+  totalRows        Int          @default(0)
+  processedRows    Int          @default(0)
+  successRows      Int          @default(0)
+  errorRows        Int          @default(0)
+  errors           Json?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdByUserId  String?
+  createdAt        DateTime     @default(now())
+
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template         ImportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy        User?           @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+}
+
+// =========================
+// Phase 17+: External Integration
+// =========================
+//
+// Stores connection credentials and sync settings for external
+// services (QuickBooks, Shopify, etc.). Credentials are encrypted
+// at the application layer.
+
+model Integration {
+  id               String              @id @default(cuid())
+  organizationId   String
+  provider         IntegrationProvider
+  status           IntegrationStatus   @default(DISCONNECTED)
+  credentials      Json?
+  settings         Json?
+  lastSyncAt       DateTime?
+  lastError        String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  syncLogs         SyncLog[]
+
+  @@unique([organizationId, provider])
+}
+
+// =========================
+// Phase 17+: Sync Log
+// =========================
+//
+// Records the outcome of each sync operation between OneAce and
+// an external integration.
+
+model SyncLog {
+  id               String       @id @default(cuid())
+  integrationId    String
+  direction        SyncDirection
+  entityType       ImportEntity
+  status           ImportStatus
+  recordsProcessed Int          @default(0)
+  recordsCreated   Int          @default(0)
+  recordsUpdated   Int          @default(0)
+  recordsSkipped   Int          @default(0)
+  recordsFailed    Int          @default(0)
+  errors           Json?
+  startedAt        DateTime     @default(now())
+  completedAt      DateTime?
+
+  integration      Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId, startedAt])
+}
+
+// =========================
+// Phase 17+: Scheduled Report
+// =========================
+//
+// Configures automated report generation and email delivery on a
+// cron schedule.
+
+model ScheduledReport {
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String
+  reportType       ReportType
+  filters          Json?
+  format           ExportFormat @default(PDF)
+  cronExpression   String
+  recipientEmails  String[]
+  isActive         Boolean      @default(true)
+  lastSentAt       DateTime?
+  nextSendAt       DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, isActive])
+  @@index([isActive, nextSendAt])
+}
+
+// =========================
+// Phase V4: New Models
+// =========================
+
+// =========================
+// ReasonCode — configurable reason codes for adjustments/variances
+// =========================
+model ReasonCode {
+  id                String           @id @default(cuid())
+  organizationId    String
+  code              String
+  name              String
+  category          ReasonCategory
+  description       String?
+  isActive          Boolean          @default(true)
+  isDefault         Boolean          @default(false)
+  sortOrder         Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId, category, isActive])
+}
+
+// =========================
+// SerialNumber — serial number tracking with lifecycle
+// =========================
+model SerialNumber {
+  id                String           @id @default(cuid())
+  organizationId    String
+  itemId            String
+  variantId         String?
+  serialNumber      String
+  status            SerialStatus     @default(IN_STOCK)
+  warehouseId       String?
+  binId             String?
+  batchId           String?
+  receivedDate      DateTime?
+  soldDate          DateTime?
+  lastMovedAt       DateTime?
+  assignedToUserId  String?
+  note              String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  history           SerialHistory[]
+
+  @@unique([organizationId, serialNumber])
+  @@index([organizationId, itemId])
+  @@index([organizationId, status])
+  @@index([serialNumber])
+}
+
+// =========================
+// SerialHistory — serial number lifecycle events
+// =========================
+model SerialHistory {
+  id                String           @id @default(cuid())
+  serialNumberId    String
+  action            SerialAction
+  fromWarehouseId   String?
+  toWarehouseId     String?
+  reference         String?
+  performedByUserId String?
+  note              String?
+  performedAt       DateTime         @default(now())
+
+  serialNumber      SerialNumber     @relation(fields: [serialNumberId], references: [id], onDelete: Cascade)
+
+  @@index([serialNumberId, performedAt])
+}
+
+// =========================
+// ItemAttachment — multiple files per item
+// =========================
+model ItemAttachment {
+  id                String           @id @default(cuid())
+  organizationId    String
+  itemId            String
+  fileName          String
+  fileUrl           String
+  fileType          AttachmentType
+  fileSize          Int
+  sortOrder         Int              @default(0)
+  uploadedByUserId  String?
+  createdAt         DateTime         @default(now())
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  uploadedBy        User?            @relation("UploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, itemId])
+}
+
+// =========================
+// SavedView — reusable filter presets
+// =========================
+model SavedView {
+  id                String           @id @default(cuid())
+  organizationId    String
+  userId            String?
+  page              String
+  name              String
+  filters           Json
+  sortBy            String?
+  sortOrder         String?
+  columns           String[]
+  isDefault         Boolean          @default(false)
+  isShared          Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user              User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, page])
+  @@index([userId, page])
+}
+
+// =========================
+// LocationLevel — zone/aisle/rack/shelf hierarchy
+// =========================
+model LocationLevel {
+  id                String           @id @default(cuid())
+  organizationId    String
+  warehouseId       String
+  parentId          String?
+  type              LocationType
+  name              String
+  code              String
+  barcodeValue      String?
+  sortOrder         Int              @default(0)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  warehouse         Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  parent            LocationLevel?   @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children          LocationLevel[]  @relation("LocationHierarchy")
+
+  @@unique([warehouseId, code])
+  @@index([organizationId, warehouseId])
+  @@index([parentId])
+}
+
+// =========================
+// StockTransfer — transfers with in-transit state
+// =========================
+model StockTransfer {
+  id                String           @id @default(cuid())
+  organizationId    String
+  transferNumber    String
+  fromWarehouseId   String
+  toWarehouseId     String
+  status            TransferStatus   @default(DRAFT)
+  shippedAt         DateTime?
+  receivedAt        DateTime?
+  shippedByUserId   String?
+  receivedByUserId  String?
+  note              String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lines             StockTransferLine[]
+
+  @@unique([organizationId, transferNumber])
+  @@index([organizationId, status])
+}
+
+// =========================
+// StockTransferLine — transfer line items
+// =========================
+model StockTransferLine {
+  id                String           @id @default(cuid())
+  transferId        String
+  itemId            String
+  variantId         String?
+  batchId           String?
+  serialNumberId    String?
+  shippedQty        Int
+  receivedQty       Int              @default(0)
+  discrepancy       Int              @default(0)
+  note              String?
+
+  transfer          StockTransfer    @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  @@index([transferId])
+}
+
+// =========================
+// SalesOrder — sales orders for allocation
+// =========================
+model SalesOrder {
+  id                String           @id @default(cuid())
+  organizationId    String
+  orderNumber       String
+  customerName      String?
+  customerRef       String?
+  status            SalesOrderStatus @default(DRAFT)
+  orderDate         DateTime         @default(now())
+  requiredDate      DateTime?
+  shippedAt         DateTime?
+  note              String?
+  createdByUserId   String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lines             SalesOrderLine[]
+
+  @@unique([organizationId, orderNumber])
+  @@index([organizationId, status])
+}
+
+// =========================
+// SalesOrderLine — sales order line items
+// =========================
+model SalesOrderLine {
+  id                String           @id @default(cuid())
+  salesOrderId      String
+  itemId            String
+  variantId         String?
+  warehouseId       String
+  orderedQty        Int
+  allocatedQty      Int              @default(0)
+  shippedQty        Int              @default(0)
+  note              String?
+
+  salesOrder        SalesOrder       @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([salesOrderId])
+}
+
+// =========================
+// Kit — kit/bundle definitions
+// =========================
+model Kit {
+  id                String           @id @default(cuid())
+  organizationId    String
+  parentItemId      String
+  name              String
+  description       String?
+  type              KitType
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parentItem        Item             @relation(fields: [parentItemId], references: [id], onDelete: Cascade)
+  components        KitComponent[]
+
+  @@unique([organizationId, parentItemId])
+  @@index([organizationId])
+}
+
+// =========================
+// KitComponent — kit components
+// =========================
+model KitComponent {
+  id                String           @id @default(cuid())
+  kitId             String
+  componentItemId   String
+  variantId         String?
+  quantity          Decimal          @db.Decimal(10, 3)
+  sortOrder         Int              @default(0)
+
+  kit               Kit              @relation(fields: [kitId], references: [id], onDelete: Cascade)
+
+  @@unique([kitId, componentItemId, variantId])
+  @@index([kitId])
+}
+
+// =========================
+// PickTask — directed pick tasks
+// =========================
+model PickTask {
+  id                String           @id @default(cuid())
+  organizationId    String
+  salesOrderLineId  String?
+  itemId            String
+  variantId         String?
+  warehouseId       String
+  fromBinId         String?
+  quantity          Int
+  status            PickStatus       @default(PENDING)
+  assignedToUserId  String?
+  pickedAt          DateTime?
+  verifiedAt        DateTime?
+  note              String?
+  createdAt         DateTime         @default(now())
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([assignedToUserId, status])
+}
+
+// =========================
+// OrgSettings — org-level workflow/display configuration
+// =========================
+model OrgSettings {
+  id                          String           @id @default(cuid())
+  organizationId              String           @unique
+  transferNumberPrefix        String           @default("TRF")
+  transferNumberSequence      Int              @default(1)
+  salesOrderPrefix            String           @default("SO")
+  salesOrderSequence          Int              @default(1)
+  assetTagPrefix              String           @default("FA")
+  assetTagSequence            Int              @default(1)
+  batchNumberPrefix           String           @default("LOT")
+  batchNumberSequence         Int              @default(1)
+  requireCountApproval        Boolean          @default(false)
+  varianceThreshold           Decimal          @default(5.00) @db.Decimal(5, 2)
+  recountOnThreshold          Boolean          @default(true)
+  defaultCountMethodology     String           @default("FULL")
+  allowNegativeStock          Boolean          @default(false)
+  defaultStockStatus          String           @default("AVAILABLE")
+  dateFormat                  String           @default("MM/DD/YYYY")
+  currencySymbol              String           @default("$")
+  updatedAt                   DateTime         @updatedAt
+
+  organization                Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// =========================
+// ItemOptionGroup — variant option types (e.g. "Size", "Color")
+// =========================
+model ItemOptionGroup {
+  id                String           @id @default(cuid())
+  organizationId    String
+  itemId            String
+  name              String
+  sortOrder         Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  values            ItemOptionValue[]
+
+  @@unique([itemId, name])
+  @@index([organizationId, itemId])
+}
+
+// =========================
+// ItemOptionValue — option values (e.g. "Small", "Red")
+// =========================
+model ItemOptionValue {
+  id                String           @id @default(cuid())
+  optionGroupId     String
+  value             String
+  sortOrder         Int              @default(0)
+  createdAt         DateTime         @default(now())
+
+  optionGroup       ItemOptionGroup  @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  variantOptions    ItemVariantOption[]
+
+  @@unique([optionGroupId, value])
+  @@index([optionGroupId])
+}
+
+// =========================
+// ItemVariant — specific product variant
+// =========================
+model ItemVariant {
+  id                String           @id @default(cuid())
+  organizationId    String
+  itemId            String
+  sku               String
+  name              String?
+  costPrice         Decimal?         @db.Decimal(12, 2)
+  salePrice         Decimal?         @db.Decimal(12, 2)
+  weight            Decimal?         @db.Decimal(10, 3)
+  imageUrl          String?
+  status            ItemStatus       @default(ACTIVE)
+  isDefault         Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  options           ItemVariantOption[]
+  barcodes          ItemBarcode[]
+  stockLevels       VariantStockLevel[]
+  movements         VariantStockMovement[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId, itemId])
+  @@index([organizationId, status])
+}
+
+// =========================
+// ItemVariantOption — junction: variant ↔ option values
+// =========================
+model ItemVariantOption {
+  id                String           @id @default(cuid())
+  variantId         String
+  optionValueId     String
+
+  variant           ItemVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  optionValue       ItemOptionValue  @relation(fields: [optionValueId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, optionValueId])
+  @@index([variantId])
+}
+
+// =========================
+// ItemBarcode — multiple barcodes per item/variant
+// =========================
+model ItemBarcode {
+  id                String           @id @default(cuid())
+  organizationId    String
+  itemId            String
+  variantId         String?
+  value             String
+  format            BarcodeFormat
+  type              BarcodeType
+  label             String?
+  multiplier        Int              @default(1)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  variant           ItemVariant?     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, value])
+  @@index([organizationId, itemId])
+  @@index([organizationId, variantId])
+  @@index([value])
+}
+
+// =========================
+// VariantStockLevel — per-variant stock levels
+// =========================
+model VariantStockLevel {
+  id                String           @id @default(cuid())
+  organizationId    String
+  variantId         String
+  warehouseId       String
+  binId             String?
+  quantity          Int              @default(0)
+  reservedQty       Int              @default(0)
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  variant           ItemVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  warehouse         Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, warehouseId, binId])
+  @@index([organizationId])
+  @@index([variantId])
+  @@index([warehouseId])
+}
+
+// =========================
+// VariantStockMovement — variant-level movements
+// =========================
+model VariantStockMovement {
+  id                String           @id @default(cuid())
+  organizationId    String
+  variantId         String
+  itemId            String
+  warehouseId       String
+  binId             String?
+  toWarehouseId     String?
+  toBinId           String?
+  type              StockMovementType
+  quantity          Int
+  direction         Int              @default(1)
+  reference         String?
+  note              String?
+  idempotencyKey    String?
+  stockCountId      String?
+  createdByUserId   String?
+  createdAt         DateTime         @default(now())
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  variant           ItemVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, variantId])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, type])
+}
+
+// =========================
+// FixedAsset — fixed asset register
+// =========================
+model FixedAsset {
+  id                String           @id @default(cuid())
+  organizationId    String
+  itemId            String?
+  assetTag          String
+  name              String
+  description       String?
+  serialNumber      String?
+  category          AssetCategory
+  status            AssetStatus      @default(ACTIVE)
+  purchaseDate      DateTime?
+  purchaseCost      Decimal?         @db.Decimal(12, 2)
+  currentValue      Decimal?         @db.Decimal(12, 2)
+  depreciationRate  Decimal?         @db.Decimal(5, 2)
+  warrantyExpiry    DateTime?
+  assignedToUserId  String?
+  warehouseId       String?
+  binId             String?
+  barcodeValue      String?
+  imageUrl          String?
+  notes             String?
+  lastAuditedAt     DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item?            @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  assignedTo        User?            @relation("AssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  warehouse         Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  history           AssetHistory[]
+
+  @@unique([organizationId, assetTag])
+  @@index([organizationId, status])
+  @@index([organizationId, category])
+  @@index([organizationId, assignedToUserId])
+  @@index([barcodeValue])
+}
+
+// =========================
+// AssetHistory — asset lifecycle events
+// =========================
+model AssetHistory {
+  id                String           @id @default(cuid())
+  assetId           String
+  action            AssetAction
+  fromUserId        String?
+  toUserId          String?
+  fromWarehouseId   String?
+  toWarehouseId     String?
+  note              String?
+  performedByUserId String?
+  performedAt       DateTime         @default(now())
+
+  asset             FixedAsset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId, performedAt])
+}
+
+// =========================
+// ItemBatch — batch/lot with expiry tracking
+// =========================
+model ItemBatch {
+  id                String           @id @default(cuid())
+  organizationId    String
+  itemId            String
+  variantId         String?
+  batchNumber       String
+  expiryDate        DateTime?
+  manufactureDate   DateTime?
+  receivedDate      DateTime?
+  supplierBatchRef  String?
+  warehouseId       String
+  binId             String?
+  quantity          Int
+  initialQuantity   Int
+  costPrice         Decimal?         @db.Decimal(12, 2)
+  status            BatchStatus      @default(AVAILABLE)
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse         Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, itemId, batchNumber])
+  @@index([organizationId, itemId])
+  @@index([organizationId, expiryDate])
+  @@index([organizationId, status])
+  @@index([warehouseId])
+}
+
+// =========================
+// CountZone — temporary zones during counts (from V2)
+// =========================
+model CountZone {
+  id                String           @id @default(cuid())
+  organizationId    String
+  countId           String
+  name              String
+  code              String?
+  barcodeValue      String?
+  barcodeFormat     BarcodeFormat    @default(QR)
+  color             String?
+  description       String?
+  warehouseId       String?
+  parentZoneId      String?
+  sortOrder         Int              @default(0)
+  isArchived        Boolean          @default(false)
+  promoteToBin      Boolean          @default(false)
+  createdByUserId   String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  count             StockCount       @relation(fields: [countId], references: [id], onDelete: Cascade)
+  warehouse         Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  parentZone        CountZone?       @relation("ZoneHierarchy", fields: [parentZoneId], references: [id], onDelete: SetNull)
+  childZones        CountZone[]      @relation("ZoneHierarchy")
+  createdBy         User?            @relation("ZoneCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  entries           CountEntry[]
+  labels            ZoneLabel[]
+
+  @@unique([countId, code])
+  @@index([organizationId, countId])
+  @@index([countId, isArchived])
+}
+
+// =========================
+// ZoneLabel — printed labels for temp zones
+// =========================
+model ZoneLabel {
+  id                String           @id @default(cuid())
+  zoneId            String
+  templateId        String?
+  printedAt         DateTime?
+  printedByUserId   String?
+  copies            Int              @default(1)
+  createdAt         DateTime         @default(now())
+
+  zone              CountZone        @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  template          LabelTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  printedBy         User?            @relation("PrintedBy", fields: [printedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([zoneId])
+}
+
+// =========================
+// MigrationJob — competitor migration tracking (from V2)
+// =========================
+model MigrationJob {
+  id                String           @id @default(cuid())
+  organizationId    String
+  sourcePlatform    MigrationSource
+  status            MigrationStatus  @default(PENDING)
+  sourceFiles       Json?
+  fieldMappings     Json?
+  validationReport  Json?
+  importResults     Json?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdByUserId   String?
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy         User?            @relation("MigrationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
 }

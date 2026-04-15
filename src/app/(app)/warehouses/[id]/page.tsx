@@ -3,6 +3,7 @@ import {
 	Grid3X3,
 	Pencil,
 	Warehouse as WarehouseIcon,
+	Barcode,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -187,6 +188,26 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
 							{t.warehouses.detail.metaCountry}
 						</span>
 						<span>{warehouse.country ?? "—"}</span>
+					</div>
+					<div className="flex justify-between md:col-span-2">
+						<span className="text-muted-foreground">
+							{"Code"}
+						</span>
+						<div className="flex items-center gap-2">
+							<span className="font-mono text-xs">
+								{warehouse.barcodeValue ?? "—"}
+							</span>
+							{canEditWarehouse ? (
+								<Button
+									variant="ghost"
+									size="sm"
+									title="Assign code"
+									disabled
+								>
+									<Barcode className="h-4 w-4" />
+								</Button>
+							) : null}
+						</div>
 					</div>
 				</CardContent>
 			</Card>

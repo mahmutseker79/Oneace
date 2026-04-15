@@ -10,6 +10,7 @@ import { hasCapability } from "@/lib/permissions";
 import { checkPlanLimit, planLimitError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { warehouseInputSchema } from "@/lib/validation/warehouse";
+import { barcodeValueSchema } from "@/lib/validation/barcode";
 
 export type ActionResult =
   | { ok: true; id: string }
@@ -245,5 +246,65 @@ export async function deleteWarehouseAction(id: string): Promise<ActionResult> {
     return { ok: true, id };
   } catch {
     return { ok: false, error: t.warehouses.errors.deleteFailed };
+  }
+}
+
+export async function assignWarehouseBarcodeAction(
+  warehouseId: string,
+  barcodeValue: string,
+): Promise<ActionResult> {
+  const { session, membership } = await requireActiveMembership();
+  const t = await getMessages();
+
+  if (!hasCapability(membership.role, "warehouses.edit")) {
+    return { ok: false, error: t.permissions.forbidden };
+  }
+
+  const warehouse = await db.warehouse.findFirst({
+    where: { id: warehouseId, organizationId: membership.organizationId },
+    select: { id: true },
+  });
+  if (!warehouse) {
+    return { ok: false, error: t.warehouses.errors.notFound };
+  }
+
+  const parsed = barcodeValueSchema.safeParse(barcodeValue);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: "Please provide a valid code",
+      fieldErrors: { barcodeValue: parsed.error.errors.map((e) => e.message) },
+    };
+  }
+
+  try {
+    const updated = await db.warehouse.update({
+      where: { id: warehouseId, organizationId: membership.organizationId },
+      data: { barcodeValue: parsed.data },
+      select: { id: true },
+    });
+
+    revalidatePath("/warehouses");
+    revalidatePath(`/warehouses/${warehouseId}`);
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "warehouse.barcode_assigned",
+      entityType: "warehouse",
+      entityId: updated.id,
+      metadata: { barcodeValue: parsed.data },
+    });
+    return { ok: true, id: updated.id };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return {
+          ok: false,
+          error: "A location with this code already exists",
+          fieldErrors: { barcodeValue: ["A location with this code already exists"] },
+        };
+      }
+    }
+    return { ok: false, error: t.warehouses.errors.updateFailed };
   }
 }

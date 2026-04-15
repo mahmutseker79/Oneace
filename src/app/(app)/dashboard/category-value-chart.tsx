@@ -36,6 +36,7 @@ export function CategoryValueChart({ data }: CategoryValueChartProps) {
             border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontSize: 12,
+            padding: "8px 12px",
           }}
           formatter={(value) => {
             if (typeof value === "number") {
@@ -48,6 +49,7 @@ export function CategoryValueChart({ data }: CategoryValueChartProps) {
           wrapperStyle={{ fontSize: 12 }}
           verticalAlign="bottom"
           height={36}
+          iconType="circle"
         />
         <Pie
           data={data}
@@ -62,6 +64,8 @@ export function CategoryValueChart({ data }: CategoryValueChartProps) {
             const percent = entry.percent ?? 0;
             return `${(percent * 100).toFixed(0)}%`;
           }}
+          strokeWidth={1}
+          stroke="hsl(var(--card))"
         >
           {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

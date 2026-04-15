@@ -11,6 +11,9 @@ import {
   BarChart3,
   ChevronDown,
   ClipboardList,
+  Download,
+  FileDown,
+  FileUp,
   FolderOpen,
   History,
   Package,
@@ -63,6 +66,22 @@ export function MobileNav({
     { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
   ];
 
+  const warehouseItems: NavItem[] = [
+    { label: labels.nav.transfers ?? "Transfers", href: "/transfers", icon: ArrowLeftRight },
+    { label: labels.nav.departments ?? "Departments", href: "/departments", icon: Warehouse },
+  ];
+
+  const commerceItems: NavItem[] = [
+    { label: labels.nav.salesOrders ?? "Sales Orders", href: "/sales-orders", icon: ShoppingCart },
+    { label: labels.nav.kits ?? "Kits", href: "/kits", icon: Package },
+    { label: labels.nav.picks ?? "Picks", href: "/picks", icon: ClipboardList },
+  ];
+
+  const utilityItems: NavItem[] = [
+    { label: labels.nav.import ?? "Import", href: "/import", icon: FileUp },
+    { label: labels.nav.export ?? "Export", href: "/export", icon: FileDown },
+  ];
+
   const analyticsItems: NavItem[] = [
     { label: labels.nav.reports, href: "/reports", icon: BarChart3 },
   ];
@@ -82,8 +101,8 @@ export function MobileNav({
         href={item.href}
         onClick={() => onOpenChange(false)}
         className={cn(
-          "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-          isActive ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-accent/60",
+          "flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition-colors duration-150",
+          isActive ? "border-l-primary bg-accent text-accent-foreground" : "border-l-transparent text-foreground hover:bg-accent/60",
         )}
       >
         <Icon className="h-4 w-4 shrink-0" />
@@ -114,11 +133,32 @@ export function MobileNav({
           <div className="space-y-1">{coreItems.map(renderItem)}</div>
 
           {/* Operations */}
-          <div className="mt-4 border-t pt-4">
+          <div className="mt-6 border-t pt-4">
             <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {labels.nav.operations}
             </p>
             <div className="space-y-1">{operationsItems.map(renderItem)}</div>
+          </div>
+
+          {/* Warehouse */}
+          <div className="mt-4 border-t pt-4">
+            <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {labels.nav.warehouse ?? "Warehouse"}
+            </p>
+            <div className="space-y-1">{warehouseItems.map(renderItem)}</div>
+          </div>
+
+          {/* Commerce */}
+          <div className="mt-4 border-t pt-4">
+            <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {labels.nav.commerce ?? "Commerce"}
+            </p>
+            <div className="space-y-1">{commerceItems.map(renderItem)}</div>
+          </div>
+
+          {/* Utilities */}
+          <div className="mt-4 border-t pt-4">
+            <div className="space-y-1">{utilityItems.map(renderItem)}</div>
           </div>
 
           {/* Analytics */}

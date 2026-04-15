@@ -245,9 +245,9 @@ export default function PricingPage() {
                 {COMPETITOR_ROWS.map((row, idx) => (
                   <tr
                     key={row.product}
-                    className={`border-b last:border-0 ${
+                    className={`border-b last:border-0 transition-colors hover:bg-muted/30 ${
                       row.highlight
-                        ? "bg-primary/5 font-medium"
+                        ? "bg-primary/10 font-medium"
                         : idx % 2 === 0
                           ? ""
                           : "bg-muted/20"
@@ -325,7 +325,7 @@ export default function PricingPage() {
                 {PRICING_FEATURES.map((feature, idx) => (
                   <tr
                     key={feature.label}
-                    className={`border-b last:border-0 ${idx % 2 === 0 ? "" : "bg-muted/20"}`}
+                    className={`border-b last:border-0 transition-colors hover:bg-muted/30 ${idx % 2 === 0 ? "" : "bg-muted/20"}`}
                   >
                     <td className="px-4 py-3 font-medium">{feature.label}</td>
                     <td className="px-4 py-3 text-center">

@@ -40,6 +40,10 @@ export type Capability =
   | "stockCounts.addEntry"
   | "stockCounts.reconcile"
   | "stockCounts.cancel"
+  | "stockCounts.submitForApproval"
+  | "stockCounts.approve"
+  | "stockCounts.reject"
+  | "stockCounts.rollback"
   // Purchase orders
   | "purchaseOrders.create"
   | "purchaseOrders.edit"
@@ -59,14 +63,42 @@ export type Capability =
   | "bins.edit"
   | "bins.delete"
   | "bins.transfer"
+  // Labels
+  | "labels.create"
+  | "labels.edit"
+  | "labels.delete"
   // Categories
   | "categories.create"
   | "categories.edit"
   | "categories.delete"
+  // Departments (Phase B)
+  | "departments.create"
+  | "departments.edit"
+  | "departments.delete"
+  // Count assignments (Phase B)
+  | "countAssignments.create"
+  | "countAssignments.remove"
+  // Count templates (Phase B)
+  | "countTemplates.create"
+  | "countTemplates.edit"
+  | "countTemplates.delete"
   // Reports & exports
   | "reports.export"
+  | "reports.schedule"
+  | "reports.abcClassify"
   // Reorder config
   | "reorderConfig.edit"
+  // Phase E: Integrations
+  | "integrations.connect"
+  | "integrations.disconnect"
+  | "integrations.sync"
+  // Phase E: Imports
+  | "imports.create"
+  | "imports.cancel"
+  // Phase E: Webhooks
+  | "webhooks.create"
+  | "webhooks.edit"
+  | "webhooks.delete"
   // Org admin
   | "org.editProfile"
   | "org.editDefaults"
@@ -91,6 +123,8 @@ export type Capability =
  * Design principle: VIEWER can only read. MEMBER (Operator) can do all
  * day-to-day inventory work. ADMIN adds org/team management. OWNER
  * adds destructive org operations. MANAGER is a legacy alias for MEMBER.
+ * APPROVER can approve counts and adjustments but cannot create items.
+ * COUNTER can perform assigned counts but cannot approve or manage settings.
  */
 const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   // --- Items ---
@@ -104,9 +138,13 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
 
   // --- Stock counts ---
   "stockCounts.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "stockCounts.addEntry": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "stockCounts.addEntry": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER", "COUNTER"]),
   "stockCounts.reconcile": new Set<Role>(["OWNER", "ADMIN"]),
   "stockCounts.cancel": new Set<Role>(["OWNER", "ADMIN"]),
+  "stockCounts.submitForApproval": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER", "COUNTER"]),
+  "stockCounts.approve": new Set<Role>(["OWNER", "ADMIN", "APPROVER"]),
+  "stockCounts.reject": new Set<Role>(["OWNER", "ADMIN", "APPROVER"]),
+  "stockCounts.rollback": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Purchase orders ---
   "purchaseOrders.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
@@ -130,16 +168,51 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "bins.delete": new Set<Role>(["OWNER", "ADMIN"]),
   "bins.transfer": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
 
+  // --- Labels ---
+  "labels.create": new Set<Role>(["OWNER", "ADMIN"]),
+  "labels.edit": new Set<Role>(["OWNER", "ADMIN"]),
+  "labels.delete": new Set<Role>(["OWNER", "ADMIN"]),
+
   // --- Categories ---
   "categories.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "categories.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "categories.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
+  // --- Departments (Phase B) ---
+  "departments.create": new Set<Role>(["OWNER", "ADMIN"]),
+  "departments.edit": new Set<Role>(["OWNER", "ADMIN"]),
+  "departments.delete": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Count assignments (Phase B) ---
+  "countAssignments.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "countAssignments.remove": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Count templates (Phase B) ---
+  "countTemplates.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "countTemplates.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "countTemplates.delete": new Set<Role>(["OWNER", "ADMIN"]),
+
   // --- Reports & exports ---
   "reports.export": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "reports.schedule": new Set<Role>(["OWNER", "ADMIN"]),
+  "reports.abcClassify": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
 
   // --- Reorder config ---
   "reorderConfig.edit": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Phase E: Integrations ---
+  "integrations.connect": new Set<Role>(["OWNER", "ADMIN"]),
+  "integrations.disconnect": new Set<Role>(["OWNER", "ADMIN"]),
+  "integrations.sync": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+
+  // --- Phase E: Imports ---
+  "imports.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "imports.cancel": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Phase E: Webhooks ---
+  "webhooks.create": new Set<Role>(["OWNER", "ADMIN"]),
+  "webhooks.edit": new Set<Role>(["OWNER", "ADMIN"]),
+  "webhooks.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Org admin ---
   "org.editProfile": new Set<Role>(["OWNER", "ADMIN"]),
@@ -199,10 +272,10 @@ export function isReadOnly(role: Role): boolean {
 }
 
 /**
- * The four user-facing roles (hides the legacy MANAGER value).
+ * The assignable user-facing roles (hides the legacy MANAGER value).
  * Used by the invite form and role-change dropdown.
  */
-export const ASSIGNABLE_ROLES: readonly Role[] = ["OWNER", "ADMIN", "MEMBER", "VIEWER"];
+export const ASSIGNABLE_ROLES: readonly Role[] = ["OWNER", "ADMIN", "MEMBER", "APPROVER", "COUNTER", "VIEWER"];
 
 /**
  * All capabilities as an array. Used in test assertions to verify

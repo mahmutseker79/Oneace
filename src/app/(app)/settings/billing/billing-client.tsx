@@ -138,19 +138,19 @@ function LimitBar({
   const isAt = current >= max;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span
           className={`font-medium ${isAt ? "text-destructive" : isNear ? "text-amber-600" : ""}`}
         >
-          {current} / {max}
+          {current} / {max} ({Math.round(pct)}%)
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={`h-full rounded-full transition-all ${
-            isAt ? "bg-destructive" : isNear ? "bg-amber-500" : "bg-primary"
+            isAt ? "bg-gradient-to-r from-destructive to-destructive/80" : isNear ? "bg-gradient-to-r from-amber-500 to-amber-400" : "bg-gradient-to-r from-primary to-primary/80"
           }`}
           style={{ width: `${pct}%` }}
         />
@@ -288,8 +288,8 @@ export function BillingPage({
         </div>
       ) : null}
 
-      {/* Current plan + usage */}
-      <Card>
+      {/* Current plan + usage — Phase 6C: gradient border for active plans */}
+      <Card className={plan !== "FREE" ? "border-primary/30 shadow-lg shadow-primary/5" : ""}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             Current plan
@@ -445,13 +445,22 @@ export function BillingPage({
 
       <Separator />
 
-      <p className="text-sm text-muted-foreground">
-        View the full{" "}
-        <Link href="/pricing" className="text-primary hover:underline">
-          pricing page
-        </Link>{" "}
-        to compare plan features.
-      </p>
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          View the full{" "}
+          <Link href="/pricing" className="text-primary hover:underline">
+            pricing page
+          </Link>{" "}
+          to compare plan features.
+        </p>
+        {plan !== "BUSINESS" && (
+          <p className="text-sm">
+            <Link href="/pricing" className="font-medium text-primary hover:underline">
+              Compare plans →
+            </Link>
+          </p>
+        )}
+      </div>
     </div>
   );
 }

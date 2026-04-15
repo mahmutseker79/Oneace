@@ -110,10 +110,10 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
 
   function typeBadge(type: MovementType) {
     const label = t.movements.types[type];
-    if (type === "RECEIPT") return <Badge className="bg-emerald-600">{label}</Badge>;
+    if (type === "RECEIPT") return <Badge variant="success">{label}</Badge>;
     if (type === "ISSUE") return <Badge variant="destructive">{label}</Badge>;
-    if (type === "ADJUSTMENT") return <Badge variant="secondary">{label}</Badge>;
-    if (type === "TRANSFER") return <Badge variant="outline">{label}</Badge>;
+    if (type === "ADJUSTMENT") return <Badge variant="warning">{label}</Badge>;
+    if (type === "TRANSFER") return <Badge variant="info">{label}</Badge>;
     return <Badge variant="outline">{label}</Badge>;
   }
 
@@ -289,7 +289,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                       const userLabel =
                         m.createdBy?.name ?? m.createdBy?.email ?? t.movements.unknownUser;
                       return (
-                        <TableRow key={m.id}>
+                        <TableRow key={m.id} className="hover:bg-muted/50 transition-colors">
                           <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
                             {dateFormatter.format(m.createdAt)}
                           </TableCell>

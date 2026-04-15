@@ -23,20 +23,30 @@ export function LowStockTrendChart({ data }: LowStockTrendChartProps) {
             <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.1} />
         <XAxis
           dataKey="date"
-          tickFormatter={(v: string) => v.slice(5)} // "MM-DD"
-          fontSize={11}
+          tickFormatter={(v: string) => v.slice(5)}
+          tick={{ fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
           className="fill-muted-foreground"
         />
-        <YAxis fontSize={11} allowDecimals={false} className="fill-muted-foreground" />
+        <YAxis
+          fontSize={11}
+          allowDecimals={false}
+          tick={{ fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+          className="fill-muted-foreground"
+        />
         <Tooltip
           contentStyle={{
             background: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
             borderRadius: 8,
             fontSize: 12,
+            padding: "8px 12px",
           }}
           labelFormatter={(v) => String(v)}
           formatter={(value) => [`${value} items`, "Below reorder point"]}
@@ -48,6 +58,7 @@ export function LowStockTrendChart({ data }: LowStockTrendChartProps) {
           fill="url(#colorCount)"
           stroke="hsl(0, 84%, 60%)"
           strokeWidth={2}
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>

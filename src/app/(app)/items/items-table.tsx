@@ -209,8 +209,8 @@ export function ItemsTable({ items, canEdit, canDelete, labels, deleteButton }: 
   }
 
   function statusBadge(status: "ACTIVE" | "ARCHIVED" | "DRAFT") {
-    if (status === "ACTIVE") return <Badge>{labels.active}</Badge>;
-    if (status === "DRAFT") return <Badge variant="outline">{labels.draft}</Badge>;
+    if (status === "ACTIVE") return <Badge variant="success">{labels.active}</Badge>;
+    if (status === "DRAFT") return <Badge variant="warning">{labels.draft}</Badge>;
     return <Badge variant="secondary">{labels.archived}</Badge>;
   }
 
@@ -242,7 +242,7 @@ export function ItemsTable({ items, canEdit, canDelete, labels, deleteButton }: 
             {items.map((item) => {
               const isSelected = selected.has(item.id);
               return (
-                <TableRow key={item.id} data-selected={isSelected || undefined}>
+                <TableRow key={item.id} data-selected={isSelected || undefined} className="hover:bg-muted/50 transition-colors">
                   <TableCell>
                     <Checkbox
                       checked={isSelected}

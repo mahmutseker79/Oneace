@@ -64,9 +64,17 @@ export default async function StockCountsPage() {
   function stateBadge(state: CountState) {
     const label = t.stockCounts.statusBadge[state];
     if (state === "OPEN") return <Badge variant="outline">{label}</Badge>;
-    if (state === "IN_PROGRESS") return <Badge className="bg-amber-600">{label}</Badge>;
-    if (state === "COMPLETED") return <Badge className="bg-emerald-600">{label}</Badge>;
+    if (state === "IN_PROGRESS") return <Badge variant="processing">{label}</Badge>;
+    if (state === "COMPLETED") return <Badge variant="success">{label}</Badge>;
     return <Badge variant="secondary">{label}</Badge>;
+  }
+
+  function methodologyBadge(methodology: Methodology) {
+    return (
+      <Badge variant="outline" className="bg-muted text-xs font-mono rounded px-1.5 py-0.5 border-0">
+        {t.stockCounts.methodology[methodology]}
+      </Badge>
+    );
   }
 
   function renderTable(rows: typeof counts, emptyLabel: string): React.ReactElement {
@@ -88,7 +96,7 @@ export default async function StockCountsPage() {
         </TableHeader>
         <TableBody>
           {rows.map((count) => (
-            <TableRow key={count.id}>
+            <TableRow key={count.id} className="hover:bg-muted/50 transition-colors">
               <TableCell>
                 <Link href={`/stock-counts/${count.id}`} className="font-medium hover:underline">
                   {count.name}
@@ -98,9 +106,7 @@ export default async function StockCountsPage() {
                 ) : null}
               </TableCell>
               <TableCell>{stateBadge(count.state as CountState)}</TableCell>
-              <TableCell className="text-sm text-muted-foreground">
-                {t.stockCounts.methodology[count.methodology as Methodology]}
-              </TableCell>
+              <TableCell>{methodologyBadge(count.methodology as Methodology)}</TableCell>
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                 {dateFormatter.format(count.createdAt)}
               </TableCell>

@@ -104,7 +104,7 @@ export default async function SuppliersPage() {
 								</TableHeader>
 								<TableBody>
 									{suppliers.map((s) => (
-										<TableRow key={s.id}>
+										<TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
 											<TableCell className="font-medium">
 												<Link
 													href={`/suppliers/${s.id}`}
@@ -124,7 +124,7 @@ export default async function SuppliersPage() {
 											</TableCell>
 											<TableCell>
 												{s.isActive ? (
-													<Badge>{t.suppliers.activeLabel}</Badge>
+													<Badge variant="success">{t.suppliers.activeLabel}</Badge>
 												) : (
 													<Badge variant="secondary">
 														{t.suppliers.inactiveLabel}

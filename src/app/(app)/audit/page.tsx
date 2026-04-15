@@ -89,6 +89,16 @@ function actionLabel(
 	return (catalog as Record<string, string | undefined>)[action] ?? action;
 }
 
+// Helper to render action badges with semantic colors based on action type prefix
+function actionBadge(action: string): React.ReactNode {
+	if (action.startsWith("item.")) return <Badge variant="info">{action}</Badge>;
+	if (action.startsWith("stock_count.")) return <Badge variant="outline">{action}</Badge>;
+	if (action.startsWith("purchase_order.")) return <Badge variant="warning">{action}</Badge>;
+	if (action.startsWith("organization.")) return <Badge variant="success">{action}</Badge>;
+	if (action.startsWith("member.")) return <Badge variant="info">{action}</Badge>;
+	return <Badge variant="secondary">{action}</Badge>;
+}
+
 // Render a metadata JSON blob as a terse "key: value" inline list. We
 // deliberately don't pretty-print nested objects — the goal is that
 // the reviewer can scan a page and spot anomalies, not inspect full
@@ -297,8 +307,10 @@ export default async function AuditPage({
 							<p className="text-sm text-muted-foreground">{t.audit.empty}</p>
 						</div>
 					) : (
-						<div className="overflow-x-auto">
-							<Table>
+						<>
+							{/* Phase 7B: Desktop table */}
+							<div className="hidden md:block overflow-x-auto">
+								<Table>
 								<TableHeader>
 									<TableRow>
 										<TableHead>{t.audit.columnWhen}</TableHead>
@@ -317,15 +329,13 @@ export default async function AuditPage({
 												: t.audit.systemActor;
 										const details = renderMetadata(row.metadata);
 										return (
-											<TableRow key={row.id}>
+											<TableRow key={row.id} className="hover:bg-muted/50 transition-colors">
 												<TableCell className="whitespace-nowrap text-sm text-muted-foreground">
 													{dateTimeFmt.format(row.createdAt)}
 												</TableCell>
 												<TableCell className="text-sm">{actorLabel}</TableCell>
 												<TableCell>
-													<Badge variant="secondary" className="font-normal">
-														{actionLabel(row.action, t.audit.actions)}
-													</Badge>
+													{actionBadge(row.action)}
 												</TableCell>
 												<TableCell className="text-sm text-muted-foreground">
 													{row.entityType}
@@ -336,8 +346,8 @@ export default async function AuditPage({
                             to formatted JSON for detailed inspection. No JS needed. */}
 												<TableCell className="text-xs text-muted-foreground max-w-xs">
 													{row.metadata ? (
-														<details className="group">
-															<summary className="cursor-pointer list-none truncate hover:text-foreground">
+														<details className="group cursor-pointer">
+															<summary className="list-none truncate hover:text-foreground bg-muted/50 rounded p-2 hover:bg-muted transition-colors">
 																{details || t.audit.noEntity}
 															</summary>
 															<pre className="mt-1.5 overflow-auto rounded bg-muted p-2 text-[11px] leading-relaxed max-h-40">
@@ -352,8 +362,54 @@ export default async function AuditPage({
 										);
 									})}
 								</TableBody>
-							</Table>
-						</div>
+								</Table>
+							</div>
+
+							{/* Phase 7B: Mobile card view */}
+							<div className="space-y-2 md:hidden">
+								{visibleRows.map((row) => {
+									const actorLabel = row.actor
+										? (row.actor.name ?? row.actor.email)
+										: row.actorId
+											? t.audit.deletedUser
+											: t.audit.systemActor;
+									const details = renderMetadata(row.metadata);
+									return (
+										<Card key={row.id} className="p-3">
+											<div className="space-y-2 text-sm">
+												<div className="flex items-start justify-between gap-2">
+													<div className="flex-1">
+														<p className="text-xs text-muted-foreground">
+															{dateTimeFmt.format(row.createdAt)}
+														</p>
+														<p className="font-medium">{actorLabel}</p>
+													</div>
+													{actionBadge(row.action)}
+												</div>
+												<div className="space-y-1">
+													<p className="text-xs text-muted-foreground">
+														{row.entityType}
+														{row.entityId ? ` · ${row.entityId.slice(0, 8)}` : ""}
+													</p>
+													{row.metadata ? (
+														<details className="group cursor-pointer">
+															<summary className="list-none text-xs truncate hover:text-foreground bg-muted/50 rounded px-2 py-1 hover:bg-muted transition-colors">
+																{details || t.audit.noEntity}
+															</summary>
+															<pre className="mt-1.5 overflow-auto rounded bg-muted p-2 text-[10px] leading-relaxed max-h-40">
+																{JSON.stringify(row.metadata, null, 2)}
+															</pre>
+														</details>
+													) : (
+														<span className="text-xs text-muted-foreground">{t.audit.noEntity}</span>
+													)}
+												</div>
+											</div>
+										</Card>
+									);
+								})}
+							</div>
+						</>
 					)}
 
 					{hasMore && lastId ? (
