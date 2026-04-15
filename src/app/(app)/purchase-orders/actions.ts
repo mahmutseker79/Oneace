@@ -607,9 +607,34 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
   try {
     const receivedLineCount = deltaByLine.size;
     const fullyReceived = await db.$transaction(async (tx) => {
+      // Sprint 4: Lock PO lines with SELECT FOR UPDATE to prevent
+      // double-receive from concurrent tabs. Two tabs would each get
+      // a different submissionNonce, bypassing idempotency, and both
+      // increment receivedQty. The lock ensures serialized access.
+      const lockedLines = await tx.$queryRaw<Array<{
+        id: string;
+        itemId: string;
+        orderedQty: number;
+        receivedQty: number;
+      }>>`
+        SELECT id, "itemId", "orderedQty", "receivedQty"
+        FROM "PurchaseOrderLine"
+        WHERE "purchaseOrderId" = ${existing.id}
+        FOR UPDATE
+      `;
+      const freshLineMap = new Map(lockedLines.map((l) => [l.id, l]));
+
+      // Re-validate with locked (fresh) data — catches concurrent overwrites
       for (const [lineId, delta] of deltaByLine) {
-        const line = lineMap.get(lineId);
-        if (!line) continue; // unreachable — validated above
+        const freshLine = freshLineMap.get(lineId);
+        if (!freshLine) throw new Error("Line not found after lock");
+        const open = freshLine.orderedQty - freshLine.receivedQty;
+        if (delta > open) throw new Error("Receive overflow after lock (concurrent receive detected)");
+      }
+
+      for (const [lineId, delta] of deltaByLine) {
+        const line = freshLineMap.get(lineId);
+        if (!line) continue;
 
         await tx.stockMovement.create({
           data: {
