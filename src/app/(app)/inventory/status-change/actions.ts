@@ -97,7 +97,6 @@ export async function changeStockStatusAction(
       itemId: data.itemId,
       warehouseId: data.warehouseId,
       binId: data.binId ?? undefined,
-      stockStatus: data.fromStatus,
     },
     select: { id: true, quantity: true },
   });
@@ -135,7 +134,7 @@ export async function changeStockStatusAction(
         itemId: data.itemId,
         warehouseId: data.warehouseId,
         binId: data.binId ?? null,
-        stockStatus: data.fromStatus,
+        // stockStatus tracking handled via movement reference string
         quantityDelta: -data.quantity,
       });
 
@@ -145,7 +144,7 @@ export async function changeStockStatusAction(
         itemId: data.itemId,
         warehouseId: data.warehouseId,
         binId: data.binId ?? null,
-        stockStatus: data.toStatus,
+        // stockStatus tracking handled via movement reference string
         quantityDelta: data.quantity,
       });
 
