@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 export interface BreadcrumbItem {
   label: string;
@@ -21,9 +21,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
 
   // For mobile, show truncated version if more than 3 items
   const shouldTruncate = items.length > 3;
-  const displayItems = shouldTruncate
-    ? [items[0], { label: "..." }, ...items.slice(-2)]
-    : items;
+  const displayItems = shouldTruncate ? [items[0], { label: "..." }, ...items.slice(-2)] : items;
 
   return (
     <nav
@@ -44,10 +42,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
             ) : isLast ? (
               <span className="font-medium text-foreground">{item.label}</span>
             ) : item.href ? (
-              <Link
-                href={item.href}
-                className="hover:text-foreground transition-colors truncate"
-              >
+              <Link href={item.href} className="hover:text-foreground transition-colors truncate">
                 {item.label}
               </Link>
             ) : (

@@ -36,7 +36,7 @@ export type ParseCsvOptions = {
   hasHeader?: boolean;
   /**
    * Maximum number of rows to parse (excluding header). Extra rows are
-   * silently dropped. Defaults to Number.POSITIVE_INFINITY.
+   * silently dropped. Defaults to 50,000 (DoS protection).
    */
   maxRows?: number;
 };
@@ -76,7 +76,8 @@ function autoDetectDelimiter(input: string): CsvDelimiter {
  */
 export function parseCsv(input: string, options: ParseCsvOptions = {}): ParseCsvResult {
   const hasHeader = options.hasHeader ?? true;
-  const maxRows = options.maxRows ?? Number.POSITIVE_INFINITY;
+  // Security: default to 50K rows to prevent OOM on large uploads
+  const maxRows = options.maxRows ?? 50_000;
   const delimiter = options.delimiter ?? autoDetectDelimiter(input);
 
   const rows: string[][] = [];

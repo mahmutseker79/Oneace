@@ -32,7 +32,7 @@ export function ResponsiveTable({ children, cardView, className, label }: Respon
   // If no card view provided, just render the table with scroll
   if (!cardView) {
     return (
-      <div className={cn("relative w-full", className)} role="region" aria-label={label}>
+      <div className={cn("relative w-full", className)} aria-label={label}>
         <div className="overflow-auto scrollbar-thin rounded-lg">{children}</div>
       </div>
     );
@@ -68,7 +68,7 @@ export function ResponsiveTable({ children, cardView, className, label }: Respon
 
       {/* Table view (always visible on desktop, toggle on mobile) */}
       <div className={cn(showCards ? "hidden md:block" : "block")}>
-        <div className="overflow-auto scrollbar-thin rounded-lg" role="region" aria-label={label}>
+        <div className="overflow-auto scrollbar-thin rounded-lg" aria-label={label}>
           {children}
         </div>
       </div>

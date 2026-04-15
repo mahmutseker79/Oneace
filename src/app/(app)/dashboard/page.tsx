@@ -213,8 +213,8 @@ async function loadDashboardData(orgId: string) {
 
 	// P9.3a — Low stock trend (last 30 days): for each day, count items below reorder
 	// Simplified: generate a synthetic trend using current low stock count
-	const thirtyDaysAgo = new Date();
-	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+	const lowStockStart = new Date();
+	lowStockStart.setDate(lowStockStart.getDate() - 30);
 	const lowStockTrendData: Array<{ date: string; count: number }> = [];
 
 	for (let i = 29; i >= 0; i--) {
@@ -441,33 +441,6 @@ export default async function DashboardPage() {
 						} else {
 							trendLabel = t.dashboard.kpi.noChange;
 						}
-					}
-
-					// Sparkline: generate synthetic data for tiny 80x24 chart
-					const sparkData = [0.2, 0.3, 0.25, 0.4, 0.35, 0.5, 0.45, 0.6];
-					const sparkWidth = 80;
-					const sparkHeight = 24;
-					const sparkPadding = 2;
-					const sparkContentWidth = sparkWidth - sparkPadding * 2;
-					const sparkContentHeight = sparkHeight - sparkPadding * 2;
-
-					const maxVal = Math.max(...sparkData);
-					const minVal = Math.min(...sparkData);
-					const range = maxVal - minVal || 1;
-
-					const points = sparkData
-						.map((val, i) => {
-							const x = sparkPadding + (i / (sparkData.length - 1)) * sparkContentWidth;
-							const y = sparkPadding + sparkContentHeight - ((val - minVal) / range) * sparkContentHeight;
-							return `${x},${y}`;
-						})
-						.join(" ");
-
-					let trendColor = "hsl(215, 14%, 34%)";
-					if (trendLabel === t.dashboard.kpi.up) {
-						trendColor = "hsl(142, 71%, 45%)";
-					} else if (trendLabel === t.dashboard.kpi.down) {
-						trendColor = "hsl(0, 84%, 60%)";
 					}
 
 					return (

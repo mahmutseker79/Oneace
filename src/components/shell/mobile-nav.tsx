@@ -102,7 +102,9 @@ export function MobileNav({
         onClick={() => onOpenChange(false)}
         className={cn(
           "flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition-colors duration-150",
-          isActive ? "border-l-primary bg-accent text-accent-foreground" : "border-l-transparent text-foreground hover:bg-accent/60",
+          isActive
+            ? "border-l-primary bg-accent text-accent-foreground"
+            : "border-l-transparent text-foreground hover:bg-accent/60",
         )}
       >
         <Icon className="h-4 w-4 shrink-0" />

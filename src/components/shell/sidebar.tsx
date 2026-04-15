@@ -129,9 +129,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     },
     {
       heading: labels.nav.analytics,
-      items: [
-        { label: labels.nav.reports, href: "/reports", icon: BarChart3 },
-      ],
+      items: [{ label: labels.nav.reports, href: "/reports", icon: BarChart3 }],
     },
   ];
 
@@ -171,7 +169,14 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
             : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
         )}
       >
-        <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-accent-foreground")} />
+        <Icon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            isActive
+              ? "text-primary"
+              : "text-muted-foreground group-hover:text-sidebar-accent-foreground",
+          )}
+        />
         <span className="truncate">{item.label}</span>
         {item.badge ? (
           <span className="ml-auto shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground tabular-nums">
@@ -201,7 +206,12 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
             className={cn("h-3.5 w-3.5 transition-transform duration-200", open && "rotate-180")}
           />
         </button>
-        <div className={cn("mt-1 space-y-0.5 overflow-hidden transition-all duration-200", open ? "max-h-96 opacity-100" : "max-h-0 opacity-0")}>
+        <div
+          className={cn(
+            "mt-1 space-y-0.5 overflow-hidden transition-all duration-200",
+            open ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+          )}
+        >
           {items.map(renderItem)}
         </div>
       </div>
@@ -262,12 +272,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
 
         {/* Admin — collapsible group (P10.1: hidden for non-admin roles) */}
         {labels.showAdmin !== false
-          ? renderCollapsibleGroup(
-              labels.nav.admin,
-              adminItems,
-              adminOpen,
-              setAdminOpen,
-            )
+          ? renderCollapsibleGroup(labels.nav.admin, adminItems, adminOpen, setAdminOpen)
           : null}
       </nav>
 

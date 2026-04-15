@@ -65,7 +65,10 @@ export function MarketingFooter() {
                   </Link>
                 </li>
                 <li>
-                  <a href="mailto:hello@oneace.app" className="transition-colors hover:text-foreground">
+                  <a
+                    href="mailto:hello@oneace.app"
+                    className="transition-colors hover:text-foreground"
+                  >
                     Contact us
                   </a>
                 </li>

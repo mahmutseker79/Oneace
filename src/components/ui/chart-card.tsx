@@ -61,7 +61,9 @@ export function ChartCard({
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={1.5}
+                aria-hidden="true"
               >
+                <title>No data</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import Image from "next/image";
 import { Upload, X } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { trackEvent } from "@/lib/analytics/events";
+import { toast } from "sonner";
 
 type ImageUploadProps = {
   value?: string | null;
@@ -63,7 +63,7 @@ export function ImageUpload({ value, onChange, disabled = false }: ImageUploadPr
         setIsLoading(false);
       }
     },
-    [disabled, isLoading, onChange]
+    [disabled, isLoading, onChange],
   );
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -93,13 +93,7 @@ export function ImageUpload({ value, onChange, disabled = false }: ImageUploadPr
       {value ? (
         <div className="relative inline-block">
           <div className="relative h-40 w-40 overflow-hidden rounded-lg border border-border">
-            <Image
-              src={value}
-              alt="Item image"
-              fill
-              className="object-cover"
-              sizes="160px"
-            />
+            <Image src={value} alt="Item image" fill className="object-cover" sizes="160px" />
           </div>
           <Button
             type="button"
@@ -124,9 +118,7 @@ export function ImageUpload({ value, onChange, disabled = false }: ImageUploadPr
           <p className="mt-2 text-sm font-medium text-foreground">
             Drop image here or click to upload
           </p>
-          <p className="text-xs text-muted-foreground">
-            JPEG, PNG, or WebP up to 5MB
-          </p>
+          <p className="text-xs text-muted-foreground">JPEG, PNG, or WebP up to 5MB</p>
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -137,9 +129,7 @@ export function ImageUpload({ value, onChange, disabled = false }: ImageUploadPr
         </label>
       )}
 
-      {isLoading && (
-        <div className="text-sm text-muted-foreground">Uploading...</div>
-      )}
+      {isLoading && <div className="text-sm text-muted-foreground">Uploading...</div>}
     </div>
   );
 }

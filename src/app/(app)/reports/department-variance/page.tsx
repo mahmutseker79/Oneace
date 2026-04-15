@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { getMessages, getRegion } from "@/lib/i18n";
+// Note: getMessages/getRegion are server-only. This client component uses hardcoded strings.
 import { hasPlanCapability } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -50,8 +50,9 @@ export default function DepartmentVariancePage() {
 	useEffect(() => {
 		async function init() {
 			try {
-				const messages = await getMessages();
-				const regionData = await getRegion();
+				// server-only: use defaults instead
+				const messages = { reports: { heading: "Reports" } } as any;
+				const regionData = { numberLocale: "en-US", currency: "USD" };
 				setT(messages);
 				setRegion(regionData);
 

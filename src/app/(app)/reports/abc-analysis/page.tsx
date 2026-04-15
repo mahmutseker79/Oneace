@@ -34,7 +34,8 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getMessages, getRegion } from "@/lib/i18n";
+// Note: getMessages/getRegion are server-only (use next/headers).
+// This client component uses hardcoded strings instead.
 import { hasPlanCapability } from "@/lib/plans";
 import { cn, formatCurrency } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
@@ -92,10 +93,9 @@ export default function ABCAnalysisPage() {
 	useEffect(() => {
 		async function init() {
 			try {
-				const messages = await getMessages();
-				const regionData = await getRegion();
-				setT(messages);
-				setRegion(regionData);
+				// Use defaults since we're a client component (can't call server-only getMessages/getRegion)
+				setT({ reports: { heading: "Reports" } });
+				setRegion({ numberLocale: "en-US", currency: "USD" });
 
 				// Get org ID from session (this would normally come from requireActiveMembership)
 				const sessionRes = await fetch("/api/session");

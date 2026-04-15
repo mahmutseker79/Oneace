@@ -15,45 +15,41 @@ import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 type ExportButtonProps = {
-	href: string;
-	children: React.ReactNode;
-	variant?: "default" | "outline" | "ghost";
-	size?: "default" | "sm" | "lg";
-	className?: string;
+  href: string;
+  children: React.ReactNode;
+  variant?: "default" | "outline" | "ghost";
+  size?: "default" | "sm" | "lg";
+  className?: string;
 };
 
 export function ExportButton({
-	href,
-	children,
-	variant = "outline",
-	size = "default",
-	className,
+  href,
+  children,
+  variant = "outline",
+  size = "default",
+  className,
 }: ExportButtonProps) {
-	const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-	function handleClick() {
-		setLoading(true);
-		// Navigate to the export route. The download will start in the browser.
-		window.location.href = href;
-		// Reset after 3 seconds — enough time for the browser to start the download.
-		window.setTimeout(() => setLoading(false), 3000);
-	}
+  function handleClick() {
+    setLoading(true);
+    // Navigate to the export route. The download will start in the browser.
+    window.location.href = href;
+    // Reset after 3 seconds — enough time for the browser to start the download.
+    window.setTimeout(() => setLoading(false), 3000);
+  }
 
-	return (
-		<Button
-			type="button"
-			variant={variant}
-			size={size}
-			className={className}
-			disabled={loading}
-			onClick={handleClick}
-		>
-			{loading ? (
-				<Loader2 className="h-4 w-4 animate-spin" />
-			) : (
-				<Download className="h-4 w-4" />
-			)}
-			{loading ? "Preparing…" : children}
-		</Button>
-	);
+  return (
+    <Button
+      type="button"
+      variant={variant}
+      size={size}
+      className={className}
+      disabled={loading}
+      onClick={handleClick}
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+      {loading ? "Preparing…" : children}
+    </Button>
+  );
 }

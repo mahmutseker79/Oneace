@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
-import { getMessages } from "@/lib/i18n";
+// Note: getMessages is server-only. This client component uses hardcoded strings.
 import { hasPlanCapability } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 
@@ -29,7 +29,8 @@ export default function VarianceTrendPage() {
 	useEffect(() => {
 		async function init() {
 			try {
-				const messages = await getMessages();
+				// server-only: use defaults instead
+				const messages = { reports: { heading: "Reports" } } as any;
 				setT(messages);
 
 				const sessionRes = await fetch("/api/session");
