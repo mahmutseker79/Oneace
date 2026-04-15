@@ -6,7 +6,14 @@ import { type NextRequest, NextResponse } from "next/server";
 // cookie-presence check — the actual session validation happens server-side
 // in requireActiveMembership().
 
-const SESSION_COOKIE_NAME = "better-auth.session_token";
+// Better Auth uses "__Secure-" prefixed cookie names when the request is
+// served over HTTPS (i.e. production / Vercel). On plain HTTP (localhost)
+// the un-prefixed name is used. We check both so the middleware gate works
+// in every environment without importing better-auth/cookies.
+const SESSION_COOKIE_CANDIDATES = [
+  "__Secure-better-auth.session_token",
+  "better-auth.session_token",
+] as const;
 
 const PUBLIC_PATHS = [
   "/",
@@ -41,8 +48,10 @@ export function middleware(request: NextRequest) {
   // Cheap cookie check — skips DB hit until the request actually needs auth state.
   // We check for the session cookie directly instead of using better-auth's
   // getSessionCookie helper to avoid Edge Runtime incompatibility.
-  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
-  if (!sessionCookie?.value) {
+  const hasSession = SESSION_COOKIE_CANDIDATES.some(
+    (name) => Boolean(request.cookies.get(name)?.value),
+  );
+  if (!hasSession) {
     // Validate redirect parameter: must be relative (starts with / and NOT //)
     const safeRedirect =
       pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
