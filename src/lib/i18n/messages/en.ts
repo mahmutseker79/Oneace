@@ -1731,6 +1731,47 @@ export const en = {
 		},
 	},
 
+	security: {
+		heading: "Security",
+		subtitle: "Manage your account security settings",
+		twoFactor: {
+			title: "Two-Factor Authentication",
+			subtitle: "Add an extra layer of security to your account",
+			enabled: "2FA is enabled on your account",
+			disabled: "2FA is not currently enabled",
+			enable: "Enable 2FA",
+			disable: "Disable 2FA",
+			disablingReason:
+				"2FA is not currently enabled for your account. Enable it to add an extra layer of security to your login.",
+			step1Title: "Scan with authenticator app",
+			step1Description:
+				"Use an authenticator app like Google Authenticator, Authy, or Microsoft Authenticator to scan this code or enter the code manually.",
+			step1ManualEntry: "Or enter this code manually",
+			step1BackupCodes: "Backup codes",
+			step1BackupWarning:
+				"Save these codes in a safe place. You can use them to access your account if you lose access to your authenticator app. Each code can only be used once.",
+			step1NextButton: "I've saved my codes",
+			step2Title: "Verify the code",
+			step2Description:
+				"Enter the 6-digit code from your authenticator app to verify that 2FA is set up correctly.",
+			step2CodeLabel: "Code",
+			step2CodePlaceholder: "000000",
+			step2VerifyButton: "Verify",
+			step3Title: "2FA is now enabled",
+			step3Description:
+				"Your account is now protected with two-factor authentication. You will need to enter a code from your authenticator app each time you sign in.",
+			step3SuccessButton: "Done",
+			copySuccess: "Copied to clipboard",
+			disableCodeLabel: "Code",
+			disableCodePlaceholder: "Enter your TOTP code or a backup code",
+			disableButton: "Disable 2FA",
+			regenerateButton: "Regenerate backup codes",
+			regenerateSuccess: "Backup codes have been regenerated",
+			error: "An error occurred. Please try again.",
+		},
+		rateLimitError: "Too many attempts. Please try again later.",
+	},
+
 	users: {
 		metaTitle: "Users",
 		heading: "Team members",
@@ -2160,7 +2201,39 @@ export const en = {
 			"ui.bridge_dismiss": "Dismissed bridge",
 			"ui.low_stock_banner_click": "Clicked low-stock banner",
 			"ui.reorder_config_save": "Saved reorder config",
+			"account.data_export": "Exported account data",
+			"account.deleted": "Deleted account",
 		},
+	},
+
+	privacy: {
+		heading: "Privacy & Data",
+		subtitle: "Manage your personal data and account settings",
+		exportData: {
+			title: "Export Your Data",
+			subtitle: "Download a copy of all your data in JSON format",
+			button: "Download My Data",
+			success: "Data exported successfully",
+		},
+		deleteAccount: {
+			title: "Delete Account",
+			subtitle: "Permanently delete your account and all associated data",
+			warning:
+				"Warning: This action cannot be undone. Your personal data will be deleted, but organization data (items, movements) will be preserved.",
+			ownerWarning:
+				"You are the owner of one or more organizations. You must transfer ownership before deleting your account.",
+			confirmPhrase: "Confirmation phrase",
+			confirmPlaceholder: "Type DELETE MY ACCOUNT",
+			button: "Delete My Account",
+		},
+	},
+
+	imageUpload: {
+		dropzone: "Drop image here or click to upload",
+		remove: "Remove image",
+		uploading: "Uploading...",
+		invalidType: "Only JPEG, PNG, and WebP images are allowed",
+		tooLarge: "Image must be under 5MB",
 	},
 } as const;
 

@@ -236,6 +236,23 @@ async function checkUpstash(bucketKey: string, limit: RateLimit): Promise<RateLi
   }
 }
 
+// --- Predefined rate-limit profiles ----------------------------------------
+//
+// Common rate limits for authentication and sensitive operations.
+// Use these to ensure consistent rate limiting across the app.
+
+export const RATE_LIMITS = {
+  // Authentication flows
+  login: { max: 5, windowSeconds: 300 },           // 5 attempts per 5 min
+  register: { max: 3, windowSeconds: 3600 },       // 3 per hour
+  forgotPassword: { max: 3, windowSeconds: 3600 }, // 3 per hour
+  twoFactor: { max: 5, windowSeconds: 300 },       // 5 attempts per 5 min
+
+  // API and general operations
+  apiGeneral: { max: 100, windowSeconds: 60 },     // 100 req/min
+  export: { max: 10, windowSeconds: 60 },           // 10 exports/min
+} as const;
+
 // --- Public entry point -----------------------------------------------
 
 /**

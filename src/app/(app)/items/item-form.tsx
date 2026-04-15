@@ -11,6 +11,7 @@ import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImageUpload } from "@/components/ui/image-upload";
 import {
 	Select,
 	SelectContent,
@@ -124,6 +125,7 @@ export function ItemForm({
 	const [status, setStatus] = useState<"ACTIVE" | "ARCHIVED" | "DRAFT">(
 		initial?.status ?? "ACTIVE",
 	);
+	const [imageUrl, setImageUrl] = useState<string | null>(initial?.imageUrl ?? null);
 
 	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -137,6 +139,7 @@ export function ItemForm({
 			preferredSupplierId === NO_SUPPLIER ? "" : preferredSupplierId,
 		);
 		formData.set("status", status);
+		formData.set("imageUrl", imageUrl ?? "");
 
 		startTransition(async () => {
 			const result =
@@ -449,14 +452,18 @@ export function ItemForm({
 					</Select>
 				</div>
 
-				{/* Phase 5.2 — imageUrl field removed from UI.
-            The field exists in the DB schema but a plain text URL input with no
-            preview or upload is a dead-end UX. Users can set it via CSV import
-            or a future media upload feature. Hidden input preserves the value
-            on edit to avoid clearing it accidentally. */}
-				{initial?.imageUrl ? (
-					<input type="hidden" name="imageUrl" value={initial.imageUrl} />
-				) : null}
+				{/* Image upload */}
+				<div className="space-y-2">
+					<Label>{labels.fields.imageUrl}</Label>
+					<ImageUpload
+						value={imageUrl}
+						onChange={(url) => {
+							setImageUrl(url);
+							setDirty(true);
+						}}
+						disabled={isPending}
+					/>
+				</div>
 			</div>
 
 			{error ? (

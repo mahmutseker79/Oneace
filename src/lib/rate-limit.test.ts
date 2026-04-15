@@ -13,7 +13,7 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { __resetMemoryBucketsForTest, rateLimit } from "./rate-limit";
+import { __resetMemoryBucketsForTest, rateLimit, RATE_LIMITS } from "./rate-limit";
 
 afterEach(() => {
   __resetMemoryBucketsForTest();
@@ -78,5 +78,50 @@ describe("rateLimit (in-process memory backend)", () => {
     // sample and the helper's internal `Math.floor(Date.now()/1000)`.
     expect(result.reset).toBeGreaterThanOrEqual(before);
     expect(result.reset).toBeLessThanOrEqual(before + 60 + 1);
+  });
+
+  it("enforces RATE_LIMITS.twoFactor profile", async () => {
+    const limit = RATE_LIMITS.twoFactor;
+    const key = "auth:two_factor:user:test123";
+
+    // Should allow 5 attempts
+    for (let i = 0; i < 5; i++) {
+      const result = await rateLimit(key, limit);
+      expect(result.ok).toBe(true);
+    }
+
+    // 6th attempt should be denied
+    const denied = await rateLimit(key, limit);
+    expect(denied.ok).toBe(false);
+  });
+
+  it("enforces RATE_LIMITS.login profile", async () => {
+    const limit = RATE_LIMITS.login;
+    const key = "auth:login:ip:192.168.1.1";
+
+    // Should allow 5 attempts
+    for (let i = 0; i < 5; i++) {
+      const result = await rateLimit(key, limit);
+      expect(result.ok).toBe(true);
+    }
+
+    // 6th attempt should be denied
+    const denied = await rateLimit(key, limit);
+    expect(denied.ok).toBe(false);
+  });
+
+  it("enforces RATE_LIMITS.register profile", async () => {
+    const limit = RATE_LIMITS.register;
+    const key = "auth:register:ip:192.168.1.1";
+
+    // Should allow 3 attempts
+    for (let i = 0; i < 3; i++) {
+      const result = await rateLimit(key, limit);
+      expect(result.ok).toBe(true);
+    }
+
+    // 4th attempt should be denied
+    const denied = await rateLimit(key, limit);
+    expect(denied.ok).toBe(false);
   });
 });

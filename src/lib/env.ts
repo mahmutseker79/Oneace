@@ -160,6 +160,13 @@ const schema = z.object({
   // silently falling back.
   UPSTASH_REDIS_REST_URL: optionalUrl,
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+
+  // --- PostHog analytics (optional) ------------------------------------------
+  // Optional analytics integration for product insights.
+  // When set, PostHog SDK initializes and captures events.
+  // When unset, analytics is disabled (graceful degradation).
+  NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_POSTHOG_HOST: optionalUrl.default("https://us.i.posthog.com"),
 });
 
 // Require the mail pair to be all-or-nothing: having `RESEND_API_KEY`

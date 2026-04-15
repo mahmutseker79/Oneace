@@ -85,7 +85,10 @@ export type AuditAction =
   | "ui.bridge_card_click"
   | "ui.bridge_dismiss"
   | "ui.low_stock_banner_click"
-  | "ui.reorder_config_save";
+  | "ui.reorder_config_save"
+  // --- Account lifecycle (GDPR) -------------------------------------------
+  | "account.data_export"
+  | "account.deleted";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
