@@ -570,6 +570,9 @@ model StockMovement {
   // produced — the stock change already happened.
   purchaseOrderLine   PurchaseOrderLine? @relation(fields: [purchaseOrderLineId], references: [id], onDelete: SetNull)
   stockCount          StockCount?        @relation(fields: [stockCountId], references: [id], onDelete: SetNull)
+  reasonCode          ReasonCode?        @relation("MovementReasonCode", fields: [reasonCodeId], references: [id], onDelete: SetNull)
+  serialNumber        SerialNumber?      @relation("MovementSerial", fields: [serialNumberId], references: [id], onDelete: SetNull)
+  batch               ItemBatch?         @relation("MovementBatch", fields: [batchId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, createdAt])
@@ -723,6 +726,9 @@ model CountEntry {
   bin             Bin?          @relation(fields: [binId], references: [id], onDelete: SetNull)
   countedBy       User?         @relation(fields: [countedByUserId], references: [id], onDelete: SetNull)
   zone            CountZone?    @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  reasonCode      ReasonCode?   @relation("EntryReasonCode", fields: [reasonCodeId], references: [id], onDelete: SetNull)
+  serialNumber    SerialNumber? @relation("EntrySerial", fields: [serialNumberId], references: [id], onDelete: SetNull)
+  batch           ItemBatch?    @relation("EntryBatch", fields: [batchId], references: [id], onDelete: SetNull)
   // Phase 5A — composite FK to the owning CountSnapshot row. This is
   // a SECOND FK over the same three scalar fields (Postgres happily
   // supports multiple FKs on the same column), using the
@@ -1676,6 +1682,9 @@ model ReasonCode {
   updatedAt         DateTime         @updatedAt
 
   organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Back-references for V4 tracking
+  stockMovements    StockMovement[]  @relation("MovementReasonCode")
+  countEntries      CountEntry[]     @relation("EntryReasonCode")
 
   @@unique([organizationId, code])
   @@index([organizationId, category, isActive])
@@ -1705,6 +1714,9 @@ model SerialNumber {
   organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
   history           SerialHistory[]
+  // Back-references for V4 tracking
+  stockMovements    StockMovement[]  @relation("MovementSerial")
+  countEntries      CountEntry[]     @relation("EntrySerial")
 
   @@unique([organizationId, serialNumber])
   @@index([organizationId, itemId])
@@ -2234,6 +2246,9 @@ model ItemBatch {
   organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   item              Item             @relation(fields: [itemId], references: [id], onDelete: Cascade)
   warehouse         Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  // Back-references for V4 tracking
+  stockMovements    StockMovement[]  @relation("MovementBatch")
+  countEntries      CountEntry[]     @relation("EntryBatch")
 
   @@unique([organizationId, itemId, batchNumber])
   @@index([organizationId, itemId])
