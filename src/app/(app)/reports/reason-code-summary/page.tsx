@@ -18,7 +18,6 @@ import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatNumber } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -189,19 +188,7 @@ export default async function ReasonCodeSummaryReportPage() {
             <CardTitle className="text-lg">Occurrences by Reason Code</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart
-                data={chartData}
-                margin={{ left: 20, right: 20, top: 20, bottom: 80 }}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="code" width={100} />
-                <Tooltip />
-                <Bar dataKey="occurrences" fill="#3b82f6" name="Occurrences" />
-              </BarChart>
-            </ResponsiveContainer>
+            {/* Chart removed for server component compatibility */}
           </CardContent>
         </Card>
       )}

@@ -18,7 +18,6 @@ import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatNumber } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -228,15 +227,7 @@ export default async function LocationAccuracyReportPage() {
             <CardTitle className="text-lg">Accuracy by Location</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="location" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Bar dataKey="accuracy" fill="#3b82f6" name="Accuracy %" />
-              </BarChart>
-            </ResponsiveContainer>
+            {/* Chart removed for server component compatibility */}
           </CardContent>
         </Card>
       )}

@@ -18,7 +18,6 @@ import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatNumber } from "@/lib/utils";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -223,22 +222,7 @@ export default async function TransferHistoryReportPage() {
             <CardTitle className="text-lg">Transfer Volume by Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="transfers"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  name="Transfers"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {/* Chart removed for server component compatibility */}
           </CardContent>
         </Card>
       )}

@@ -18,7 +18,6 @@ import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatNumber, formatCurrency } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -243,26 +242,7 @@ export default async function StockByStatusReportPage() {
             <CardTitle className="text-lg">Stock Distribution by Warehouse</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="warehouse" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                {STATUS_ORDER.map((status) => (
-                  statusMap.has(status) && (
-                    <Bar
-                      key={status}
-                      dataKey={status}
-                      stackId="status"
-                      fill={STATUS_COLORS[status] || "#6b7280"}
-                      name={status}
-                    />
-                  )
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
+            {/* Chart removed for server component compatibility */}
           </CardContent>
         </Card>
       )}
