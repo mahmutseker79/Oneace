@@ -192,12 +192,22 @@ export type AuditEntityType =
   | "import_job"
   | "import_template"
   | "webhook"
-  // Phase V4: Reason Codes
+  // Phase V4: Reason Codes & Stock Status
   | "reason_code"
+  | "stock_level"
   // Phase L: Sales Orders, Kits, Pick Tasks
   | "sales_order"
   | "kit"
-  | "pick_task";
+  | "pick_task"
+  // Phase V4: Transfers, Assets, Serial Numbers, Batches
+  | "transfer"
+  | "fixed_asset"
+  | "serial_number"
+  | "batch"
+  | "org_settings"
+  | "saved_view"
+  | "attachment"
+  | "location_level";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so
