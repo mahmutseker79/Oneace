@@ -8,9 +8,12 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { Button } from "@/components/ui/button";
 import { requireActiveMembership } from "@/lib/session";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
+
+import { disconnectIntegrationAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Integrations",
@@ -119,10 +122,21 @@ export default async function IntegrationsPage() {
                   >
                     Settings
                   </Link>
-                  {canDisconnect && (
-                    <button className="flex-1 px-3 py-2 text-sm font-medium border rounded hover:bg-red-50 text-red-600">
-                      Disconnect
-                    </button>
+                  {canDisconnect && connectedMap.get(integration.provider) && (
+                    <form action={async () => {
+                      "use server";
+                      const integrationRecord = await db.integration.findFirst({
+                        where: { provider: integration.provider, organizationId: membership.organizationId, status: "CONNECTED" },
+                        select: { id: true },
+                      });
+                      if (integrationRecord) {
+                        await disconnectIntegrationAction({ integrationId: integrationRecord.id });
+                      }
+                    }}>
+                      <Button type="submit" variant="destructive" size="sm" className="flex-1">
+                        Disconnect
+                      </Button>
+                    </form>
                   )}
                 </>
               ) : (
