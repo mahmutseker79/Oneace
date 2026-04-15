@@ -78,9 +78,10 @@ export function verifyTotpCode(secret: string, code: string): boolean {
       secret: OTPAuth.Secret.fromBase32(secret),
     });
 
-    // Verify the code with a window of ±1 (allows previous and next period)
-    // This is a standard practice to account for clock skew
-    const result = totp.validate({ token: code, window: 1 });
+    // Verify the code with current period only (window=0).
+    // RFC 6238 recommends minimal window. Previous window=1 setting
+    // doubled the valid time to 60s, increasing brute-force surface.
+    const result = totp.validate({ token: code, window: 0 });
 
     // validate returns null if invalid, or a delta number if valid
     return result !== null;

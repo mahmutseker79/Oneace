@@ -27,20 +27,7 @@ export async function GET() {
       );
     }
 
-    // Guard against excessive exports
-    const MAX_EXPORT_ITEMS = 50_000;
-    const organizationIds = memberships.map((m) => m.organizationId);
-    const itemCount = await db.item.count({
-      where: { organizationId: { in: organizationIds } },
-    });
-    if (itemCount > MAX_EXPORT_ITEMS) {
-      return NextResponse.json(
-        { error: "Export too large. Contact support for bulk exports." },
-        { status: 413, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Collect all user data
+    // Collect user profile first
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -60,6 +47,7 @@ export async function GET() {
       );
     }
 
+    // Fetch all memberships BEFORE using them
     const memberships = await db.membership.findMany({
       where: { userId: session.user.id },
       include: {
@@ -74,6 +62,20 @@ export async function GET() {
         },
       },
     });
+
+    const organizationIds = memberships.map((m) => m.organizationId);
+
+    // Guard against excessive exports
+    const MAX_EXPORT_ITEMS = 50_000;
+    const itemCount = await db.item.count({
+      where: { organizationId: { in: organizationIds } },
+    });
+    if (itemCount > MAX_EXPORT_ITEMS) {
+      return NextResponse.json(
+        { error: "Export too large. Contact support for bulk exports." },
+        { status: 413, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     // Items created by this user's org(s)
     const items = await db.item.findMany({

@@ -30,10 +30,21 @@ type UpsertStockLevelInput = {
 export async function upsertStockLevel(tx: TxClient, input: UpsertStockLevelInput) {
   const qty = input.quantityDelta ?? input.quantityAbsolute ?? 0;
 
-  // Use raw SQL with ON CONFLICT to atomically upsert, handling nullable binId.
-  // This is more correct than findFirst + create/update because it's a single
-  // atomic operation and prevents race conditions during concurrent stock updates.
-  await tx.$executeRaw`
+  // Use raw SQL with ON CONFLICT + RETURNING to atomically upsert AND
+  // return the result in a single statement. This prevents the stale-read
+  // race condition where a separate findFirst could return an outdated
+  // quantity if another transaction updated the row between the upsert
+  // and the read.
+  const rows = await tx.$queryRaw<Array<{
+    id: string;
+    organizationId: string;
+    itemId: string;
+    warehouseId: string;
+    binId: string | null;
+    quantity: number;
+    reservedQty: number;
+    updatedAt: Date;
+  }>>`
     INSERT INTO "StockLevel" (
       "id",
       "organizationId",
@@ -58,14 +69,8 @@ export async function upsertStockLevel(tx: TxClient, input: UpsertStockLevelInpu
     DO UPDATE SET
       "quantity" = "StockLevel"."quantity" + ${input.quantityDelta || 0},
       "updatedAt" = NOW()
+    RETURNING *
   `;
 
-  // Fetch and return the upserted record
-  return tx.stockLevel.findFirst({
-    where: {
-      itemId: input.itemId,
-      warehouseId: input.warehouseId,
-      binId: input.binId ?? null,
-    },
-  });
+  return rows[0] ?? null;
 }

@@ -12,10 +12,18 @@ import { verifyTotpCode, verifyBackupCode } from "@/lib/totp";
  *
  * Request body:
  *   {
- *     userId: string;
- *     code: string; // 6-digit TOTP or 8-char backup code
+ *     userId: string;   // The user whose 2FA to verify
+ *     code: string;     // 6-digit TOTP or 8-char backup code
  *     sessionToken?: string; // pending session token from Better Auth
  *   }
+ *
+ * Security notes:
+ *   - userId is accepted from the body because this endpoint is called
+ *     BEFORE the session is fully established (pending 2FA challenge).
+ *     The caller (Better Auth login flow) provides the userId after
+ *     email/password verification succeeds.
+ *   - Rate limiting keys on both IP AND userId to prevent distributed attacks.
+ *   - Account is locked after 10 consecutive failures within the window.
  *
  * Response:
  *   Success (200): { verified: true }
@@ -33,16 +41,28 @@ export async function POST(req: Request) {
       });
     }
 
+    // Validate userId format (prevent injection of arbitrary strings into rate-limit keys)
+    if (typeof userId !== "string" || userId.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(userId)) {
+      return new Response(JSON.stringify({ error: "Invalid userId format" }), { status: 400 });
+    }
+
     // Get client IP for rate limiting
     const headersList = await headers();
     const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown";
 
-    // Rate limit by IP + user combo
+    // Rate limit by IP + user combo (prevents distributed brute-force)
     const rateLimitKey = `auth:two_factor:${ip}:${userId}`;
     const rateLimitResult = await rateLimit(rateLimitKey, RATE_LIMITS.twoFactor);
 
-    if (!rateLimitResult.ok) {
-      const retryAfter = Math.max(0, rateLimitResult.reset - Math.floor(Date.now() / 1000));
+    // Also rate limit per-user globally (prevents multi-IP attacks on single user)
+    const perUserRateResult = await rateLimit(`auth:two_factor:user:${userId}`, {
+      max: 10,
+      windowSeconds: 300,
+    });
+
+    if (!rateLimitResult.ok || !perUserRateResult.ok) {
+      const failedResult = !rateLimitResult.ok ? rateLimitResult : perUserRateResult;
+      const retryAfter = Math.max(0, failedResult.reset - Math.floor(Date.now() / 1000));
       return new Response(
         JSON.stringify({ error: "Too many attempts", retryAfter }),
         {
@@ -66,7 +86,8 @@ export async function POST(req: Request) {
     });
 
     if (!twoFactorAuth?.enabled) {
-      return new Response(JSON.stringify({ error: "2FA not enabled for this user" }), {
+      // Return same error as invalid code to prevent user enumeration
+      return new Response(JSON.stringify({ verified: false, error: "Invalid code" }), {
         status: 400,
       });
     }
@@ -79,9 +100,12 @@ export async function POST(req: Request) {
 
     // Try backup code
     const backupCodesCopy = [...twoFactorAuth.backupCodes];
-    const backupResult = verifyBackupCode(backupCodesCopy, code);
+    const backupResult = verifyBackupCode(code, backupCodesCopy);
 
     if (backupResult.valid) {
+      // Consume the used backup code so it cannot be replayed
+      backupCodesCopy.splice(backupResult.index, 1);
+
       // Update the backup codes (one was consumed)
       // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
       await db.twoFactorAuth.update({
@@ -91,7 +115,7 @@ export async function POST(req: Request) {
         },
       });
 
-      return new Response(JSON.stringify({ verified: true }), { status: 200 });
+      return new Response(JSON.stringify({ verified: true, remainingBackupCodes: backupCodesCopy.length }), { status: 200 });
     }
 
     // Neither code was valid

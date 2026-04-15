@@ -112,6 +112,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Process the event. If processing fails, remove the idempotency record
+    // so Stripe's retry delivery will reprocess it instead of being skipped.
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -148,6 +150,19 @@ export async function POST(request: NextRequest) {
       error: err instanceof Error ? err.message : String(err),
       stack: err instanceof Error ? err.stack : undefined,
     });
+
+    // Remove the idempotency record so Stripe's retry delivery will
+    // reprocess this event instead of being silently skipped.
+    try {
+      await db.stripeWebhookEvent.delete({ where: { eventId: event.id } });
+      logger.info("stripe webhook: removed failed event record for retry", { eventId: event.id });
+    } catch (deleteErr) {
+      logger.error("stripe webhook: failed to remove event record", {
+        eventId: event.id,
+        deleteErr: deleteErr instanceof Error ? deleteErr.message : String(deleteErr),
+      });
+    }
+
     return NextResponse.json({ error: "Handler error." }, { status: 500 });
   }
 

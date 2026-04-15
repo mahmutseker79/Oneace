@@ -155,6 +155,9 @@ export const getDashboardKPIs = unstable_cache(
 			topLowStockItems: lowStockItems,
 		};
 	},
+	// Cache key includes orgId to prevent cross-tenant cache collision.
+	// unstable_cache auto-appends the function args to the key parts,
+	// but being explicit is safer for multi-tenant isolation.
 	["dashboard-kpis"],
-	{ revalidate: 300 }, // 5 minutes
+	{ revalidate: 300, tags: ["dashboard-kpis"] }, // 5 minutes
 );

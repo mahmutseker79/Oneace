@@ -92,21 +92,27 @@ export async function POST(request: NextRequest) {
       data: Record<string, unknown>;
     };
 
-    // Check timestamp is recent (within 5 minutes)
+    // Check timestamp is recent (within 5 minutes) and not in the future
     const webhookTime = new Date(timestamp).getTime();
     const now = Date.now();
+
+    // Reject invalid/unparseable timestamps (NaN)
+    if (Number.isNaN(webhookTime)) {
+      logger.warn("Webhook timestamp invalid (NaN)", { deliveryId, timestamp });
+      return NextResponse.json({ error: "Invalid timestamp format" }, { status: 400 });
+    }
+
+    // Reject future timestamps (with 30s tolerance for clock skew)
+    if (webhookTime > now + 30_000) {
+      logger.warn("Webhook timestamp in the future", { deliveryId, webhookTime, now });
+      return NextResponse.json({ error: "Timestamp in the future" }, { status: 400 });
+    }
+
+    // Reject timestamps older than 5 minutes
     const age = now - webhookTime;
-
     if (age > 5 * 60 * 1000) {
-      logger.warn("Webhook timestamp too old", {
-        deliveryId,
-        age,
-      });
-
-      return NextResponse.json(
-        { error: "Request too old" },
-        { status: 400 },
-      );
+      logger.warn("Webhook timestamp too old", { deliveryId, age });
+      return NextResponse.json({ error: "Request too old" }, { status: 400 });
     }
 
     // Verify organization exists
