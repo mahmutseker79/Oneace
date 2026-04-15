@@ -52,33 +52,57 @@ export async function generateMetadata(): Promise<Metadata> {
 // =========================
 
 async function loadDashboardData(orgId: string) {
-	// Parallel fire-and-collect for every KPI source.
+	// Sprint 4: Consolidated queries — replaced findMany-then-aggregate-in-JS
+	// with SQL aggregation. Reduces rows transferred from ~40K to ~100.
+
+	// Type for SQL aggregation results
+	type StockValueRow = { stockValue: number; itemsWithCostPrice: number };
+	type CategoryValueRow = { category: string; value: number };
+	type TopItemRow = { name: string; quantity: number };
+
+	const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
 	const [
 		activeItemCount,
 		archivedItemCount,
-		stockLevels,
+		stockValueResult,
+		categoryValueData,
 		warehouseCount,
 		openCountCount,
 		inProgressCountCount,
 		recentMovements,
-		topMovementsRaw,
-		allMovementsLast30Days,
+		topItemsData,
 	] = await Promise.all([
 		db.item.count({ where: { organizationId: orgId, status: "ACTIVE" } }),
 		db.item.count({ where: { organizationId: orgId, status: "ARCHIVED" } }),
-		db.stockLevel.findMany({
-			where: { organizationId: orgId },
-			select: {
-				quantity: true,
-				itemId: true,
-				item: { select: { costPrice: true, category: { select: { name: true } } } },
-			},
-		}),
+
+		// Stock value: single SQL instead of fetching all stockLevels + JS loop
+		db.$queryRaw<StockValueRow[]>`
+			SELECT
+				COALESCE(SUM(sl.quantity * COALESCE(i."costPrice", 0)), 0)::float as "stockValue",
+				COUNT(DISTINCT CASE WHEN i."costPrice" > 0 THEN sl."itemId" END)::int as "itemsWithCostPrice"
+			FROM "StockLevel" sl
+			JOIN "Item" i ON i.id = sl."itemId"
+			WHERE sl."organizationId" = ${orgId}
+		`,
+
+		// Category value: single SQL instead of fetching all + JS Map
+		db.$queryRaw<CategoryValueRow[]>`
+			SELECT
+				COALESCE(c.name, 'Uncategorized') as category,
+				COALESCE(SUM(sl.quantity * COALESCE(i."costPrice", 0)), 0)::float as value
+			FROM "StockLevel" sl
+			JOIN "Item" i ON i.id = sl."itemId"
+			LEFT JOIN "Category" c ON c.id = i."categoryId"
+			WHERE sl."organizationId" = ${orgId}
+			GROUP BY c.name
+			ORDER BY value DESC
+		`,
+
 		db.warehouse.count({ where: { organizationId: orgId } }),
 		db.stockCount.count({ where: { organizationId: orgId, state: "OPEN" } }),
-		db.stockCount.count({
-			where: { organizationId: orgId, state: "IN_PROGRESS" },
-		}),
+		db.stockCount.count({ where: { organizationId: orgId, state: "IN_PROGRESS" } }),
+
 		db.stockMovement.findMany({
 			where: { organizationId: orgId },
 			orderBy: { createdAt: "desc" },
@@ -86,43 +110,25 @@ async function loadDashboardData(orgId: string) {
 			include: {
 				item: { select: { id: true, sku: true, name: true } },
 				warehouse: { select: { id: true, name: true, code: true } },
-				// Phase 5.1 — show "by whom" in recent activity card.
 				createdBy: { select: { id: true, name: true, email: true } },
 			},
 		}),
-		// P9.3a — Top 10 most-moved items (last 30 days)
-		db.stockMovement.findMany({
-			where: {
-				organizationId: orgId,
-				createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-			},
-			select: {
-				itemId: true,
-				quantity: true,
-				item: { select: { name: true } },
-			},
-		}),
-		// P9.3a — All movements for last 30 days (for low stock trend)
-		db.stockMovement.findMany({
-			where: {
-				organizationId: orgId,
-				createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-			},
-			select: { createdAt: true },
-		}),
+
+		// Top 10 most-moved items: SQL GROUP BY instead of fetching all + JS Map
+		db.$queryRaw<TopItemRow[]>`
+			SELECT i.name, SUM(sm.quantity)::int as quantity
+			FROM "StockMovement" sm
+			JOIN "Item" i ON i.id = sm."itemId"
+			WHERE sm."organizationId" = ${orgId}
+				AND sm."createdAt" >= ${thirtyDaysAgo}
+			GROUP BY i.name
+			ORDER BY quantity DESC
+			LIMIT 10
+		`,
 	]);
 
-	// Phase 5.1 — count items that have a costPrice set (to detect $0 due to missing prices).
-	const itemsWithCostPrice = stockLevels.filter(
-		(l) => l.item.costPrice !== null && Number(l.item.costPrice) > 0,
-	).length;
-
-	// Stock value = sum(qty × costPrice). Missing costPrice counts as 0.
-	let stockValue = 0;
-	for (const level of stockLevels) {
-		const cost = level.item.costPrice ? Number(level.item.costPrice) : 0;
-		stockValue += level.quantity * cost;
-	}
+	const stockValue = stockValueResult[0]?.stockValue ?? 0;
+	const itemsWithCostPrice = stockValueResult[0]?.itemsWithCostPrice ?? 0;
 
 	// Low-stock items = items whose total on-hand (sum across warehouses)
 	// is at or below reorderPoint AND reorderPoint > 0. Items with a
@@ -196,28 +202,12 @@ async function loadDashboardData(orgId: string) {
 		trendData.push({ day, ...bucket });
 	}
 
-	// P9.3a — Top 10 most-moved items (aggregate by itemId)
-	const topItemsMap = new Map<string, { name: string; quantity: number }>();
-	for (const m of topMovementsRaw) {
-		const existing = topItemsMap.get(m.itemId) ?? { name: m.item.name, quantity: 0 };
-		existing.quantity += m.quantity;
-		topItemsMap.set(m.itemId, existing);
-	}
-	const topItemsData = Array.from(topItemsMap.values())
-		.sort((a, b) => b.quantity - a.quantity)
-		.slice(0, 10);
+	// Sprint 4: topItemsData and categoryValueData now come directly from SQL
+	// (computed in the parallel Promise.all above). No JS aggregation needed.
+	// The old code fetched all 30-day movements + all stockLevels and aggregated
+	// in JavaScript. Now it's 2 SQL GROUP BY queries returning ~10-20 rows each.
 
-	// P9.3a — Stock value by category
-	const categoryValueMap = new Map<string, number>();
-	for (const level of stockLevels) {
-		const categoryName = level.item.category?.name || "Uncategorized";
-		const cost = level.item.costPrice ? Number(level.item.costPrice) : 0;
-		const value = level.quantity * cost;
-		categoryValueMap.set(categoryName, (categoryValueMap.get(categoryName) ?? 0) + value);
-	}
-	const categoryValueData = Array.from(categoryValueMap.entries())
-		.map(([category, value]) => ({ category, value }))
-		.sort((a, b) => b.value - a.value);
+	// categoryValueData already comes as { category, value }[] from SQL above.
 
 	// P9.3a — Low stock trend (last 30 days): for each day, count items below reorder
 	// Simplified: generate a synthetic trend using current low stock count
