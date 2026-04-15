@@ -29,12 +29,9 @@ import { MovementsFilterBar } from "./movements-filter-bar";
 
 type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "BIN_TRANSFER" | "COUNT";
 
-// Result cap. Unfiltered view shows the most recent 200 (unchanged
-// from Sprint 2); filtered view raises to 500 so a date range can
-// actually surface older history. Anyone who needs more can use the
-// CSV export at /movements/export, which carries the same filters.
-const UNFILTERED_LIMIT = 200;
-const FILTERED_LIMIT = 500;
+// Sprint 4: cursor-based pagination. Page size is 50 for both modes.
+// Cursor pagination avoids the OFFSET performance cliff at scale.
+const PAGE_SIZE = 50;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -73,7 +70,8 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
 
   const filter = await parseMovementFilter(searchParams);
   const filterActive = hasAnyFilter(filter);
-  const limit = filterActive ? FILTERED_LIMIT : UNFILTERED_LIMIT;
+  const params = await searchParams;
+  const cursor = typeof params?.cursor === "string" ? params.cursor : undefined;
 
   // Load the org's warehouses for the filter dropdown in parallel
   // with the ledger query. Independent of the active filter so a
@@ -94,7 +92,8 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
         createdBy: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: limit,
+      take: PAGE_SIZE + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     }),
     db.warehouse.findMany({
       where: { organizationId: membership.organizationId, isArchived: false },
@@ -124,13 +123,18 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
     }),
   );
 
+  // Sprint 4: cursor-based pagination
+  const hasNextPage = movements.length > PAGE_SIZE;
+  const pageMovements = hasNextPage ? movements.slice(0, PAGE_SIZE) : movements;
+  const nextCursor = hasNextPage ? pageMovements[pageMovements.length - 1]?.id : null;
+
   const countLine = filterActive
-    ? format(t.movements.filter.resultCount, { count: movements.length })
+    ? format(t.movements.filter.resultCount, { count: pageMovements.length })
     : format(t.movements.filter.resultCountUnfiltered, {
-        count: movements.length,
+        count: pageMovements.length,
       });
 
-  const truncated = movements.length === limit;
+  const truncated = hasNextPage;
 
   return (
     <div className="space-y-6">
@@ -191,7 +195,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
         }}
       />
 
-      {movements.length === 0 ? (
+      {pageMovements.length === 0 ? (
         <EmptyState
           icon={ArrowLeftRight}
           title={filterActive ? t.movements.filter.emptyFilteredTitle : t.movements.emptyTitle}
@@ -215,7 +219,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
             <span>{countLine}</span>
             {truncated ? (
               <span className="italic">
-                {format(t.movements.filter.truncatedNotice, { limit })}
+                {format(t.movements.filter.truncatedNotice, { limit: PAGE_SIZE })}
               </span>
             ) : null}
           </div>
@@ -223,7 +227,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
             <CardContent className="p-0">
               {/* Phase 4.2 — Mobile card view (hidden md+) */}
               <div className="divide-y md:hidden">
-                {movements.map((m) => {
+                {pageMovements.map((m) => {
                   const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
                   const qtyPrefix =
                     signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
@@ -277,7 +281,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {movements.map((m) => {
+                    {pageMovements.map((m) => {
                       const signedQty = m.direction < 0 ? -m.quantity : m.quantity;
                       const qtyPrefix =
                         signedQty > 0 ? t.movements.directionIn : t.movements.directionOut;
@@ -338,6 +342,23 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
               </div>
             </CardContent>
           </Card>
+          {/* Sprint 4: cursor-based pagination — "Load more" link */}
+          {nextCursor ? (
+            <div className="flex justify-center">
+              <Button variant="outline" asChild>
+                <Link href={`/movements?${new URLSearchParams({
+                  ...(filter.rawFrom ? { from: filter.rawFrom } : {}),
+                  ...(filter.rawTo ? { to: filter.rawTo } : {}),
+                  ...(filter.rawType ? { type: filter.rawType } : {}),
+                  ...(filter.rawWarehouse ? { warehouse: filter.rawWarehouse } : {}),
+                  ...(filter.rawQ ? { q: filter.rawQ } : {}),
+                  cursor: nextCursor,
+                }).toString()}`}>
+                  {t.common?.loadMore ?? "Load more"}
+                </Link>
+              </Button>
+            </div>
+          ) : null}
         </>
       )}
     </div>

@@ -38,6 +38,7 @@ export type MovementSearchParams = {
   type?: string | string[];
   warehouse?: string | string[];
   q?: string | string[];
+  cursor?: string | string[]; // Sprint 4: cursor-based pagination
 };
 
 function pickString(raw: string | string[] | undefined): string {
