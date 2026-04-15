@@ -33,6 +33,20 @@ export type Capability =
   | "items.edit"
   | "items.delete"
   | "items.import"
+  // Item attachments
+  | "items.attachments.create"
+  | "items.attachments.edit"
+  | "items.attachments.delete"
+  // Item serials
+  | "items.serials.create"
+  | "items.serials.edit"
+  | "items.serials.delete"
+  // Locations (hierarchy)
+  | "locations.create"
+  | "locations.edit"
+  | "locations.delete"
+  // Settings
+  | "settings.manage"
   // Movements
   | "movements.create"
   // Stock counts
@@ -109,6 +123,7 @@ export type Capability =
   // Sales orders
   | "salesOrders.create"
   | "salesOrders.edit"
+  | "salesOrders.confirm"
   | "salesOrders.allocate"
   | "salesOrders.ship"
   | "salesOrders.cancel"
@@ -116,10 +131,13 @@ export type Capability =
   | "kits.create"
   | "kits.edit"
   | "kits.assemble"
+  | "kits.disassemble"
   // Pick tasks
   | "picks.create"
   | "picks.assign"
+  | "picks.start"
   | "picks.complete"
+  | "picks.verify"
   // Assets
   | "assets.create"
   | "assets.edit"
@@ -157,6 +175,24 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "items.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "items.delete": new Set<Role>(["OWNER", "ADMIN"]),
   "items.import": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+
+  // --- Item attachments ---
+  "items.attachments.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.attachments.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.attachments.delete": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Item serials ---
+  "items.serials.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.serials.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.serials.delete": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Locations (hierarchy) ---
+  "locations.create": new Set<Role>(["OWNER", "ADMIN"]),
+  "locations.edit": new Set<Role>(["OWNER", "ADMIN"]),
+  "locations.delete": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Settings ---
+  "settings.manage": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Movements ---
   "movements.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
@@ -251,6 +287,7 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   // --- Sales orders ---
   "salesOrders.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "salesOrders.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "salesOrders.confirm": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
   "salesOrders.allocate": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
   "salesOrders.ship": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "salesOrders.cancel": new Set<Role>(["OWNER", "ADMIN"]),
@@ -259,11 +296,14 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "kits.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "kits.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "kits.assemble": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "kits.disassemble": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
 
   // --- Pick tasks ---
   "picks.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "picks.assign": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
+  "picks.start": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "picks.complete": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "picks.verify": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
 
   // --- Assets ---
   "assets.create": new Set<Role>(["OWNER", "ADMIN"]),
