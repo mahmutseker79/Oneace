@@ -1,0 +1,366 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   OneAce Design Tokens (ported from github.com/mahmutseker79/oneace)
+   Mirrors the original theme.css 1:1 so the visual identity is preserved.
+   ============================================================ */
+
+:root {
+  --font-size: 16px;
+  --background: #fdfcfb;
+  --foreground: #2d3748;
+  --card: #ffffff;
+  --card-foreground: #2d3748;
+  --popover: #ffffff;
+  --popover-foreground: #2d3748;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #4b5563;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #eef2ff;
+  --accent-foreground: #4338ca;
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+  --border: #e5e7eb;
+  --input: transparent;
+  --input-background: #f9fafb;
+  --switch-background: #d1d5db;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #c7d2fe;
+  --chart-1: #a78bfa;
+  --chart-2: #60a5fa;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
+  --radius: 0.75rem;
+
+  /* Stock Level Colors - Pastel */
+  --stock-critical: #f87171;
+  --stock-critical-bg: #fef2f2;
+  --stock-low: #fb923c;
+  --stock-low-bg: #fff7ed;
+  --stock-normal: #4ade80;
+  --stock-normal-bg: #f0fdf4;
+  --stock-high: #60a5fa;
+  --stock-high-bg: #eff6ff;
+  --stock-excess: #c084fc;
+  --stock-excess-bg: #faf5ff;
+
+  /* Count Status Colors - Pastel */
+  --count-pending: #9ca3af;
+  --count-pending-bg: #f9fafb;
+  --count-in-progress: #60a5fa;
+  --count-in-progress-bg: #eff6ff;
+  --count-completed: #4ade80;
+  --count-completed-bg: #f0fdf4;
+  --count-variance: #fb923c;
+  --count-variance-bg: #fff7ed;
+  --count-approved: #34d399;
+  --count-approved-bg: #d1fae5;
+  --count-rejected: #f87171;
+  --count-rejected-bg: #fee2e2;
+
+  /* Count Sheet Status Colors */
+  --sheet-open: #9ca3af;
+  --sheet-assigned: #60a5fa;
+  --sheet-counting: #fb923c;
+  --sheet-in-review: #c084fc;
+  --sheet-completed: #4ade80;
+  --discrepancy-positive: #22d3ee;
+  --discrepancy-negative: #f87171;
+  --discrepancy-match: #4ade80;
+  --frozen: #7dd3fc;
+
+  /* Scanner / Barcode Colors */
+  --scan-success: #4ade80;
+  --scan-error: #f87171;
+  --scan-not-found: #fb923c;
+  --scan-ready: #60a5fa;
+  --scanner-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Connectivity / Sync Colors */
+  --online: #4ade80;
+  --offline: #f87171;
+  --syncing: #60a5fa;
+  --sync-error: #fb923c;
+
+  /* Check-In / Check-Out Colors */
+  --checked-out: #fb923c;
+  --checked-in: #4ade80;
+  --overdue: #f87171;
+  --reserved: #60a5fa;
+
+  /* Purchase Order Colors */
+  --order-draft: #9ca3af;
+  --order-sent: #60a5fa;
+  --order-partial: #fb923c;
+  --order-received: #4ade80;
+  --order-cancelled: #f87171;
+
+  /* Serial / Lot Tracking Colors */
+  --serial-active: #4ade80;
+  --serial-sold: #9ca3af;
+  --serial-warranty: #60a5fa;
+  --lot-active: #4ade80;
+  --lot-expiring-soon: #fb923c;
+  --lot-expired: #f87171;
+
+  --sidebar: #fefefe;
+  --sidebar-foreground: #374151;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #4b5563;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #c7d2fe;
+
+  /* Premium shadow scale */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-popover: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.06);
+
+  /* Gradient tokens */
+  --gradient-card: linear-gradient(to bottom right, var(--card), hsl(from var(--muted) h s l / 0.3));
+  --gradient-accent: linear-gradient(135deg, var(--primary), hsl(from var(--primary) h s calc(l + 15)));
+
+  /* Transition tokens */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Font tokens */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+.dark {
+  --background: #1e293b;
+  --foreground: #f1f5f9;
+  --card: #334155;
+  --card-foreground: #f1f5f9;
+  --popover: #334155;
+  --popover-foreground: #f1f5f9;
+  --primary: #818cf8;
+  --primary-foreground: #1e1b4b;
+  --secondary: #475569;
+  --secondary-foreground: #f1f5f9;
+  --muted: #475569;
+  --muted-foreground: #cbd5e1;
+  --accent: #3730a3;
+  --accent-foreground: #e0e7ff;
+  --destructive: #fca5a5;
+  --destructive-foreground: #7f1d1d;
+  --border: #475569;
+  --input: #475569;
+  --ring: #6366f1;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: #a78bfa;
+  --chart-2: #60a5fa;
+  --chart-3: #4ade80;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
+
+  /* Stock Level - Dark */
+  --stock-critical: #fca5a5;
+  --stock-critical-bg: rgba(252, 165, 165, 0.15);
+  --stock-low: #fdba74;
+  --stock-low-bg: rgba(253, 186, 116, 0.15);
+  --stock-normal: #86efac;
+  --stock-normal-bg: rgba(134, 239, 172, 0.15);
+  --stock-high: #93c5fd;
+  --stock-high-bg: rgba(147, 197, 253, 0.15);
+  --stock-excess: #d8b4fe;
+  --stock-excess-bg: rgba(216, 180, 254, 0.15);
+
+  /* Count Status - Dark */
+  --count-pending: #d1d5db;
+  --count-pending-bg: rgba(209, 213, 219, 0.15);
+  --count-in-progress: #93c5fd;
+  --count-in-progress-bg: rgba(147, 197, 253, 0.15);
+  --count-completed: #86efac;
+  --count-completed-bg: rgba(134, 239, 172, 0.15);
+  --count-variance: #fdba74;
+  --count-variance-bg: rgba(253, 186, 116, 0.15);
+  --count-approved: #6ee7b7;
+  --count-approved-bg: rgba(110, 231, 183, 0.15);
+  --count-rejected: #fca5a5;
+  --count-rejected-bg: rgba(252, 165, 165, 0.15);
+
+  /* Count Sheet - Dark */
+  --sheet-open: #d1d5db;
+  --sheet-assigned: #93c5fd;
+  --sheet-counting: #fdba74;
+  --sheet-in-review: #d8b4fe;
+  --sheet-completed: #86efac;
+  --discrepancy-positive: #67e8f9;
+  --discrepancy-negative: #fca5a5;
+  --discrepancy-match: #86efac;
+  --frozen: #bae6fd;
+
+  /* Scanner - Dark */
+  --scan-success: #86efac;
+  --scan-error: #fca5a5;
+  --scan-not-found: #fdba74;
+  --scan-ready: #93c5fd;
+  --scanner-overlay: rgba(0, 0, 0, 0.8);
+
+  /* Connectivity - Dark */
+  --online: #86efac;
+  --offline: #fca5a5;
+  --syncing: #93c5fd;
+  --sync-error: #fdba74;
+
+  /* Check-In/Out - Dark */
+  --checked-out: #fdba74;
+  --checked-in: #86efac;
+  --overdue: #fca5a5;
+  --reserved: #93c5fd;
+
+  /* Purchase Order - Dark */
+  --order-draft: #d1d5db;
+  --order-sent: #93c5fd;
+  --order-partial: #fdba74;
+  --order-received: #86efac;
+  --order-cancelled: #fca5a5;
+
+  /* Serial/Lot - Dark */
+  --serial-active: #86efac;
+  --serial-sold: #d1d5db;
+  --serial-warranty: #93c5fd;
+  --lot-active: #86efac;
+  --lot-expiring-soon: #fdba74;
+  --lot-expired: #fca5a5;
+
+  --sidebar: #334155;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #f1f5f9;
+  --sidebar-accent: #475569;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #475569;
+  --sidebar-ring: #6366f1;
+
+  /* Premium shadow scale - Dark */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.15), 0 1px 1px -1px rgb(0 0 0 / 0.1);
+  --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.15);
+  --shadow-popover: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+
+  /* Gradient tokens - Dark */
+  --gradient-card: linear-gradient(to bottom right, var(--card), hsl(from var(--muted) h s calc(l - 5)));
+  --gradient-accent: linear-gradient(135deg, var(--primary), hsl(from var(--primary) h s calc(l - 10)));
+
+  /* Transition tokens */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Font tokens */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: 1rem;
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}

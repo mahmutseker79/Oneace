@@ -1,0 +1,117 @@
+// Ship sales order page
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { shipSalesOrderAction } from "../../actions";
+
+export default function ShipSalesOrderPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const [order, setOrder] = useState<any>(null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useState(() => {
+    // TODO: Fetch sales order and initialize quantities
+  });
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("salesOrderId", params.id);
+    formData.append(
+      "lines",
+      JSON.stringify(
+        order?.lines.map((line: any) => ({
+          lineId: line.id,
+          shippedQty: quantities[line.id] || 0,
+        })) || []
+      )
+    );
+
+    const result = await shipSalesOrderAction(formData);
+
+    if (result.ok) {
+      router.push(`/sales-orders/${result.id}`);
+    } else {
+      setError(result.error);
+    }
+    setIsLoading(false);
+  }
+
+  if (!order) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <h1 className="text-3xl font-bold">Ship: {order.orderNumber}</h1>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && <div className="rounded bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+
+        <div className="rounded-lg border overflow-hidden">
+          <div className="bg-muted/50 border-b px-6 py-3">
+            <h2 className="font-semibold">Ship Quantities</h2>
+          </div>
+          <table className="w-full">
+            <thead className="border-b bg-muted/50">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-medium">Item</th>
+                <th className="px-6 py-3 text-left text-sm font-medium">Warehouse</th>
+                <th className="px-6 py-3 text-center text-sm font-medium">Ordered</th>
+                <th className="px-6 py-3 text-center text-sm font-medium">Already Shipped</th>
+                <th className="px-6 py-3 text-center text-sm font-medium">Remaining</th>
+                <th className="px-6 py-3 text-center text-sm font-medium">Ship Now</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {order.lines?.map((line: any) => {
+                const remaining = line.allocatedQty - line.shippedQty;
+                return (
+                  <tr key={line.id} className="hover:bg-muted/50">
+                    <td className="px-6 py-3 text-sm font-medium">{line.itemId}</td>
+                    <td className="px-6 py-3 text-sm text-muted-foreground">{line.warehouseId}</td>
+                    <td className="px-6 py-3 text-sm text-center">{line.orderedQty}</td>
+                    <td className="px-6 py-3 text-sm text-center">{line.shippedQty}</td>
+                    <td className="px-6 py-3 text-sm text-center font-semibold">{remaining}</td>
+                    <td className="px-6 py-3 text-center">
+                      <Input
+                        type="number"
+                        min="0"
+                        max={remaining}
+                        defaultValue={remaining}
+                        onChange={(e) =>
+                          setQuantities({
+                            ...quantities,
+                            [line.id]: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-20 text-center"
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex gap-4">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Shipping..." : "Confirm Shipment"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
