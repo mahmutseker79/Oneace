@@ -31,7 +31,12 @@ export const auth = betterAuth({
       // Extend here with locale, timezone, etc. as profile fields grow.
     },
   },
-  trustedOrigins: [env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"],
+  trustedOrigins: [
+    env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    env.BETTER_AUTH_URL,
+    // Vercel preview/production domains
+    ...(env.NEXT_PUBLIC_APP_URL ? [] : ["https://oneace-next-local.vercel.app"]),
+  ].filter(Boolean) as string[],
 });
 
 export type Session = typeof auth.$Infer.Session;
