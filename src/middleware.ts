@@ -1,5 +1,12 @@
-import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
+
+// NOTE: We intentionally avoid importing better-auth/cookies here because
+// its transitive dependency (jose) uses CompressionStream/DecompressionStream
+// which are not available in Vercel's Edge Runtime. Instead we do a simple
+// cookie-presence check — the actual session validation happens server-side
+// in requireActiveMembership().
+
+const SESSION_COOKIE_NAME = "better-auth.session_token";
 
 const PUBLIC_PATHS = [
   "/",
@@ -32,8 +39,10 @@ export function middleware(request: NextRequest) {
   }
 
   // Cheap cookie check — skips DB hit until the request actually needs auth state.
-  const sessionCookie = getSessionCookie(request);
-  if (!sessionCookie) {
+  // We check for the session cookie directly instead of using better-auth's
+  // getSessionCookie helper to avoid Edge Runtime incompatibility.
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
+  if (!sessionCookie?.value) {
     // Validate redirect parameter: must be relative (starts with / and NOT //)
     const safeRedirect =
       pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
