@@ -34,8 +34,11 @@ export function middleware(request: NextRequest) {
   // Cheap cookie check — skips DB hit until the request actually needs auth state.
   const sessionCookie = getSessionCookie(request);
   if (!sessionCookie) {
+    // Validate redirect parameter: must be relative (starts with / and NOT //)
+    const safeRedirect =
+      pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    loginUrl.searchParams.set("redirect", safeRedirect);
     return NextResponse.redirect(loginUrl);
   }
 

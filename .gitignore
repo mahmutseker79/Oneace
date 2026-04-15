@@ -68,3 +68,6 @@ tsconfig.sandbox.json
 tsconfig.tsbuildinfo.old*
 oneace
 oneace.pub
+
+# User uploads
+public/uploads/

@@ -1,4 +1,4 @@
-// Phase 7C: registration gate.
+// Phase 7C: registration gate + rate limiting.
 //
 // Better Auth's `toNextJsHandler` produces a { GET, POST } pair that
 // forwards every `/api/auth/*` request to the Better Auth router.
@@ -25,6 +25,7 @@
 import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { rateLimit } from "@/lib/rate-limit";
 import { toNextJsHandler } from "better-auth/next-js";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -32,13 +33,56 @@ import type { NextRequest } from "next/server";
 const { GET, POST: betterAuthPost } = toNextJsHandler(auth.handler);
 
 async function gatedPost(request: NextRequest) {
+  // Extract IP for rate limiting
+  const ip = request.headers
+    .get("x-forwarded-for")
+    ?.split(",")[0]
+    ?.trim() ?? "unknown";
+  const pathname = new URL(request.url).pathname;
+
+  // Rate limit sign-in: 5 attempts per 5 minutes per IP
+  if (pathname.includes("/sign-in")) {
+    const rl = await rateLimit(
+      `login:ip:${ip}`,
+      { max: 5, windowSeconds: 300 }
+    );
+    if (!rl.ok) {
+      logger.warn("Login rate limit exceeded", {
+        tag: "auth.rate-limit",
+        ip,
+      });
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.reset) } }
+      );
+    }
+  }
+
+  // Rate limit sign-up: 3 attempts per hour per IP
+  if (pathname.includes("/sign-up")) {
+    const rl = await rateLimit(
+      `register:ip:${ip}`,
+      { max: 3, windowSeconds: 3600 }
+    );
+    if (!rl.ok) {
+      logger.warn("Registration rate limit exceeded", {
+        tag: "auth.rate-limit",
+        ip,
+      });
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.reset) } }
+      );
+    }
+  }
+
   // The sign-up endpoint path in Better Auth's default router is
   // `/api/auth/sign-up/email`. We match on the trailing segment so
   // a future `basePath` change doesn't silently bypass the gate.
   if (!env.REGISTRATION_ENABLED && request.nextUrl.pathname.endsWith("/sign-up/email")) {
     logger.warn("registration gate: blocked sign-up attempt while REGISTRATION_ENABLED=false", {
       tag: "auth.registration-gate",
-      ip: request.headers.get("x-forwarded-for") ?? "unknown",
+      ip,
     });
     return NextResponse.json(
       {

@@ -1,0 +1,470 @@
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  ArrowRight,
+  BarChart3,
+  Check,
+  Circle,
+  Download,
+  Eye,
+  FileUp,
+  Info,
+  Package,
+  Plus,
+  Users,
+} from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+
+import { ItemsCacheBanner } from "@/components/offline/items-cache-banner";
+import { ItemsCacheSync } from "@/components/offline/items-cache-sync";
+import { DeleteButton } from "@/components/shell/delete-button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { db } from "@/lib/db";
+import { getMessages, getRegion } from "@/lib/i18n";
+import type { ItemSnapshotRow } from "@/lib/offline/items-cache";
+import { requireActiveMembership } from "@/lib/session";
+import { formatCurrency } from "@/lib/utils";
+
+import { deleteItemAction } from "./actions";
+
+type SearchParams = Promise<{ status?: string }>;
+
+type ItemStatus = "ACTIVE" | "ARCHIVED" | "DRAFT";
+type StatusFilter = "all" | ItemStatus;
+
+function parseStatusFilter(raw: string | undefined): StatusFilter {
+  if (raw === "active") return "ACTIVE";
+  if (raw === "archived") return "ARCHIVED";
+  if (raw === "draft") return "DRAFT";
+  return "all";
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getMessages();
+  return { title: t.items.metaTitle };
+}
+
+export default async function ItemsPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
+  const { membership, session } = await requireActiveMembership();
+  const t = await getMessages();
+  const region = await getRegion();
+
+  const params = (await searchParams) ?? {};
+  const statusFilter = parseStatusFilter(params.status);
+
+  const items = await db.item.findMany({
+    where: {
+      organizationId: membership.organizationId,
+      ...(statusFilter === "all" ? {} : { status: statusFilter }),
+    },
+    include: {
+      category: { select: { id: true, name: true } },
+      stockLevels: { select: { quantity: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
+
+  // ── P3.3 / P3.4 — setup progress queries ─────────────────────────────
+  // Lightweight counts to drive the stateful setup checklist and forward
+  // guidance banners. These run in parallel with the main item fetch above.
+  const [warehouseCount, completedCountCount] = await Promise.all([
+    db.warehouse.count({
+      where: { organizationId: membership.organizationId, isArchived: false },
+    }),
+    db.stockCount.count({
+      where: { organizationId: membership.organizationId, state: "COMPLETED" },
+    }),
+  ]);
+
+  const hasItems = items.length > 0;
+  const hasLocation = warehouseCount > 0;
+  const hasCompletedCount = completedCountCount > 0;
+  const setupComplete = hasItems && hasLocation && hasCompletedCount;
+
+  // ── P3.3 / P3.4 end ────────────────────────────────────────────────
+
+  // Offline cache must reflect the default, unfiltered inventory list so
+  // switching to /items?status=archived doesn't silently shrink the
+  // snapshot stored in IndexedDB. When no filter is active we reuse the
+  // already-fetched rows; otherwise we run a second query with the same
+  // shape and limits as the prior pre-filter snapshot behavior. See the
+  // cache-contract comment in `src/components/offline/items-cache-sync.tsx`
+  // — `cacheItems` is the unfiltered snapshot and is decoupled from the
+  // rendered `items` variable on purpose.
+  const cacheItems =
+    statusFilter === "all"
+      ? items
+      : await db.item.findMany({
+          where: { organizationId: membership.organizationId },
+          include: {
+            category: { select: { id: true, name: true } },
+            stockLevels: { select: { quantity: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 100,
+        });
+
+  // Build the serializable snapshot the client passes to IndexedDB.
+  // We compute onHand once here (server-side) so the cache rendered
+  // offline matches what the user just saw.
+  const cacheScope = {
+    orgId: membership.organizationId,
+    userId: session.user.id,
+  };
+  const cacheRows: ItemSnapshotRow[] = cacheItems.map((item) => ({
+    id: item.id,
+    sku: item.sku,
+    barcode: item.barcode,
+    name: item.name,
+    unit: item.unit,
+    status: item.status,
+    categoryId: item.category?.id ?? null,
+    categoryName: item.category?.name ?? null,
+    salePrice: item.salePrice ? item.salePrice.toString() : null,
+    currency: item.currency,
+    onHand: item.stockLevels.reduce((sum, level) => sum + level.quantity, 0),
+  }));
+
+  function statusBadge(status: "ACTIVE" | "ARCHIVED" | "DRAFT") {
+    if (status === "ACTIVE") {
+      return <Badge>{t.common.active}</Badge>;
+    }
+    if (status === "DRAFT") {
+      return <Badge variant="outline">{t.common.draft}</Badge>;
+    }
+    return <Badge variant="secondary">{t.common.archived}</Badge>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold">{t.items.heading}</h1>
+          <p className="text-muted-foreground">{t.items.subtitle}</p>
+          <ItemsCacheBanner
+            scope={cacheScope}
+            locale={region.numberLocale}
+            labels={{
+              onlineFresh: t.offline.cacheStatus.onlineFresh,
+              onlineStale: t.offline.cacheStatus.onlineStale,
+              offlineCached: t.offline.cacheStatus.offlineCached,
+              offlineEmpty: t.offline.cacheStatus.offlineEmpty,
+              neverSynced: t.offline.cacheStatus.neverSynced,
+            }}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/items/export">
+              <Download className="h-4 w-4" />
+              {t.common.exportCsv}
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/items/import">
+              <FileUp className="h-4 w-4" />
+              {t.items.importCta}
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/items/new">
+              <Plus className="h-4 w-4" />
+              {t.items.newItem}
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t.items.filter.label}:
+        </span>
+        {(
+          [
+            { key: "all", label: t.items.filter.all, href: "/items" },
+            { key: "ACTIVE", label: t.items.filter.active, href: "/items?status=active" },
+            { key: "ARCHIVED", label: t.items.filter.archived, href: "/items?status=archived" },
+            { key: "DRAFT", label: t.items.filter.draft, href: "/items?status=draft" },
+          ] as const
+        ).map((opt) => (
+          <Button
+            key={opt.key}
+            size="sm"
+            variant={statusFilter === opt.key ? "default" : "outline"}
+            asChild
+          >
+            <Link href={opt.href}>{opt.label}</Link>
+          </Button>
+        ))}
+      </div>
+
+      {/* ── CASE A: No items yet — empty card ─────────────────────────── */}
+      {items.length === 0 ? (
+        <Card>
+          <CardHeader className="items-center text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Package className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <CardTitle>{t.items.emptyTitle}</CardTitle>
+            <CardDescription>{t.items.emptyBody}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-2">
+            <Button asChild>
+              <Link href="/items/new">
+                <Plus className="h-4 w-4" />
+                {t.items.emptyCta}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/items/import">
+                <FileUp className="h-4 w-4" />
+                {t.items.emptyImportCta}
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+        {/* ── CASE B: Items exist, setup incomplete — banner ───────────── */}
+        {!setupComplete ? (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>
+              {!hasLocation
+                ? t.setup.bannerAddLocation
+                : t.setup.bannerReadyToCount}
+            </AlertTitle>
+            <AlertDescription>
+              <Button variant="link" className="h-auto p-0" asChild>
+                <Link
+                  href={!hasLocation ? "/warehouses/new" : "/stock-counts/new"}
+                >
+                  {!hasLocation
+                    ? t.setup.bannerAddLocationCta
+                    : t.setup.bannerReadyToCountCta}
+                  <ArrowRight className="ml-1 inline h-3 w-3" />
+                </Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {/* ── CASE C: Setup complete — post-setup operational bridge ──── */}
+        {setupComplete ? (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">{t.setup.bridgeHeading}</h2>
+              <p className="text-sm text-muted-foreground">
+                {t.setup.bridgeSubtitle}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  icon: AlertTriangle,
+                  title: t.setup.bridgeReorderTitle,
+                  body: t.setup.bridgeReorderBody,
+                  cta: t.setup.bridgeReorderCta,
+                  href: "/items",
+                },
+                {
+                  icon: ArrowLeftRight,
+                  title: t.setup.bridgeMovementTitle,
+                  body: t.setup.bridgeMovementBody,
+                  cta: t.setup.bridgeMovementCta,
+                  href: "/movements",
+                },
+                {
+                  icon: BarChart3,
+                  title: t.setup.bridgeReportsTitle,
+                  body: t.setup.bridgeReportsBody,
+                  cta: t.setup.bridgeReportsCta,
+                  href: "/reports",
+                },
+                {
+                  icon: Users,
+                  title: t.setup.bridgeTeamTitle,
+                  body: t.setup.bridgeTeamBody,
+                  cta: t.setup.bridgeTeamCta,
+                  href: "/users",
+                },
+              ].map((card) => (
+                <Card key={card.href} className="flex flex-col">
+                  <CardHeader className="flex-1 space-y-1.5 pb-3">
+                    <card.icon className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {card.body}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      asChild
+                    >
+                      <Link href={card.href}>
+                        {card.cta}
+                        <ArrowRight className="ml-1 h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* ── Items table ─────────────────────────────────────────────── */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t.items.columnSku}</TableHead>
+                  <TableHead>{t.items.columnName}</TableHead>
+                  <TableHead>{t.items.columnCategory}</TableHead>
+                  <TableHead className="text-right">{t.items.columnStock}</TableHead>
+                  <TableHead>{t.items.columnStatus}</TableHead>
+                  <TableHead className="w-36 text-right">{t.items.columnActions}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => {
+                  const onHand = item.stockLevels.reduce((sum, level) => sum + level.quantity, 0);
+                  const price = item.salePrice
+                    ? formatCurrency(Number(item.salePrice), {
+                        currency: item.currency,
+                        locale: region.numberLocale,
+                      })
+                    : null;
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                      <TableCell>
+                        <Link href={`/items/${item.id}`} className="font-medium hover:underline">
+                          {item.name}
+                        </Link>
+                        {price ? (
+                          <div className="text-xs text-muted-foreground">{price}</div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.category?.name ?? t.common.none}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {onHand} {item.unit}
+                      </TableCell>
+                      <TableCell>{statusBadge(item.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/items/${item.id}`} aria-label={t.common.search}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/items/${item.id}/edit`}>{t.common.edit}</Link>
+                          </Button>
+                          <DeleteButton
+                            labels={{
+                              trigger: t.common.delete,
+                              title: t.items.deleteConfirmTitle,
+                              body: t.items.deleteConfirmBody,
+                              cancel: t.common.cancel,
+                              confirm: t.common.delete,
+                            }}
+                            action={deleteItemAction.bind(null, item.id)}
+                            iconOnly
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        </>
+      )}
+
+      {/* ── P5.2: Persistent setup checklist (visible until setupComplete) ── */}
+      {!setupComplete ? (
+        <div className="mx-auto max-w-md space-y-3">
+          <p className="text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t.setup.heading}
+          </p>
+          {[
+            {
+              done: hasItems,
+              label: t.setup.step1,
+              doneLabel: t.setup.step1Done,
+              href: "/items/new",
+            },
+            {
+              done: hasLocation,
+              label: t.setup.step2,
+              doneLabel: t.setup.step2Done,
+              href: "/warehouses",
+              sublabel: hasLocation ? t.setup.step2Auto : undefined,
+            },
+            {
+              done: hasCompletedCount,
+              label: t.setup.step3,
+              doneLabel: t.setup.step3Done,
+              href: "/stock-counts/new",
+            },
+          ].map((step, i) => (
+            <Link
+              key={i}
+              href={step.href}
+              className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm transition-colors hover:bg-accent/50"
+            >
+              {step.done ? (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
+                  <Check className="h-3.5 w-3.5" />
+                </span>
+              ) : (
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/40">
+                  <Circle className="h-2.5 w-2.5 text-muted-foreground/40" />
+                </span>
+              )}
+              <span className="flex-1">
+                <span className={step.done ? "text-muted-foreground line-through" : ""}>
+                  {step.done ? step.doneLabel : step.label}
+                </span>
+                {step.sublabel ? (
+                  <span className="block text-xs text-muted-foreground">{step.sublabel}</span>
+                ) : null}
+              </span>
+              {!step.done ? <ArrowRight className="h-4 w-4 text-muted-foreground" /> : null}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
+      <ItemsCacheSync scope={cacheScope} rows={cacheRows} />
+    </div>
+  );
+}

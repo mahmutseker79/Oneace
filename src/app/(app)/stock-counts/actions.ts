@@ -607,22 +607,13 @@ export async function completeStockCountAction(
 
   const count = await db.stockCount.findFirst({
     where: { id: data.countId, organizationId: orgId },
-    include: {
-      snapshots: {
-        select: {
-          itemId: true,
-          warehouseId: true,
-          expectedQuantity: true,
-        },
-      },
-      entries: {
-        select: {
-          itemId: true,
-          warehouseId: true,
-          binId: true,
-          countedQuantity: true,
-        },
-      },
+    select: {
+      id: true,
+      organizationId: true,
+      name: true,
+      state: true,
+      createdByUserId: true,
+      completedAt: true,
     },
   });
   if (!count) return { ok: false, error: t.stockCounts.errors.notFound };
@@ -630,14 +621,55 @@ export async function completeStockCountAction(
     return { ok: false, error: t.stockCounts.errors.notReconcilable };
   }
 
-  // Stale-read note: count.snapshots / count.entries were read in the
-  // findFirst above, OUTSIDE the transaction that posts adjustments
-  // below. The `canReconcile` state gate is what makes this safe — a
-  // sibling tab that adds an entry between here and the tx open would
-  // need the count to still be IN_PROGRESS, and the final state
-  // update below serialises on the row. Do not move the variance calc
-  // inside the tx without also tightening (or removing) that gate.
-  const variances = calculateVariances(count.snapshots, count.entries);
+  // Load snapshots (usually small, frozen at count creation time)
+  const snapshots = await db.countSnapshot.findMany({
+    where: { countId: data.countId, organizationId: orgId },
+    select: {
+      itemId: true,
+      warehouseId: true,
+      expectedQuantity: true,
+    },
+  });
+
+  // Load entries in batches to prevent OOM on large counts
+  const BATCH_SIZE = 1000;
+  let allEntries: { itemId: string; warehouseId: string; binId: string | null; countedQuantity: number }[] = [];
+  let cursor: string | undefined;
+
+  while (true) {
+    const batch = await db.countEntry.findMany({
+      where: { countId: data.countId, organizationId: orgId },
+      take: BATCH_SIZE,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      orderBy: { countedAt: "asc" },
+      select: {
+        id: true,
+        itemId: true,
+        warehouseId: true,
+        binId: true,
+        countedQuantity: true,
+      },
+    });
+    allEntries.push(
+      ...batch.map((e) => ({
+        itemId: e.itemId,
+        warehouseId: e.warehouseId,
+        binId: e.binId,
+        countedQuantity: e.countedQuantity,
+      })),
+    );
+    if (batch.length < BATCH_SIZE) break;
+    cursor = batch[batch.length - 1].id;
+  }
+
+  // Stale-read note: snapshots/entries were read OUTSIDE the transaction
+  // that posts adjustments below. The `canReconcile` state gate is what
+  // makes this safe — a sibling tab that adds an entry between here and
+  // the tx open would need the count to still be IN_PROGRESS, and the
+  // final state update below serialises on the row. Do not move the
+  // variance calc inside the tx without also tightening (or removing)
+  // that gate.
+  const variances = calculateVariances(snapshots, allEntries);
   const postable = data.applyAdjustments ? variances.filter((row) => row.variance !== 0) : [];
 
   try {

@@ -10,6 +10,11 @@ const globalForPrisma = globalThis as unknown as {
 // also guarantees that DATABASE_URL / DIRECT_URL have been schema-
 // checked by the time we instantiate Prisma — a missing or malformed
 // URL now throws at env load, not at the first query.
+//
+// Sprint 2: Connection pool tuning.
+// For Neon (serverless Postgres), the connection string should include
+// ?connection_limit=20 to pool connections appropriately. This can be
+// set in DATABASE_URL or DIRECT_URL in the environment.
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({

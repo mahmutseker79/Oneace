@@ -58,7 +58,6 @@ async function loadDashboardData(orgId: string) {
 		archivedItemCount,
 		stockLevels,
 		warehouseCount,
-		allItemsForLowStock,
 		openCountCount,
 		inProgressCountCount,
 		recentMovements,
@@ -76,17 +75,6 @@ async function loadDashboardData(orgId: string) {
 			},
 		}),
 		db.warehouse.count({ where: { organizationId: orgId } }),
-		db.item.findMany({
-			where: { organizationId: orgId, status: "ACTIVE" },
-			select: {
-				id: true,
-				sku: true,
-				name: true,
-				reorderPoint: true,
-				preferredSupplier: { select: { id: true, name: true } },
-				stockLevels: { select: { quantity: true } },
-			},
-		}),
 		db.stockCount.count({ where: { organizationId: orgId, state: "OPEN" } }),
 		db.stockCount.count({
 			where: { organizationId: orgId, state: "IN_PROGRESS" },
@@ -139,13 +127,35 @@ async function loadDashboardData(orgId: string) {
 	// Low-stock items = items whose total on-hand (sum across warehouses)
 	// is at or below reorderPoint AND reorderPoint > 0. Items with a
 	// reorderPoint of 0 opt out of this report.
-	const lowStockItems = allItemsForLowStock
-		.map((item) => {
-			const onHand = item.stockLevels.reduce((acc, l) => acc + l.quantity, 0);
-			return { ...item, onHand };
-		})
-		.filter((item) => item.reorderPoint > 0 && item.onHand <= item.reorderPoint)
-		.sort((a, b) => a.onHand - b.onHand - (a.reorderPoint - b.reorderPoint));
+	// Optimized: use database aggregation instead of JS loops
+	type LowStockItemRaw = {
+		id: string;
+		name: string;
+		sku: string;
+		reorderPoint: number;
+		preferredSupplierName: string | null;
+		onHand: number;
+	};
+
+	const itemsWithStockData = await db.$queryRaw<LowStockItemRaw[]>`
+		SELECT i.id, i.name, i.sku, i."reorderPoint", s.name as "preferredSupplierName",
+		  COALESCE(SUM(sl.quantity), 0)::int as "onHand"
+		FROM "Item" i
+		LEFT JOIN "Supplier" s ON s.id = i."preferredSupplierId"
+		LEFT JOIN "StockLevel" sl ON sl."itemId" = i.id AND sl."organizationId" = i."organizationId"
+		WHERE i."organizationId" = ${orgId}
+		  AND i.status = 'ACTIVE'
+		  AND i."reorderPoint" > 0
+		GROUP BY i.id, i.name, i.sku, i."reorderPoint", s.name
+		HAVING COALESCE(SUM(sl.quantity), 0) <= i."reorderPoint"
+		ORDER BY COALESCE(SUM(sl.quantity), 0) ASC
+		LIMIT 20
+	`;
+
+	const lowStockItems = itemsWithStockData.map((item) => ({
+		...item,
+		preferredSupplier: item.preferredSupplierName ? { name: item.preferredSupplierName } : null,
+	}));
 
 	// Movement volume per day (last 14 days) for the trend chart.
 	const fourteenDaysAgo = new Date();

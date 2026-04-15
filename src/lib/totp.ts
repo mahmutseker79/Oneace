@@ -1,5 +1,5 @@
 import * as OTPAuth from "otpauth";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash, timingSafeEqual } from "crypto";
 
 /**
  * Result of TOTP secret generation.
@@ -47,7 +47,7 @@ export function generateTotpSecret(email: string): GeneratedTotpSecret {
   const uri = totp.toString();
 
   // Generate 10 backup codes (8-character alphanumeric strings)
-  const backupCodes = generateBackupCodes(10);
+  const { plain: backupCodes } = generateBackupCodes(10);
 
   return {
     secret,
@@ -97,82 +97,64 @@ export function verifyTotpCode(secret: string, code: string): boolean {
  * Backup codes are randomly-generated 8-character alphanumeric strings.
  * They serve as single-use recovery codes if the user loses access to their authenticator.
  *
+ * Returns both plain codes (to show the user once) and hashed codes (for database storage).
+ *
  * @param count Number of codes to generate (default: 10)
- * @returns Array of backup codes
+ * @returns Object with plain and hashed codes
  */
-export function generateBackupCodes(count: number = 10): string[] {
-  const codes: string[] = [];
+export function generateBackupCodes(count: number = 10): { plain: string[]; hashed: string[] } {
+  const plain: string[] = [];
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
   for (let i = 0; i < count; i++) {
     let code = "";
     // Use crypto.randomBytes for cryptographically secure randomness
-    const randomValues = randomBytes(8);
+    const randomValues = randomBytes(4);
     for (let j = 0; j < 8; j++) {
-      code += chars[randomValues[j]! % chars.length];
+      code += chars[randomValues[j % randomValues.length]! % chars.length];
     }
-    codes.push(code);
+    plain.push(code.toUpperCase());
   }
 
-  return codes;
+  return {
+    plain,
+    hashed: plain.map(hashBackupCode),
+  };
 }
 
 /**
  * Verify a backup code against a list of stored (hashed) codes.
  *
- * This function assumes the stored codes are hashed. In a real implementation,
- * you would compare the hash of the provided code against the stored hashes.
- * For simplicity in this implementation, we compare directly.
+ * Uses constant-time comparison to prevent timing attacks.
+ * Hashes the input code and compares against stored hashes.
  *
- * NOTE: In production, backup codes should be hashed before storage, and
- * this function should use constant-time comparison to verify.
- *
- * @param storedCodes Array of stored backup codes (or their hashes)
- * @param code The backup code to verify
- * @returns Object indicating validity and remaining code count
+ * @param input The backup code entered by the user
+ * @param storedHashes Array of stored hashed backup codes
+ * @returns Object indicating validity and the index of the matched code (if valid)
  */
-export function verifyBackupCode(
-  storedCodes: string[],
-  code: string,
-): BackupCodeVerificationResult {
-  // Normalize the code (uppercase, remove spaces)
-  const normalizedCode = code.toUpperCase().replace(/\s/g, "");
+export function verifyBackupCode(input: string, storedHashes: string[]): { valid: boolean; index: number } {
+  const inputHash = hashBackupCode(input);
+  const inputBuf = Buffer.from(inputHash, "hex");
 
-  // Find and remove the matching code
-  const index = storedCodes.findIndex(
-    (c) => c.toUpperCase().replace(/\s/g, "") === normalizedCode,
-  );
-
-  if (index === -1) {
-    return {
-      valid: false,
-      remaining: storedCodes.length,
-    };
+  for (let i = 0; i < storedHashes.length; i++) {
+    const storedBuf = Buffer.from(storedHashes[i], "hex");
+    if (inputBuf.length === storedBuf.length && timingSafeEqual(inputBuf, storedBuf)) {
+      return { valid: true, index: i };
+    }
   }
 
-  // Mark as consumed by removing from the array
-  storedCodes.splice(index, 1);
-
-  return {
-    valid: true,
-    remaining: storedCodes.length,
-  };
+  return { valid: false, index: -1 };
 }
 
 /**
  * Hash a backup code for storage.
  *
- * Uses a simple hash approach. In production, this should use bcrypt or
- * a similar secure hashing function, but for backup codes we use a simpler
- * approach since they're single-use and stored encrypted in the database.
+ * Uses SHA-256 hashing for secure storage. Codes are uppercase before hashing
+ * to ensure consistent comparison regardless of input case.
  *
  * @param code The backup code to hash
- * @returns Hashed code
+ * @returns Hex-encoded SHA-256 hash of the uppercase code
  */
 export function hashBackupCode(code: string): string {
-  // For simplicity, we'll use a basic approach: store the code as-is since
-  // it will be encrypted at the database level. In production, you might want
-  // to use bcrypt here, but single-use codes with database-level encryption
-  // are reasonably secure.
-  return code.toUpperCase();
+  return createHash("sha256").update(code.toUpperCase()).digest("hex");
 }

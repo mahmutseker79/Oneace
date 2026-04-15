@@ -34,6 +34,16 @@ export async function POST(request: NextRequest) {
     // Get raw body for signature verification
     const body = await request.text();
 
+    // Guard against oversized payloads
+    const MAX_PAYLOAD_SIZE = 1_000_000; // 1MB
+    if (body.length > MAX_PAYLOAD_SIZE) {
+      logger.warn("Webhook payload too large", { deliveryId, size: body.length });
+      return NextResponse.json(
+        { error: "Payload too large" },
+        { status: 413 },
+      );
+    }
+
     // Verify signature
     const secret = process.env.WEBHOOK_SECRET || "default-secret";
     const isValid = WebhookDispatcher.verifySignature(body, signature, secret);
@@ -46,8 +56,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse payload
-    const payload = JSON.parse(body) as {
+    // Parse payload and validate depth
+    const checkJsonDepth = (obj: unknown, maxDepth = 10, currentDepth = 0): boolean => {
+      if (currentDepth > maxDepth) return false;
+      if (obj && typeof obj === "object") {
+        for (const value of Object.values(obj as Record<string, unknown>)) {
+          if (!checkJsonDepth(value, maxDepth, currentDepth + 1)) return false;
+        }
+      }
+      return true;
+    };
+
+    let parsed: { event: string; organizationId: string; data: Record<string, unknown> };
+    try {
+      parsed = JSON.parse(body);
+    } catch (err) {
+      logger.warn("Webhook JSON parse failed", { deliveryId });
+      return NextResponse.json(
+        { error: "Invalid JSON" },
+        { status: 400 },
+      );
+    }
+
+    if (!checkJsonDepth(parsed)) {
+      logger.warn("Webhook payload too deeply nested", { deliveryId });
+      return NextResponse.json(
+        { error: "Payload too deeply nested" },
+        { status: 400 },
+      );
+    }
+
+    const payload = parsed as {
       event: string;
       organizationId: string;
       data: Record<string, unknown>;

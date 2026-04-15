@@ -451,6 +451,7 @@ model Item {
   @@index([organizationId, barcode])
   @@index([organizationId, status])
   @@index([organizationId, preferredSupplierId])
+  @@index([organizationId, status, reorderPoint])
 }
 
 enum ItemStatus {
@@ -577,6 +578,7 @@ model StockMovement {
   @@index([organizationId, type])
   @@index([organizationId, purchaseOrderLineId])
   @@index([organizationId, stockCountId])
+  @@index([organizationId, type, createdAt])
 }
 
 enum StockMovementType {
@@ -651,6 +653,7 @@ model StockCount {
   @@index([organizationId, createdAt])
   @@index([warehouseId])
   @@index([departmentId])
+  @@index([organizationId, state, createdAt])
 }
 
 // One row per (count, item, warehouse) frozen at create time. The
@@ -988,6 +991,7 @@ model Alert {
   @@index([organizationId, itemId, type, status])
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
+  @@index([organizationId, itemId, type])
 }
 
 model Notification {

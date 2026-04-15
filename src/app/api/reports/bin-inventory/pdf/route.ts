@@ -3,9 +3,19 @@ import { db } from "@/lib/db";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { exportBinInventoryPdf } from "@/lib/export/pdf";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 export async function GET() {
   const { membership } = await requireActiveMembership();
+
+  // Rate limit export endpoint: 10 per hour per user
+  const rl = await rateLimit(`export:${membership.userId}`, RATE_LIMITS.export);
+  if (!rl.ok) {
+    return new Response(
+      JSON.stringify({ error: "Export rate limit exceeded. Try again later." }),
+      { status: 429, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   // Bins are a PRO+ feature
   const exportPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";

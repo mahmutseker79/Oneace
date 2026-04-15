@@ -156,6 +156,23 @@ export type ImportValidationResult = {
 export function validateImportRows(
   rawRows: readonly Record<string, unknown>[],
 ): ImportValidationResult {
+  const MAX_IMPORT_ROWS = 10_000;
+  if (rawRows.length > MAX_IMPORT_ROWS) {
+    return {
+      valid: [],
+      invalid: [
+        {
+          rowIndex: 0,
+          sku: null,
+          errors: [
+            `Import limited to ${MAX_IMPORT_ROWS} rows. File has ${rawRows.length}.`,
+          ],
+        },
+      ],
+      duplicateSkus: [],
+    };
+  }
+
   const valid: ImportValidationResult["valid"] = [];
   const invalid: ImportValidationIssue[] = [];
   const seenSkus = new Map<string, number>();

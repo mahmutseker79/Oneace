@@ -2,6 +2,7 @@ import { type CsvColumn, csvResponse, serializeCsv, todayIsoDate } from "@/lib/c
 import { db } from "@/lib/db";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
+import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * GET /reports/low-stock/export — CSV of every ACTIVE item whose on-hand
@@ -35,6 +36,15 @@ const columns: CsvColumn<ExportRow>[] = [
 
 export async function GET() {
   const { membership } = await requireActiveMembership();
+
+  // Rate limit export endpoint: 10 per hour per user
+  const rl = await rateLimit(`export:${membership.userId}`, RATE_LIMITS.export);
+  if (!rl.ok) {
+    return new Response(
+      JSON.stringify({ error: "Export rate limit exceeded. Try again later." }),
+      { status: 429, headers: { "Content-Type": "application/json" } },
+    );
+  }
 
   // Phase 13.2 — exports require PRO or BUSINESS plan
   const exportPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";

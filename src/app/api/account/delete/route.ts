@@ -94,8 +94,8 @@ export async function POST(request: Request) {
     ]);
 
     return NextResponse.json(
-      { success: true, message: "Account deleted successfully" },
-      { status: 200 }
+      { ok: true, message: "Account deleted successfully. This action cannot be undone." },
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
     console.error("Account deletion failed:", err);

@@ -6,9 +6,25 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { createHmac } from "crypto";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 import { ShopifyClient } from "@/lib/integrations/shopify/shopify-client";
+
+function verifyOAuthState(
+  state: string,
+  secret: string,
+): { organizationId: string; userId: string } | null {
+  const parts = state.split("|");
+  if (parts.length !== 3) return null; // expect orgId|userId|signature
+  const [organizationId, userId, signature] = parts;
+  const expected = createHmac("sha256", secret)
+    .update(`${organizationId}|${userId}`)
+    .digest("hex");
+  if (signature !== expected) return null;
+  return { organizationId, userId };
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,16 +41,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify HMAC to ensure request came from Shopify
-    // In production, implement proper HMAC verification
-    const [organizationId, userId] = state.split("|");
-
-    if (!organizationId || !userId) {
+    // Verify state parameter with HMAC signature
+    const verified = verifyOAuthState(state, env.BETTER_AUTH_SECRET);
+    if (!verified) {
+      logger.warn("Shopify OAuth state verification failed", {
+        state,
+      });
       return NextResponse.json(
         { error: "Invalid state parameter" },
-        { status: 400 },
+        { status: 403 },
       );
     }
+
+    const { organizationId, userId } = verified;
 
     // Initialize Shopify client to exchange code for token
     const client = new ShopifyClient({ accessToken: "", expiresAt: 0 }, shop);

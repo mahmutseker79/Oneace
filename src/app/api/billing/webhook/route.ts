@@ -142,9 +142,11 @@ export async function POST(request: NextRequest) {
         logger.debug("stripe webhook: unhandled event type", { type: event.type });
     }
   } catch (err) {
-    logger.error("stripe webhook: handler failed", {
-      type: event.type,
-      err: err instanceof Error ? err.message : String(err),
+    logger.error("Stripe webhook processing failed", {
+      eventId: event.id,
+      eventType: event.type,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
     });
     return NextResponse.json({ error: "Handler error." }, { status: 500 });
   }

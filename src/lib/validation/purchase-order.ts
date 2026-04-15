@@ -112,7 +112,7 @@ export const purchaseOrderInputSchema = z.object({
   lines: z
     .array(purchaseOrderLineInputSchema)
     .min(1, { message: "At least one line item is required" })
-    .max(200, { message: "A PO can have at most 200 lines" }),
+    .max(1000, { message: "A PO can have at most 1000 lines" }),
 });
 
 export type PurchaseOrderInput = z.input<typeof purchaseOrderInputSchema>;
