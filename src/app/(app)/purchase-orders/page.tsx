@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
@@ -262,6 +263,8 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
               </span>
             ) : null}
           </div>
+          <Card>
+          <CardContent className="p-0">
           <ResponsiveTable
             cardView={orders.map((po) => {
               let total = 0;
@@ -404,6 +407,8 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
               </TableBody>
             </Table>
           </ResponsiveTable>
+          </CardContent>
+          </Card>
         </>
       )}
     </div>

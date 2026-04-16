@@ -133,7 +133,6 @@ export default async function SuppliersPage() {
                 />
               ))}
             >
-              <div className="overflow-x-auto">
                 <Table className="min-w-[560px]">
                   <TableHeader>
                     <TableRow>
@@ -195,7 +194,6 @@ export default async function SuppliersPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
             </ResponsiveTable>
           </CardContent>
         </Card>
