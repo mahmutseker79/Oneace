@@ -76,12 +76,12 @@ export async function GET() {
   const rows: ExportRow[] = levels
     .filter((l) => l.bin && l.item && l.warehouse)
     .map((l) => ({
-      warehouse: l.warehouse?.name,
-      warehouseCode: l.warehouse?.code,
-      binCode: l.bin?.code,
+      warehouse: l.warehouse!.name,
+      warehouseCode: l.warehouse!.code,
+      binCode: l.bin!.code,
       binLabel: l.bin?.label ?? null,
-      sku: l.item?.sku,
-      name: l.item?.name,
+      sku: l.item!.sku,
+      name: l.item!.name,
       unit: l.item?.unit,
       quantity: l.quantity,
     }));

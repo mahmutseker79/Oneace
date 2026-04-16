@@ -70,7 +70,7 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
   const [state, formAction, isPending] = useActionState(
     isEditing
       ? (prevState: unknown, formData: FormData) =>
-          updateReasonCodeAction(reasonCode?.id, Object.fromEntries(formData))
+          updateReasonCodeAction(reasonCode?.id ?? "", Object.fromEntries(formData))
       : (prevState: unknown, formData: FormData) =>
           createReasonCodeAction(Object.fromEntries(formData)),
     { ok: false, error: "" },
