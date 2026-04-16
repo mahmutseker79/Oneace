@@ -35,11 +35,7 @@ export default async function NewDepartmentPage() {
       </div>
 
       <div className="max-w-2xl">
-        <DepartmentForm
-          members={members}
-          warehouses={warehouses}
-          isNew={true}
-        />
+        <DepartmentForm members={members} warehouses={warehouses} isNew={true} />
 
         <div className="mt-4">
           <Link href="/departments">

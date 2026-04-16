@@ -611,12 +611,14 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
       // double-receive from concurrent tabs. Two tabs would each get
       // a different submissionNonce, bypassing idempotency, and both
       // increment receivedQty. The lock ensures serialized access.
-      const lockedLines = await tx.$queryRaw<Array<{
-        id: string;
-        itemId: string;
-        orderedQty: number;
-        receivedQty: number;
-      }>>`
+      const lockedLines = await tx.$queryRaw<
+        Array<{
+          id: string;
+          itemId: string;
+          orderedQty: number;
+          receivedQty: number;
+        }>
+      >`
         SELECT id, "itemId", "orderedQty", "receivedQty"
         FROM "PurchaseOrderLine"
         WHERE "purchaseOrderId" = ${existing.id}
@@ -629,7 +631,8 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
         const freshLine = freshLineMap.get(lineId);
         if (!freshLine) throw new Error("Line not found after lock");
         const open = freshLine.orderedQty - freshLine.receivedQty;
-        if (delta > open) throw new Error("Receive overflow after lock (concurrent receive detected)");
+        if (delta > open)
+          throw new Error("Receive overflow after lock (concurrent receive detected)");
       }
 
       for (const [lineId, delta] of deltaByLine) {

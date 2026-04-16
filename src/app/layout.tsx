@@ -1,10 +1,10 @@
 import { getDirection, getLocale, getMessages } from "@/lib/i18n";
-import { Inter } from "next/font/google";
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { VercelAnalytics } from "@/components/analytics";
-import { PostHogProviderWrapper } from "@/components/posthog-provider";
 import { PostHogPageview } from "@/components/posthog-pageview";
+import { PostHogProviderWrapper } from "@/components/posthog-provider";
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
 

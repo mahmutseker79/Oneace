@@ -4,7 +4,6 @@ import { Truck } from "lucide-react";
 import { useState } from "react";
 import { useTransition } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 import { shipTransferAction } from "../actions";
 
@@ -37,11 +37,7 @@ export function ShipTransferButton({ transferId }: ShipTransferButtonProps) {
 
   return (
     <>
-      {error && (
-        <div className="w-full rounded-md bg-red-50 p-3 text-sm text-red-800">
-          {error}
-        </div>
-      )}
+      {error && <div className="w-full rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="default" disabled={isPending}>
@@ -52,8 +48,8 @@ export function ShipTransferButton({ transferId }: ShipTransferButtonProps) {
         <AlertDialogContent>
           <AlertDialogTitle>Ship Transfer</AlertDialogTitle>
           <AlertDialogDescription>
-            This will mark the transfer as shipped and deduct items from the source warehouse.
-            This action cannot be undone.
+            This will mark the transfer as shipped and deduct items from the source warehouse. This
+            action cannot be undone.
           </AlertDialogDescription>
           <div className="flex gap-3">
             <AlertDialogCancel>Cancel</AlertDialogCancel>

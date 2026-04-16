@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { calculateLabelsPerPage, renderLabel } from "@/lib/labels/label-renderer";
 import { requireActiveMembership } from "@/lib/session";
-import { renderLabel, calculateLabelsPerPage } from "@/lib/labels/label-renderer";
 
 /**
  * POST /api/labels/custom/pdf
@@ -140,9 +140,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Label PDF generation error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate label PDF" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to generate label PDF" }, { status: 500 });
   }
 }

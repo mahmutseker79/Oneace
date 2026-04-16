@@ -5,19 +5,20 @@
  * Uses Shopify's GraphQL API for flexible queries and mutations.
  */
 
-import { IntegrationClient, type OAuthConfig, type OAuthToken } from "@/lib/integrations/base-client";
+import {
+  IntegrationClient,
+  type OAuthConfig,
+  type OAuthToken,
+} from "@/lib/integrations/base-client";
 import { logger } from "@/lib/logger";
 
 const SHOPIFY_OAUTH_CONFIG: OAuthConfig = {
   clientId: process.env.SHOPIFY_CLIENT_ID || "",
   clientSecret: process.env.SHOPIFY_CLIENT_SECRET || "",
   redirectUri: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/integrations/shopify/callback`,
-  authorizationUrl: (shop: string) =>
-    `https://${shop}.myshopify.com/admin/oauth/authorize`,
-  tokenUrl: (shop: string) =>
-    `https://${shop}.myshopify.com/admin/oauth/access_token`,
-  revokeUrl: (shop: string) =>
-    `https://${shop}.myshopify.com/admin/oauth/access_token`,
+  authorizationUrl: (shop: string) => `https://${shop}.myshopify.com/admin/oauth/authorize`,
+  tokenUrl: (shop: string) => `https://${shop}.myshopify.com/admin/oauth/access_token`,
+  revokeUrl: (shop: string) => `https://${shop}.myshopify.com/admin/oauth/access_token`,
 } as unknown as OAuthConfig;
 
 export interface ShopifyProduct {
@@ -56,8 +57,8 @@ export interface ShopifyOrder {
  * Shopify integration client using GraphQL API.
  */
 export class ShopifyClient extends IntegrationClient {
-  private shop: string = "";
-  private apiVersion: string = "2024-01";
+  private shop = "";
+  private apiVersion = "2024-01";
 
   constructor(credentials: OAuthToken, shop: string) {
     const config = { ...SHOPIFY_OAUTH_CONFIG };
@@ -70,9 +71,7 @@ export class ShopifyClient extends IntegrationClient {
    * Get the authorization URL for OAuth flow.
    */
   getAuthorizationUrl(state: string, scope: string[] = []): string {
-    const authUrl = new URL(
-      `https://${this.shop}.myshopify.com/admin/oauth/authorize`,
-    );
+    const authUrl = new URL(`https://${this.shop}.myshopify.com/admin/oauth/authorize`);
     authUrl.searchParams.append("client_id", this.oauthConfig.clientId);
     authUrl.searchParams.append("redirect_uri", this.oauthConfig.redirectUri);
     authUrl.searchParams.append("scope", (scope.length > 0 ? scope : this.getScopes()).join(","));
@@ -85,12 +84,7 @@ export class ShopifyClient extends IntegrationClient {
    * Get required OAuth scopes.
    */
   private getScopes(): string[] {
-    return [
-      "read_products",
-      "read_orders",
-      "read_customers",
-      "write_inventory",
-    ];
+    return ["read_products", "read_orders", "read_customers", "write_inventory"];
   }
 
   /**
@@ -100,16 +94,13 @@ export class ShopifyClient extends IntegrationClient {
     query: string,
     variables?: Record<string, unknown>,
   ): Promise<T> {
-    const response = await this.apiCall<{ data: T; errors?: unknown[] }>(
-      "/graphql.json",
-      {
-        method: "POST",
-        body: {
-          query,
-          variables: variables || {},
-        },
+    const response = await this.apiCall<{ data: T; errors?: unknown[] }>("/graphql.json", {
+      method: "POST",
+      body: {
+        query,
+        variables: variables || {},
       },
-    );
+    });
 
     if (response.data.errors) {
       const errorMsg = JSON.stringify(response.data.errors);
@@ -123,7 +114,7 @@ export class ShopifyClient extends IntegrationClient {
    * Fetch products from Shopify.
    */
   async getProducts(
-    limit: number = 50,
+    limit = 50,
     after?: string,
   ): Promise<{
     products: ShopifyProduct[];
@@ -239,7 +230,7 @@ export class ShopifyClient extends IntegrationClient {
    * Fetch orders from Shopify.
    */
   async getOrders(
-    limit: number = 50,
+    limit = 50,
     after?: string,
   ): Promise<{
     orders: ShopifyOrder[];
@@ -359,9 +350,7 @@ export class ShopifyClient extends IntegrationClient {
           id: lineEdge.node.id,
           productId: lineEdge.node.productId,
           quantity: lineEdge.node.quantity,
-          price: Number(
-            lineEdge.node.originalUnitPriceSet.shopMoney.amount,
-          ),
+          price: Number(lineEdge.node.originalUnitPriceSet.shopMoney.amount),
         })),
       }));
 
@@ -378,10 +367,7 @@ export class ShopifyClient extends IntegrationClient {
   /**
    * Update inventory for a product variant.
    */
-  async updateInventory(
-    variantId: string,
-    quantity: number,
-  ): Promise<boolean> {
+  async updateInventory(variantId: string, quantity: number): Promise<boolean> {
     try {
       const mutation = `
         mutation updateInventory($input: InventoryAdjustQuantitiesInput!) {

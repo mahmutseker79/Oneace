@@ -11,12 +11,14 @@ import { requireActiveMembership } from "@/lib/session";
 import type { ActionResult } from "@/lib/validation/action-result";
 import {
   createLocationLevelSchema,
-  updateLocationLevelSchema,
   deleteLocationLevelSchema,
   reorderLocationLevelsSchema,
+  updateLocationLevelSchema,
 } from "@/lib/validation/location-level";
 
-export async function createLocationLevelAction(input: Record<string, unknown>): Promise<ActionResult> {
+export async function createLocationLevelAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -57,7 +59,10 @@ export async function createLocationLevelAction(input: Record<string, unknown>):
     });
 
     if (!parent) {
-      return { ok: false, error: t.locations?.errors?.parentNotFound || "Parent location not found" };
+      return {
+        ok: false,
+        error: t.locations?.errors?.parentNotFound || "Parent location not found",
+      };
     }
   }
 
@@ -176,7 +181,10 @@ export async function updateLocationLevelAction(
   }
 }
 
-export async function deleteLocationLevelAction(id: string, warehouseId: string): Promise<ActionResult> {
+export async function deleteLocationLevelAction(
+  id: string,
+  warehouseId: string,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -214,7 +222,9 @@ export async function deleteLocationLevelAction(id: string, warehouseId: string)
   }
 }
 
-export async function reorderLocationLevelsAction(input: Record<string, unknown>): Promise<ActionResult> {
+export async function reorderLocationLevelsAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -256,6 +266,9 @@ export async function reorderLocationLevelsAction(input: Record<string, unknown>
 
     return { ok: true, id: data.warehouseId };
   } catch (error) {
-    return { ok: false, error: t.locations?.errors?.reorderFailed || "Failed to reorder locations" };
+    return {
+      ok: false,
+      error: t.locations?.errors?.reorderFailed || "Failed to reorder locations",
+    };
   }
 }

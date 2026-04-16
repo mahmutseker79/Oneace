@@ -69,19 +69,14 @@ export class ConflictResolver {
    * Last-write-wins: use the version with the latest modification time.
    */
   private lastWriteWins(conflict: ConflictInfo): ResolvedConflict {
-    const useLocal =
-      conflict.localModifiedAt >= conflict.externalModifiedAt;
+    const useLocal = conflict.localModifiedAt >= conflict.externalModifiedAt;
 
     return {
       entityId: conflict.entityId,
       strategy: "LAST_WRITE_WINS",
-      resolvedVersion: useLocal
-        ? conflict.localVersion
-        : conflict.externalVersion,
+      resolvedVersion: useLocal ? conflict.localVersion : conflict.externalVersion,
       merged: false,
-      fieldsResolved: Object.keys(
-        useLocal ? conflict.localVersion : conflict.externalVersion,
-      ),
+      fieldsResolved: Object.keys(useLocal ? conflict.localVersion : conflict.externalVersion),
       fieldsUnresolved: [],
     };
   }
@@ -165,20 +160,14 @@ export class ConflictResolver {
 
       // For arrays, try to merge
       if (Array.isArray(localValue) && Array.isArray(externalValue)) {
-        const merged_array = this.mergeArrays(
-          localValue,
-          externalValue,
-        );
+        const merged_array = this.mergeArrays(localValue, externalValue);
         merged[field] = merged_array;
         fieldsResolved.push(field);
         continue;
       }
 
       // For objects, recursively merge
-      if (
-        typeof localValue === "object" &&
-        typeof externalValue === "object"
-      ) {
+      if (typeof localValue === "object" && typeof externalValue === "object") {
         merged[field] = { ...localValue, ...externalValue };
         fieldsResolved.push(field);
         continue;

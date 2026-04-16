@@ -3,12 +3,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useTransition } from "react";
-import { getTwoFactorStatusAction, disableTwoFactorAction } from "./actions";
-import { TwoFactorSetup } from "./two-factor-setup";
-import { Lock, Unlock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Lock, Unlock } from "lucide-react";
+import { useState, useTransition } from "react";
+import { disableTwoFactorAction, getTwoFactorStatusAction } from "./actions";
+import { TwoFactorSetup } from "./two-factor-setup";
 
 interface TwoFactorCardProps {
   userId: string;

@@ -114,9 +114,7 @@ export const shipSalesOrderLineSchema = z.object({
 
 export const shipSalesOrderSchema = z.object({
   salesOrderId: z.string().trim().min(1, { message: "Sales order ID is required" }),
-  lines: z
-    .array(shipSalesOrderLineSchema)
-    .min(1, { message: "At least one line must be shipped" }),
+  lines: z.array(shipSalesOrderLineSchema).min(1, { message: "At least one line must be shipped" }),
 });
 
 export type ShipSalesOrderInput = z.input<typeof shipSalesOrderSchema>;

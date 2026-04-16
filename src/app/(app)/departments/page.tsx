@@ -61,10 +61,7 @@ export default async function DepartmentsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       {dept.color && (
-                        <div
-                          className="h-8 w-8 rounded"
-                          style={{ backgroundColor: dept.color }}
-                        />
+                        <div className="h-8 w-8 rounded" style={{ backgroundColor: dept.color }} />
                       )}
                       <div>
                         <CardTitle className="text-lg">{dept.name}</CardTitle>

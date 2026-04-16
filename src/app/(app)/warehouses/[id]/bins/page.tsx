@@ -1,12 +1,12 @@
-import { ArrowLeft, Grid3X3, Plus, Printer, Barcode } from "lucide-react";
+import { ArrowLeft, Barcode, Grid3X3, Plus, Printer } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,

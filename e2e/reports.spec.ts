@@ -9,7 +9,10 @@ test.describe("Reports", () => {
 
     // Check for reports heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /reports/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /reports/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -18,9 +21,9 @@ test.describe("Reports", () => {
     await authedPage.waitForURL("**/reports**", { timeout: 10_000 });
 
     // Look for report links or cards
-    const reportLinks = authedPage.locator(
-      "a, button, [role='link']"
-    ).filter({ hasText: /stock|movement|scan|inventory/i });
+    const reportLinks = authedPage
+      .locator("a, button, [role='link']")
+      .filter({ hasText: /stock|movement|scan|inventory/i });
 
     const count = await reportLinks.count();
     if (count > 0) {
@@ -34,7 +37,10 @@ test.describe("Reports", () => {
 
     // Check for low stock report heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /low stock/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /low stock/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -44,7 +50,10 @@ test.describe("Reports", () => {
 
     // Check for stock value report heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /stock value|inventory value/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /stock value|inventory value/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -54,7 +63,10 @@ test.describe("Reports", () => {
 
     // Check for movements report heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /movement|history/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /movement|history/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -64,7 +76,10 @@ test.describe("Reports", () => {
 
     // Check for scan activity report heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /scan|activity/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /scan|activity/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -74,7 +89,10 @@ test.describe("Reports", () => {
 
     // Check for bin inventory report heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /bin|location/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /bin|location/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 });
@@ -85,9 +103,9 @@ test.describe("Report features", () => {
     await authedPage.waitForURL("**/reports/low-stock**", { timeout: 10_000 });
 
     // Look for export, download, or print button
-    const exportBtn = authedPage.locator(
-      "button, a"
-    ).filter({ hasText: /export|download|print|csv|pdf/i });
+    const exportBtn = authedPage
+      .locator("button, a")
+      .filter({ hasText: /export|download|print|csv|pdf/i });
 
     const count = await exportBtn.count();
     if (count > 0) {

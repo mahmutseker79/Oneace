@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,9 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { updateOrgSettingsAction } from "./actions";
-import { toast } from "sonner";
 import type { ActionResult } from "@/lib/validation/action-result";
+import { useState } from "react";
+import { toast } from "sonner";
+import { updateOrgSettingsAction } from "./actions";
 
 interface GeneralSettingsFormProps {
   settings: {
@@ -67,7 +67,7 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
       assetTagPrefix: formData.assetTagPrefix,
       batchNumberPrefix: formData.batchNumberPrefix,
       requireCountApproval: formData.requireCountApproval,
-      varianceThreshold: parseFloat(formData.varianceThreshold),
+      varianceThreshold: Number.parseFloat(formData.varianceThreshold),
       recountOnThreshold: formData.recountOnThreshold,
       defaultCountMethodology: formData.defaultCountMethodology as any,
       allowNegativeStock: formData.allowNegativeStock,
@@ -91,7 +91,9 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
       <Card>
         <CardHeader>
           <CardTitle>Numbering Prefixes</CardTitle>
-          <CardDescription>Configure prefixes for document numbers. Sequences auto-increment.</CardDescription>
+          <CardDescription>
+            Configure prefixes for document numbers. Sequences auto-increment.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
@@ -150,11 +152,7 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
                   maxLength={10}
                   className="flex-1"
                 />
-                <Input
-                  readOnly
-                  value={`#${settings.assetTagSequence}`}
-                  className="w-20 bg-muted"
-                />
+                <Input readOnly value={`#${settings.assetTagSequence}`} className="w-20 bg-muted" />
               </div>
             </div>
 
@@ -186,14 +184,19 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
       <Card>
         <CardHeader>
           <CardTitle>Counting Workflow</CardTitle>
-          <CardDescription>Configure default counting behavior and approval workflow.</CardDescription>
+          <CardDescription>
+            Configure default counting behavior and approval workflow.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="defaultCountMethodology">Default Counting Methodology</Label>
-            <Select value={formData.defaultCountMethodology} onValueChange={(value) =>
-              setFormData({ ...formData, defaultCountMethodology: value })
-            }>
+            <Select
+              value={formData.defaultCountMethodology}
+              onValueChange={(value) =>
+                setFormData({ ...formData, defaultCountMethodology: value })
+              }
+            >
               <SelectTrigger id="defaultCountMethodology">
                 <SelectValue />
               </SelectTrigger>
@@ -275,9 +278,10 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="defaultStockStatus">Default Stock Status</Label>
-            <Select value={formData.defaultStockStatus} onValueChange={(value) =>
-              setFormData({ ...formData, defaultStockStatus: value })
-            }>
+            <Select
+              value={formData.defaultStockStatus}
+              onValueChange={(value) => setFormData({ ...formData, defaultStockStatus: value })}
+            >
               <SelectTrigger id="defaultStockStatus">
                 <SelectValue />
               </SelectTrigger>
@@ -299,15 +303,18 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
       <Card>
         <CardHeader>
           <CardTitle>Display Preferences</CardTitle>
-          <CardDescription>Set default date and currency formats for your organization.</CardDescription>
+          <CardDescription>
+            Set default date and currency formats for your organization.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="dateFormat">Date Format</Label>
-              <Select value={formData.dateFormat} onValueChange={(value) =>
-                setFormData({ ...formData, dateFormat: value })
-              }>
+              <Select
+                value={formData.dateFormat}
+                onValueChange={(value) => setFormData({ ...formData, dateFormat: value })}
+              >
                 <SelectTrigger id="dateFormat">
                   <SelectValue />
                 </SelectTrigger>

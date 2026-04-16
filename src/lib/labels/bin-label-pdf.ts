@@ -63,12 +63,7 @@ function getLabelY(row: number): number {
 /**
  * Draw a single label at the given position
  */
-function drawLabel(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  binLabel: BinLabel,
-): void {
+function drawLabel(doc: jsPDF, x: number, y: number, binLabel: BinLabel): void {
   const padding = 2; // mm
   const contentWidth = LABEL_WIDTH - 2 * padding;
   const contentHeight = LABEL_HEIGHT - 2 * padding;

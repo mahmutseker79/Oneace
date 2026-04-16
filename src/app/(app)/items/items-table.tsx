@@ -23,6 +23,7 @@ import { useCallback, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
   TableBody,
@@ -31,7 +32,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import { Eye } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -259,7 +259,11 @@ export function ItemsTable({ items, canEdit, canDelete, labels, deleteButton }: 
               {items.map((item) => {
                 const isSelected = selected.has(item.id);
                 return (
-                  <TableRow key={item.id} data-selected={isSelected || undefined} className="hover:bg-muted/50 transition-colors">
+                  <TableRow
+                    key={item.id}
+                    data-selected={isSelected || undefined}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
                     <TableCell>
                       <Checkbox
                         checked={isSelected}

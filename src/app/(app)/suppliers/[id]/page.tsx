@@ -1,11 +1,4 @@
-import {
-  CalendarClock,
-  ChevronRight,
-  ExternalLink,
-  Pencil,
-  Plus,
-  Truck,
-} from "lucide-react";
+import { CalendarClock, ChevronRight, ExternalLink, Pencil, Plus, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -269,10 +262,7 @@ export default async function SupplierDetailPage({ params }: DetailPageProps) {
       <PageHeader
         title={supplier.name}
         backHref="/suppliers"
-        breadcrumb={[
-          { label: "Suppliers", href: "/suppliers" },
-          { label: supplier.name },
-        ]}
+        breadcrumb={[{ label: "Suppliers", href: "/suppliers" }, { label: supplier.name }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {canEditSupplier ? (

@@ -155,17 +155,13 @@ function levenshteinDistance(a: string, b: string): number {
       const row = matrix[i];
       const prevRow = matrix[i - 1];
       if (row && prevRow) {
-        row[j] = Math.min(
-          row[j - 1]! + 1,
-          prevRow[j]! + 1,
-          prevRow[j - 1]! + cost,
-        );
+        row[j] = Math.min(row[j - 1]! + 1, prevRow[j]! + 1, prevRow[j - 1]! + cost);
       }
     }
   }
 
   const lastRow = matrix[bLower.length];
-  return (lastRow && lastRow[aLower.length]) || 0;
+  return lastRow?.[aLower.length] || 0;
 }
 
 /**
@@ -192,10 +188,7 @@ function detectFieldType(value: string | null | undefined): FieldType {
   }
 
   // Check if it's a date (very basic)
-  if (
-    /^\d{4}-\d{2}-\d{2}/.test(trimmed) ||
-    /^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(trimmed)
-  ) {
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed) || /^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(trimmed)) {
     return "date";
   }
 
@@ -230,10 +223,7 @@ export class FieldMapper {
   /**
    * Auto-map columns to fields using fuzzy matching and type detection.
    */
-  automap(
-    headers: string[],
-    sampleRows: (string | null)[][] = [],
-  ): AutomapResult {
+  automap(headers: string[], sampleRows: (string | null)[][] = []): AutomapResult {
     const mappings: FieldMapping[] = [];
     const mappedFields = new Set<string>();
     const warnings: string[] = [];
@@ -262,8 +252,7 @@ export class FieldMapper {
             typeScore = 1.0;
           } else if (
             (detectedType === "string" && field.type !== "email") ||
-            (detectedType === "number" &&
-              field.type === "number")
+            (detectedType === "number" && field.type === "number")
           ) {
             typeScore = 0.8;
           } else {
@@ -304,15 +293,12 @@ export class FieldMapper {
       .map((f) => f.label);
 
     if (unmappedRequired.length > 0) {
-      warnings.push(
-        `Missing required fields: ${unmappedRequired.join(", ")}`,
-      );
+      warnings.push(`Missing required fields: ${unmappedRequired.join(", ")}`);
     }
 
     // List unmapped columns
     const unmappedColumns = headers.filter(
-      (header, idx) =>
-        !mappings.find((m) => m.columnIndex === idx),
+      (header, idx) => !mappings.find((m) => m.columnIndex === idx),
     );
 
     const confidence =

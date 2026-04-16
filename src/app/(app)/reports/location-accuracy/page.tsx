@@ -1,11 +1,11 @@
-import { MapPin, Gauge, CheckCircle } from "lucide-react";
+import { CheckCircle, Gauge, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
@@ -115,14 +115,14 @@ export default async function LocationAccuracyReportPage() {
     if (!snapshotsByCount.has(snap.countId)) {
       snapshotsByCount.set(snap.countId, []);
     }
-    snapshotsByCount.get(snap.countId)!.push(snap);
+    snapshotsByCount.get(snap.countId)?.push(snap);
   }
 
   for (const entry of entries) {
     if (!entriesByCount.has(entry.countId)) {
       entriesByCount.set(entry.countId, []);
     }
-    entriesByCount.get(entry.countId)!.push(entry);
+    entriesByCount.get(entry.countId)?.push(entry);
   }
 
   // Calculate accuracy per warehouse
@@ -174,7 +174,9 @@ export default async function LocationAccuracyReportPage() {
   }));
 
   const avgAccuracy =
-    rows.length > 0 ? Math.round((rows.reduce((s, r) => s + r.accuracyPercent, 0) / rows.length) * 10) / 10 : 0;
+    rows.length > 0
+      ? Math.round((rows.reduce((s, r) => s + r.accuracyPercent, 0) / rows.length) * 10) / 10
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -182,15 +184,8 @@ export default async function LocationAccuracyReportPage() {
         title="Location Accuracy Report"
         description="Warehouse inventory accuracy metrics"
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Location Accuracy Report" },
-        ]}
-        actions={
-          <ExportButton href="/reports/location-accuracy/export">
-            Export CSV
-          </ExportButton>
-        }
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Location Accuracy Report" }]}
+        actions={<ExportButton href="/reports/location-accuracy/export">Export CSV</ExportButton>}
       />
 
       <ReportSummaryCard
@@ -199,7 +194,8 @@ export default async function LocationAccuracyReportPage() {
             label: "Average Accuracy",
             value: `${formatNumber(avgAccuracy, region.numberLocale)}%`,
             icon: Gauge,
-            trendDirection: avgAccuracy >= 95 ? "positive" : avgAccuracy >= 85 ? "neutral" : "negative",
+            trendDirection:
+              avgAccuracy >= 95 ? "positive" : avgAccuracy >= 85 ? "neutral" : "negative",
           },
           {
             label: "Locations Measured",
@@ -218,13 +214,17 @@ export default async function LocationAccuracyReportPage() {
         <Card>
           <CardHeader>
             <CardDescription>Average Accuracy</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(avgAccuracy, region.numberLocale)}%</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatNumber(avgAccuracy, region.numberLocale)}%
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
             <CardDescription>Locations Measured</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(rows.length, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatNumber(rows.length, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -234,9 +234,7 @@ export default async function LocationAccuracyReportPage() {
           <CardHeader>
             <CardTitle className="text-lg">Accuracy by Location</CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* Chart removed for server component compatibility */}
-          </CardContent>
+          <CardContent>{/* Chart removed for server component compatibility */}</CardContent>
         </Card>
       )}
 
@@ -259,12 +257,20 @@ export default async function LocationAccuracyReportPage() {
               {rows.map((row) => (
                 <TableRow key={row.warehouseId}>
                   <TableCell className="text-sm font-medium">{row.warehouseName}</TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.countedLines, region.numberLocale)}</TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.accurateLines, region.numberLocale)}</TableCell>
-                  <TableCell className={`text-right text-sm font-medium ${row.accuracyPercent >= 95 ? "text-green-600" : row.accuracyPercent >= 85 ? "text-orange-600" : "text-red-600"}`}>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.countedLines, region.numberLocale)}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.accurateLines, region.numberLocale)}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right text-sm font-medium ${row.accuracyPercent >= 95 ? "text-green-600" : row.accuracyPercent >= 85 ? "text-orange-600" : "text-red-600"}`}
+                  >
                     {formatNumber(row.accuracyPercent, region.numberLocale)}%
                   </TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.totalVarianceValue, region.numberLocale)}</TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.totalVarianceValue, region.numberLocale)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

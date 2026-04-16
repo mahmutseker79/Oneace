@@ -164,9 +164,7 @@ export function validateImportRows(
         {
           rowIndex: 0,
           sku: null,
-          errors: [
-            `Import limited to ${MAX_IMPORT_ROWS} rows. File has ${rawRows.length}.`,
-          ],
+          errors: [`Import limited to ${MAX_IMPORT_ROWS} rows. File has ${rawRows.length}.`],
         },
       ],
       duplicateSkus: [],

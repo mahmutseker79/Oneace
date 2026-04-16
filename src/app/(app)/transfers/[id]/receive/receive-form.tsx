@@ -43,7 +43,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
 
   // State for received quantities
   const [receivedByLine, setReceivedByLine] = useState<Record<string, number>>(
-    Object.fromEntries(lines.map((l) => [l.id, l.shippedQty]))
+    Object.fromEntries(lines.map((l) => [l.id, l.shippedQty])),
   );
 
   const handleQtyChange = (lineId: string, qty: number | "") => {
@@ -105,18 +105,11 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
   };
 
   const totalShipped = lines.reduce((sum, l) => sum + l.shippedQty, 0);
-  const totalReceived = lines.reduce(
-    (sum, l) => sum + (receivedByLine[l.id] || 0),
-    0
-  );
+  const totalReceived = lines.reduce((sum, l) => sum + (receivedByLine[l.id] || 0), 0);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
 
       <Table>
         <TableHeader>
@@ -134,9 +127,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
             return (
               <TableRow key={line.id}>
                 <TableCell>{line.item.name}</TableCell>
-                <TableCell className="text-right font-semibold">
-                  {line.shippedQty}
-                </TableCell>
+                <TableCell className="text-right font-semibold">{line.shippedQty}</TableCell>
                 <TableCell className="text-right">
                   <Input
                     type="number"
@@ -146,7 +137,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
                     onChange={(e) =>
                       handleQtyChange(
                         line.id,
-                        e.target.value ? parseInt(e.target.value, 10) : ""
+                        e.target.value ? Number.parseInt(e.target.value, 10) : "",
                       )
                     }
                     className="w-24 text-right"
@@ -154,11 +145,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   {discrepancy !== 0 ? (
-                    <span
-                      className={
-                        discrepancy > 0 ? "text-green-600" : "text-red-600"
-                      }
-                    >
+                    <span className={discrepancy > 0 ? "text-green-600" : "text-red-600"}>
                       {discrepancy > 0 ? "+" : ""}
                       {discrepancy}
                     </span>
@@ -176,11 +163,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
             <TableCell className="text-right">
               {totalReceived - totalShipped !== 0 ? (
                 <span
-                  className={
-                    totalReceived - totalShipped > 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }
+                  className={totalReceived - totalShipped > 0 ? "text-green-600" : "text-red-600"}
                 >
                   {totalReceived - totalShipped > 0 ? "+" : ""}
                   {totalReceived - totalShipped}
@@ -207,20 +190,10 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "Processing..." : "Complete Receipt"}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleReceiveAll}
-          disabled={isLoading}
-        >
+        <Button type="button" variant="outline" onClick={handleReceiveAll} disabled={isLoading}>
           Receive All
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => router.back()}
-          disabled={isLoading}
-        >
+        <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isLoading}>
           Cancel
         </Button>
       </div>

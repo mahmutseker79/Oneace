@@ -57,7 +57,7 @@ export type VarianceResult = {
 export function evaluateRecountNeed(
   snapshots: SnapshotRow[],
   entries: EntryRow[],
-  thresholdPercent: number = 5,
+  thresholdPercent = 5,
 ): Array<{ itemId: string; warehouseId: string }> {
   const variances = calculateVariances(snapshots, entries);
   const itemsExceedingThreshold: Array<{ itemId: string; warehouseId: string }> = [];

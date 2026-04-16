@@ -1,11 +1,11 @@
-import { Package, Boxes, DollarSign } from "lucide-react";
+import { Boxes, DollarSign, Package } from "lucide-react";
 import type { Metadata } from "next";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
@@ -18,7 +18,7 @@ import {
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
@@ -50,7 +50,15 @@ type ChartData = {
   [key: string]: number | string;
 };
 
-const STATUS_ORDER = ["AVAILABLE", "HOLD", "DAMAGED", "QUARANTINE", "EXPIRED", "IN_TRANSIT", "RESERVED"];
+const STATUS_ORDER = [
+  "AVAILABLE",
+  "HOLD",
+  "DAMAGED",
+  "QUARANTINE",
+  "EXPIRED",
+  "IN_TRANSIT",
+  "RESERVED",
+];
 const STATUS_COLORS: Record<string, string> = {
   AVAILABLE: "#10b981",
   HOLD: "#f59e0b",
@@ -84,10 +92,7 @@ export default async function StockByStatusReportPage() {
           title="Stock by Status"
           description="Inventory breakdown by stock status"
           backHref="/reports"
-          breadcrumb={[
-            { label: "Reports", href: "/reports" },
-            { label: "Stock by Status" },
-          ]}
+          breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Stock by Status" }]}
         />
         <EmptyState
           icon={Package}
@@ -135,11 +140,7 @@ export default async function StockByStatusReportPage() {
 
   const statusSummaries = STATUS_ORDER.filter((s) => statusMap.has(s))
     .map((s) => statusMap.get(s)!)
-    .concat(
-      Array.from(statusMap.values()).filter(
-        (s) => !STATUS_ORDER.includes(s.status),
-      ),
-    );
+    .concat(Array.from(statusMap.values()).filter((s) => !STATUS_ORDER.includes(s.status)));
 
   const totalValue = rows.reduce((s, r) => s + r.totalValue, 0);
   const totalQty = rows.reduce((s, r) => s + r.quantity, 0);
@@ -154,10 +155,12 @@ export default async function StockByStatusReportPage() {
     wh[row.status] = (wh[row.status] ?? 0) + row.quantity;
   }
 
-  const chartData: ChartData[] = Array.from(warehouseMap.entries()).map(([warehouse, statuses]) => ({
-    warehouse,
-    ...statuses,
-  }));
+  const chartData: ChartData[] = Array.from(warehouseMap.entries()).map(
+    ([warehouse, statuses]) => ({
+      warehouse,
+      ...statuses,
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -165,15 +168,8 @@ export default async function StockByStatusReportPage() {
         title="Stock by Status"
         description="Inventory breakdown by stock status"
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Stock by Status" },
-        ]}
-        actions={
-          <ExportButton href="/reports/stock-by-status/export">
-            Export CSV
-          </ExportButton>
-        }
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Stock by Status" }]}
+        actions={<ExportButton href="/reports/stock-by-status/export">Export CSV</ExportButton>}
       />
 
       <ReportSummaryCard
@@ -185,7 +181,10 @@ export default async function StockByStatusReportPage() {
           },
           {
             label: "Total Value",
-            value: formatCurrency(totalValue, { currency: region.currency, locale: region.numberLocale }),
+            value: formatCurrency(totalValue, {
+              currency: region.currency,
+              locale: region.numberLocale,
+            }),
             icon: DollarSign,
           },
           {
@@ -201,14 +200,19 @@ export default async function StockByStatusReportPage() {
           <CardHeader>
             <CardDescription>Total Value</CardDescription>
             <CardTitle className="text-3xl">
-              {formatCurrency(totalValue, { currency: region.currency, locale: region.numberLocale })}
+              {formatCurrency(totalValue, {
+                currency: region.currency,
+                locale: region.numberLocale,
+              })}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
             <CardDescription>Total Units</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(totalQty, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatNumber(totalQty, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -220,10 +224,7 @@ export default async function StockByStatusReportPage() {
             <Card key={summary.status}>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <div
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: statusColor }}
-                  />
+                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: statusColor }} />
                   <CardDescription>{summary.status}</CardDescription>
                 </div>
                 <CardTitle className="text-2xl">
@@ -235,7 +236,10 @@ export default async function StockByStatusReportPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm font-medium">
-                  {formatCurrency(summary.totalValue, { currency: region.currency, locale: region.numberLocale })}
+                  {formatCurrency(summary.totalValue, {
+                    currency: region.currency,
+                    locale: region.numberLocale,
+                  })}
                 </p>
               </CardContent>
             </Card>
@@ -248,9 +252,7 @@ export default async function StockByStatusReportPage() {
           <CardHeader>
             <CardTitle className="text-lg">Stock Distribution by Warehouse</CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* Chart removed for server component compatibility */}
-          </CardContent>
+          <CardContent>{/* Chart removed for server component compatibility */}</CardContent>
         </Card>
       )}
 
@@ -287,9 +289,21 @@ export default async function StockByStatusReportPage() {
                         {row.status}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right text-sm">{formatNumber(row.quantity, region.numberLocale)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(row.unitCost, { currency: region.currency, locale: region.numberLocale })}</TableCell>
-                    <TableCell className="text-right text-sm font-medium">{formatCurrency(row.totalValue, { currency: region.currency, locale: region.numberLocale })}</TableCell>
+                    <TableCell className="text-right text-sm">
+                      {formatNumber(row.quantity, region.numberLocale)}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {formatCurrency(row.unitCost, {
+                        currency: region.currency,
+                        locale: region.numberLocale,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right text-sm font-medium">
+                      {formatCurrency(row.totalValue, {
+                        currency: region.currency,
+                        locale: region.numberLocale,
+                      })}
+                    </TableCell>
                   </TableRow>
                 );
               })}

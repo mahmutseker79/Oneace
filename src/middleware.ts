@@ -48,13 +48,12 @@ export function middleware(request: NextRequest) {
   // Cheap cookie check — skips DB hit until the request actually needs auth state.
   // We check for the session cookie directly instead of using better-auth's
   // getSessionCookie helper to avoid Edge Runtime incompatibility.
-  const hasSession = SESSION_COOKIE_CANDIDATES.some(
-    (name) => Boolean(request.cookies.get(name)?.value),
+  const hasSession = SESSION_COOKIE_CANDIDATES.some((name) =>
+    Boolean(request.cookies.get(name)?.value),
   );
   if (!hasSession) {
     // Validate redirect parameter: must be relative (starts with / and NOT //)
-    const safeRedirect =
-      pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
+    const safeRedirect = pathname.startsWith("/") && !pathname.startsWith("//") ? pathname : "/";
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", safeRedirect);
     return NextResponse.redirect(loginUrl);

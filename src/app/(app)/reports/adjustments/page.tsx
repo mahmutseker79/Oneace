@@ -1,11 +1,11 @@
-import { Wrench, Download } from "lucide-react";
+import { Download, Wrench } from "lucide-react";
 import type { Metadata } from "next";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -80,40 +80,42 @@ export default async function AdjustmentReportPage() {
     movements.filter((m) => m.stockCountId).map((m) => m.stockCountId!),
   );
 
-  const countSnapshots = stockCountIds.size > 0
-    ? await db.countSnapshot.findMany({
-        where: {
-          countId: { in: Array.from(stockCountIds) },
-        },
-        select: {
-          countId: true,
-          itemId: true,
-          expectedQuantity: true,
-        },
-      })
-    : [];
-
-  const countEntriesByCountId = stockCountIds.size > 0
-    ? await db.countEntry.findMany({
-        where: {
-          count: {
-            id: { in: Array.from(stockCountIds) },
+  const countSnapshots =
+    stockCountIds.size > 0
+      ? await db.countSnapshot.findMany({
+          where: {
+            countId: { in: Array.from(stockCountIds) },
           },
-        },
-        select: {
-          countId: true,
-          itemId: true,
-          countedQuantity: true,
-        },
-      })
-    : [];
+          select: {
+            countId: true,
+            itemId: true,
+            expectedQuantity: true,
+          },
+        })
+      : [];
+
+  const countEntriesByCountId =
+    stockCountIds.size > 0
+      ? await db.countEntry.findMany({
+          where: {
+            count: {
+              id: { in: Array.from(stockCountIds) },
+            },
+          },
+          select: {
+            countId: true,
+            itemId: true,
+            countedQuantity: true,
+          },
+        })
+      : [];
 
   const snapshotMap = new Map<string, Map<string, number>>();
   for (const snap of countSnapshots) {
     if (!snapshotMap.has(snap.countId)) {
       snapshotMap.set(snap.countId, new Map());
     }
-    snapshotMap.get(snap.countId)!.set(snap.itemId, snap.expectedQuantity);
+    snapshotMap.get(snap.countId)?.set(snap.itemId, snap.expectedQuantity);
   }
 
   const entryMap = new Map<string, Map<string, number>>();
@@ -121,7 +123,7 @@ export default async function AdjustmentReportPage() {
     if (!entryMap.has(entry.countId)) {
       entryMap.set(entry.countId, new Map());
     }
-    entryMap.get(entry.countId)!.set(entry.itemId, entry.countedQuantity);
+    entryMap.get(entry.countId)?.set(entry.itemId, entry.countedQuantity);
   }
 
   // Build adjustment rows
@@ -136,8 +138,7 @@ export default async function AdjustmentReportPage() {
       if (entries) countedQty = entries.get(m.itemId) ?? null;
     }
 
-    const variance =
-      expectedQty != null && countedQty != null ? countedQty - expectedQty : 0;
+    const variance = expectedQty != null && countedQty != null ? countedQty - expectedQty : 0;
 
     return {
       id: m.id,
@@ -195,14 +196,9 @@ export default async function AdjustmentReportPage() {
         title="Adjustment Report"
         description="Track inventory adjustments and reconciliation"
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Adjustment Report" },
-        ]}
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Adjustment Report" }]}
         actions={
-          <ExportButton href="/reports/adjustments/export">
-            {t.common.exportCsv}
-          </ExportButton>
+          <ExportButton href="/reports/adjustments/export">{t.common.exportCsv}</ExportButton>
         }
       />
 
@@ -218,13 +214,17 @@ export default async function AdjustmentReportPage() {
             <Card>
               <CardHeader>
                 <CardDescription>Total Adjustments</CardDescription>
-                <CardTitle className="text-3xl">{formatNumber(rows.length, region.numberLocale)}</CardTitle>
+                <CardTitle className="text-3xl">
+                  {formatNumber(rows.length, region.numberLocale)}
+                </CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader>
                 <CardDescription>Reason Codes Used</CardDescription>
-                <CardTitle className="text-3xl">{formatNumber(reasonCodeData.length, region.numberLocale)}</CardTitle>
+                <CardTitle className="text-3xl">
+                  {formatNumber(reasonCodeData.length, region.numberLocale)}
+                </CardTitle>
               </CardHeader>
             </Card>
           </div>
@@ -234,9 +234,7 @@ export default async function AdjustmentReportPage() {
               <CardHeader>
                 <CardTitle className="text-lg">Adjustments by Reason Code</CardTitle>
               </CardHeader>
-              <CardContent>
-                {/* Chart removed for server component compatibility */}
-              </CardContent>
+              <CardContent>{/* Chart removed for server component compatibility */}</CardContent>
             </Card>
           )}
 
@@ -268,15 +266,26 @@ export default async function AdjustmentReportPage() {
                       </TableCell>
                       <TableCell className="text-sm">{row.warehouseName}</TableCell>
                       <TableCell className="text-right text-sm">
-                        {row.expectedQty !== null ? formatNumber(row.expectedQty, region.numberLocale) : "—"}
+                        {row.expectedQty !== null
+                          ? formatNumber(row.expectedQty, region.numberLocale)
+                          : "—"}
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        {row.countedQty !== null ? formatNumber(row.countedQty, region.numberLocale) : "—"}
+                        {row.countedQty !== null
+                          ? formatNumber(row.countedQty, region.numberLocale)
+                          : "—"}
                       </TableCell>
-                      <TableCell className={`text-right text-sm font-medium ${row.variance !== 0 ? "text-orange-600" : ""}`}>
-                        {row.variance !== 0 ? (row.variance > 0 ? "+" : "") + formatNumber(row.variance, region.numberLocale) : "—"}
+                      <TableCell
+                        className={`text-right text-sm font-medium ${row.variance !== 0 ? "text-orange-600" : ""}`}
+                      >
+                        {row.variance !== 0
+                          ? (row.variance > 0 ? "+" : "") +
+                            formatNumber(row.variance, region.numberLocale)
+                          : "—"}
                       </TableCell>
-                      <TableCell className="text-sm">{row.reasonCodeName || row.reasonCode || "—"}</TableCell>
+                      <TableCell className="text-sm">
+                        {row.reasonCodeName || row.reasonCode || "—"}
+                      </TableCell>
                       <TableCell className="text-sm">{row.createdBy || "—"}</TableCell>
                     </TableRow>
                   ))}

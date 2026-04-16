@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 import { evaluateAlerts } from "@/lib/alerts";
@@ -29,10 +29,7 @@ const TRANSFER_NUMBER_PAD = 6;
  * Auto-generate next transfer number using OrgSettings.
  * Thread-safe within a transaction via optimistic locking.
  */
-async function nextTransferNumber(
-  orgId: string,
-  tx: Prisma.TransactionClient,
-): Promise<string> {
+async function nextTransferNumber(orgId: string, tx: Prisma.TransactionClient): Promise<string> {
   const settings = await tx.orgSettings.findUnique({
     where: { organizationId: orgId },
     select: { transferNumberPrefix: true, transferNumberSequence: true },
@@ -55,9 +52,7 @@ async function nextTransferNumber(
  * Create a new transfer header with DRAFT status.
  * Returns the transfer ID; caller then adds lines via addTransferLine.
  */
-export async function createTransferAction(
-  input: CreateTransferInput,
-): Promise<ActionResult> {
+export async function createTransferAction(input: CreateTransferInput): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -149,9 +144,7 @@ export async function createTransferAction(
  * Add a line to a DRAFT transfer.
  * Validates the transfer exists and is in DRAFT status.
  */
-export async function addTransferLineAction(
-  input: AddTransferLineInput,
-): Promise<ActionResult> {
+export async function addTransferLineAction(input: AddTransferLineInput): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -422,9 +415,7 @@ export async function shipTransferAction(transferId: string): Promise<ActionResu
  * Receive a transfer: validate IN_TRANSIT status, add lines to destination
  * warehouse, record discrepancies, transition to RECEIVED.
  */
-export async function receiveTransferAction(
-  input: ReceiveTransferInput,
-): Promise<ActionResult> {
+export async function receiveTransferAction(input: ReceiveTransferInput): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

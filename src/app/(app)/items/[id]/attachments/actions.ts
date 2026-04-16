@@ -10,12 +10,14 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import type { ActionResult } from "@/lib/validation/action-result";
 import {
-  uploadAttachmentSchema,
   deleteAttachmentSchema,
   reorderAttachmentsSchema,
+  uploadAttachmentSchema,
 } from "@/lib/validation/attachment";
 
-export async function uploadAttachmentAction(input: Record<string, unknown>): Promise<ActionResult> {
+export async function uploadAttachmentAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -82,7 +84,10 @@ export async function uploadAttachmentAction(input: Record<string, unknown>): Pr
   }
 }
 
-export async function deleteAttachmentAction(itemId: string, attachmentId: string): Promise<ActionResult> {
+export async function deleteAttachmentAction(
+  itemId: string,
+  attachmentId: string,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -130,7 +135,9 @@ export async function deleteAttachmentAction(itemId: string, attachmentId: strin
   }
 }
 
-export async function reorderAttachmentsAction(input: Record<string, unknown>): Promise<ActionResult> {
+export async function reorderAttachmentsAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

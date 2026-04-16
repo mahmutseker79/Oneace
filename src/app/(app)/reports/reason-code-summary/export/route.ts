@@ -1,8 +1,8 @@
+import { csvResponse, serializeCsv, todayIsoDate } from "@/lib/csv";
+import type { CsvColumn } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
-import { serializeCsv, csvResponse, todayIsoDate } from "@/lib/csv";
-import type { CsvColumn } from "@/lib/csv";
 
 type ExportRow = {
   code: string;
@@ -47,7 +47,10 @@ export async function GET() {
     },
   });
 
-  const reasonCodeMap = new Map<string, { code: string; category: string; count: number; qtyImpact: number; valueImpact: number }>();
+  const reasonCodeMap = new Map<
+    string,
+    { code: string; category: string; count: number; qtyImpact: number; valueImpact: number }
+  >();
   let totalImpact = 0;
 
   for (const m of movements) {
@@ -86,7 +89,7 @@ export async function GET() {
         percentOfTotal: String(Math.round(percent * 10) / 10),
       };
     })
-    .sort((a, b) => parseInt(b.occurrences) - parseInt(a.occurrences));
+    .sort((a, b) => Number.parseInt(b.occurrences) - Number.parseInt(a.occurrences));
 
   const columns: CsvColumn<ExportRow>[] = [
     { header: "Code", value: (r) => r.code },

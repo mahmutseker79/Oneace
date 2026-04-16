@@ -1,9 +1,9 @@
 // Kit detail page
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useState } from "react";
 
 export default function KitDetailPage({ params }: { params: { id: string } }) {
   const [kit, setKit] = useState<any>(null);
@@ -84,7 +84,7 @@ export default function KitDetailPage({ params }: { params: { id: string } }) {
               type="number"
               min="1"
               value={assembleQty}
-              onChange={(e) => setAssembleQty(parseInt(e.target.value) || 1)}
+              onChange={(e) => setAssembleQty(Number.parseInt(e.target.value) || 1)}
             />
           </div>
           <Button className="w-full">Assemble</Button>
@@ -99,7 +99,7 @@ export default function KitDetailPage({ params }: { params: { id: string } }) {
               type="number"
               min="1"
               value={disassembleQty}
-              onChange={(e) => setDisassembleQty(parseInt(e.target.value) || 1)}
+              onChange={(e) => setDisassembleQty(Number.parseInt(e.target.value) || 1)}
             />
           </div>
           <Button className="w-full" variant="outline">

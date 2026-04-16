@@ -2,11 +2,12 @@ import { Barcode } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -15,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -98,7 +98,8 @@ export default async function SerialTraceabilityReportPage({
         itemName: serial.item.name,
         itemSku: serial.item.sku,
         currentStatus: currentHistory?.action ?? "UNKNOWN",
-        currentLocation: currentHistory?.toWarehouse?.name ?? currentHistory?.fromWarehouse?.name ?? "Unknown",
+        currentLocation:
+          currentHistory?.toWarehouse?.name ?? currentHistory?.fromWarehouse?.name ?? "Unknown",
         history: history.map((h) => ({
           date: h.performedAt,
           action: h.action,
@@ -123,10 +124,7 @@ export default async function SerialTraceabilityReportPage({
         title="Serial Traceability"
         description="Track serial number lifecycle and movements"
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Serial Traceability" },
-        ]}
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Serial Traceability" }]}
       />
 
       <form method="get" className="flex gap-2">
@@ -216,7 +214,9 @@ export default async function SerialTraceabilityReportPage({
                       <TableCell className="text-sm">{entry.toWarehouse || "—"}</TableCell>
                       <TableCell className="text-sm">{entry.user || "—"}</TableCell>
                       <TableCell className="text-sm font-mono">{entry.reference || "—"}</TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">{entry.note || "—"}</TableCell>
+                      <TableCell className="text-sm max-w-xs truncate">
+                        {entry.note || "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -226,7 +226,9 @@ export default async function SerialTraceabilityReportPage({
 
           {serialData.history.length > 0 && (
             <div className="flex items-center gap-2">
-              <ExportButton href={`/reports/serial-traceability/export?serial=${encodeURIComponent(serialData.serialNumber)}`}>
+              <ExportButton
+                href={`/reports/serial-traceability/export?serial=${encodeURIComponent(serialData.serialNumber)}`}
+              >
                 Export Timeline
               </ExportButton>
             </div>

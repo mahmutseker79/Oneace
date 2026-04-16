@@ -9,7 +9,10 @@ test.describe("Settings page", () => {
 
     // Check for settings heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /settings/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /settings/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -19,9 +22,9 @@ test.describe("Settings page", () => {
 
     // Look for org name form field or section
     const orgField = authedPage.locator(
-      "input[placeholder*='organization' i], input[placeholder*='org' i], label:has-text(/organization/i)"
+      "input[placeholder*='organization' i], input[placeholder*='org' i], label:has-text(/organization/i)",
     );
-    if (await orgField.count() > 0) {
+    if ((await orgField.count()) > 0) {
       await expect(orgField.first()).toBeVisible({ timeout: 5_000 });
     }
   });
@@ -31,9 +34,7 @@ test.describe("Settings page", () => {
     await authedPage.waitForURL("**/settings**", { timeout: 10_000 });
 
     // Look for account or email display
-    const accountSection = authedPage.locator(
-      "text=/account|email|profile/i"
-    );
+    const accountSection = authedPage.locator("text=/account|email|profile/i");
     const count = await accountSection.count();
     if (count > 0) {
       await expect(accountSection.first()).toBeVisible({ timeout: 5_000 });
@@ -45,9 +46,9 @@ test.describe("Settings page", () => {
     await authedPage.waitForURL("**/settings**", { timeout: 10_000 });
 
     // Look for security, 2FA, or authentication link
-    const securityLink = authedPage.locator(
-      "a, button, div[role='button']"
-    ).filter({ hasText: /security|2fa|authentication|two-factor/i });
+    const securityLink = authedPage
+      .locator("a, button, div[role='button']")
+      .filter({ hasText: /security|2fa|authentication|two-factor/i });
 
     const count = await securityLink.count();
     // If security section exists, it should be visible
@@ -61,9 +62,9 @@ test.describe("Settings page", () => {
     await authedPage.waitForURL("**/settings**", { timeout: 10_000 });
 
     // Look for privacy, data export, or GDPR section
-    const privacyLink = authedPage.locator(
-      "a, button, div[role='button']"
-    ).filter({ hasText: /privacy|data export|gdpr|delete account/i });
+    const privacyLink = authedPage
+      .locator("a, button, div[role='button']")
+      .filter({ hasText: /privacy|data export|gdpr|delete account/i });
 
     const count = await privacyLink.count();
     if (count > 0) {
@@ -78,9 +79,9 @@ test.describe("Settings navigation", () => {
     await authedPage.waitForURL("**/dashboard**", { timeout: 10_000 });
 
     // Look for settings link in nav
-    const settingsNav = authedPage.locator(
-      "a, button"
-    ).filter({ hasText: /settings|profile|account/i });
+    const settingsNav = authedPage
+      .locator("a, button")
+      .filter({ hasText: /settings|profile|account/i });
 
     const count = await settingsNav.count();
     if (count > 0) {

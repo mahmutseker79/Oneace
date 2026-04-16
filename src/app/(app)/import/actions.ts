@@ -6,21 +6,27 @@
 
 "use server";
 
+import type { ImportEntity, ImportStatus } from "@/generated/prisma";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
-import { recordAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import type { ImportEntity, ImportStatus } from "@/generated/prisma";
 
-export type ActionResult<T = unknown> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
+export type ActionResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string };
 
 const createImportJobSchema = z.object({
-  entity: z.enum(["ITEM", "SUPPLIER", "PURCHASE_ORDER", "STOCK_LEVEL", "CATEGORY", "WAREHOUSE", "CUSTOMER"]),
+  entity: z.enum([
+    "ITEM",
+    "SUPPLIER",
+    "PURCHASE_ORDER",
+    "STOCK_LEVEL",
+    "CATEGORY",
+    "WAREHOUSE",
+    "CUSTOMER",
+  ]),
   templateId: z.string().cuid().optional(),
   source: z.enum(["CSV", "EXCEL"]),
 });
@@ -125,10 +131,7 @@ export async function startImportAction(
       where: { id: jobId },
     });
 
-    if (
-      !importJob ||
-      importJob.organizationId !== membership.organizationId
-    ) {
+    if (!importJob || importJob.organizationId !== membership.organizationId) {
       return { ok: false, error: "Import job not found" };
     }
 
@@ -167,9 +170,7 @@ export async function startImportAction(
 /**
  * Cancel an import job.
  */
-export async function cancelImportAction(
-  input: unknown,
-): Promise<ActionResult> {
+export async function cancelImportAction(input: unknown): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -190,10 +191,7 @@ export async function cancelImportAction(
       where: { id: jobId },
     });
 
-    if (
-      !importJob ||
-      importJob.organizationId !== membership.organizationId
-    ) {
+    if (!importJob || importJob.organizationId !== membership.organizationId) {
       return { ok: false, error: "Import job not found" };
     }
 
@@ -236,9 +234,7 @@ export async function cancelImportAction(
 /**
  * Get import job status.
  */
-export async function getImportJobStatusAction(
-  jobId: string,
-): Promise<
+export async function getImportJobStatusAction(jobId: string): Promise<
   ActionResult<{
     status: ImportStatus;
     processedRows: number;
@@ -254,10 +250,7 @@ export async function getImportJobStatusAction(
       where: { id: jobId },
     });
 
-    if (
-      !importJob ||
-      importJob.organizationId !== membership.organizationId
-    ) {
+    if (!importJob || importJob.organizationId !== membership.organizationId) {
       return { ok: false, error: "Import job not found" };
     }
 

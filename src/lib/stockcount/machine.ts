@@ -59,7 +59,11 @@ export function isEditable(state: StockCountState): boolean {
 export function canTransition(from: StockCountState, to: StockCountState): boolean {
   if (from === to) return false;
   if (from === "OPEN" && (to === "IN_PROGRESS" || to === "CANCELLED")) return true;
-  if (from === "IN_PROGRESS" && (to === "COMPLETED" || to === "CANCELLED" || to === "REQUIRES_RECOUNT")) return true;
+  if (
+    from === "IN_PROGRESS" &&
+    (to === "COMPLETED" || to === "CANCELLED" || to === "REQUIRES_RECOUNT")
+  )
+    return true;
   if (from === "REQUIRES_RECOUNT" && (to === "IN_PROGRESS" || to === "CANCELLED")) return true;
   // Phase 17+: approval workflow transitions
   if (from === "IN_PROGRESS" && to === "PENDING_APPROVAL") return true;

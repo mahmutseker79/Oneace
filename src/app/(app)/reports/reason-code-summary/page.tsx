@@ -1,11 +1,11 @@
 import { Tag } from "lucide-react";
 import type { Metadata } from "next";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -78,10 +78,7 @@ export default async function ReasonCodeSummaryReportPage() {
           title="Reason Code Summary"
           description="Track inventory adjustments by reason code"
           backHref="/reports"
-          breadcrumb={[
-            { label: "Reports", href: "/reports" },
-            { label: "Reason Code Summary" },
-          ]}
+          breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Reason Code Summary" }]}
         />
         <EmptyState
           icon={Tag}
@@ -142,28 +139,25 @@ export default async function ReasonCodeSummaryReportPage() {
         title="Reason Code Summary"
         description="Track inventory adjustments by reason code"
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Reason Code Summary" },
-        ]}
-        actions={
-          <ExportButton href="/reports/reason-code-summary/export">
-            Export CSV
-          </ExportButton>
-        }
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Reason Code Summary" }]}
+        actions={<ExportButton href="/reports/reason-code-summary/export">Export CSV</ExportButton>}
       />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardDescription>Total Reason Codes Used</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(rows.length, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatNumber(rows.length, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader>
             <CardDescription>Total Occurrences</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(totalOccurrences, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatNumber(totalOccurrences, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -173,9 +167,7 @@ export default async function ReasonCodeSummaryReportPage() {
           <CardHeader>
             <CardTitle className="text-lg">Occurrences by Reason Code</CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* Chart removed for server component compatibility */}
-          </CardContent>
+          <CardContent>{/* Chart removed for server component compatibility */}</CardContent>
         </Card>
       )}
 
@@ -200,10 +192,18 @@ export default async function ReasonCodeSummaryReportPage() {
                 <TableRow key={row.reasonCodeId}>
                   <TableCell className="font-mono text-sm font-medium">{row.code}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{row.category}</TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.occurrenceCount, region.numberLocale)}</TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.totalQtyImpact, region.numberLocale)}</TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.totalValueImpact, region.numberLocale)}</TableCell>
-                  <TableCell className="text-right text-sm font-medium">{formatNumber(row.percentOfTotal, region.numberLocale)}%</TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.occurrenceCount, region.numberLocale)}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.totalQtyImpact, region.numberLocale)}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.totalValueImpact, region.numberLocale)}
+                  </TableCell>
+                  <TableCell className="text-right text-sm font-medium">
+                    {formatNumber(row.percentOfTotal, region.numberLocale)}%
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

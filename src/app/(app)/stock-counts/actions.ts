@@ -633,7 +633,12 @@ export async function completeStockCountAction(
 
   // Load entries in batches to prevent OOM on large counts
   const BATCH_SIZE = 1000;
-  let allEntries: { itemId: string; warehouseId: string; binId: string | null; countedQuantity: number }[] = [];
+  const allEntries: {
+    itemId: string;
+    warehouseId: string;
+    binId: string | null;
+    countedQuantity: number;
+  }[] = [];
   let cursor: string | undefined;
 
   while (true) {

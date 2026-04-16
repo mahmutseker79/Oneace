@@ -1,13 +1,16 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
-import { updateOrgSettingsSchema, type UpdateOrgSettingsInput } from "@/lib/validation/org-settings";
 import type { ActionResult } from "@/lib/validation/action-result";
+import {
+  type UpdateOrgSettingsInput,
+  updateOrgSettingsSchema,
+} from "@/lib/validation/org-settings";
+import { revalidatePath } from "next/cache";
 
 /**
  * Phase L9 — Update organization settings.

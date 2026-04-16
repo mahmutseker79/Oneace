@@ -1,4 +1,11 @@
-import { ArrowLeftRight, Download, ExternalLink, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
+import {
+  ArrowLeftRight,
+  ArrowUpDown,
+  Download,
+  ExternalLink,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -163,7 +170,12 @@ export default async function MovementHistoryReportPage({
           <div className="flex items-center gap-2">
             {canExport && visibleMovements.length > 0 ? (
               <>
-                <ExportButton href={buildExportHref(filter.rawFrom, filter.rawTo, filter.rawType).replace('/export', '/pdf')}>
+                <ExportButton
+                  href={buildExportHref(filter.rawFrom, filter.rawTo, filter.rawType).replace(
+                    "/export",
+                    "/pdf",
+                  )}
+                >
                   {t.common.downloadPdf}
                 </ExportButton>
                 <ExportButton href={buildExportHref(filter.rawFrom, filter.rawTo, filter.rawType)}>

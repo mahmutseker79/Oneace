@@ -94,9 +94,7 @@ export default async function SettingsPage() {
       <PageHeader
         title={t.settings.heading}
         description={t.settings.subtitle}
-        breadcrumb={[
-          { label: t.settings?.heading ?? "Settings" },
-        ]}
+        breadcrumb={[{ label: t.settings?.heading ?? "Settings" }]}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">

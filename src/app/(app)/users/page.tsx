@@ -103,10 +103,7 @@ export default async function UsersPage() {
       <PageHeader
         title={t.users.heading}
         description={t.users.subtitle}
-        breadcrumb={[
-          { label: "Settings", href: "/settings" },
-          { label: t.users.heading },
-        ]}
+        breadcrumb={[{ label: "Settings", href: "/settings" }, { label: t.users.heading }]}
       />
 
       {/* Phase 15.3 — member limit nudge */}
@@ -255,7 +252,9 @@ export default async function UsersPage() {
 
           {/* Phase 7B: Mobile card view */}
           {sorted.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-muted-foreground md:hidden">{t.users.table.empty}</p>
+            <p className="px-4 py-3 text-sm text-muted-foreground md:hidden">
+              {t.users.table.empty}
+            </p>
           ) : (
             <div className="space-y-2 md:hidden">
               {sorted.map((m) => (
@@ -266,7 +265,9 @@ export default async function UsersPage() {
                         <p className="font-medium text-sm break-words">
                           {m.user.name ?? m.user.email}
                           {m.user.id === session.user.id && (
-                            <span className="ml-1 text-xs text-muted-foreground">({t.users.table.you})</span>
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              ({t.users.table.you})
+                            </span>
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground break-words">{m.user.email}</p>

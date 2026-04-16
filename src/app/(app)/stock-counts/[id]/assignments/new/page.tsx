@@ -50,7 +50,10 @@ export default async function NewAssignmentPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href={`/stock-counts/${params.id}/assignments`} className="text-muted-foreground hover:underline">
+        <Link
+          href={`/stock-counts/${params.id}/assignments`}
+          className="text-muted-foreground hover:underline"
+        >
           Assignments for {count.name}
         </Link>
         <h1 className="text-3xl font-bold">Assign Counter</h1>

@@ -40,7 +40,13 @@ export function RollbackForm({ countId }: RollbackFormProps) {
   };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); handleRollback(); }} className="space-y-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleRollback();
+      }}
+      className="space-y-4"
+    >
       <div>
         <Label htmlFor="reason">Reason for Rollback</Label>
         <Textarea

@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { serializeCsv, type CsvColumn } from "./csv";
+import { type CsvColumn, serializeCsv } from "./csv";
 
 type Row = { name: string; qty: number | null; note: string | undefined };
 

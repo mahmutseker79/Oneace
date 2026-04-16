@@ -7,22 +7,20 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
+import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type CreateTemplateInput,
-  type UpdateTemplateInput,
   type DeleteTemplateInput,
+  type UpdateTemplateInput,
   createTemplateSchema,
-  updateTemplateSchema,
   deleteTemplateSchema,
+  updateTemplateSchema,
 } from "@/lib/validation/count-template";
-import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 
 /**
  * Create a count template.
  */
-export async function createTemplateAction(
-  input: unknown,
-): Promise<ActionResult<{ id: string }>> {
+export async function createTemplateAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -124,9 +122,7 @@ export async function createTemplateAction(
 /**
  * Update a count template.
  */
-export async function updateTemplateAction(
-  input: unknown,
-): Promise<ActionResult<{ id: string }>> {
+export async function updateTemplateAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -240,9 +236,7 @@ export async function updateTemplateAction(
 /**
  * Delete a count template.
  */
-export async function deleteTemplateAction(
-  input: unknown,
-): Promise<ActionResult<{ id: string }>> {
+export async function deleteTemplateAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

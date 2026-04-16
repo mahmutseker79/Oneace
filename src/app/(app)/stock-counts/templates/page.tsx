@@ -75,7 +75,6 @@ export default async function TemplatesPage() {
                   {template.department && <p>Department: {template.department.name}</p>}
                   {template.warehouse && <p>Warehouse: {template.warehouse.name}</p>}
                   {template.cronExpression && <p>Schedule: {template.cronExpression}</p>}
-                  
                 </CardContent>
               </Card>
             </Link>

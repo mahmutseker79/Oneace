@@ -4,7 +4,12 @@ import { describe, expect, it } from "vitest";
 
 // File type validation
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const ALLOWED_DOCUMENT_TYPES = ["application/pdf", "text/csv", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
+const ALLOWED_DOCUMENT_TYPES = [
+  "application/pdf",
+  "text/csv",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -141,7 +146,10 @@ describe("Document upload validation", () => {
     });
 
     it("should accept XLSX files", () => {
-      const result = validateDocumentFile("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 1024);
+      const result = validateDocumentFile(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        1024,
+      );
       expect(result.valid).toBe(true);
     });
   });

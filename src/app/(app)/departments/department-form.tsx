@@ -17,31 +17,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import { useState } from "react";
+import { toast } from "sonner";
 
-import {
-  createDepartmentAction,
-  updateDepartmentAction,
-  deleteDepartmentAction,
-} from "./actions";
+import { createDepartmentAction, deleteDepartmentAction, updateDepartmentAction } from "./actions";
 
 interface DepartmentFormProps {
   department?: Partial<Department> & {
-    manager?: (Pick<User, "id" | "email" | "name">) | null;
-    warehouse?: (Pick<Warehouse, "id" | "name" | "code">) | null;
+    manager?: Pick<User, "id" | "email" | "name"> | null;
+    warehouse?: Pick<Warehouse, "id" | "name" | "code"> | null;
   };
   members: Pick<User, "id" | "email" | "name">[];
   warehouses: Pick<Warehouse, "id" | "name" | "code">[];
   isNew: boolean;
 }
 
-export function DepartmentForm({
-  department,
-  members,
-  warehouses,
-  isNew,
-}: DepartmentFormProps) {
+export function DepartmentForm({ department, members, warehouses, isNew }: DepartmentFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -58,9 +49,7 @@ export function DepartmentForm({
     e.preventDefault();
     startTransition(async () => {
       const action = isNew ? createDepartmentAction : updateDepartmentAction;
-      const payload = isNew
-        ? formData
-        : { id: department!.id, ...formData };
+      const payload = isNew ? formData : { id: department?.id, ...formData };
 
       const result = await action(payload);
       if (result.ok) {
@@ -77,7 +66,7 @@ export function DepartmentForm({
 
     setIsDeleting(true);
     startTransition(async () => {
-      const result = await deleteDepartmentAction({ id: department!.id });
+      const result = await deleteDepartmentAction({ id: department?.id });
       setIsDeleting(false);
 
       if (result.ok) {

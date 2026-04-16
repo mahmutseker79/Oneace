@@ -41,10 +41,11 @@ export async function resolveScopeItems(input: ResolveScopeInput): Promise<strin
     case "DEPARTMENT":
       return resolveDepartment(orgId, departmentId);
 
-    default:
+    default: {
       // TypeScript exhaustiveness check; should never reach here.
       const _exhaustive: never = scope;
       throw new Error(`Unknown scope: ${_exhaustive}`);
+    }
   }
 }
 

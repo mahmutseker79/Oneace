@@ -129,7 +129,10 @@ function LimitBar({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">{label}</span>
-          <span className="font-medium tabular-nums">{current.toLocaleString()}<span className="text-muted-foreground font-normal"> / ∞</span></span>
+          <span className="font-medium tabular-nums">
+            {current.toLocaleString()}
+            <span className="text-muted-foreground font-normal"> / ∞</span>
+          </span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div className="h-full rounded-full bg-primary/30 w-[15%]" />
@@ -149,7 +152,8 @@ function LimitBar({
         <span
           className={`font-medium tabular-nums ${isAt ? "text-destructive" : isNear ? "text-amber-600 dark:text-amber-400" : ""}`}
         >
-          {current}<span className="text-muted-foreground font-normal"> / {max}</span>
+          {current}
+          <span className="text-muted-foreground font-normal"> / {max}</span>
           {isAt && <span className="ml-1 text-xs">⚠</span>}
         </span>
       </div>
@@ -334,11 +338,7 @@ export function BillingPage({
           {/* Usage indicators — shown for all plans */}
           <div className="space-y-3 rounded-xl border bg-surface-sunken p-4">
             <p className="text-overline text-muted-foreground">Resource Usage</p>
-            <LimitBar
-              label="Items"
-              current={currentItems}
-              max={plan === "FREE" ? 100 : null}
-            />
+            <LimitBar label="Items" current={currentItems} max={plan === "FREE" ? 100 : null} />
             <LimitBar
               label="Warehouse locations"
               current={currentWarehouses}

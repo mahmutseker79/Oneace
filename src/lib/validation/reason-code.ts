@@ -35,7 +35,10 @@ const optionalDescription = z
 export const createReasonCodeSchema = z.object({
   code: trimmedString(1, 20, "Code is required")
     .transform((val) => val.toUpperCase())
-    .refine((val) => /^[A-Z0-9_]+$/.test(val), "Code must contain only letters, numbers, and underscores"),
+    .refine(
+      (val) => /^[A-Z0-9_]+$/.test(val),
+      "Code must contain only letters, numbers, and underscores",
+    ),
   name: trimmedString(1, 100, "Name is required"),
   category: reasonCategoryEnum,
   description: optionalDescription,

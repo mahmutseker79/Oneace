@@ -4,10 +4,10 @@
  * Allows users to export inventory data in various formats.
  */
 
-import { Metadata } from "next";
-import Link from "next/link";
-import { requireActiveMembership } from "@/lib/session";
 import { getMessages } from "@/lib/i18n";
+import { requireActiveMembership } from "@/lib/session";
+import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Export",
@@ -76,9 +76,7 @@ export default async function ExportPage() {
           <div key={option.id} className="border rounded-lg p-6 space-y-4">
             <div>
               <h2 className="font-semibold text-lg">{option.label}</h2>
-              <p className="text-sm text-muted-foreground">
-                {option.description}
-              </p>
+              <p className="text-sm text-muted-foreground">{option.description}</p>
             </div>
 
             <div className="space-y-2">
@@ -99,8 +97,7 @@ export default async function ExportPage() {
       <div className="border-t pt-8">
         <h2 className="text-xl font-semibold mb-4">Scheduled Exports</h2>
         <p className="text-muted-foreground mb-4">
-          Set up automatic exports to be sent to your email or integrated
-          systems.
+          Set up automatic exports to be sent to your email or integrated systems.
         </p>
         <Link
           href="/settings/scheduled-reports"

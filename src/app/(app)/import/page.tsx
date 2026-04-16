@@ -5,11 +5,11 @@
  * recent import jobs, and import templates.
  */
 
-import { Metadata } from "next";
-import Link from "next/link";
 import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
 import { getMessages } from "@/lib/i18n";
+import { requireActiveMembership } from "@/lib/session";
+import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Import",
@@ -91,9 +91,7 @@ export default async function ImportPage() {
               className="border rounded-lg p-4 hover:bg-gray-50 transition"
             >
               <h3 className="font-semibold">{entity.label}</h3>
-              <p className="text-sm text-muted-foreground">
-                {entity.description}
-              </p>
+              <p className="text-sm text-muted-foreground">{entity.description}</p>
             </Link>
           ))}
         </div>
@@ -142,12 +140,8 @@ export default async function ImportPage() {
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Entity</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
-                  <th className="text-left px-4 py-3 font-medium">
-                    Date
-                  </th>
-                  <th className="text-right px-4 py-3 font-medium">
-                    Action
-                  </th>
+                  <th className="text-left px-4 py-3 font-medium">Date</th>
+                  <th className="text-right px-4 py-3 font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>

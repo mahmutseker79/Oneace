@@ -35,16 +35,18 @@ export async function upsertStockLevel(tx: TxClient, input: UpsertStockLevelInpu
   // race condition where a separate findFirst could return an outdated
   // quantity if another transaction updated the row between the upsert
   // and the read.
-  const rows = await tx.$queryRaw<Array<{
-    id: string;
-    organizationId: string;
-    itemId: string;
-    warehouseId: string;
-    binId: string | null;
-    quantity: number;
-    reservedQty: number;
-    updatedAt: Date;
-  }>>`
+  const rows = await tx.$queryRaw<
+    Array<{
+      id: string;
+      organizationId: string;
+      itemId: string;
+      warehouseId: string;
+      binId: string | null;
+      quantity: number;
+      reservedQty: number;
+      updatedAt: Date;
+    }>
+  >`
     INSERT INTO "StockLevel" (
       "id",
       "organizationId",

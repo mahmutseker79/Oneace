@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import type { User, Department, Warehouse } from "@/generated/prisma";
+import type { Department, User, Warehouse } from "@/generated/prisma";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";

@@ -1,16 +1,10 @@
-import { Plus, ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
@@ -62,9 +56,7 @@ export default async function TransfersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Stock Transfers</h1>
-            <p className="text-sm text-muted-foreground">
-              Manage inter-warehouse transfers
-            </p>
+            <p className="text-sm text-muted-foreground">Manage inter-warehouse transfers</p>
           </div>
           {canCreate && (
             <Button asChild>
@@ -118,38 +110,36 @@ export default async function TransfersPage() {
       <Card>
         <CardContent className="p-0">
           <ResponsiveTable
-            cardView={
-              <>
-                {transfers.map((transfer) => (
-                  <MobileCard
-                    key={transfer.id}
-                    href={`/transfers/${transfer.id}`}
-                    title={transfer.transferNumber}
-                    badge={<Badge variant={statusBadgeVariant(transfer.status) as any}>
-                      {statusLabel(transfer.status)}
-                    </Badge>}
-                    fields={[
-                      {
-                        label: "From",
-                        value: transfer.fromWarehouse.name,
-                      },
-                      {
-                        label: "To",
-                        value: transfer.toWarehouse.name,
-                      },
-                      {
-                        label: "Date",
-                        value: fmtDate(transfer.createdAt, region.numberLocale),
-                      },
-                      {
-                        label: "Items",
-                        value: transfer.lines.length,
-                      },
-                    ]}
-                  />
-                ))}
-              </>
-            }
+            cardView={transfers.map((transfer) => (
+              <MobileCard
+                key={transfer.id}
+                href={`/transfers/${transfer.id}`}
+                title={transfer.transferNumber}
+                badge={
+                  <Badge variant={statusBadgeVariant(transfer.status) as any}>
+                    {statusLabel(transfer.status)}
+                  </Badge>
+                }
+                fields={[
+                  {
+                    label: "From",
+                    value: transfer.fromWarehouse.name,
+                  },
+                  {
+                    label: "To",
+                    value: transfer.toWarehouse.name,
+                  },
+                  {
+                    label: "Date",
+                    value: fmtDate(transfer.createdAt, region.numberLocale),
+                  },
+                  {
+                    label: "Items",
+                    value: transfer.lines.length,
+                  },
+                ]}
+              />
+            ))}
           >
             <Table>
               <TableHeader>

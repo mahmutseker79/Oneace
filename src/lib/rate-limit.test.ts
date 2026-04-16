@@ -13,7 +13,7 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { __resetMemoryBucketsForTest, rateLimit, RATE_LIMITS } from "./rate-limit";
+import { RATE_LIMITS, __resetMemoryBucketsForTest, rateLimit } from "./rate-limit";
 
 afterEach(() => {
   __resetMemoryBucketsForTest();

@@ -50,7 +50,10 @@ export default async function CountAssignmentsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Link href={`/stock-counts/${params.id}`} className="text-muted-foreground hover:underline">
+          <Link
+            href={`/stock-counts/${params.id}`}
+            className="text-muted-foreground hover:underline"
+          >
             {count.name}
           </Link>
           <h1 className="text-3xl font-bold">Assignments</h1>

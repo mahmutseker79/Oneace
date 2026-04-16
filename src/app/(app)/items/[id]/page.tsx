@@ -125,10 +125,7 @@ export default async function ItemDetailPage({ params, searchParams }: PageProps
         description={item.sku}
         backHref="/items"
         badge={statusBadge(item.status)}
-        breadcrumb={[
-          { label: t.nav?.items ?? "Items", href: "/items" },
-          { label: item.name },
-        ]}
+        breadcrumb={[{ label: t.nav?.items ?? "Items", href: "/items" }, { label: item.name }]}
       />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

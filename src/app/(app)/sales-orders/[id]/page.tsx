@@ -6,16 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
 import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
 
 import {
-  confirmSalesOrderAction,
   allocateSalesOrderAction,
   cancelSalesOrderAction,
+  confirmSalesOrderAction,
 } from "../actions";
 
 function statusBadge(status: string) {
@@ -138,10 +143,14 @@ export default async function SalesOrderDetailPage({
                       {line.itemId.slice(0, 8)}...
                     </Link>
                     {line.variantId && (
-                      <span className="text-xs text-muted-foreground ml-1">({line.variantId.slice(0, 6)})</span>
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({line.variantId.slice(0, 6)})
+                      </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{line.warehouseId.slice(0, 8)}...</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {line.warehouseId.slice(0, 8)}...
+                  </TableCell>
                   <TableCell className="text-right font-mono">{line.orderedQty}</TableCell>
                   <TableCell className="text-right font-mono">{line.allocatedQty}</TableCell>
                   <TableCell className="text-right font-mono">{line.shippedQty}</TableCell>
@@ -156,17 +165,42 @@ export default async function SalesOrderDetailPage({
       <div className="flex gap-3 flex-wrap">
         {order.status === "DRAFT" && canEdit && (
           <>
-            <form action={async () => { "use server"; await confirmSalesOrderAction(order.id); }}>
-              <Button type="submit"><Package className="h-4 w-4 mr-1" /> Confirm Order</Button>
+            <form
+              action={async () => {
+                "use server";
+                await confirmSalesOrderAction(order.id);
+              }}
+            >
+              <Button type="submit">
+                <Package className="h-4 w-4 mr-1" /> Confirm Order
+              </Button>
             </form>
-            <form action={async (formData: FormData) => { "use server"; const fd = new FormData(); fd.set("id", order.id); await cancelSalesOrderAction(fd); }}>
-              <Button type="submit" variant="destructive">Cancel</Button>
+            <form
+              action={async (formData: FormData) => {
+                "use server";
+                const fd = new FormData();
+                fd.set("id", order.id);
+                await cancelSalesOrderAction(fd);
+              }}
+            >
+              <Button type="submit" variant="destructive">
+                Cancel
+              </Button>
             </form>
           </>
         )}
         {order.status === "CONFIRMED" && canEdit && (
-          <form action={async (formData: FormData) => { "use server"; const fd = new FormData(); fd.set("id", order.id); await allocateSalesOrderAction(fd); }}>
-            <Button type="submit"><Package className="h-4 w-4 mr-1" /> Allocate Stock</Button>
+          <form
+            action={async (formData: FormData) => {
+              "use server";
+              const fd = new FormData();
+              fd.set("id", order.id);
+              await allocateSalesOrderAction(fd);
+            }}
+          >
+            <Button type="submit">
+              <Package className="h-4 w-4 mr-1" /> Allocate Stock
+            </Button>
           </form>
         )}
         {(order.status === "ALLOCATED" || order.status === "PARTIALLY_SHIPPED") && canEdit && (

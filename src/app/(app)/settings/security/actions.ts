@@ -3,10 +3,10 @@
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 import {
-  generateTotpSecret,
-  verifyTotpCode,
   generateBackupCodes,
+  generateTotpSecret,
   verifyBackupCode,
+  verifyTotpCode,
 } from "@/lib/totp";
 
 /**

@@ -1,11 +1,11 @@
 import { Truck } from "lucide-react";
 import type { Metadata } from "next";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -72,10 +72,7 @@ export default async function TransferHistoryReportPage() {
           title="Transfer History"
           description="Track inter-warehouse transfers"
           backHref="/reports"
-          breadcrumb={[
-            { label: "Reports", href: "/reports" },
-            { label: "Transfer History" },
-          ]}
+          breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Transfer History" }]}
         />
         <EmptyState
           icon={Truck}
@@ -111,7 +108,9 @@ export default async function TransferHistoryReportPage() {
   const monthMap = new Map<string, number>();
   for (const row of rows) {
     const date = row.shippedDate || new Date();
-    const monthKey = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short" }).format(date);
+    const monthKey = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short" }).format(
+      date,
+    );
     monthMap.set(monthKey, (monthMap.get(monthKey) ?? 0) + 1);
   }
 
@@ -124,7 +123,10 @@ export default async function TransferHistoryReportPage() {
 
   // Calculate discrepancy summary
   const transfersWithDiscrepancy = rows.filter((r) => r.discrepancy !== 0);
-  const totalDiscrepancyValue = transfersWithDiscrepancy.reduce((s, r) => s + Math.abs(r.discrepancy), 0);
+  const totalDiscrepancyValue = transfersWithDiscrepancy.reduce(
+    (s, r) => s + Math.abs(r.discrepancy),
+    0,
+  );
 
   const dateFmt = new Intl.DateTimeFormat(region.numberLocale, {
     dateStyle: "medium",
@@ -152,22 +154,17 @@ export default async function TransferHistoryReportPage() {
         title="Transfer History"
         description="Track inter-warehouse transfers"
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Transfer History" },
-        ]}
-        actions={
-          <ExportButton href="/reports/transfer-history/export">
-            Export CSV
-          </ExportButton>
-        }
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Transfer History" }]}
+        actions={<ExportButton href="/reports/transfer-history/export">Export CSV</ExportButton>}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardDescription>Total Transfers</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(rows.length, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatNumber(rows.length, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -201,9 +198,7 @@ export default async function TransferHistoryReportPage() {
           <CardHeader>
             <CardTitle className="text-lg">Transfer Volume by Month</CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* Chart removed for server component compatibility */}
-          </CardContent>
+          <CardContent>{/* Chart removed for server component compatibility */}</CardContent>
         </Card>
       )}
 
@@ -230,19 +225,33 @@ export default async function TransferHistoryReportPage() {
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.id} className={row.discrepancy !== 0 ? "bg-orange-50" : ""}>
-                  <TableCell className="font-mono text-sm font-medium">{row.transferNumber}</TableCell>
+                  <TableCell className="font-mono text-sm font-medium">
+                    {row.transferNumber}
+                  </TableCell>
                   <TableCell className="text-sm">{row.fromWarehouse}</TableCell>
                   <TableCell className="text-sm">{row.toWarehouse}</TableCell>
                   <TableCell className="text-sm">
-                    <div className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(row.status)}`}>
+                    <div
+                      className={`inline-block px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(row.status)}`}
+                    >
                       {row.status}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.totalItems, region.numberLocale)}</TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.shippedQty, region.numberLocale)}</TableCell>
-                  <TableCell className="text-right text-sm">{formatNumber(row.receivedQty, region.numberLocale)}</TableCell>
-                  <TableCell className={`text-right text-sm font-mono font-bold ${row.discrepancy !== 0 ? "text-orange-600" : ""}`}>
-                    {row.discrepancy !== 0 ? formatNumber(row.discrepancy, region.numberLocale) : "—"}
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.totalItems, region.numberLocale)}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.shippedQty, region.numberLocale)}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">
+                    {formatNumber(row.receivedQty, region.numberLocale)}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right text-sm font-mono font-bold ${row.discrepancy !== 0 ? "text-orange-600" : ""}`}
+                  >
+                    {row.discrepancy !== 0
+                      ? formatNumber(row.discrepancy, region.numberLocale)
+                      : "—"}
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
                     {row.shippedDate ? dateFmt.format(row.shippedDate) : "—"}

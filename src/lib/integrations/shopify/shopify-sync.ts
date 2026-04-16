@@ -6,14 +6,14 @@
  */
 
 import { db } from "@/lib/db";
-import { logger } from "@/lib/logger";
+import type { ShopifyClient } from "@/lib/integrations/shopify/shopify-client";
 import {
+  type SyncContext,
   SyncEngine,
   type SyncEntity,
-  type SyncContext,
   type SyncResult,
 } from "@/lib/integrations/sync-engine";
-import { ShopifyClient } from "@/lib/integrations/shopify/shopify-client";
+import { logger } from "@/lib/logger";
 
 export class ShopifySyncEngine extends SyncEngine {
   private client: ShopifyClient;
@@ -69,18 +69,12 @@ export class ShopifySyncEngine extends SyncEngine {
   /**
    * Sync products from Shopify.
    */
-  private async syncProducts(
-    context: SyncContext,
-    result: SyncResult,
-  ): Promise<void> {
+  private async syncProducts(context: SyncContext, result: SyncResult): Promise<void> {
     let hasNextPage = true;
     let after: string | undefined;
 
     while (hasNextPage) {
-      const { products, pageInfo } = await this.client.getProducts(
-        context.batchSize || 50,
-        after,
-      );
+      const { products, pageInfo } = await this.client.getProducts(context.batchSize || 50, after);
 
       const items = products.map((product) => ({
         id: product.id,
@@ -163,18 +157,12 @@ export class ShopifySyncEngine extends SyncEngine {
   /**
    * Sync orders from Shopify.
    */
-  private async syncOrders(
-    context: SyncContext,
-    result: SyncResult,
-  ): Promise<void> {
+  private async syncOrders(context: SyncContext, result: SyncResult): Promise<void> {
     let hasNextPage = true;
     let after: string | undefined;
 
     while (hasNextPage) {
-      const { orders, pageInfo } = await this.client.getOrders(
-        context.batchSize || 50,
-        after,
-      );
+      const { orders, pageInfo } = await this.client.getOrders(context.batchSize || 50, after);
 
       const items = orders.map((order) => ({
         id: order.id,
@@ -211,9 +199,7 @@ export class ShopifySyncEngine extends SyncEngine {
     }
   }
 
-  protected async fetchExternalEntities(
-    context: SyncContext,
-  ): Promise<SyncEntity[]> {
+  protected async fetchExternalEntities(context: SyncContext): Promise<SyncEntity[]> {
     if (context.entityType === "PRODUCT") {
       const { products } = await this.client.getProducts();
 
@@ -242,17 +228,13 @@ export class ShopifySyncEngine extends SyncEngine {
     return local;
   }
 
-  protected async pushToExternal(
-    entities: SyncEntity[],
-  ): Promise<SyncEntity[]> {
+  protected async pushToExternal(entities: SyncEntity[]): Promise<SyncEntity[]> {
     // Shopify product creation would require different API - placeholder for now
     logger.warn("Shopify push not yet implemented");
     return entities;
   }
 
-  protected async pullFromExternal(
-    entities: SyncEntity[],
-  ): Promise<SyncEntity[]> {
+  protected async pullFromExternal(entities: SyncEntity[]): Promise<SyncEntity[]> {
     // Handled by specific sync methods above
     return entities;
   }

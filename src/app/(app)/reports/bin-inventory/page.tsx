@@ -2,11 +2,11 @@ import { Download, Grid3X3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -106,7 +106,7 @@ export default async function BinInventoryReportPage() {
       warehouseMap.set(whId, wh);
     }
 
-    let bin = wh.bins.find((b) => b.binId === level.bin!.id);
+    let bin = wh.bins.find((b) => b.binId === level.bin?.id);
     if (!bin) {
       bin = {
         binId: level.bin.id,
@@ -164,9 +164,7 @@ export default async function BinInventoryReportPage() {
         actions={
           canExport && warehouses.length > 0 ? (
             <div className="flex items-center gap-2">
-              <ExportButton href="/reports/bin-inventory/pdf">
-                {t.common.downloadPdf}
-              </ExportButton>
+              <ExportButton href="/reports/bin-inventory/pdf">{t.common.downloadPdf}</ExportButton>
               <ExportButton href="/reports/bin-inventory/export">Export CSV</ExportButton>
             </div>
           ) : null

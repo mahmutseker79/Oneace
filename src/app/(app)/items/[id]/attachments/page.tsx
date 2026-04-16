@@ -1,12 +1,12 @@
-import { ArrowLeft, Trash2, Download } from "lucide-react";
+import { ArrowLeft, Download, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -68,7 +68,7 @@ export default async function AttachmentsPage({ params }: PageProps) {
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+    return `${Math.round((bytes / k ** i) * 100) / 100} ${sizes[i]}`;
   }
 
   return (
@@ -116,7 +116,9 @@ export default async function AttachmentsPage({ params }: PageProps) {
 
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
-                      {attachment.uploadedBy?.name || attachment.uploadedBy?.email || "Unknown user"}
+                      {attachment.uploadedBy?.name ||
+                        attachment.uploadedBy?.email ||
+                        "Unknown user"}
                     </div>
                     {canDeleteAttachment && (
                       <DeleteButton

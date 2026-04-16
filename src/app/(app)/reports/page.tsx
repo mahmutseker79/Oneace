@@ -40,7 +40,16 @@ export default async function ReportsPage() {
   // reports page focused on the two core reports.
   // Hardening Track: also conditionally show bin inventory (bins exist)
   // and movement history (any movements recorded).
-  const [supplierCount, binCount, movementCount, adjustmentCount, stockCountCount, serialCount, transferCount, stockLevelCount] = await Promise.all([
+  const [
+    supplierCount,
+    binCount,
+    movementCount,
+    adjustmentCount,
+    stockCountCount,
+    serialCount,
+    transferCount,
+    stockLevelCount,
+  ] = await Promise.all([
     db.supplier.count({ where: { organizationId: membership.organizationId } }),
     db.bin.count({
       where: {
@@ -48,7 +57,9 @@ export default async function ReportsPage() {
       },
     }),
     db.stockMovement.count({ where: { organizationId: membership.organizationId } }),
-    db.stockMovement.count({ where: { organizationId: membership.organizationId, type: "ADJUSTMENT" } }),
+    db.stockMovement.count({
+      where: { organizationId: membership.organizationId, type: "ADJUSTMENT" },
+    }),
     db.stockCount.count({ where: { organizationId: membership.organizationId } }),
     db.serialNumber.count({ where: { organizationId: membership.organizationId } }),
     db.stockTransfer.count({ where: { organizationId: membership.organizationId } }),
@@ -190,7 +201,12 @@ export default async function ReportsPage() {
   const reports = [...coreReports, ...conditionalReports, ...advancedReports];
 
   // Helper for premium report card rendering
-  function renderReportCard(report: { href: string; icon: typeof AlertTriangle; title: string; description: string }) {
+  function renderReportCard(report: {
+    href: string;
+    icon: typeof AlertTriangle;
+    title: string;
+    description: string;
+  }) {
     const Icon = report.icon;
     return (
       <Link key={report.href} href={report.href} className="group block">
@@ -201,8 +217,12 @@ export default async function ReportsPage() {
                 <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1">
-                <CardTitle className="text-sm font-semibold leading-tight">{report.title}</CardTitle>
-                <CardDescription className="text-xs mt-1 line-clamp-2">{report.description}</CardDescription>
+                <CardTitle className="text-sm font-semibold leading-tight">
+                  {report.title}
+                </CardTitle>
+                <CardDescription className="text-xs mt-1 line-clamp-2">
+                  {report.description}
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -233,7 +253,9 @@ export default async function ReportsPage() {
       <section>
         <div className="flex items-center gap-2 mb-3">
           <h2 className="text-sm font-semibold text-foreground">Core Reports</h2>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">{coreReports.length}</span>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">
+            {coreReports.length}
+          </span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {coreReports.map(renderReportCard)}
@@ -245,7 +267,9 @@ export default async function ReportsPage() {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-foreground">Movement & Warehouse</h2>
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">{conditionalReports.length}</span>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">
+              {conditionalReports.length}
+            </span>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {conditionalReports.map(renderReportCard)}
@@ -258,7 +282,9 @@ export default async function ReportsPage() {
         <section>
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-sm font-semibold text-foreground">Advanced Reports</h2>
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">{advancedReports.length}</span>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">
+              {advancedReports.length}
+            </span>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {advancedReports.map(renderReportCard)}

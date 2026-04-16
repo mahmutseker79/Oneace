@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -84,11 +84,15 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
   });
 
   function statusBadge(s: string) {
-    if (s === "IN_STOCK") return <Badge variant="outline">{t.serials.statusInStock || "In Stock"}</Badge>;
-    if (s === "ISSUED") return <Badge variant="secondary">{t.serials.statusIssued || "Issued"}</Badge>;
+    if (s === "IN_STOCK")
+      return <Badge variant="outline">{t.serials.statusInStock || "In Stock"}</Badge>;
+    if (s === "ISSUED")
+      return <Badge variant="secondary">{t.serials.statusIssued || "Issued"}</Badge>;
     if (s === "SOLD") return <Badge>{t.serials.statusSold || "Sold"}</Badge>;
-    if (s === "RETURNED") return <Badge className="bg-blue-600">{t.serials.statusReturned || "Returned"}</Badge>;
-    if (s === "DISPOSED") return <Badge variant="destructive">{t.serials.statusDisposed || "Disposed"}</Badge>;
+    if (s === "RETURNED")
+      return <Badge className="bg-blue-600">{t.serials.statusReturned || "Returned"}</Badge>;
+    if (s === "DISPOSED")
+      return <Badge variant="destructive">{t.serials.statusDisposed || "Disposed"}</Badge>;
     if (s === "LOST") return <Badge variant="destructive">{t.serials.statusLost || "Lost"}</Badge>;
     return <Badge>{s}</Badge>;
   }
@@ -128,7 +132,9 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
         <Card>
           <CardHeader className="items-center text-center">
             <CardTitle>{t.serials.emptyTitle || "No serial numbers"}</CardTitle>
-            <CardDescription>{t.serials.emptyBody || "Create serial numbers to start tracking"}</CardDescription>
+            <CardDescription>
+              {t.serials.emptyBody || "Create serial numbers to start tracking"}
+            </CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -156,7 +162,7 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
                     </TableCell>
                     <TableCell>{statusBadge(serial.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {serial.warehouseId ? `Warehouse` : "—"}
+                      {serial.warehouseId ? "Warehouse" : "—"}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {serial.lastMovedAt ? dateFormatter.format(serial.lastMovedAt) : "—"}

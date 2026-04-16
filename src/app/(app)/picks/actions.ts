@@ -98,7 +98,9 @@ export async function createPickTaskAction(formData: FormData): Promise<ActionRe
   }
 }
 
-export async function generatePicksFromSalesOrderAction(salesOrderId: string): Promise<ActionResult> {
+export async function generatePicksFromSalesOrderAction(
+  salesOrderId: string,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -133,7 +135,10 @@ export async function generatePicksFromSalesOrderAction(salesOrderId: string): P
     }
 
     if (salesOrder.status !== "ALLOCATED" && salesOrder.status !== "PARTIALLY_SHIPPED") {
-      return { ok: false, error: t.picks?.errors?.generateFailed ?? "Sales order must be allocated" };
+      return {
+        ok: false,
+        error: t.picks?.errors?.generateFailed ?? "Sales order must be allocated",
+      };
     }
 
     let createdCount = 0;

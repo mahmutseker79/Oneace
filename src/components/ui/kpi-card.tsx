@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import type React from "react";
 import { Badge } from "./badge";
 import { Card } from "./card";
 
@@ -20,15 +20,7 @@ interface KpiCardProps {
   href?: string;
 }
 
-export function KpiCard({
-  title,
-  value,
-  description,
-  icon,
-  trend,
-  className,
-  href,
-}: KpiCardProps) {
+export function KpiCard({ title, value, description, icon, trend, className, href }: KpiCardProps) {
   const content = (
     <div className={cn("relative p-5", className)}>
       {/* Header: Icon + Title */}

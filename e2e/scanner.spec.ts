@@ -8,9 +8,9 @@ test.describe("Scanner", () => {
     await authedPage.waitForURL("**/scan**", { timeout: 10_000 });
 
     // Check for scanner heading
-    const heading = authedPage.locator(
-      "h1, h2, [data-testid='scanner-heading']"
-    ).filter({ hasText: /scan/i });
+    const heading = authedPage
+      .locator("h1, h2, [data-testid='scanner-heading']")
+      .filter({ hasText: /scan/i });
 
     const headingCount = await heading.count();
     if (headingCount > 0) {
@@ -23,9 +23,11 @@ test.describe("Scanner", () => {
     await authedPage.waitForURL("**/scan**", { timeout: 10_000 });
 
     // Look for barcode or scan input field
-    const scanInput = authedPage.locator(
-      "#scan-manual, input[placeholder*='barcode' i], input[placeholder*='scan' i], input[type='text'][class*='scan']"
-    ).first();
+    const scanInput = authedPage
+      .locator(
+        "#scan-manual, input[placeholder*='barcode' i], input[placeholder*='scan' i], input[type='text'][class*='scan']",
+      )
+      .first();
 
     const count = await scanInput.count();
     if (count > 0) {
@@ -38,9 +40,9 @@ test.describe("Scanner", () => {
     await authedPage.waitForURL("**/scan**", { timeout: 10_000 });
 
     // Look for camera icon, button, or toggle
-    const cameraControl = authedPage.locator(
-      "button, div[role='button'], svg[class*='camera']"
-    ).filter({ hasText: /camera|photo|video/i });
+    const cameraControl = authedPage
+      .locator("button, div[role='button'], svg[class*='camera']")
+      .filter({ hasText: /camera|photo|video/i });
 
     const count = await cameraControl.count();
     if (count > 0) {
@@ -53,18 +55,18 @@ test.describe("Scanner", () => {
     await authedPage.waitForURL("**/scan**", { timeout: 10_000 });
 
     // Try entering a non-existent barcode
-    const scanInput = authedPage.locator(
-      "#scan-manual, input[placeholder*='barcode' i], input[placeholder*='scan' i]"
-    ).first();
+    const scanInput = authedPage
+      .locator("#scan-manual, input[placeholder*='barcode' i], input[placeholder*='scan' i]")
+      .first();
 
     const inputCount = await scanInput.count();
     if (inputCount > 0) {
       await scanInput.fill("NONEXISTENT-CODE-12345-ZZZZ");
 
       // Look for submit button or press Enter
-      const submitBtn = authedPage.locator(
-        "button[type='submit'], button:has-text(/submit|scan|search/i)"
-      ).first();
+      const submitBtn = authedPage
+        .locator("button[type='submit'], button:has-text(/submit|scan|search/i)")
+        .first();
 
       const submitCount = await submitBtn.count();
       if (submitCount > 0) {
@@ -76,7 +78,7 @@ test.describe("Scanner", () => {
 
       // Should show "not found" or error result
       const notFoundMsg = authedPage.locator(
-        "text=/not found|invalid|no results|not in inventory/i"
+        "text=/not found|invalid|no results|not in inventory/i",
       );
 
       const notFoundCount = await notFoundMsg.count();
@@ -91,9 +93,9 @@ test.describe("Scanner", () => {
     await authedPage.waitForURL("**/scan**", { timeout: 10_000 });
 
     // Look for results container or area
-    const resultArea = authedPage.locator(
-      "[class*='result'], [class*='response'], [data-testid='scan-result']"
-    ).first();
+    const resultArea = authedPage
+      .locator("[class*='result'], [class*='response'], [data-testid='scan-result']")
+      .first();
 
     const resultCount = await resultArea.count();
     if (resultCount > 0) {
@@ -106,9 +108,9 @@ test.describe("Scanner", () => {
     await authedPage.waitForURL("**/scan**", { timeout: 10_000 });
 
     // Look for mode selector (e.g., receiving, putaway, transfer, etc.)
-    const modeSelector = authedPage.locator(
-      "select, [role='listbox'], button[class*='toggle']"
-    ).filter({ hasText: /mode|type|action/i });
+    const modeSelector = authedPage
+      .locator("select, [role='listbox'], button[class*='toggle']")
+      .filter({ hasText: /mode|type|action/i });
 
     const modeCount = await modeSelector.count();
     if (modeCount > 0) {
@@ -123,9 +125,7 @@ test.describe("Scanner navigation", () => {
     await authedPage.waitForURL("**/dashboard**", { timeout: 10_000 });
 
     // Look for scanner link in nav
-    const scannerNav = authedPage.locator(
-      "a, button"
-    ).filter({ hasText: /scan|scanner|barcode/i });
+    const scannerNav = authedPage.locator("a, button").filter({ hasText: /scan|scanner|barcode/i });
 
     const count = await scannerNav.count();
     if (count > 0) {

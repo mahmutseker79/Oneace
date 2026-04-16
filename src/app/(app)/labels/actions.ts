@@ -19,9 +19,7 @@ function formToInput(formData: FormData) {
   return Object.fromEntries(formData);
 }
 
-export async function createLabelTemplateAction(
-  formData: FormData,
-): Promise<ActionResult> {
+export async function createLabelTemplateAction(formData: FormData): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

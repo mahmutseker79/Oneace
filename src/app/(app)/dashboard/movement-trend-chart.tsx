@@ -1,6 +1,15 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 export type TrendPoint = {
   day: string;
@@ -33,7 +42,12 @@ export function MovementTrendChart({ data, labels }: MovementTrendChartProps) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="currentColor"
+          strokeOpacity={0.06}
+          vertical={false}
+        />
         <XAxis
           dataKey="day"
           tickFormatter={(v: string) => v.slice(5)}
@@ -56,11 +70,7 @@ export function MovementTrendChart({ data, labels }: MovementTrendChartProps) {
           cursor={{ fill: "currentColor", fillOpacity: 0.04 }}
           labelFormatter={(v) => String(v)}
         />
-        <Legend
-          wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-          iconType="circle"
-          iconSize={8}
-        />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle" iconSize={8} />
         <Bar
           dataKey="receipts"
           name={labels.receipts}

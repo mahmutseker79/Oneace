@@ -5,10 +5,10 @@
  * Verifies HMAC signature before processing.
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { WebhookDispatcher } from "@/lib/webhooks/dispatcher";
+import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * POST /api/webhooks/inbound
@@ -25,10 +25,7 @@ export async function POST(request: NextRequest) {
     const deliveryId = request.headers.get("x-webhook-delivery-id");
 
     if (!signature || !timestamp || !deliveryId) {
-      return NextResponse.json(
-        { error: "Missing webhook headers" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing webhook headers" }, { status: 400 });
     }
 
     // Get raw body for signature verification
@@ -38,10 +35,7 @@ export async function POST(request: NextRequest) {
     const MAX_PAYLOAD_SIZE = 1_000_000; // 1MB
     if (body.length > MAX_PAYLOAD_SIZE) {
       logger.warn("Webhook payload too large", { deliveryId, size: body.length });
-      return NextResponse.json(
-        { error: "Payload too large" },
-        { status: 413 },
-      );
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
     }
 
     // Verify signature — reject if no secret is configured
@@ -54,10 +48,7 @@ export async function POST(request: NextRequest) {
 
     if (!isValid) {
       logger.warn("Invalid webhook signature", { deliveryId });
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     // Parse payload and validate depth
@@ -76,18 +67,12 @@ export async function POST(request: NextRequest) {
       parsed = JSON.parse(body);
     } catch (err) {
       logger.warn("Webhook JSON parse failed", { deliveryId });
-      return NextResponse.json(
-        { error: "Invalid JSON" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
     if (!checkJsonDepth(parsed)) {
       logger.warn("Webhook payload too deeply nested", { deliveryId });
-      return NextResponse.json(
-        { error: "Payload too deeply nested" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Payload too deeply nested" }, { status: 400 });
     }
 
     const payload = parsed as {
@@ -130,10 +115,7 @@ export async function POST(request: NextRequest) {
         deliveryId,
       });
 
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     logger.info("Webhook received", {
@@ -147,17 +129,11 @@ export async function POST(request: NextRequest) {
     // - Handle import completion events
     // - Trigger appropriate actions
 
-    return NextResponse.json(
-      { ok: true, deliveryId },
-      { status: 200 },
-    );
+    return NextResponse.json({ ok: true, deliveryId }, { status: 200 });
   } catch (error) {
     logger.error("Webhook processing error", { error });
 
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

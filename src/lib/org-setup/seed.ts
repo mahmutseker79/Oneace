@@ -1,6 +1,6 @@
+import type { ReasonCategory } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import type { ReasonCategory } from "@/generated/prisma";
 
 /**
  * Phase L9 — Organization seeding utility.
@@ -115,10 +115,7 @@ async function seedDefaultReasonCodes(organizationId: string): Promise<void> {
     } catch (err) {
       // Swallow "unique constraint" errors — reason code may already exist
       // from a concurrent seed attempt or earlier partial run. Log and continue.
-      if (
-        err instanceof Error &&
-        err.message.includes("Unique constraint")
-      ) {
+      if (err instanceof Error && err.message.includes("Unique constraint")) {
         logger.debug(`reason code ${def.code} already exists for org ${organizationId}`);
       } else {
         // Unexpected error — log and continue (don't fail the entire seed)

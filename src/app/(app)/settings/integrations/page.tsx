@@ -5,15 +5,15 @@
  * and connect/disconnect buttons.
  */
 
-import { Metadata } from "next";
-import Link from "next/link";
-import { db } from "@/lib/db";
-import { IntegrationProvider } from "@/generated/prisma";
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import { requireActiveMembership } from "@/lib/session";
+import { PageHeader } from "@/components/ui/page-header";
+import type { IntegrationProvider } from "@/generated/prisma";
+import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
+import type { Metadata } from "next";
+import Link from "next/link";
 
 import { disconnectIntegrationAction } from "./actions";
 
@@ -36,10 +36,7 @@ export default async function IntegrationsPage() {
   const t = await getMessages();
 
   const canConnect = hasCapability(membership.role, "integrations.connect");
-  const canDisconnect = hasCapability(
-    membership.role,
-    "integrations.disconnect",
-  );
+  const canDisconnect = hasCapability(membership.role, "integrations.disconnect");
 
   // Fetch connected integrations
   const connectedIntegrations = await db.integration.findMany({
@@ -49,9 +46,7 @@ export default async function IntegrationsPage() {
     },
   });
 
-  const connectedMap = new Map(
-    connectedIntegrations.map((i) => [i.provider, i]),
-  );
+  const connectedMap = new Map(connectedIntegrations.map((i) => [i.provider, i]));
 
   // Define available integrations
   const availableIntegrations: IntegrationCard[] = [
@@ -89,16 +84,15 @@ export default async function IntegrationsPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {availableIntegrations.map((integration) => (
-          <div
-            key={integration.id}
-            className="border rounded-lg p-6 space-y-4"
-          >
+          <div key={integration.id} className="border rounded-lg p-6 space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h2 className="font-semibold text-lg">{integration.provider === "QUICKBOOKS_ONLINE" ? "QuickBooks Online" : integration.provider}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {integration.description}
-                </p>
+                <h2 className="font-semibold text-lg">
+                  {integration.provider === "QUICKBOOKS_ONLINE"
+                    ? "QuickBooks Online"
+                    : integration.provider}
+                </h2>
+                <p className="text-sm text-muted-foreground">{integration.description}</p>
               </div>
               <div
                 className={`px-2 py-1 rounded text-sm font-medium ${
@@ -113,8 +107,7 @@ export default async function IntegrationsPage() {
 
             {integration.lastSyncAt && (
               <div className="text-sm text-muted-foreground">
-                Last sync:{" "}
-                {integration.lastSyncAt.toLocaleString()}
+                Last sync: {integration.lastSyncAt.toLocaleString()}
               </div>
             )}
 
@@ -128,16 +121,24 @@ export default async function IntegrationsPage() {
                     Settings
                   </Link>
                   {canDisconnect && connectedMap.get(integration.provider) && (
-                    <form action={async () => {
-                      "use server";
-                      const integrationRecord = await db.integration.findFirst({
-                        where: { provider: integration.provider, organizationId: membership.organizationId, status: "CONNECTED" },
-                        select: { id: true },
-                      });
-                      if (integrationRecord) {
-                        await disconnectIntegrationAction({ integrationId: integrationRecord.id });
-                      }
-                    }}>
+                    <form
+                      action={async () => {
+                        "use server";
+                        const integrationRecord = await db.integration.findFirst({
+                          where: {
+                            provider: integration.provider,
+                            organizationId: membership.organizationId,
+                            status: "CONNECTED",
+                          },
+                          select: { id: true },
+                        });
+                        if (integrationRecord) {
+                          await disconnectIntegrationAction({
+                            integrationId: integrationRecord.id,
+                          });
+                        }
+                      }}
+                    >
                       <Button type="submit" variant="destructive" size="sm" className="flex-1">
                         Disconnect
                       </Button>
@@ -171,8 +172,7 @@ export default async function IntegrationsPage() {
           </Link>
         </div>
         <p className="text-muted-foreground">
-          Send real-time notifications to external systems when events occur in
-          OneAce.
+          Send real-time notifications to external systems when events occur in OneAce.
         </p>
       </div>
     </div>

@@ -10,7 +10,7 @@
  * Terminal states: RECEIVED, CANCELLED
  */
 
-import { TransferStatus } from "@/generated/prisma";
+import type { TransferStatus } from "@/generated/prisma";
 
 /**
  * Check if a transfer can transition to SHIPPED (outbound).

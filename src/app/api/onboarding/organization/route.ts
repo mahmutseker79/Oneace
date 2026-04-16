@@ -5,10 +5,10 @@ import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { getMailer } from "@/lib/mail";
 import { buildWelcomeEmail } from "@/lib/mail/templates/welcome-email";
+import { seedOrganization } from "@/lib/org-setup/seed";
 // Phase 6A / P2 — narrow rate-limit surface for org create. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";
-import { seedOrganization } from "@/lib/org-setup/seed";
 import { slugify } from "@/lib/utils";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";

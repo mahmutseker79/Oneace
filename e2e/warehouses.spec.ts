@@ -9,7 +9,10 @@ test.describe("Warehouses", () => {
 
     // Check for warehouses heading
     await expect(
-      authedPage.locator("h1, h2").filter({ hasText: /warehouse|location|facility/i }).first()
+      authedPage
+        .locator("h1, h2")
+        .filter({ hasText: /warehouse|location|facility/i })
+        .first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 
@@ -31,9 +34,9 @@ test.describe("Warehouses", () => {
     await authedPage.waitForURL("**/warehouses**", { timeout: 10_000 });
 
     // Look for new warehouse button
-    const newBtn = authedPage.locator(
-      "button, a"
-    ).filter({ hasText: /new|create|add.*warehouse|new location/i });
+    const newBtn = authedPage
+      .locator("button, a")
+      .filter({ hasText: /new|create|add.*warehouse|new location/i });
 
     const count = await newBtn.count();
     if (count > 0) {
@@ -56,7 +59,7 @@ test.describe("Warehouses", () => {
 
     // Look for name input field
     const nameInput = authedPage.locator(
-      "input[placeholder*='name' i], input[placeholder*='warehouse' i], label:has-text(/name/i) ~ input"
+      "input[placeholder*='name' i], input[placeholder*='warehouse' i], label:has-text(/name/i) ~ input",
     );
 
     const count = await nameInput.count();
@@ -72,9 +75,7 @@ test.describe("Bins", () => {
     await authedPage.waitForURL("**/bins**", { timeout: 10_000 });
 
     // Check for bins heading
-    const heading = authedPage.locator(
-      "h1, h2"
-    ).filter({ hasText: /bins|locations|storage/i });
+    const heading = authedPage.locator("h1, h2").filter({ hasText: /bins|locations|storage/i });
 
     const count = await heading.count();
     if (count > 0) {
@@ -100,9 +101,9 @@ test.describe("Bins", () => {
     await authedPage.waitForURL("**/bins**", { timeout: 10_000 });
 
     // Look for new bin button
-    const newBtn = authedPage.locator(
-      "button, a"
-    ).filter({ hasText: /new|create|add.*bin|new location/i });
+    const newBtn = authedPage
+      .locator("button, a")
+      .filter({ hasText: /new|create|add.*bin|new location/i });
 
     const count = await newBtn.count();
     if (count > 0) {
@@ -117,9 +118,9 @@ test.describe("Warehouse navigation", () => {
     await authedPage.waitForURL("**/dashboard**", { timeout: 10_000 });
 
     // Look for warehouses link in nav
-    const warehouseNav = authedPage.locator(
-      "a, button"
-    ).filter({ hasText: /warehouse|location|facility/i });
+    const warehouseNav = authedPage
+      .locator("a, button")
+      .filter({ hasText: /warehouse|location|facility/i });
 
     const count = await warehouseNav.count();
     if (count > 0) {

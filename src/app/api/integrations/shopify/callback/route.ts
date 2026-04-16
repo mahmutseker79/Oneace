@@ -5,12 +5,12 @@
  * Exchanges the authorization code for an access token.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
 import { db } from "@/lib/db";
-import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { ShopifyClient } from "@/lib/integrations/shopify/shopify-client";
+import { logger } from "@/lib/logger";
+import { type NextRequest, NextResponse } from "next/server";
 
 function verifyOAuthState(
   state: string,
@@ -20,9 +20,7 @@ function verifyOAuthState(
   if (parts.length !== 3) return null; // expect orgId|userId|signature
   const [organizationId, userId, signature] = parts;
   if (!organizationId || !userId || !signature) return null;
-  const expected = createHmac("sha256", secret)
-    .update(`${organizationId}|${userId}`)
-    .digest("hex");
+  const expected = createHmac("sha256", secret).update(`${organizationId}|${userId}`).digest("hex");
   if (signature !== expected) return null;
   return { organizationId, userId };
 }
@@ -36,10 +34,7 @@ export async function GET(request: NextRequest) {
     const hmac = searchParams.get("hmac");
 
     if (!code || !state || !shop || !hmac) {
-      return NextResponse.json(
-        { error: "Missing OAuth parameters" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing OAuth parameters" }, { status: 400 });
     }
 
     // Verify state parameter with HMAC signature
@@ -48,10 +43,7 @@ export async function GET(request: NextRequest) {
       logger.warn("Shopify OAuth state verification failed", {
         state,
       });
-      return NextResponse.json(
-        { error: "Invalid state parameter" },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: "Invalid state parameter" }, { status: 403 });
     }
 
     const { organizationId, userId } = verified;
@@ -88,19 +80,13 @@ export async function GET(request: NextRequest) {
 
     // Redirect to settings page with success message
     return NextResponse.redirect(
-      new URL(
-        "/settings/integrations/shopify?status=success",
-        request.url,
-      ),
+      new URL("/settings/integrations/shopify?status=success", request.url),
     );
   } catch (error) {
     logger.error("Shopify OAuth callback error", { error });
 
     return NextResponse.redirect(
-      new URL(
-        "/settings/integrations/shopify?status=error",
-        request.url,
-      ),
+      new URL("/settings/integrations/shopify?status=error", request.url),
     );
   }
 }

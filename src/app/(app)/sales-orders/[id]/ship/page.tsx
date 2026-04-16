@@ -1,10 +1,10 @@
 // Ship sales order page
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { shipSalesOrderAction } from "../../actions";
 
 export default function ShipSalesOrderPage({ params }: { params: { id: string } }) {
@@ -31,8 +31,8 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
         order?.lines.map((line: any) => ({
           lineId: line.id,
           shippedQty: quantities[line.id] || 0,
-        })) || []
-      )
+        })) || [],
+      ),
     );
 
     const result = await shipSalesOrderAction(formData);
@@ -90,7 +90,7 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
                         onChange={(e) =>
                           setQuantities({
                             ...quantities,
-                            [line.id]: parseInt(e.target.value) || 0,
+                            [line.id]: Number.parseInt(e.target.value) || 0,
                           })
                         }
                         className="w-20 text-center"

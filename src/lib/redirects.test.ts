@@ -52,9 +52,9 @@ describe("isSafeRedirect", () => {
   });
 
   it("rejects paths over 512 characters", () => {
-    const long = "/" + "a".repeat(512);
+    const long = `/${"a".repeat(512)}`;
     expect(isSafeRedirect(long)).toBe(false);
-    expect(isSafeRedirect("/" + "a".repeat(511))).toBe(true);
+    expect(isSafeRedirect(`/${"a".repeat(511)}`)).toBe(true);
   });
 
   it("rejects paths that don't start with /", () => {

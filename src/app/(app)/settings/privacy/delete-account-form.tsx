@@ -1,8 +1,8 @@
 "use client";
 
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,11 +87,7 @@ export function DeleteAccountForm({ isDisabled = false, labels }: DeleteAccountF
         >
           {isLoading ? "Deleting..." : labels.button}
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => setPhrase("")}
-          disabled={isLoading}
-        >
+        <Button variant="outline" onClick={() => setPhrase("")} disabled={isLoading}>
           {labels.cancel}
         </Button>
       </div>

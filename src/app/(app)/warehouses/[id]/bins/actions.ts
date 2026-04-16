@@ -9,8 +9,8 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
-import { binInputSchema } from "@/lib/validation/bin";
 import { barcodeValueSchema } from "@/lib/validation/barcode";
+import { binInputSchema } from "@/lib/validation/bin";
 
 export type ActionResult =
   | { ok: true; id: string }

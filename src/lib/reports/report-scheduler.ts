@@ -13,12 +13,12 @@
 import { db } from "@/lib/db";
 
 export interface ScheduledReportExecution {
-	reportId: string;
-	reportName: string;
-	executedAt: Date;
-	sentTo: string[];
-	success: boolean;
-	error?: string;
+  reportId: string;
+  reportName: string;
+  executedAt: Date;
+  sentTo: string[];
+  success: boolean;
+  error?: string;
 }
 
 /**
@@ -31,33 +31,32 @@ export interface ScheduledReportExecution {
  *   "0 9 1 * *" = first day of month at 9:00
  */
 function shouldRunNow(cronExpression: string, now: Date): boolean {
-	try {
-		const parts = cronExpression.split(" ");
-		const minute = parts[0] ?? "*";
-		const hour = parts[1] ?? "*";
-		const day = parts[2] ?? "*";
-		const month = parts[3] ?? "*";
-		const dayOfWeek = parts[4] ?? "*";
+  try {
+    const parts = cronExpression.split(" ");
+    const minute = parts[0] ?? "*";
+    const hour = parts[1] ?? "*";
+    const day = parts[2] ?? "*";
+    const month = parts[3] ?? "*";
+    const dayOfWeek = parts[4] ?? "*";
 
-		const currentMinute = now.getMinutes();
-		const currentHour = now.getHours();
-		const currentDay = now.getDate();
-		const currentMonth = now.getMonth() + 1; // getMonth is 0-indexed
-		const currentDayOfWeek = now.getDay();
+    const currentMinute = now.getMinutes();
+    const currentHour = now.getHours();
+    const currentDay = now.getDate();
+    const currentMonth = now.getMonth() + 1; // getMonth is 0-indexed
+    const currentDayOfWeek = now.getDay();
 
-		// Check each field
-		const matchMinute = minute === "*" || parseInt(minute) === currentMinute;
-		const matchHour = hour === "*" || parseInt(hour) === currentHour;
-		const matchDay = day === "*" || parseInt(day) === currentDay;
-		const matchMonth = month === "*" || parseInt(month) === currentMonth;
-		const matchDayOfWeek =
-			dayOfWeek === "*" || parseInt(dayOfWeek) === currentDayOfWeek;
+    // Check each field
+    const matchMinute = minute === "*" || Number.parseInt(minute) === currentMinute;
+    const matchHour = hour === "*" || Number.parseInt(hour) === currentHour;
+    const matchDay = day === "*" || Number.parseInt(day) === currentDay;
+    const matchMonth = month === "*" || Number.parseInt(month) === currentMonth;
+    const matchDayOfWeek = dayOfWeek === "*" || Number.parseInt(dayOfWeek) === currentDayOfWeek;
 
-		return matchMinute && matchHour && matchDay && matchMonth && matchDayOfWeek;
-	} catch (error) {
-		console.error("Cron parse error:", error);
-		return false;
-	}
+    return matchMinute && matchHour && matchDay && matchMonth && matchDayOfWeek;
+  } catch (error) {
+    console.error("Cron parse error:", error);
+    return false;
+  }
 }
 
 /**
@@ -65,83 +64,80 @@ function shouldRunNow(cronExpression: string, now: Date): boolean {
  * Called by Vercel Cron or similar background job
  */
 export async function processScheduledReports(): Promise<ScheduledReportExecution[]> {
-	const now = new Date();
-	const executions: ScheduledReportExecution[] = [];
+  const now = new Date();
+  const executions: ScheduledReportExecution[] = [];
 
-	try {
-		// Find all active reports due to run
-		const dueReports = await db.scheduledReport.findMany({
-			where: {
-				isActive: true,
-				nextSendAt: { lte: now },
-			},
-			include: {
-				organization: { select: { id: true, name: true } },
-			},
-		});
+  try {
+    // Find all active reports due to run
+    const dueReports = await db.scheduledReport.findMany({
+      where: {
+        isActive: true,
+        nextSendAt: { lte: now },
+      },
+      include: {
+        organization: { select: { id: true, name: true } },
+      },
+    });
 
-		for (const report of dueReports) {
-			try {
-				// Check if it's time to run based on cron expression
-				if (!shouldRunNow(report.cronExpression as string, now)) {
-					continue;
-				}
+    for (const report of dueReports) {
+      try {
+        // Check if it's time to run based on cron expression
+        if (!shouldRunNow(report.cronExpression as string, now)) {
+          continue;
+        }
 
-				// Generate the report (simplified—actual implementation would call report generators)
-				const reportContent = await generateReport(
-					report.organization.id,
-					report.reportType as string,
-					report.filters as Record<string, any>,
-					report.format as string,
-				);
+        // Generate the report (simplified—actual implementation would call report generators)
+        const reportContent = await generateReport(
+          report.organization.id,
+          report.reportType as string,
+          report.filters as Record<string, any>,
+          report.format as string,
+        );
 
-				// Send email to recipients (simplified)
-				await sendReportEmail(
-					report.recipientEmails,
-					report.name,
-					report.organization.name,
-					reportContent,
-					report.format as string,
-				);
+        // Send email to recipients (simplified)
+        await sendReportEmail(
+          report.recipientEmails,
+          report.name,
+          report.organization.name,
+          reportContent,
+          report.format as string,
+        );
 
-				// Update last sent time and calculate next run
-				const nextSendAt = calculateNextRunTime(
-					report.cronExpression as string,
-					now,
-				);
+        // Update last sent time and calculate next run
+        const nextSendAt = calculateNextRunTime(report.cronExpression as string, now);
 
-				await db.scheduledReport.update({
-					where: { id: report.id },
-					data: {
-						lastSentAt: now,
-						nextSendAt,
-					},
-				});
+        await db.scheduledReport.update({
+          where: { id: report.id },
+          data: {
+            lastSentAt: now,
+            nextSendAt,
+          },
+        });
 
-				executions.push({
-					reportId: report.id,
-					reportName: report.name,
-					executedAt: now,
-					sentTo: report.recipientEmails,
-					success: true,
-				});
-			} catch (error) {
-				console.error(`Error executing report ${report.id}:`, error);
-				executions.push({
-					reportId: report.id,
-					reportName: report.name,
-					executedAt: now,
-					sentTo: report.recipientEmails,
-					success: false,
-					error: error instanceof Error ? error.message : "Unknown error",
-				});
-			}
-		}
-	} catch (error) {
-		console.error("Process scheduled reports error:", error);
-	}
+        executions.push({
+          reportId: report.id,
+          reportName: report.name,
+          executedAt: now,
+          sentTo: report.recipientEmails,
+          success: true,
+        });
+      } catch (error) {
+        console.error(`Error executing report ${report.id}:`, error);
+        executions.push({
+          reportId: report.id,
+          reportName: report.name,
+          executedAt: now,
+          sentTo: report.recipientEmails,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Process scheduled reports error:", error);
+  }
 
-	return executions;
+  return executions;
 }
 
 /**
@@ -149,18 +145,18 @@ export async function processScheduledReports(): Promise<ScheduledReportExecutio
  * This is a placeholder; actual implementation would call specific report generators
  */
 async function generateReport(
-	orgId: string,
-	reportType: string,
-	filters: Record<string, any>,
-	format: string,
+  orgId: string,
+  reportType: string,
+  filters: Record<string, any>,
+  format: string,
 ): Promise<Buffer> {
-	// Placeholder: in reality, this would:
-	// 1. Fetch data based on report type and filters
-	// 2. Generate PDF/XLSX/CSV output
-	// 3. Return the file buffer
+  // Placeholder: in reality, this would:
+  // 1. Fetch data based on report type and filters
+  // 2. Generate PDF/XLSX/CSV output
+  // 3. Return the file buffer
 
-	// For now, return empty buffer
-	return Buffer.from("Report generated");
+  // For now, return empty buffer
+  return Buffer.from("Report generated");
 }
 
 /**
@@ -168,16 +164,14 @@ async function generateReport(
  * This is a placeholder; actual implementation would use SendGrid/AWS SES/etc
  */
 async function sendReportEmail(
-	recipientEmails: string[],
-	reportName: string,
-	orgName: string,
-	fileBuffer: Buffer,
-	format: string,
+  recipientEmails: string[],
+  reportName: string,
+  orgName: string,
+  fileBuffer: Buffer,
+  format: string,
 ): Promise<void> {
-	// Placeholder: in reality, this would send an email with the report attached
-	console.log(
-		`Would send ${reportName} to ${recipientEmails.join(", ")} (org: ${orgName})`,
-	);
+  // Placeholder: in reality, this would send an email with the report attached
+  console.log(`Would send ${reportName} to ${recipientEmails.join(", ")} (org: ${orgName})`);
 }
 
 /**
@@ -185,8 +179,8 @@ async function sendReportEmail(
  * Simplified version—real implementation would use cron library
  */
 function calculateNextRunTime(cronExpression: string, now: Date): Date {
-	// For now, add one day and return same time
-	const next = new Date(now);
-	next.setDate(next.getDate() + 1);
-	return next;
+  // For now, add one day and return same time
+  const next = new Date(now);
+  next.setDate(next.getDate() + 1);
+  return next;
 }

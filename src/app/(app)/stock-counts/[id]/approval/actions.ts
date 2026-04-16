@@ -8,20 +8,16 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
+import { canApprove, canReject, canSubmitForApproval } from "@/lib/stockcount/machine";
+import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
-  canApprove,
-  canReject,
-  canSubmitForApproval,
-} from "@/lib/stockcount/machine";
-import {
-  type SubmitForApprovalInput,
   type ApproveCountInput,
   type RejectCountInput,
-  submitForApprovalSchema,
+  type SubmitForApprovalInput,
   approveCountSchema,
   rejectCountSchema,
+  submitForApprovalSchema,
 } from "@/lib/validation/count-approval";
-import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 
 /**
  * Submit a count for approval. Transitions IN_PROGRESS → PENDING_APPROVAL.
@@ -108,9 +104,7 @@ export async function submitForApprovalAction(
 /**
  * Approve a pending count. Transitions PENDING_APPROVAL → APPROVED.
  */
-export async function approveCountAction(
-  input: unknown,
-): Promise<ActionResult<{ id: string }>> {
+export async function approveCountAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -184,9 +178,7 @@ export async function approveCountAction(
 /**
  * Reject a pending count. Transitions PENDING_APPROVAL → IN_PROGRESS.
  */
-export async function rejectCountAction(
-  input: unknown,
-): Promise<ActionResult<{ id: string }>> {
+export async function rejectCountAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

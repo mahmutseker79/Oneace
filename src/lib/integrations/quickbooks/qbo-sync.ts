@@ -6,14 +6,14 @@
  */
 
 import { db } from "@/lib/db";
-import { logger } from "@/lib/logger";
+import type { QBOClient, QBOItem } from "@/lib/integrations/quickbooks/qbo-client";
 import {
+  type SyncContext,
   SyncEngine,
   type SyncEntity,
-  type SyncContext,
   type SyncResult,
 } from "@/lib/integrations/sync-engine";
-import { QBOClient, type QBOItem } from "@/lib/integrations/quickbooks/qbo-client";
+import { logger } from "@/lib/logger";
 
 export class QBOSyncEngine extends SyncEngine {
   private client: QBOClient;
@@ -71,10 +71,7 @@ export class QBOSyncEngine extends SyncEngine {
   /**
    * Sync items (products/services).
    */
-  private async syncItems(
-    context: SyncContext,
-    result: SyncResult,
-  ): Promise<void> {
+  private async syncItems(context: SyncContext, result: SyncResult): Promise<void> {
     const qboItems = await this.client.getItems();
 
     const items = qboItems.map((item) => ({
@@ -130,10 +127,7 @@ export class QBOSyncEngine extends SyncEngine {
   /**
    * Sync suppliers (vendors).
    */
-  private async syncSuppliers(
-    context: SyncContext,
-    result: SyncResult,
-  ): Promise<void> {
+  private async syncSuppliers(context: SyncContext, result: SyncResult): Promise<void> {
     const qboVendors = await this.client.getVendors();
 
     const suppliers = qboVendors.map((vendor) => ({
@@ -153,26 +147,28 @@ export class QBOSyncEngine extends SyncEngine {
         context,
         async (supplier) => {
           const code = String(supplier.data.name).substring(0, 4).toUpperCase();
-          await db.supplier.create({
-            data: {
-              organizationId: context.organizationId,
-              name: String(supplier.data.name),
-              code,
-              email: String(supplier.data.email || ""),
-              phone: String(supplier.data.phone || ""),
-            },
-          }).catch(async () => {
-            return db.supplier.updateMany({
-              where: {
+          await db.supplier
+            .create({
+              data: {
                 organizationId: context.organizationId,
                 name: String(supplier.data.name),
-              },
-              data: {
+                code,
                 email: String(supplier.data.email || ""),
                 phone: String(supplier.data.phone || ""),
               },
+            })
+            .catch(async () => {
+              return db.supplier.updateMany({
+                where: {
+                  organizationId: context.organizationId,
+                  name: String(supplier.data.name),
+                },
+                data: {
+                  email: String(supplier.data.email || ""),
+                  phone: String(supplier.data.phone || ""),
+                },
+              });
             });
-          });
         },
       );
 
@@ -185,10 +181,7 @@ export class QBOSyncEngine extends SyncEngine {
   /**
    * Sync purchase orders.
    */
-  private async syncPurchaseOrders(
-    context: SyncContext,
-    result: SyncResult,
-  ): Promise<void> {
+  private async syncPurchaseOrders(context: SyncContext, result: SyncResult): Promise<void> {
     const qboPOs = await this.client.getPurchaseOrders();
 
     const pos = qboPOs.map((po) => ({
@@ -205,64 +198,60 @@ export class QBOSyncEngine extends SyncEngine {
     }));
 
     if (context.direction === "INBOUND") {
-      const { processed, failed, errors } = await this.processBatch(
-        pos,
-        context,
-        async (po) => {
-          // For now, we'll need to match suppliers by vendorId or create a fallback
-          // In a real scenario, this would be stored during vendor sync
-          const vendorName = String(po.data.vendorId || "Unknown Vendor");
+      const { processed, failed, errors } = await this.processBatch(pos, context, async (po) => {
+        // For now, we'll need to match suppliers by vendorId or create a fallback
+        // In a real scenario, this would be stored during vendor sync
+        const vendorName = String(po.data.vendorId || "Unknown Vendor");
 
-          const supplier = await db.supplier.findFirst({
-            where: {
-              organizationId: context.organizationId,
-              name: vendorName,
-            },
+        const supplier = await db.supplier.findFirst({
+          where: {
+            organizationId: context.organizationId,
+            name: vendorName,
+          },
+        });
+
+        if (!supplier) {
+          logger.warn("Supplier not found for PO", {
+            poNumber: po.data.docNumber,
           });
+          return;
+        }
 
-          if (!supplier) {
-            logger.warn("Supplier not found for PO", {
-              poNumber: po.data.docNumber,
-            });
-            return;
-          }
+        // Get default warehouse
+        const warehouse = await db.warehouse.findFirst({
+          where: {
+            organizationId: context.organizationId,
+            isArchived: false,
+          },
+        });
 
-          // Get default warehouse
-          const warehouse = await db.warehouse.findFirst({
-            where: {
-              organizationId: context.organizationId,
-              isArchived: false,
-            },
+        if (!warehouse) {
+          logger.warn("No warehouse found for PO sync", {
+            organizationId: context.organizationId,
           });
+          return;
+        }
 
-          if (!warehouse) {
-            logger.warn("No warehouse found for PO sync", {
+        await db.purchaseOrder.upsert({
+          where: {
+            organizationId_poNumber: {
               organizationId: context.organizationId,
-            });
-            return;
-          }
-
-          await db.purchaseOrder.upsert({
-            where: {
-              organizationId_poNumber: {
-                organizationId: context.organizationId,
-                poNumber: String(po.data.docNumber),
-              },
-            },
-            create: {
-              organizationId: context.organizationId,
-              supplierId: supplier.id,
-              warehouseId: warehouse.id,
               poNumber: String(po.data.docNumber),
-              status: "DRAFT",
-              notes: `Synced from QBO on ${new Date().toISOString()}`,
             },
-            update: {
-              notes: `Last synced from QBO on ${new Date().toISOString()}`,
-            },
-          });
-        },
-      );
+          },
+          create: {
+            organizationId: context.organizationId,
+            supplierId: supplier.id,
+            warehouseId: warehouse.id,
+            poNumber: String(po.data.docNumber),
+            status: "DRAFT",
+            notes: `Synced from QBO on ${new Date().toISOString()}`,
+          },
+          update: {
+            notes: `Last synced from QBO on ${new Date().toISOString()}`,
+          },
+        });
+      });
 
       result.itemsSynced = processed;
       result.itemsFailed = failed;
@@ -270,9 +259,7 @@ export class QBOSyncEngine extends SyncEngine {
     }
   }
 
-  protected async fetchExternalEntities(
-    context: SyncContext,
-  ): Promise<SyncEntity[]> {
+  protected async fetchExternalEntities(context: SyncContext): Promise<SyncEntity[]> {
     if (context.entityType === "ITEM") {
       const items = await this.client.getItems();
       return items.map((item) => ({
@@ -299,9 +286,7 @@ export class QBOSyncEngine extends SyncEngine {
     return local;
   }
 
-  protected async pushToExternal(
-    entities: SyncEntity[],
-  ): Promise<SyncEntity[]> {
+  protected async pushToExternal(entities: SyncEntity[]): Promise<SyncEntity[]> {
     const pushed: SyncEntity[] = [];
 
     for (const entity of entities) {
@@ -329,9 +314,7 @@ export class QBOSyncEngine extends SyncEngine {
     return pushed;
   }
 
-  protected async pullFromExternal(
-    entities: SyncEntity[],
-  ): Promise<SyncEntity[]> {
+  protected async pullFromExternal(entities: SyncEntity[]): Promise<SyncEntity[]> {
     // Handled by specific sync methods above
     return entities;
   }

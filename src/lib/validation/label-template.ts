@@ -26,10 +26,7 @@ export const labelTemplateInputSchema = z.object({
       errorMap: () => ({ message: "Invalid barcode format" }),
     })
     .optional(),
-  layout: z
-    .record(z.unknown())
-    .optional()
-    .describe("JSON layout configuration for label fields"),
+  layout: z.record(z.unknown()).optional().describe("JSON layout configuration for label fields"),
   isDefault: z.boolean().optional(),
 });
 

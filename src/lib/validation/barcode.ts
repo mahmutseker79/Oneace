@@ -24,10 +24,7 @@ export const barcodeValueSchema = z
  * @param code - The location code (warehouse code or bin code)
  * @returns The generated barcode value
  */
-export function generateLocationBarcode(
-  type: "warehouse" | "bin",
-  code: string,
-): string {
+export function generateLocationBarcode(type: "warehouse" | "bin", code: string): string {
   const timestamp = Date.now();
   const typeUpper = type.toUpperCase();
   const codeUpper = code.toUpperCase();

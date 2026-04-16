@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
   TableBody,
@@ -14,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import { db } from "@/lib/db";
 import { format, getMessages, getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -141,7 +141,9 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.movements.heading}</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            {t.movements.heading}
+          </h1>
           <p className="text-sm text-muted-foreground">{t.movements.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -348,14 +350,16 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
           {nextCursor ? (
             <div className="flex justify-center">
               <Button variant="outline" asChild>
-                <Link href={`/movements?${new URLSearchParams({
-                  ...(filter.rawFrom ? { from: filter.rawFrom } : {}),
-                  ...(filter.rawTo ? { to: filter.rawTo } : {}),
-                  ...(filter.rawType ? { type: filter.rawType } : {}),
-                  ...(filter.rawWarehouse ? { warehouse: filter.rawWarehouse } : {}),
-                  ...(filter.rawQ ? { q: filter.rawQ } : {}),
-                  cursor: nextCursor,
-                }).toString()}`}>
+                <Link
+                  href={`/movements?${new URLSearchParams({
+                    ...(filter.rawFrom ? { from: filter.rawFrom } : {}),
+                    ...(filter.rawTo ? { to: filter.rawTo } : {}),
+                    ...(filter.rawType ? { type: filter.rawType } : {}),
+                    ...(filter.rawWarehouse ? { warehouse: filter.rawWarehouse } : {}),
+                    ...(filter.rawQ ? { q: filter.rawQ } : {}),
+                    cursor: nextCursor,
+                  }).toString()}`}
+                >
                   {t.common.loadMore}
                 </Link>
               </Button>

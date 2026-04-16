@@ -1,6 +1,6 @@
 "use client";
 
-import { Cell, PieChart, Pie, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 // Premium color palette — harmonious, accessible, dark-mode friendly
 const COLORS = [

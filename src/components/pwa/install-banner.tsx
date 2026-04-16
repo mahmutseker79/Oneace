@@ -27,7 +27,7 @@ export function InstallBanner() {
 
     // Increment visit count
     const visitCountStr = localStorage.getItem("oneace-visit-count") || "0";
-    const visitCount = Math.min(parseInt(visitCountStr, 10) + 1, 3);
+    const visitCount = Math.min(Number.parseInt(visitCountStr, 10) + 1, 3);
     localStorage.setItem("oneace-visit-count", visitCount.toString());
 
     // Show banner only on first 3 visits

@@ -1,12 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
 
 import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canRollback } from "@/lib/stockcount/machine";
-import { getMessages } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +55,10 @@ export default async function RollbackPage({
       <div className="space-y-6">
         <PageHeader
           title={t.stockCounts.rollback?.heading || "Rollback Count"}
-          description={t.stockCounts.rollback?.subtitle || "Reverse this completed count and revert stock adjustments"}
+          description={
+            t.stockCounts.rollback?.subtitle ||
+            "Reverse this completed count and revert stock adjustments"
+          }
           backHref={`/stock-counts/${params.id}`}
           breadcrumb={[
             { label: t.nav?.stockCounts ?? "Stock Counts", href: "/stock-counts" },
@@ -78,7 +81,10 @@ export default async function RollbackPage({
     <div className="space-y-6">
       <PageHeader
         title={t.stockCounts.rollback?.heading || "Rollback Count"}
-        description={t.stockCounts.rollback?.subtitle || "Reverse this completed count and revert stock adjustments"}
+        description={
+          t.stockCounts.rollback?.subtitle ||
+          "Reverse this completed count and revert stock adjustments"
+        }
         backHref={`/stock-counts/${params.id}`}
         breadcrumb={[
           { label: t.nav?.stockCounts ?? "Stock Counts", href: "/stock-counts" },
@@ -96,9 +102,12 @@ export default async function RollbackPage({
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm">
-                  <p className="font-semibold text-red-900">Warning: This action cannot be undone</p>
+                  <p className="font-semibold text-red-900">
+                    Warning: This action cannot be undone
+                  </p>
                   <p className="text-red-800 mt-2">
-                    Rolling back this count will revert all stock adjustments made during reconciliation.
+                    Rolling back this count will revert all stock adjustments made during
+                    reconciliation.
                   </p>
                 </div>
 

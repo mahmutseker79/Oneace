@@ -1,6 +1,7 @@
-import { Plus, Pencil, Trash2, Copy } from "lucide-react";
+import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 
+import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
-import { DeleteButton } from "@/components/shell/delete-button";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
@@ -65,9 +65,7 @@ export default async function LabelsPage({ params }: PageProps) {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Label Templates</h1>
-          <p className="text-muted-foreground">
-            Create and manage label templates for printing
-          </p>
+          <p className="text-muted-foreground">Create and manage label templates for printing</p>
         </div>
         {canUseLabels && templates.length > 0 ? (
           <Button variant="outline" asChild>
@@ -92,9 +90,7 @@ export default async function LabelsPage({ params }: PageProps) {
               <Plus className="h-6 w-6 text-muted-foreground" />
             </div>
             <CardTitle>No Label Templates</CardTitle>
-            <CardDescription>
-              Create your first label template to get started
-            </CardDescription>
+            <CardDescription>Create your first label template to get started</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-2">
             {canUseLabels ? (
@@ -114,9 +110,7 @@ export default async function LabelsPage({ params }: PageProps) {
                   <TableHead>Type</TableHead>
                   <TableHead>Barcode Format</TableHead>
                   <TableHead>Size</TableHead>
-                  <TableHead className="w-36 text-right">
-                    Actions
-                  </TableHead>
+                  <TableHead className="w-36 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -124,9 +118,7 @@ export default async function LabelsPage({ params }: PageProps) {
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">{template.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {typeLabels[template.type] || template.type}
-                      </Badge>
+                      <Badge variant="outline">{typeLabels[template.type] || template.type}</Badge>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
@@ -142,12 +134,7 @@ export default async function LabelsPage({ params }: PageProps) {
                       <div className="flex items-center justify-end gap-1">
                         {canUseLabels ? (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              asChild
-                              title="Edit template"
-                            >
+                            <Button variant="ghost" size="sm" asChild title="Edit template">
                               <a href={`/labels/designer?id=${template.id}`}>
                                 <Pencil className="h-4 w-4" />
                               </a>

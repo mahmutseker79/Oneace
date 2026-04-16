@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { verifyBackupCode, verifyTotpCode } from "@/lib/totp";
 import { headers } from "next/headers";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
-import { verifyTotpCode, verifyBackupCode } from "@/lib/totp";
 
 /**
  * POST /api/auth/two-factor/verify
@@ -63,15 +63,12 @@ export async function POST(req: Request) {
     if (!rateLimitResult.ok || !perUserRateResult.ok) {
       const failedResult = !rateLimitResult.ok ? rateLimitResult : perUserRateResult;
       const retryAfter = Math.max(0, failedResult.reset - Math.floor(Date.now() / 1000));
-      return new Response(
-        JSON.stringify({ error: "Too many attempts", retryAfter }),
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(retryAfter),
-          },
+      return new Response(JSON.stringify({ error: "Too many attempts", retryAfter }), {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfter),
         },
-      );
+      });
     }
 
     // Get the user's 2FA configuration
@@ -113,7 +110,10 @@ export async function POST(req: Request) {
         },
       });
 
-      return new Response(JSON.stringify({ verified: true, remainingBackupCodes: backupCodesCopy.length }), { status: 200 });
+      return new Response(
+        JSON.stringify({ verified: true, remainingBackupCodes: backupCodesCopy.length }),
+        { status: 200 },
+      );
     }
 
     // Neither code was valid

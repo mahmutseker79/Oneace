@@ -10,17 +10,15 @@
 
 "use server";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { ACTIVE_ORG_COOKIE, requireActiveMembership } from "@/lib/session";
-import { recordAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-export type ActionResult<T = unknown> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
+export type ActionResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string };
 
 const connectIntegrationSchema = z.object({
   provider: z.enum(["QUICKBOOKS_ONLINE", "SHOPIFY"]),
@@ -118,9 +116,7 @@ export async function connectIntegrationAction(
 /**
  * Disconnect an integration.
  */
-export async function disconnectIntegrationAction(
-  input: unknown,
-): Promise<ActionResult> {
+export async function disconnectIntegrationAction(input: unknown): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -141,10 +137,7 @@ export async function disconnectIntegrationAction(
       where: { id: integrationId },
     });
 
-    if (
-      !integration ||
-      integration.organizationId !== membership.organizationId
-    ) {
+    if (!integration || integration.organizationId !== membership.organizationId) {
       return { ok: false, error: "Integration not found" };
     }
 
@@ -204,10 +197,7 @@ export async function triggerSyncAction(
       where: { id: integrationId },
     });
 
-    if (
-      !integration ||
-      integration.organizationId !== membership.organizationId
-    ) {
+    if (!integration || integration.organizationId !== membership.organizationId) {
       return { ok: false, error: "Integration not found" };
     }
 
@@ -263,10 +253,7 @@ export async function getIntegrationStatusAction(
       where: { id: integrationId },
     });
 
-    if (
-      !integration ||
-      integration.organizationId !== membership.organizationId
-    ) {
+    if (!integration || integration.organizationId !== membership.organizationId) {
       return { ok: false, error: "Integration not found" };
     }
 

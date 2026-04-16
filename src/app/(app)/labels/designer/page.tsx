@@ -60,9 +60,7 @@ export default async function LabelDesignerPage({ params, searchParams }: PagePr
 
       <div>
         <h1 className="text-2xl font-semibold">
-          {isEdit
-            ? "Edit Label Template"
-            : "New Label Template"}
+          {isEdit ? "Edit Label Template" : "New Label Template"}
         </h1>
         <p className="text-muted-foreground">
           Design your label layout and configure barcode settings
@@ -74,9 +72,7 @@ export default async function LabelDesignerPage({ params, searchParams }: PagePr
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">
-                Template Settings
-              </CardTitle>
+              <CardTitle className="text-base">Template Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -130,9 +126,7 @@ export default async function LabelDesignerPage({ params, searchParams }: PagePr
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="barcodeFormat">
-                  Barcode Format
-                </Label>
+                <Label htmlFor="barcodeFormat">Barcode Format</Label>
                 <Select defaultValue={template?.barcodeFormat || "CODE128"}>
                   <SelectTrigger id="barcodeFormat">
                     <SelectValue />
@@ -155,9 +149,7 @@ export default async function LabelDesignerPage({ params, searchParams }: PagePr
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">
-                Label Preview
-              </CardTitle>
+              <CardTitle className="text-base">Label Preview</CardTitle>
             </CardHeader>
             <CardContent>
               {/* Simplified canvas preview */}
@@ -181,31 +173,18 @@ export default async function LabelDesignerPage({ params, searchParams }: PagePr
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold">
-                    Label Fields
-                  </h3>
+                  <h3 className="text-sm font-semibold">Label Fields</h3>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between rounded-md border border-muted-foreground/20 bg-muted/30 p-2">
-                      <span className="text-sm">
-                        Barcode
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Remove field"
-                      >
+                      <span className="text-sm">Barcode</span>
+                      <Button variant="ghost" size="sm" title="Remove field">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    title="Add field"
-                  >
+                  <Button variant="outline" size="sm" className="w-full" title="Add field">
                     <Plus className="h-4 w-4" />
                     Add Field
                   </Button>

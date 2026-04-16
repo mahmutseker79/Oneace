@@ -10,8 +10,8 @@ import { requireActiveMembership } from "@/lib/session";
 import type { ActionResult } from "@/lib/validation/action-result";
 import {
   createSavedViewSchema,
-  updateSavedViewSchema,
   setDefaultViewSchema,
+  updateSavedViewSchema,
 } from "@/lib/validation/saved-view";
 
 export async function createSavedViewAction(input: Record<string, unknown>): Promise<ActionResult> {

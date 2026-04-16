@@ -1,7 +1,7 @@
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
 import { recordAudit } from "@/lib/audit";
+import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveMembership } from "@/lib/session";
 import { NextResponse } from "next/server";
 
 /**
@@ -23,7 +23,12 @@ export async function GET() {
     if (!result.ok) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Maximum 2 exports per hour." },
-        { status: 429, headers: { "Retry-After": String(Math.max(0, result.reset - Math.floor(Date.now() / 1000))) } }
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(0, result.reset - Math.floor(Date.now() / 1000))),
+          },
+        },
       );
     }
 
@@ -41,10 +46,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Fetch all memberships BEFORE using them
@@ -73,7 +75,7 @@ export async function GET() {
     if (itemCount > MAX_EXPORT_ITEMS) {
       return NextResponse.json(
         { error: "Export too large. Contact support for bulk exports." },
-        { status: 413, headers: { "Content-Type": "application/json" } }
+        { status: 413, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -166,9 +168,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Data export failed:", err);
-    return NextResponse.json(
-      { error: "Failed to export data" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to export data" }, { status: 500 });
   }
 }

@@ -158,9 +158,7 @@ export default async function StockValueReportPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton href="/reports/stock-value/pdf">
-              {t.common.downloadPdf}
-            </ExportButton>
+            <ExportButton href="/reports/stock-value/pdf">{t.common.downloadPdf}</ExportButton>
             <ExportButton href="/reports/stock-value/export-xlsx">
               {t.common.exportExcel}
             </ExportButton>

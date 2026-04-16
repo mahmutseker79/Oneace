@@ -8,4 +8,5 @@
 
 export const MIN_TOUCH_TARGET = 44; // pixels
 
-export const FOCUS_RING_CLASS = "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+export const FOCUS_RING_CLASS =
+  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";

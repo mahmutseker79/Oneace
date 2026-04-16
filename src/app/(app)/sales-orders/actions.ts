@@ -8,6 +8,13 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
+import {
+  canAddLines,
+  canAllocate,
+  canCancel,
+  canRemoveLines,
+  canShip,
+} from "@/lib/sales-order/machine";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
@@ -18,7 +25,6 @@ import {
   createSalesOrderSchema,
   shipSalesOrderSchema,
 } from "@/lib/validation/sales-order";
-import { canAddLines, canAllocate, canCancel, canRemoveLines, canShip } from "@/lib/sales-order/machine";
 
 export type { ActionResult };
 
@@ -39,7 +45,9 @@ export async function createSalesOrderAction(formData: FormData): Promise<Action
     return { ok: false, error: t.permissions.forbidden };
   }
 
-  if (!hasPlanCapability(membership.organization.plan as "FREE" | "PRO" | "BUSINESS", "salesOrders")) {
+  if (
+    !hasPlanCapability(membership.organization.plan as "FREE" | "PRO" | "BUSINESS", "salesOrders")
+  ) {
     return { ok: false, error: planCapabilityError("salesOrders") };
   }
 
@@ -100,13 +108,23 @@ export async function createSalesOrderAction(formData: FormData): Promise<Action
         return {
           ok: false,
           error: t.salesOrders?.errors?.orderNumberExists ?? "Order number already exists",
-          fieldErrors: { orderNumber: [t.salesOrders?.errors?.orderNumberExists ?? "Order number already exists"] },
+          fieldErrors: {
+            orderNumber: [
+              t.salesOrders?.errors?.orderNumberExists ?? "Order number already exists",
+            ],
+          },
         };
       }
-      return { ok: false, error: t.salesOrders?.errors?.createFailed ?? "Failed to create sales order" };
+      return {
+        ok: false,
+        error: t.salesOrders?.errors?.createFailed ?? "Failed to create sales order",
+      };
     }
   }
-  return { ok: false, error: t.salesOrders?.errors?.createFailed ?? "Failed to create sales order" };
+  return {
+    ok: false,
+    error: t.salesOrders?.errors?.createFailed ?? "Failed to create sales order",
+  };
 }
 
 export async function addSalesOrderLineAction(formData: FormData): Promise<ActionResult> {
@@ -144,7 +162,10 @@ export async function addSalesOrderLineAction(formData: FormData): Promise<Actio
   }
 
   if (!canAddLines(existing.status)) {
-    return { ok: false, error: t.salesOrders?.errors?.notEditable ?? "Cannot add lines to this order" };
+    return {
+      ok: false,
+      error: t.salesOrders?.errors?.notEditable ?? "Cannot add lines to this order",
+    };
   }
 
   try {
@@ -160,7 +181,10 @@ export async function addSalesOrderLineAction(formData: FormData): Promise<Actio
     ]);
 
     if (!item || !warehouse) {
-      return { ok: false, error: t.salesOrders?.errors?.addLineFailed ?? "Item or warehouse not found" };
+      return {
+        ok: false,
+        error: t.salesOrders?.errors?.addLineFailed ?? "Item or warehouse not found",
+      };
     }
 
     await db.salesOrderLine.create({
@@ -211,7 +235,10 @@ export async function removeSalesOrderLineAction(lineId: string): Promise<Action
   }
 
   if (!canRemoveLines(line.salesOrder.status)) {
-    return { ok: false, error: t.salesOrders?.errors?.notEditable ?? "Cannot remove lines from this order" };
+    return {
+      ok: false,
+      error: t.salesOrders?.errors?.notEditable ?? "Cannot remove lines from this order",
+    };
   }
 
   try {
@@ -248,12 +275,16 @@ export async function confirmSalesOrderAction(orderId: string): Promise<ActionRe
     select: { id: true, status: true, orderNumber: true, lines: { select: { id: true } } },
   });
 
-  if (!existing) return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
+  if (!existing)
+    return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
   if (existing.status !== "DRAFT") {
     return { ok: false, error: t.salesOrders?.errors?.notEditable ?? "Cannot confirm this order" };
   }
   if (existing.lines.length === 0) {
-    return { ok: false, error: t.salesOrders?.errors?.noLines ?? "Order must have at least one line" };
+    return {
+      ok: false,
+      error: t.salesOrders?.errors?.noLines ?? "Order must have at least one line",
+    };
   }
 
   await db.salesOrder.update({
@@ -307,9 +338,13 @@ export async function allocateSalesOrderAction(formData: FormData): Promise<Acti
     },
   });
 
-  if (!existing) return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
+  if (!existing)
+    return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
   if (!canAllocate(existing.status)) {
-    return { ok: false, error: t.salesOrders?.errors?.cannotAllocate ?? "Cannot allocate this order" };
+    return {
+      ok: false,
+      error: t.salesOrders?.errors?.cannotAllocate ?? "Cannot allocate this order",
+    };
   }
 
   try {
@@ -444,14 +479,15 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
     },
   });
 
-  if (!existing) return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
+  if (!existing)
+    return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
   if (!canShip(existing.status)) {
     return { ok: false, error: t.salesOrders?.errors?.cannotShip ?? "Cannot ship this order" };
   }
 
   try {
     await db.$transaction(async (tx) => {
-      const lineMap = new Map(existing.lines.map((l: typeof existing.lines[0]) => [l.id, l]));
+      const lineMap = new Map(existing.lines.map((l: (typeof existing.lines)[0]) => [l.id, l]));
 
       for (const shipLine of input.lines) {
         const line = lineMap.get(shipLine.lineId);
@@ -581,7 +617,8 @@ export async function cancelSalesOrderAction(formData: FormData): Promise<Action
     },
   });
 
-  if (!existing) return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
+  if (!existing)
+    return { ok: false, error: t.salesOrders?.errors?.notFound ?? "Sales order not found" };
   if (!canCancel(existing.status)) {
     return { ok: false, error: t.salesOrders?.errors?.cancelFailed ?? "Cannot cancel this order" };
   }

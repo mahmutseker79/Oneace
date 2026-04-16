@@ -1,8 +1,8 @@
+import { csvResponse, serializeCsv, todayIsoDate } from "@/lib/csv";
+import type { CsvColumn } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
-import { serializeCsv, csvResponse, todayIsoDate } from "@/lib/csv";
-import type { CsvColumn } from "@/lib/csv";
 
 type ExportRow = {
   location: string;
@@ -75,17 +75,26 @@ export async function GET() {
     if (!snapshotsByCount.has(snap.countId)) {
       snapshotsByCount.set(snap.countId, []);
     }
-    snapshotsByCount.get(snap.countId)!.push(snap);
+    snapshotsByCount.get(snap.countId)?.push(snap);
   }
 
   for (const entry of entries) {
     if (!entriesByCount.has(entry.countId)) {
       entriesByCount.set(entry.countId, []);
     }
-    entriesByCount.get(entry.countId)!.push(entry);
+    entriesByCount.get(entry.countId)?.push(entry);
   }
 
-  const accuracyByWarehouse = new Map<string, { warehouseId: string; warehouseName: string; countedLines: number; accurateLines: number; totalVarianceValue: number }>();
+  const accuracyByWarehouse = new Map<
+    string,
+    {
+      warehouseId: string;
+      warehouseName: string;
+      countedLines: number;
+      accurateLines: number;
+      totalVarianceValue: number;
+    }
+  >();
 
   for (const countId of countIds) {
     const countSnaps = snapshotsByCount.get(countId) ?? [];

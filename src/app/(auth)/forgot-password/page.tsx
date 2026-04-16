@@ -10,36 +10,32 @@
 // This is intentionally a soft landing — we never reveal whether an email
 // exists in the system (prevents account enumeration).
 
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ForgotPasswordForm } from "./forgot-password-form";
-import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Reset password — OneAce",
+  title: "Reset password — OneAce",
 };
 
 export default function ForgotPasswordPage() {
-	return (
-		<div className="space-y-6">
-			<div className="space-y-2">
-				<h1 className="text-2xl font-semibold">Reset your password</h1>
-				<p className="text-sm text-muted-foreground">
-					Enter your email address and we&apos;ll send you a link to reset your
-					password.
-				</p>
-			</div>
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold">Reset your password</h1>
+        <p className="text-sm text-muted-foreground">
+          Enter your email address and we&apos;ll send you a link to reset your password.
+        </p>
+      </div>
 
-			<ForgotPasswordForm />
+      <ForgotPasswordForm />
 
-			<div className="text-center text-sm text-muted-foreground">
-				Remember your password?{" "}
-				<Link
-					href="/login"
-					className="font-medium text-primary hover:underline"
-				>
-					Sign in
-				</Link>
-			</div>
-		</div>
-	);
+      <div className="text-center text-sm text-muted-foreground">
+        Remember your password?{" "}
+        <Link href="/login" className="font-medium text-primary hover:underline">
+          Sign in
+        </Link>
+      </div>
+    </div>
+  );
 }

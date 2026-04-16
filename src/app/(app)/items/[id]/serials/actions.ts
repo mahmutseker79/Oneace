@@ -10,10 +10,10 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import type { ActionResult } from "@/lib/validation/action-result.ts";
 import {
-  createSerialSchema,
   bulkCreateSerialsSchema,
-  updateSerialStatusSchema,
+  createSerialSchema,
   moveSerialSchema,
+  updateSerialStatusSchema,
 } from "@/lib/validation/serial-number";
 
 export async function createSerialAction(input: Record<string, unknown>): Promise<ActionResult> {
@@ -87,14 +87,18 @@ export async function createSerialAction(input: Record<string, unknown>): Promis
       return {
         ok: false,
         error: t.items.errors.serialExists || "Serial number already exists",
-        fieldErrors: { serialNumber: [t.items.errors.serialExists || "Serial number already exists"] },
+        fieldErrors: {
+          serialNumber: [t.items.errors.serialExists || "Serial number already exists"],
+        },
       };
     }
     return { ok: false, error: t.items.errors.createFailed };
   }
 }
 
-export async function bulkCreateSerialsAction(input: Record<string, unknown>): Promise<ActionResult> {
+export async function bulkCreateSerialsAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -232,7 +236,9 @@ export async function moveSerialAction(input: Record<string, unknown>): Promise<
   }
 }
 
-export async function updateSerialStatusAction(input: Record<string, unknown>): Promise<ActionResult> {
+export async function updateSerialStatusAction(
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

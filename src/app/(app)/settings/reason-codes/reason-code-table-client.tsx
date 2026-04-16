@@ -1,7 +1,7 @@
 "use client";
 
+import { Edit2, Plus } from "lucide-react";
 import { useState } from "react";
-import { Plus, Edit2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { ReasonCode, ReasonCategory } from "@/generated/prisma";
-import { ReasonCodeForm } from "./reason-code-form";
+import type { ReasonCategory, ReasonCode } from "@/generated/prisma";
 import { toggleReasonCodeActiveAction } from "./actions";
+import { ReasonCodeForm } from "./reason-code-form";
 
 type ReasonCodeTableClientProps = {
   reasonCodes: ReasonCode[];
@@ -68,7 +68,7 @@ export function ReasonCodeTableClient({
     if (!groupedCodes.has(code.category)) {
       groupedCodes.set(code.category, []);
     }
-    groupedCodes.get(code.category)!.push(code);
+    groupedCodes.get(code.category)?.push(code);
   }
 
   return (
@@ -122,9 +122,7 @@ export function ReasonCodeTableClient({
                       <TableBody>
                         {codes.map((code) => (
                           <TableRow key={code.id}>
-                            <TableCell className="font-mono font-semibold">
-                              {code.code}
-                            </TableCell>
+                            <TableCell className="font-mono font-semibold">{code.code}</TableCell>
                             <TableCell>{code.name}</TableCell>
                             <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                               {code.description || "—"}
@@ -141,11 +139,7 @@ export function ReasonCodeTableClient({
                               )}
                             </TableCell>
                             <TableCell className="text-right space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openForm(code)}
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => openForm(code)}>
                                 <Edit2 className="h-4 w-4" />
                               </Button>
                               <Button
@@ -169,11 +163,7 @@ export function ReasonCodeTableClient({
         })}
       </Tabs>
 
-      <ReasonCodeForm
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        reasonCode={selectedCode}
-      />
+      <ReasonCodeForm open={formOpen} onOpenChange={setFormOpen} reasonCode={selectedCode} />
     </div>
   );
 }

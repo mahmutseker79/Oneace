@@ -11,9 +11,9 @@
  * Provider-specific sync logic lives in per-provider files (qbo-sync.ts, etc.).
  */
 
-import { logger } from "@/lib/logger";
 import type { IntegrationProvider, SyncDirection } from "@/generated/prisma";
 import { ConflictResolver } from "@/lib/integrations/conflict-resolver";
+import { logger } from "@/lib/logger";
 
 export interface SyncEntity {
   id: string;
@@ -63,7 +63,7 @@ export interface SyncContext {
  */
 export abstract class SyncEngine {
   protected conflictResolver: ConflictResolver;
-  protected batchSize: number = 100;
+  protected batchSize = 100;
   protected checkpoint: string | null = null;
 
   constructor() {
@@ -87,16 +87,12 @@ export abstract class SyncEngine {
   /**
    * Transform external entity to OneAce model.
    */
-  protected abstract transformToLocal(
-    external: SyncEntity,
-  ): SyncEntity;
+  protected abstract transformToLocal(external: SyncEntity): SyncEntity;
 
   /**
    * Transform OneAce entity to external format.
    */
-  protected abstract transformToExternal(
-    local: SyncEntity,
-  ): SyncEntity;
+  protected abstract transformToExternal(local: SyncEntity): SyncEntity;
 
   /**
    * Push local changes to external system.
@@ -117,10 +113,7 @@ export abstract class SyncEngine {
   /**
    * Detect conflicts between local and external versions.
    */
-  protected detectConflict(
-    local: SyncEntity,
-    external: SyncEntity,
-  ): boolean {
+  protected detectConflict(local: SyncEntity, external: SyncEntity): boolean {
     // Simple checksum-based detection
     const localChecksum = this.computeChecksum(local);
     const externalChecksum = this.computeChecksum(external);
@@ -137,7 +130,7 @@ export abstract class SyncEngine {
     let hash = 0;
     for (let i = 0; i < json.length; i++) {
       const char = json.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
     return Math.abs(hash).toString(16);
@@ -215,32 +208,20 @@ export abstract class SyncEngine {
       // Process based on sync direction
       if (context.direction === "OUTBOUND") {
         // Push local to external
-        const pushed = await this.pushToExternal(
-          externalEntities,
-          context,
-        );
+        const pushed = await this.pushToExternal(externalEntities, context);
         result.itemsSynced = pushed.length;
       } else if (context.direction === "INBOUND") {
         // Pull external to local
-        const pulled = await this.pullFromExternal(
-          externalEntities,
-          context,
-        );
+        const pulled = await this.pullFromExternal(externalEntities, context);
         result.itemsSynced = pulled.length;
       } else {
         // BIDIRECTIONAL - push first, then pull
-        const pushed = await this.pushToExternal(
-          externalEntities,
-          context,
-        );
+        const pushed = await this.pushToExternal(externalEntities, context);
         result.itemsSynced += pushed.length;
 
         // Fetch again after push
         const refreshedExternal = await this.fetchExternalEntities(context);
-        const pulled = await this.pullFromExternal(
-          refreshedExternal,
-          context,
-        );
+        const pulled = await this.pullFromExternal(refreshedExternal, context);
         result.itemsSynced += pulled.length;
       }
     } catch (error) {

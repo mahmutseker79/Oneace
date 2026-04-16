@@ -1,6 +1,14 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 export type LowStockTrendPoint = {
   date: string;
@@ -32,7 +40,12 @@ export function LowStockTrendChart({ data }: LowStockTrendChartProps) {
             <stop offset="95%" stopColor="var(--chart-danger, #ef4444)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="currentColor"
+          strokeOpacity={0.06}
+          vertical={false}
+        />
         <XAxis
           dataKey="date"
           tickFormatter={(v: string) => v.slice(5)}

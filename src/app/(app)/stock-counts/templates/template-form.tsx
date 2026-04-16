@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import type { Item, Department, Warehouse } from "@/generated/prisma";
+import type { Department, Item, Warehouse } from "@/generated/prisma";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,11 +20,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-import {
-  createTemplateAction,
-  updateTemplateAction,
-  deleteTemplateAction,
-} from "./actions";
+import { createTemplateAction, deleteTemplateAction, updateTemplateAction } from "./actions";
 
 interface TemplateFormProps {
   template?: {
@@ -72,9 +68,7 @@ export function TemplateForm({
     e.preventDefault();
     startTransition(async () => {
       const action = isNew ? createTemplateAction : updateTemplateAction;
-      const payload = isNew
-        ? formData
-        : { id: template!.id, ...formData };
+      const payload = isNew ? formData : { id: template?.id, ...formData };
 
       const result = await action(payload);
       if (result.ok) {
@@ -91,7 +85,7 @@ export function TemplateForm({
 
     setIsDeleting(true);
     startTransition(async () => {
-      const result = await deleteTemplateAction({ id: template!.id });
+      const result = await deleteTemplateAction({ id: template?.id });
       setIsDeleting(false);
 
       if (result.ok) {

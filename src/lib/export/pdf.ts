@@ -12,8 +12,8 @@
  *   doc.setFont('CustomFont');
  */
 
-import autoTable from "jspdf-autotable";
 import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export interface PdfOptions {
   orgName: string;
@@ -55,11 +55,7 @@ export function createPdfDocument(options: PdfOptions): jsPDF {
 /**
  * Add a header to the current page with org name, report title, and date.
  */
-export function addPageHeader(
-  doc: jsPDF,
-  options: PdfOptions,
-  pageHeight: number = 297,
-): number {
+export function addPageHeader(doc: jsPDF, options: PdfOptions, pageHeight = 297): number {
   const margin = 10;
   let y = margin;
 
@@ -91,11 +87,7 @@ export function addPageHeader(
 /**
  * Add a footer to the specified page with page number.
  */
-function addPageFooter(
-  doc: jsPDF,
-  _options: PdfOptions,
-  pageNum: number,
-): void {
+function addPageFooter(doc: jsPDF, _options: PdfOptions, pageNum: number): void {
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 10;
@@ -169,12 +161,7 @@ export function addTable(
 /**
  * Add a text section to the PDF.
  */
-export function addTextSection(
-  doc: jsPDF,
-  title: string,
-  content: string,
-  startY: number,
-): number {
+export function addTextSection(doc: jsPDF, title: string, content: string, startY: number): number {
   const margin = 10;
 
   doc.setFont("helvetica", "bold");
@@ -330,9 +317,7 @@ export async function exportLowStockPdf(data: {
   );
 
   // Summary stats
-  const stats = [
-    { label: "Total Items Below Reorder", value: data.items.length.toString() },
-  ];
+  const stats = [{ label: "Total Items Below Reorder", value: data.items.length.toString() }];
   y = addSummaryStats(doc, stats, y);
 
   // Items table
@@ -543,7 +528,7 @@ export async function exportBinInventoryPdf(data: {
     date: data.date,
   });
 
-  let pageY = addPageHeader(
+  const pageY = addPageHeader(
     doc,
     {
       orgName: data.orgName,

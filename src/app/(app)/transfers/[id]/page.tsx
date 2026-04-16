@@ -23,8 +23,8 @@ import { canCancel, canReceive, canShip, isTerminal, statusLabel } from "@/lib/t
 import Link from "next/link";
 
 import { CancelTransferButton } from "./cancel-transfer-button";
-import { RemoveLineButton } from "./remove-line-button";
 import { ReceiveTransferButton } from "./receive-transfer-button";
+import { RemoveLineButton } from "./remove-line-button";
 import { ShipTransferButton } from "./ship-transfer-button";
 
 type DetailPageProps = {
@@ -44,9 +44,7 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
 
 function fmtDate(value: Date | null | undefined, locale: string): string {
   if (!value) return "—";
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
-    value
-  );
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(value);
 }
 
 function fmtDateOnly(value: Date | null | undefined, locale: string): string {
@@ -98,7 +96,11 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
       />
       <StatusTimeline
         steps={[
-          { label: "Draft", completed: transfer.status !== "DRAFT", active: transfer.status === "DRAFT" },
+          {
+            label: "Draft",
+            completed: transfer.status !== "DRAFT",
+            active: transfer.status === "DRAFT",
+          },
           {
             label: "Shipped",
             completed: ["IN_TRANSIT", "RECEIVED"].includes(transfer.status),
@@ -131,19 +133,25 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground">Shipped Date</p>
-            <p className="text-sm font-semibold">{fmtDateOnly(transfer.shippedAt, region.numberLocale)}</p>
+            <p className="text-sm font-semibold">
+              {fmtDateOnly(transfer.shippedAt, region.numberLocale)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground">Received Date</p>
-            <p className="text-sm font-semibold">{fmtDateOnly(transfer.receivedAt, region.numberLocale)}</p>
+            <p className="text-sm font-semibold">
+              {fmtDateOnly(transfer.receivedAt, region.numberLocale)}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground">Created</p>
-            <p className="text-sm font-semibold">{fmtDateOnly(transfer.createdAt, region.numberLocale)}</p>
+            <p className="text-sm font-semibold">
+              {fmtDateOnly(transfer.createdAt, region.numberLocale)}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -172,7 +180,7 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
                   <TableHead className="text-right">Shipped Qty</TableHead>
                   <TableHead className="text-right">Received Qty</TableHead>
                   <TableHead className="text-right">Discrepancy</TableHead>
-                  {canRemoveLines && <TableHead className="w-10"></TableHead>}
+                  {canRemoveLines && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -186,9 +194,7 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       {line.discrepancy !== 0 ? (
-                        <span
-                          className={line.discrepancy > 0 ? "text-green-600" : "text-red-600"}
-                        >
+                        <span className={line.discrepancy > 0 ? "text-green-600" : "text-red-600"}>
                           {line.discrepancy > 0 ? "+" : ""}
                           {line.discrepancy}
                         </span>
@@ -216,9 +222,7 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
             <CardTitle>Actions</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
-            {canShip(transfer.status) && canShipTransfer && (
-              <ShipTransferButton transferId={id} />
-            )}
+            {canShip(transfer.status) && canShipTransfer && <ShipTransferButton transferId={id} />}
             {canReceive(transfer.status) && canReceiveTransfer && (
               <ReceiveTransferButton transferId={id} />
             )}

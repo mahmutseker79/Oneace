@@ -67,7 +67,7 @@ export abstract class IntegrationClient {
   protected credentials: OAuthToken;
   protected rateLimitConfig: RateLimitConfig;
   protected requestLog: Map<string, number> = new Map();
-  protected baseUrl: string = "";
+  protected baseUrl = "";
 
   constructor(
     oauthConfig: OAuthConfig,
@@ -104,11 +104,7 @@ export abstract class IntegrationClient {
    */
   protected async refreshToken(): Promise<void> {
     if (!this.credentials.refreshToken) {
-      throw this.createError(
-        "REFRESH_FAILED",
-        "No refresh token available",
-        false,
-      );
+      throw this.createError("REFRESH_FAILED", "No refresh token available", false);
     }
 
     try {
@@ -222,14 +218,7 @@ export abstract class IntegrationClient {
     endpoint: string,
     options: ApiCallOptions = {},
   ): Promise<ApiResponse<T>> {
-    const {
-      method = "GET",
-      headers = {},
-      body,
-      params,
-      timeout = 30000,
-      retries = 3,
-    } = options;
+    const { method = "GET", headers = {}, body, params, timeout = 30000, retries = 3 } = options;
 
     let lastError: Error | null = null;
 
@@ -299,21 +288,12 @@ export abstract class IntegrationClient {
           if (isIntegrationError) {
             throw error;
           }
-          throw this.createError(
-            "API_CALL_FAILED",
-            error.message,
-            false,
-            undefined,
-            error,
-          );
+          throw this.createError("API_CALL_FAILED", error.message, false, undefined, error);
         }
 
         // Exponential backoff
         const backoffMs = Math.min(
-          Math.pow(
-            this.rateLimitConfig.backoffMultiplier || 2,
-            attempt,
-          ) * 1000,
+          (this.rateLimitConfig.backoffMultiplier || 2) ** attempt * 1000,
           this.rateLimitConfig.maxBackoffMs || 32000,
         );
 
@@ -329,23 +309,14 @@ export abstract class IntegrationClient {
       }
     }
 
-    throw lastError || this.createError(
-      "API_CALL_FAILED",
-      "Max retries exceeded",
-      false,
-    );
+    throw lastError || this.createError("API_CALL_FAILED", "Max retries exceeded", false);
   }
 
   /**
    * Build a full URL with query parameters.
    */
-  protected buildUrl(
-    endpoint: string,
-    params?: Record<string, string | number | boolean>,
-  ): string {
-    const url = new URL(endpoint.startsWith("http")
-      ? endpoint
-      : `${this.baseUrl}${endpoint}`);
+  protected buildUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
+    const url = new URL(endpoint.startsWith("http") ? endpoint : `${this.baseUrl}${endpoint}`);
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {

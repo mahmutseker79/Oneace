@@ -1,4 +1,12 @@
-import { AlertTriangle, CheckCircle2, ChevronLeft, Download, Package, ShoppingCart, Truck } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  Download,
+  Package,
+  ShoppingCart,
+  Truck,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -127,7 +135,10 @@ export default async function LowStockReportPage() {
   const supplierGroups = groups.filter((g) => g.supplier !== null);
 
   // Calculate summary metrics for the report header
-  const totalShortfall = lowStockItems.reduce((sum, item) => sum + Math.max(0, item.reorderPoint - item.onHand), 0);
+  const totalShortfall = lowStockItems.reduce(
+    (sum, item) => sum + Math.max(0, item.reorderPoint - item.onHand),
+    0,
+  );
   const criticalCount = lowStockItems.filter((item) => item.onHand === 0).length;
 
   return (
@@ -143,9 +154,7 @@ export default async function LowStockReportPage() {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton href="/reports/low-stock/pdf">
-              {t.common.downloadPdf}
-            </ExportButton>
+            <ExportButton href="/reports/low-stock/pdf">{t.common.downloadPdf}</ExportButton>
             <ExportButton href="/reports/low-stock/export-xlsx">
               {t.common.exportExcel}
             </ExportButton>

@@ -15,13 +15,7 @@ const ALLOWED_MIME_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ];
 
-const ALLOWED_FILE_TYPES = [
-  "IMAGE",
-  "DOCUMENT",
-  "DATASHEET",
-  "CERTIFICATE",
-  "OTHER",
-];
+const ALLOWED_FILE_TYPES = ["IMAGE", "DOCUMENT", "DATASHEET", "CERTIFICATE", "OTHER"];
 
 export const uploadAttachmentSchema = z.object({
   itemId: z.string().cuid({ message: "Invalid item ID" }),
@@ -30,9 +24,7 @@ export const uploadAttachmentSchema = z.object({
     .trim()
     .min(1, { message: "File name is required" })
     .max(255, { message: "File name must be 255 characters or fewer" }),
-  fileUrl: z
-    .string()
-    .url({ message: "Invalid file URL" }),
+  fileUrl: z.string().url({ message: "Invalid file URL" }),
   fileType: z.enum(ALLOWED_FILE_TYPES as [string, ...string[]], {
     message: "Invalid file type",
   }),
@@ -54,7 +46,9 @@ export type DeleteAttachmentOutput = z.output<typeof deleteAttachmentSchema>;
 
 export const reorderAttachmentsSchema = z.object({
   itemId: z.string().cuid({ message: "Invalid item ID" }),
-  attachmentIds: z.array(z.string().cuid()).min(1, { message: "At least one attachment ID is required" }),
+  attachmentIds: z
+    .array(z.string().cuid())
+    .min(1, { message: "At least one attachment ID is required" }),
 });
 
 export type ReorderAttachmentsInput = z.input<typeof reorderAttachmentsSchema>;

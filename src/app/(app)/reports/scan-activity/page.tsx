@@ -12,7 +12,7 @@
  * - Optional filters
  */
 
-import { Download, ScanLine, CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, Download, ScanLine, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getScanHistory, type ScanHistoryEntry } from "@/lib/scanner/scan-history";
+import { type ScanHistoryEntry, getScanHistory } from "@/lib/scanner/scan-history";
 // i18n format is server-only; inline helper for client component
 function format(tpl: string, vars: Record<string, string>) {
   return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), tpl);
@@ -81,10 +81,7 @@ export default function ScanActivityReportPage() {
           title="Scan Activity"
           description="Loading scan history..."
           backHref="/reports"
-          breadcrumb={[
-            { label: "Reports", href: "/reports" },
-            { label: "Scan Activity" },
-          ]}
+          breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Scan Activity" }]}
         />
       </div>
     );
@@ -96,10 +93,7 @@ export default function ScanActivityReportPage() {
         title="Scan Activity"
         description={`Recent barcode scans and their results (${entries.length} total)`}
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Scan Activity" },
-        ]}
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Scan Activity" }]}
         actions={
           entries.length > 0 ? (
             <Button variant="outline" size="sm" onClick={handleExportCsv}>
@@ -149,7 +143,6 @@ export default function ScanActivityReportPage() {
         </Card>
       ) : (
         <>
-
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Scan History</CardTitle>
@@ -173,7 +166,11 @@ export default function ScanActivityReportPage() {
                     {entries.map((entry) => (
                       <TableRow key={entry.id}>
                         <TableCell className="font-mono text-sm">{entry.barcode}</TableCell>
-                        <TableCell>{entry.itemName || <span className="text-muted-foreground italic">(unknown)</span>}</TableCell>
+                        <TableCell>
+                          {entry.itemName || (
+                            <span className="text-muted-foreground italic">(unknown)</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <span
                             className={`inline-block px-2 py-1 rounded text-xs font-medium ${

@@ -34,18 +34,12 @@ const { GET, POST: betterAuthPost } = toNextJsHandler(auth.handler);
 
 async function gatedPost(request: NextRequest) {
   // Extract IP for rate limiting
-  const ip = request.headers
-    .get("x-forwarded-for")
-    ?.split(",")[0]
-    ?.trim() ?? "unknown";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const pathname = new URL(request.url).pathname;
 
   // Rate limit sign-in: 5 attempts per 5 minutes per IP
   if (pathname.includes("/sign-in")) {
-    const rl = await rateLimit(
-      `login:ip:${ip}`,
-      { max: 5, windowSeconds: 300 }
-    );
+    const rl = await rateLimit(`login:ip:${ip}`, { max: 5, windowSeconds: 300 });
     if (!rl.ok) {
       logger.warn("Login rate limit exceeded", {
         tag: "auth.rate-limit",
@@ -53,7 +47,7 @@ async function gatedPost(request: NextRequest) {
       });
       return NextResponse.json(
         { error: "Too many login attempts. Please try again later." },
-        { status: 429, headers: { "Retry-After": String(rl.reset) } }
+        { status: 429, headers: { "Retry-After": String(rl.reset) } },
       );
     }
   }
@@ -61,15 +55,12 @@ async function gatedPost(request: NextRequest) {
   // Rate limit sign-up: per-IP AND per-email to prevent distributed attacks
   if (pathname.includes("/sign-up")) {
     // Per-IP: 3 registrations per hour
-    const ipRl = await rateLimit(
-      `register:ip:${ip}`,
-      { max: 3, windowSeconds: 3600 }
-    );
+    const ipRl = await rateLimit(`register:ip:${ip}`, { max: 3, windowSeconds: 3600 });
     if (!ipRl.ok) {
       logger.warn("Registration rate limit exceeded (IP)", { tag: "auth.rate-limit", ip });
       return NextResponse.json(
         { error: "Too many registration attempts. Please try again later." },
-        { status: 429, headers: { "Retry-After": String(ipRl.reset) } }
+        { status: 429, headers: { "Retry-After": String(ipRl.reset) } },
       );
     }
 
@@ -78,15 +69,15 @@ async function gatedPost(request: NextRequest) {
       const body = await request.clone().json();
       const email = typeof body?.email === "string" ? body.email.toLowerCase().trim() : null;
       if (email) {
-        const emailRl = await rateLimit(
-          `register:email:${email}`,
-          { max: 2, windowSeconds: 3600 }
-        );
+        const emailRl = await rateLimit(`register:email:${email}`, { max: 2, windowSeconds: 3600 });
         if (!emailRl.ok) {
-          logger.warn("Registration rate limit exceeded (email)", { tag: "auth.rate-limit", email: email.replace(/@.*/, "@***") });
+          logger.warn("Registration rate limit exceeded (email)", {
+            tag: "auth.rate-limit",
+            email: email.replace(/@.*/, "@***"),
+          });
           return NextResponse.json(
             { error: "Too many registration attempts for this email. Please try again later." },
-            { status: 429, headers: { "Retry-After": String(emailRl.reset) } }
+            { status: 429, headers: { "Retry-After": String(emailRl.reset) } },
           );
         }
       }

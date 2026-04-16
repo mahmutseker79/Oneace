@@ -1,15 +1,7 @@
 import { db } from "@/lib/db";
-import { compareStockCounts } from "@/lib/stockcount/compare";
 import { requireActiveMembership } from "@/lib/session";
+import { compareStockCounts } from "@/lib/stockcount/compare";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -18,6 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 /**
  * Compare two stock counts side-by-side.
@@ -147,10 +147,15 @@ export default async function ComparePage({
                         <TableCell>{row.warehouseCode}</TableCell>
                         <TableCell className="text-right">{row.count1Qty}</TableCell>
                         <TableCell className="text-right">{row.count2Qty}</TableCell>
-                        <TableCell className={`text-right ${row.difference !== 0 ? "font-semibold" : ""}`}>
-                          {row.difference > 0 ? "+" : ""}{row.difference}
+                        <TableCell
+                          className={`text-right ${row.difference !== 0 ? "font-semibold" : ""}`}
+                        >
+                          {row.difference > 0 ? "+" : ""}
+                          {row.difference}
                         </TableCell>
-                        <TableCell className={`text-right ${Math.abs(row.variancePercent) > 5 ? "text-red-600 font-semibold" : ""}`}>
+                        <TableCell
+                          className={`text-right ${Math.abs(row.variancePercent) > 5 ? "text-red-600 font-semibold" : ""}`}
+                        >
                           {row.variancePercent.toFixed(1)}%
                         </TableCell>
                       </TableRow>

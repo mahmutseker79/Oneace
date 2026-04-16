@@ -1,11 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import {
-  generateTotpSecret,
-  verifyTotpCode,
-  generateBackupCodes,
-  verifyBackupCode,
-} from "./totp";
 import * as OTPAuth from "otpauth";
+import { beforeEach, describe, expect, it } from "vitest";
+import { generateBackupCodes, generateTotpSecret, verifyBackupCode, verifyTotpCode } from "./totp";
 
 describe("TOTP", () => {
   describe("generateTotpSecret", () => {
@@ -142,7 +137,7 @@ describe("TOTP", () => {
     it("should handle codes with spaces", () => {
       const codes = generateBackupCodes(3);
       const originalCode = codes.plain[0]!;
-      const codeWithSpaces = originalCode.slice(0, 4) + " " + originalCode.slice(4);
+      const codeWithSpaces = `${originalCode.slice(0, 4)} ${originalCode.slice(4)}`;
 
       const result = verifyBackupCode(codeWithSpaces, codes.hashed);
 

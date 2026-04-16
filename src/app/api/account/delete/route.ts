@@ -1,7 +1,7 @@
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
 import { recordAudit } from "@/lib/audit";
+import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveMembership } from "@/lib/session";
 import { NextResponse } from "next/server";
 
 /**
@@ -26,7 +26,12 @@ export async function POST(request: Request) {
     if (!result.ok) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Maximum 1 deletion attempt per hour." },
-        { status: 429, headers: { "Retry-After": String(Math.max(0, result.reset - Math.floor(Date.now() / 1000))) } }
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(0, result.reset - Math.floor(Date.now() / 1000))),
+          },
+        },
       );
     }
 
@@ -35,10 +40,7 @@ export async function POST(request: Request) {
     const { confirmation } = body as { confirmation?: string };
 
     if (confirmation !== "DELETE MY ACCOUNT") {
-      return NextResponse.json(
-        { error: "Invalid confirmation phrase" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid confirmation phrase" }, { status: 400 });
     }
 
     // Check if user is OWNER of any organization
@@ -52,10 +54,11 @@ export async function POST(request: Request) {
     if (ownedOrgs.length > 0) {
       return NextResponse.json(
         {
-          error: "Cannot delete account while you are the owner of an organization. Transfer ownership first.",
+          error:
+            "Cannot delete account while you are the owner of an organization. Transfer ownership first.",
           ownedOrganizations: ownedOrgs.map((m) => m.organizationId),
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -94,13 +97,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { ok: true, message: "Account deleted successfully. This action cannot be undone." },
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
     console.error("Account deletion failed:", err);
-    return NextResponse.json(
-      { error: "Failed to delete account" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete account" }, { status: 500 });
   }
 }

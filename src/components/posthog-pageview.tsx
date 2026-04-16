@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { useEffect } from "react";
 
 /**
  * PostHog Pageview Tracker
@@ -26,7 +26,10 @@ const SENSITIVE_PARAMS = new Set([
 
 function stripSensitiveParams(url: string): string {
   try {
-    const urlObj = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    const urlObj = new URL(
+      url,
+      typeof window !== "undefined" ? window.location.origin : "http://localhost",
+    );
     const params = new URLSearchParams(urlObj.search);
 
     for (const key of params.keys()) {

@@ -1,12 +1,12 @@
-import { ArrowLeft, ChevronDown, ChevronRight, Plus, Pencil } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Pencil, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -82,11 +82,7 @@ export default async function LocationsPage({ params }: PageProps) {
       <div key={location.id} className="border-b">
         <div className="flex items-center gap-2 px-4 py-3 hover:bg-muted/50">
           <div style={{ marginLeft: `${depth * 24}px` }}>
-            {hasChildren ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <div className="h-4 w-4" />
-            )}
+            {hasChildren ? <ChevronRight className="h-4 w-4" /> : <div className="h-4 w-4" />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
@@ -102,11 +98,7 @@ export default async function LocationsPage({ params }: PageProps) {
           {(canEditLocation || canDeleteLocation) && (
             <div className="flex items-center gap-1">
               {canEditLocation && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                >
+                <Button variant="ghost" size="sm" asChild>
                   <Link href={`/warehouses/${warehouseId}/locations/${location.id}/edit`}>
                     <Pencil className="h-4 w-4" />
                   </Link>
@@ -133,7 +125,11 @@ export default async function LocationsPage({ params }: PageProps) {
           location.children.map((child) => {
             const location_detail = locationMap.get(child.id);
             return location_detail ? (
-              <LocationTreeNode key={location_detail.id} location={location_detail} depth={depth + 1} />
+              <LocationTreeNode
+                key={location_detail.id}
+                location={location_detail}
+                depth={depth + 1}
+              />
             ) : null;
           })}
       </div>

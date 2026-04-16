@@ -8,19 +8,14 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canRollback } from "@/lib/stockcount/machine";
-import {
-  type RollbackCountInput,
-  rollbackCountSchema,
-} from "@/lib/validation/count-approval";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
+import { type RollbackCountInput, rollbackCountSchema } from "@/lib/validation/count-approval";
 
 /**
  * Rollback a completed count. Transitions COMPLETED → ROLLED_BACK.
  * Reverts any stock movements that were posted as a result of this count.
  */
-export async function rollbackCountAction(
-  input: unknown,
-): Promise<ActionResult<{ id: string }>> {
+export async function rollbackCountAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

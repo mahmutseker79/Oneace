@@ -32,17 +32,8 @@ export function AssignmentDeleteButton({ id }: AssignmentDeleteButtonProps) {
   };
 
   return (
-    <Button
-      size="sm"
-      variant="ghost"
-      onClick={handleDelete}
-      disabled={isPending}
-    >
-      {isPending ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Trash2 className="h-4 w-4" />
-      )}
+    <Button size="sm" variant="ghost" onClick={handleDelete} disabled={isPending}>
+      {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
     </Button>
   );
 }

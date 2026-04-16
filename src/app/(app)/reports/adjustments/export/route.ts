@@ -1,8 +1,8 @@
+import { csvResponse, serializeCsv, todayIsoDate } from "@/lib/csv";
+import type { CsvColumn } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
-import { serializeCsv, csvResponse, todayIsoDate } from "@/lib/csv";
-import type { CsvColumn } from "@/lib/csv";
 
 type ExportRow = {
   date: string;
@@ -54,40 +54,42 @@ export async function GET() {
     movements.filter((m) => m.stockCountId).map((m) => m.stockCountId!),
   );
 
-  const countSnapshots = stockCountIds.size > 0
-    ? await db.countSnapshot.findMany({
-        where: {
-          countId: { in: Array.from(stockCountIds) },
-        },
-        select: {
-          countId: true,
-          itemId: true,
-          expectedQuantity: true,
-        },
-      })
-    : [];
-
-  const countEntriesByCountId = stockCountIds.size > 0
-    ? await db.countEntry.findMany({
-        where: {
-          count: {
-            id: { in: Array.from(stockCountIds) },
+  const countSnapshots =
+    stockCountIds.size > 0
+      ? await db.countSnapshot.findMany({
+          where: {
+            countId: { in: Array.from(stockCountIds) },
           },
-        },
-        select: {
-          countId: true,
-          itemId: true,
-          countedQuantity: true,
-        },
-      })
-    : [];
+          select: {
+            countId: true,
+            itemId: true,
+            expectedQuantity: true,
+          },
+        })
+      : [];
+
+  const countEntriesByCountId =
+    stockCountIds.size > 0
+      ? await db.countEntry.findMany({
+          where: {
+            count: {
+              id: { in: Array.from(stockCountIds) },
+            },
+          },
+          select: {
+            countId: true,
+            itemId: true,
+            countedQuantity: true,
+          },
+        })
+      : [];
 
   const snapshotMap = new Map<string, Map<string, number>>();
   for (const snap of countSnapshots) {
     if (!snapshotMap.has(snap.countId)) {
       snapshotMap.set(snap.countId, new Map());
     }
-    snapshotMap.get(snap.countId)!.set(snap.itemId, snap.expectedQuantity);
+    snapshotMap.get(snap.countId)?.set(snap.itemId, snap.expectedQuantity);
   }
 
   const entryMap = new Map<string, Map<string, number>>();
@@ -95,7 +97,7 @@ export async function GET() {
     if (!entryMap.has(entry.countId)) {
       entryMap.set(entry.countId, new Map());
     }
-    entryMap.get(entry.countId)!.set(entry.itemId, entry.countedQuantity);
+    entryMap.get(entry.countId)?.set(entry.itemId, entry.countedQuantity);
   }
 
   const locale = new Intl.DateTimeFormat("en-US", {
@@ -114,8 +116,7 @@ export async function GET() {
       if (entries) countedQty = entries.get(m.itemId) ?? null;
     }
 
-    const variance =
-      expectedQty != null && countedQty != null ? countedQty - expectedQty : 0;
+    const variance = expectedQty != null && countedQty != null ? countedQty - expectedQty : 0;
 
     return {
       date: locale.format(m.createdAt),

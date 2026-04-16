@@ -1,11 +1,11 @@
-import { AlertTriangle, AlertOctagon, Zap } from "lucide-react";
+import { AlertOctagon, AlertTriangle, Zap } from "lucide-react";
 import type { Metadata } from "next";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
   Table,
@@ -64,10 +64,7 @@ export default async function StockExceptionsReportPage() {
           title="Stock Exceptions"
           description="Negative and zero stock inventory issues"
           backHref="/reports"
-          breadcrumb={[
-            { label: "Reports", href: "/reports" },
-            { label: "Stock Exceptions" },
-          ]}
+          breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Stock Exceptions" }]}
         />
         <EmptyState
           icon={AlertTriangle}
@@ -125,15 +122,8 @@ export default async function StockExceptionsReportPage() {
         title="Stock Exceptions"
         description="Negative and zero stock inventory issues"
         backHref="/reports"
-        breadcrumb={[
-          { label: "Reports", href: "/reports" },
-          { label: "Stock Exceptions" },
-        ]}
-        actions={
-          <ExportButton href="/reports/stock-exceptions/export">
-            Export CSV
-          </ExportButton>
-        }
+        breadcrumb={[{ label: "Reports", href: "/reports" }, { label: "Stock Exceptions" }]}
+        actions={<ExportButton href="/reports/stock-exceptions/export">Export CSV</ExportButton>}
       />
 
       <ReportSummaryCard
@@ -163,7 +153,9 @@ export default async function StockExceptionsReportPage() {
         <Card>
           <CardHeader>
             <CardDescription>Negative Stock Items</CardDescription>
-            <CardTitle className="text-3xl text-red-600">{formatNumber(negativeStock.length, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl text-red-600">
+              {formatNumber(negativeStock.length, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
@@ -174,18 +166,20 @@ export default async function StockExceptionsReportPage() {
         <Card>
           <CardHeader>
             <CardDescription>Zero Stock Items</CardDescription>
-            <CardTitle className="text-3xl text-amber-600">{formatNumber(zeroStock.length, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl text-amber-600">
+              {formatNumber(zeroStock.length, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Potential dead stock
-            </p>
+            <p className="text-sm text-muted-foreground">Potential dead stock</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardDescription>Total Exceptions</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(rows.length, region.numberLocale)}</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatNumber(rows.length, region.numberLocale)}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -195,7 +189,8 @@ export default async function StockExceptionsReportPage() {
           <CardHeader>
             <CardTitle className="text-lg">Negative Stock (Data Quality Issue)</CardTitle>
             <CardDescription>
-              These items have negative quantities, indicating a data integrity issue that requires investigation.
+              These items have negative quantities, indicating a data integrity issue that requires
+              investigation.
             </CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">

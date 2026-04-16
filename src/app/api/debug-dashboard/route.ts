@@ -12,17 +12,23 @@ export async function GET() {
     try {
       await db.item.count({ where: { organizationId: orgId, status: "ACTIVE" } });
       results["item.count"] = "OK";
-    } catch (e: unknown) { results["item.count"] = String(e); }
+    } catch (e: unknown) {
+      results["item.count"] = String(e);
+    }
 
     try {
       await db.warehouse.count({ where: { organizationId: orgId } });
       results["warehouse.count"] = "OK";
-    } catch (e: unknown) { results["warehouse.count"] = String(e); }
+    } catch (e: unknown) {
+      results["warehouse.count"] = String(e);
+    }
 
     try {
       await db.stockCount.count({ where: { organizationId: orgId, state: "OPEN" } });
       results["stockCount.count"] = "OK";
-    } catch (e: unknown) { results["stockCount.count"] = String(e); }
+    } catch (e: unknown) {
+      results["stockCount.count"] = String(e);
+    }
 
     try {
       await db.stockMovement.findMany({
@@ -36,12 +42,16 @@ export async function GET() {
         },
       });
       results["stockMovement.findMany"] = "OK";
-    } catch (e: unknown) { results["stockMovement.findMany"] = String(e); }
+    } catch (e: unknown) {
+      results["stockMovement.findMany"] = String(e);
+    }
 
     try {
       await db.$queryRaw`SELECT 1 as test`;
-      results["rawQuery"] = "OK";
-    } catch (e: unknown) { results["rawQuery"] = String(e); }
+      results.rawQuery = "OK";
+    } catch (e: unknown) {
+      results.rawQuery = String(e);
+    }
 
     try {
       await db.$queryRaw`
@@ -51,7 +61,9 @@ export async function GET() {
         WHERE sl."organizationId" = ${orgId}
       `;
       results["stockValue.raw"] = "OK";
-    } catch (e: unknown) { results["stockValue.raw"] = String(e); }
+    } catch (e: unknown) {
+      results["stockValue.raw"] = String(e);
+    }
 
     try {
       const fourteenDaysAgo = new Date();
@@ -61,8 +73,10 @@ export async function GET() {
         select: { createdAt: true, type: true, quantity: true },
         take: 1,
       });
-      results["trendMovements"] = "OK";
-    } catch (e: unknown) { results["trendMovements"] = String(e); }
+      results.trendMovements = "OK";
+    } catch (e: unknown) {
+      results.trendMovements = String(e);
+    }
 
     try {
       await db.$queryRaw`
@@ -80,7 +94,9 @@ export async function GET() {
         LIMIT 5
       `;
       results["lowStock.raw"] = "OK";
-    } catch (e: unknown) { results["lowStock.raw"] = String(e); }
+    } catch (e: unknown) {
+      results["lowStock.raw"] = String(e);
+    }
 
     return NextResponse.json(results);
   } catch (e: unknown) {

@@ -3,13 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Check, Copy, Loader2 } from "lucide-react";
+import { useState, useTransition } from "react";
 import {
   enableTwoFactorAction,
-  verifyAndActivateTwoFactorAction,
   regenerateBackupCodesAction,
+  verifyAndActivateTwoFactorAction,
 } from "./actions";
-import { Loader2, Copy, Check } from "lucide-react";
-import { useState, useTransition } from "react";
 
 interface TwoFactorSetupProps {
   labels: {
@@ -166,10 +166,7 @@ export function TwoFactorSetup({ labels }: TwoFactorSetupProps) {
         <p className="text-xs text-muted-foreground">{labels.step1BackupWarning}</p>
         <div className="grid gap-2 max-h-64 overflow-y-auto rounded-md border p-4 bg-muted">
           {backupCodes.map((code, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between gap-2 font-mono text-sm"
-            >
+            <div key={index} className="flex items-center justify-between gap-2 font-mono text-sm">
               <span>{code}</span>
               <button
                 type="button"

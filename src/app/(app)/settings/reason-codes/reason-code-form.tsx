@@ -19,6 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,12 +28,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
 import type { ReasonCode } from "@/generated/prisma";
-import { reasonCategoryEnum, type CreateReasonCodeInput, createReasonCodeSchema, updateReasonCodeSchema } from "@/lib/validation/reason-code";
+import {
+  type CreateReasonCodeInput,
+  createReasonCodeSchema,
+  reasonCategoryEnum,
+  updateReasonCodeSchema,
+} from "@/lib/validation/reason-code";
 import { createReasonCodeAction, updateReasonCodeAction } from "./actions";
 
 type ReasonCodeFormProps = {
@@ -65,7 +70,7 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
   const [state, formAction, isPending] = useActionState(
     isEditing
       ? (prevState: unknown, formData: FormData) =>
-          updateReasonCodeAction(reasonCode!.id, Object.fromEntries(formData))
+          updateReasonCodeAction(reasonCode?.id, Object.fromEntries(formData))
       : (prevState: unknown, formData: FormData) =>
           createReasonCodeAction(Object.fromEntries(formData)),
     { ok: false, error: "" },
@@ -115,15 +120,9 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
               <FormItem>
                 <FormLabel>Code</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="e.g., DMG"
-                    {...field}
-                    disabled={isPending || isEditing}
-                  />
+                  <Input placeholder="e.g., DMG" {...field} disabled={isPending || isEditing} />
                 </FormControl>
-                <FormDescription>
-                  1-20 uppercase alphanumeric characters
-                </FormDescription>
+                <FormDescription>1-20 uppercase alphanumeric characters</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -136,15 +135,9 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="e.g., Damage"
-                    {...field}
-                    disabled={isPending}
-                  />
+                  <Input placeholder="e.g., Damage" {...field} disabled={isPending} />
                 </FormControl>
-                <FormDescription>
-                  Human-readable name for this code
-                </FormDescription>
+                <FormDescription>Human-readable name for this code</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -189,18 +182,14 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>
-                  Up to 500 characters
-                </FormDescription>
+                <FormDescription>Up to 500 characters</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
           {state.ok === false && state.error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-900">
-              {state.error}
-            </div>
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-900">{state.error}</div>
           )}
 
           <div className="flex justify-end gap-2 pt-4">

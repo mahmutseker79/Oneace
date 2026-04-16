@@ -12,6 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,14 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight } from "lucide-react";
+import { useForm } from "react-hook-form";
 
-import { stockStatusEnum, type ChangeStockStatusInput, changeStockStatusSchema } from "@/lib/validation/stock-status";
 import type { ReasonCategory } from "@/generated/prisma";
+import {
+  type ChangeStockStatusInput,
+  changeStockStatusSchema,
+  stockStatusEnum,
+} from "@/lib/validation/stock-status";
 import { changeStockStatusAction } from "./actions";
 
 type StatusChangeFormProps = {
@@ -35,11 +39,7 @@ type StatusChangeFormProps = {
   reasonCodes: Array<{ id: string; label: string; category: ReasonCategory }>;
 };
 
-export function StatusChangeForm({
-  items,
-  warehouses,
-  reasonCodes,
-}: StatusChangeFormProps) {
+export function StatusChangeForm({ items, warehouses, reasonCodes }: StatusChangeFormProps) {
   const form = useForm({
     resolver: zodResolver(changeStockStatusSchema),
     defaultValues: {
@@ -69,7 +69,15 @@ export function StatusChangeForm({
   useEffect(() => {
     if (state.ok === false && state.fieldErrors) {
       for (const [key, errors] of Object.entries(state.fieldErrors)) {
-        const fieldKey = key as "itemId" | "warehouseId" | "binId" | "fromStatus" | "toStatus" | "quantity" | "reasonCodeId" | "note";
+        const fieldKey = key as
+          | "itemId"
+          | "warehouseId"
+          | "binId"
+          | "fromStatus"
+          | "toStatus"
+          | "quantity"
+          | "reasonCodeId"
+          | "note";
         form.setError(fieldKey, { message: errors?.[0] ?? "" });
       }
     }
@@ -208,16 +216,9 @@ export function StatusChangeForm({
           <FormItem>
             <FormLabel>Quantity to Move</FormLabel>
             <FormControl>
-              <Input
-                type="number"
-                placeholder="0"
-                {...field}
-                disabled={isPending}
-              />
+              <Input type="number" placeholder="0" {...field} disabled={isPending} />
             </FormControl>
-            <FormDescription>
-              Number of units to change status
-            </FormDescription>
+            <FormDescription>Number of units to change status</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -243,9 +244,7 @@ export function StatusChangeForm({
                 ))}
               </SelectContent>
             </Select>
-            <FormDescription>
-              Reason for the status change
-            </FormDescription>
+            <FormDescription>Reason for the status change</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -265,18 +264,14 @@ export function StatusChangeForm({
                 {...field}
               />
             </FormControl>
-            <FormDescription>
-              Additional context (max 1000 characters)
-            </FormDescription>
+            <FormDescription>Additional context (max 1000 characters)</FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
 
       {state.ok === false && state.error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-900">
-          {state.error}
-        </div>
+        <div className="rounded-md bg-red-50 p-3 text-sm text-red-900">{state.error}</div>
       )}
 
       {state.ok === true && (

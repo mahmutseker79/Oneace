@@ -9,11 +9,11 @@
  * - Checkpointing for resumable imports
  */
 
+import type { ImportEntity, ImportStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
-import { logger } from "@/lib/logger";
 import { FieldMapper } from "@/lib/import/field-mapper";
 import { RowProcessor } from "@/lib/import/row-processor";
-import type { ImportEntity, ImportStatus } from "@/generated/prisma";
+import { logger } from "@/lib/logger";
 
 export interface ParsedFile {
   headers: string[];
@@ -70,15 +70,11 @@ export class ImportEngine {
     options: ImportOptions = {},
   ) {
     this.fieldMapper = new FieldMapper(entity);
-    this.rowProcessor = new RowProcessor(
-      entity,
-      fieldMappings as any,
-      {
-        skipEmptyRows: true,
-        trimValues: true,
-        strictValidation: !options.skipValidation,
-      },
-    );
+    this.rowProcessor = new RowProcessor(entity, fieldMappings as any, {
+      skipEmptyRows: true,
+      trimValues: true,
+      strictValidation: !options.skipValidation,
+    });
     this.options = {
       batchSize: 100,
       conflictStrategy: "skip",
@@ -118,24 +114,13 @@ export class ImportEngine {
       const resumeFrom = this.options.resumeFrom || 0;
 
       for (let i = resumeFrom; i < parsedFile.rows.length; i += batchSize) {
-        const batchRows = parsedFile.rows.slice(
-          i,
-          Math.min(i + batchSize, parsedFile.rows.length),
-        );
+        const batchRows = parsedFile.rows.slice(i, Math.min(i + batchSize, parsedFile.rows.length));
 
-        const { valid, invalid } = this.rowProcessor.processRows(
-          batchRows,
-          i,
-        );
+        const { valid, invalid } = this.rowProcessor.processRows(batchRows, i);
 
         // Process valid rows
         if (valid.length > 0 && !this.options.dryRun) {
-          await this.insertBatch(
-            organizationId,
-            entity,
-            valid,
-            result,
-          );
+          await this.insertBatch(organizationId, entity, valid, result);
         }
 
         result.successfulRows += valid.length;
@@ -254,10 +239,7 @@ export class ImportEngine {
   /**
    * Insert items.
    */
-  private async insertItems(
-    organizationId: string,
-    rows: any[],
-  ): Promise<void> {
+  private async insertItems(organizationId: string, rows: any[]): Promise<void> {
     for (const row of rows) {
       const data = row.data;
 
@@ -316,48 +298,44 @@ export class ImportEngine {
   /**
    * Insert suppliers.
    */
-  private async insertSuppliers(
-    organizationId: string,
-    rows: any[],
-  ): Promise<void> {
+  private async insertSuppliers(organizationId: string, rows: any[]): Promise<void> {
     for (const row of rows) {
       const data = row.data;
       const code = data.code || data.name.substring(0, 4).toUpperCase();
 
-      await db.supplier.create({
-        data: {
-          organizationId,
-          name: data.name,
-          code,
-          email: data.email,
-          phone: data.phone,
-          addressLine1: data.address,
-          city: data.city,
-          country: data.country,
-        },
-      }).catch(async () => {
-        // If unique constraint fails, update existing
-        return db.supplier.updateMany({
-          where: {
+      await db.supplier
+        .create({
+          data: {
             organizationId,
             name: data.name,
-          },
-          data: {
+            code,
             email: data.email,
             phone: data.phone,
+            addressLine1: data.address,
+            city: data.city,
+            country: data.country,
           },
+        })
+        .catch(async () => {
+          // If unique constraint fails, update existing
+          return db.supplier.updateMany({
+            where: {
+              organizationId,
+              name: data.name,
+            },
+            data: {
+              email: data.email,
+              phone: data.phone,
+            },
+          });
         });
-      });
     }
   }
 
   /**
    * Insert purchase orders.
    */
-  private async insertPurchaseOrders(
-    organizationId: string,
-    rows: any[],
-  ): Promise<void> {
+  private async insertPurchaseOrders(organizationId: string, rows: any[]): Promise<void> {
     for (const row of rows) {
       const data = row.data;
 
@@ -419,10 +397,7 @@ export class ImportEngine {
   /**
    * Insert stock movements.
    */
-  private async insertStockMovements(
-    organizationId: string,
-    rows: any[],
-  ): Promise<void> {
+  private async insertStockMovements(organizationId: string, rows: any[]): Promise<void> {
     for (const row of rows) {
       const data = row.data;
 

@@ -1,8 +1,8 @@
 import { type CsvColumn, csvResponse, serializeCsv, todayIsoDate } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { hasPlanCapability } from "@/lib/plans";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 
 /**
  * GET /reports/bin-inventory/export — CSV of all bin-level stock levels.
@@ -40,10 +40,10 @@ export async function GET() {
   // Rate limit export endpoint: 10 per hour per user
   const rl = await rateLimit(`export:${membership.userId}`, RATE_LIMITS.export);
   if (!rl.ok) {
-    return new Response(
-      JSON.stringify({ error: "Export rate limit exceeded. Try again later." }),
-      { status: 429, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Export rate limit exceeded. Try again later." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   // Phase 13.2 — exports require PRO or BUSINESS plan
@@ -76,13 +76,13 @@ export async function GET() {
   const rows: ExportRow[] = levels
     .filter((l) => l.bin && l.item && l.warehouse)
     .map((l) => ({
-      warehouse: l.warehouse!.name,
-      warehouseCode: l.warehouse!.code,
-      binCode: l.bin!.code,
-      binLabel: l.bin!.label ?? null,
-      sku: l.item!.sku,
-      name: l.item!.name,
-      unit: l.item!.unit,
+      warehouse: l.warehouse?.name,
+      warehouseCode: l.warehouse?.code,
+      binCode: l.bin?.code,
+      binLabel: l.bin?.label ?? null,
+      sku: l.item?.sku,
+      name: l.item?.name,
+      unit: l.item?.unit,
       quantity: l.quantity,
     }));
 

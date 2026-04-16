@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { hasPlanCapability } from "@/lib/plans";
-import { requireActiveMembership } from "@/lib/session";
 import { exportBinInventoryPdf } from "@/lib/export/pdf";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { hasPlanCapability } from "@/lib/plans";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { requireActiveMembership } from "@/lib/session";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const { membership } = await requireActiveMembership();
@@ -11,10 +11,10 @@ export async function GET() {
   // Rate limit export endpoint: 10 per hour per user
   const rl = await rateLimit(`export:${membership.userId}`, RATE_LIMITS.export);
   if (!rl.ok) {
-    return new Response(
-      JSON.stringify({ error: "Export rate limit exceeded. Try again later." }),
-      { status: 429, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Export rate limit exceeded. Try again later." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   // Bins are a PRO+ feature
@@ -22,7 +22,8 @@ export async function GET() {
   if (!hasPlanCapability(exportPlan, "bins")) {
     return new Response(
       JSON.stringify({
-        error: "Bin features are available on Pro and Business plans. Upgrade to unlock this report.",
+        error:
+          "Bin features are available on Pro and Business plans. Upgrade to unlock this report.",
       }),
       { status: 403, headers: { "Content-Type": "application/json" } },
     );
@@ -40,11 +41,7 @@ export async function GET() {
       bin: { select: { id: true, code: true } },
       item: { select: { sku: true, name: true } },
     },
-    orderBy: [
-      { warehouse: { name: "asc" } },
-      { bin: { code: "asc" } },
-      { item: { name: "asc" } },
-    ],
+    orderBy: [{ warehouse: { name: "asc" } }, { bin: { code: "asc" } }, { item: { name: "asc" } }],
   });
 
   type BinData = {
@@ -77,7 +74,7 @@ export async function GET() {
       locationsMap.set(warehouseKey, location);
     }
 
-    let bin = location.bins.find((b) => b.code === level.bin!.code);
+    let bin = location.bins.find((b) => b.code === level.bin?.code);
     if (!bin) {
       bin = { code: level.bin.code, items: [] };
       location.bins.push(bin);

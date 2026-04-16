@@ -67,27 +67,27 @@ export default async function BillingSettingsPage({
       />
       <div className="max-w-2xl space-y-6 px-4 py-6 sm:px-6">
         <BillingPage
-        plan={(org?.plan ?? "FREE") as "FREE" | "PRO" | "BUSINESS"}
-        canManageBilling={hasCapability(membership.role, "org.billing")}
-        hasStripe={hasStripe}
-        hasAnnualBilling={hasAnnualBilling}
-        hasCustomer={Boolean(org?.stripeCustomerId)}
-        checkoutSuccess={sp.success === "1"}
-        checkoutCancelled={sp.cancelled === "1"}
-        portalReturn={sp.portal === "1"}
-        // Phase 16.3 — billing intent fallback (from register when Stripe checkout failed)
-        intentPlan={sp.plan === "PRO" || sp.plan === "BUSINESS" ? sp.plan : undefined}
-        intentInterval={
-          sp.interval === "year" ? "year" : sp.interval === "month" ? "month" : undefined
-        }
-        currentItems={currentItems}
-        currentWarehouses={currentWarehouses}
-        currentMembers={currentMembers}
-        // Phase 16.2 — subscription truth
-        billingInterval={(org?.billingInterval ?? "month") as "month" | "year"}
-        cancelAtPeriodEnd={org?.cancelAtPeriodEnd ?? false}
-        cancelAt={org?.cancelAt?.toISOString() ?? null}
-      />
+          plan={(org?.plan ?? "FREE") as "FREE" | "PRO" | "BUSINESS"}
+          canManageBilling={hasCapability(membership.role, "org.billing")}
+          hasStripe={hasStripe}
+          hasAnnualBilling={hasAnnualBilling}
+          hasCustomer={Boolean(org?.stripeCustomerId)}
+          checkoutSuccess={sp.success === "1"}
+          checkoutCancelled={sp.cancelled === "1"}
+          portalReturn={sp.portal === "1"}
+          // Phase 16.3 — billing intent fallback (from register when Stripe checkout failed)
+          intentPlan={sp.plan === "PRO" || sp.plan === "BUSINESS" ? sp.plan : undefined}
+          intentInterval={
+            sp.interval === "year" ? "year" : sp.interval === "month" ? "month" : undefined
+          }
+          currentItems={currentItems}
+          currentWarehouses={currentWarehouses}
+          currentMembers={currentMembers}
+          // Phase 16.2 — subscription truth
+          billingInterval={(org?.billingInterval ?? "month") as "month" | "year"}
+          cancelAtPeriodEnd={org?.cancelAtPeriodEnd ?? false}
+          cancelAt={org?.cancelAt?.toISOString() ?? null}
+        />
       </div>
     </div>
   );

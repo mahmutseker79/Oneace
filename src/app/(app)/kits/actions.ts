@@ -196,7 +196,10 @@ export async function removeKitComponentAction(componentId: string): Promise<Act
     revalidatePath(`/kits/${component.kitId}`);
     return { ok: true, id: component.kitId };
   } catch (error) {
-    return { ok: false, error: t.kits?.errors?.removeComponentFailed ?? "Failed to remove component" };
+    return {
+      ok: false,
+      error: t.kits?.errors?.removeComponentFailed ?? "Failed to remove component",
+    };
   }
 }
 

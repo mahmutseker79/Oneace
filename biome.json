@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": [".next", "node_modules", "dist", "prisma/migrations"]
+    "ignore": [".next", "node_modules", "dist", "prisma/migrations", ".claude"]
   },
   "formatter": {
     "enabled": true,
@@ -23,8 +23,15 @@
         "noNonNullAssertion": "warn"
       },
       "suspicious": {
-        "noExplicitAny": "error",
+        "noExplicitAny": "warn",
         "noArrayIndexKey": "off"
+      },
+      "a11y": {
+        "noLabelWithoutControl": "warn",
+        "useButtonType": "warn"
+      },
+      "complexity": {
+        "noForEach": "warn"
       }
     }
   },

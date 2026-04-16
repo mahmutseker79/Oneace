@@ -1,5 +1,5 @@
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { requireActiveMembership } from "@/lib/session";
 import { getOrCreateOrgSettingsAction } from "./actions";
 import { GeneralSettingsForm } from "./settings-form";
@@ -69,10 +69,7 @@ export default async function GeneralSettingsPage() {
         backHref="/settings"
       />
 
-      <GeneralSettingsForm
-        settings={settings}
-        organizationId={membership.organizationId}
-      />
+      <GeneralSettingsForm settings={settings} organizationId={membership.organizationId} />
     </div>
   );
 }

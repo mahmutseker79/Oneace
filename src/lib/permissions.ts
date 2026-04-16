@@ -202,7 +202,13 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "stockCounts.addEntry": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER", "COUNTER"]),
   "stockCounts.reconcile": new Set<Role>(["OWNER", "ADMIN"]),
   "stockCounts.cancel": new Set<Role>(["OWNER", "ADMIN"]),
-  "stockCounts.submitForApproval": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER", "COUNTER"]),
+  "stockCounts.submitForApproval": new Set<Role>([
+    "OWNER",
+    "ADMIN",
+    "MANAGER",
+    "MEMBER",
+    "COUNTER",
+  ]),
   "stockCounts.approve": new Set<Role>(["OWNER", "ADMIN", "APPROVER"]),
   "stockCounts.reject": new Set<Role>(["OWNER", "ADMIN", "APPROVER"]),
   "stockCounts.rollback": new Set<Role>(["OWNER", "ADMIN"]),
@@ -371,7 +377,14 @@ export function isReadOnly(role: Role): boolean {
  * The assignable user-facing roles (hides the legacy MANAGER value).
  * Used by the invite form and role-change dropdown.
  */
-export const ASSIGNABLE_ROLES: readonly Role[] = ["OWNER", "ADMIN", "MEMBER", "APPROVER", "COUNTER", "VIEWER"];
+export const ASSIGNABLE_ROLES: readonly Role[] = [
+  "OWNER",
+  "ADMIN",
+  "MEMBER",
+  "APPROVER",
+  "COUNTER",
+  "VIEWER",
+];
 
 /**
  * All capabilities as an array. Used in test assertions to verify

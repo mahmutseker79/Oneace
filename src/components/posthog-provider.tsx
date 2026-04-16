@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { env } from "@/lib/env";
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
-import { env } from "@/lib/env";
+import { useEffect } from "react";
 
 /**
  * PostHog Provider Component
@@ -17,9 +17,7 @@ function PostHogPageview(): null {
   return null;
 }
 
-export function PostHogProviderWrapper({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export function PostHogProviderWrapper({ children }: Readonly<{ children: React.ReactNode }>) {
   useEffect(() => {
     // Only initialize if key is set
     if (!env.NEXT_PUBLIC_POSTHOG_KEY) {

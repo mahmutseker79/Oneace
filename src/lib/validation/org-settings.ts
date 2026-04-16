@@ -24,14 +24,20 @@ export const updateOrgSettingsSchema = z.object({
     .string()
     .min(1, "Sales order prefix must be at least 1 character")
     .max(10, "Sales order prefix must be at most 10 characters")
-    .regex(/^[A-Z0-9_-]+$/, "Sales order prefix must be uppercase alphanumeric, underscore, or hyphen")
+    .regex(
+      /^[A-Z0-9_-]+$/,
+      "Sales order prefix must be uppercase alphanumeric, underscore, or hyphen",
+    )
     .optional(),
 
   assetTagPrefix: z
     .string()
     .min(1, "Asset tag prefix must be at least 1 character")
     .max(10, "Asset tag prefix must be at most 10 characters")
-    .regex(/^[A-Z0-9_-]+$/, "Asset tag prefix must be uppercase alphanumeric, underscore, or hyphen")
+    .regex(
+      /^[A-Z0-9_-]+$/,
+      "Asset tag prefix must be uppercase alphanumeric, underscore, or hyphen",
+    )
     .optional(),
 
   batchNumberPrefix: z
@@ -61,9 +67,7 @@ export const updateOrgSettingsSchema = z.object({
     .enum(["AVAILABLE", "HOLD", "DAMAGED", "QUARANTINE", "EXPIRED", "IN_TRANSIT", "RESERVED"])
     .optional(),
 
-  dateFormat: z
-    .enum(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"])
-    .optional(),
+  dateFormat: z.enum(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]).optional(),
 
   currencySymbol: z
     .string()

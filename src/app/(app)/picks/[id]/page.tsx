@@ -62,12 +62,9 @@ export default async function PickTaskDetailPage({
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">
-            Pick #{task.id.slice(0, 8)}
-          </h1>
+          <h1 className="text-2xl font-semibold">Pick #{task.id.slice(0, 8)}</h1>
           <p className="text-muted-foreground">
-            {task.item?.name ?? task.itemId} · {task.quantity}{" "}
-            {task.item?.unit ?? "units"}
+            {task.item?.name ?? task.itemId} · {task.quantity} {task.item?.unit ?? "units"}
           </p>
         </div>
         {statusBadge(task.status)}
@@ -82,9 +79,7 @@ export default async function PickTaskDetailPage({
             <Link href={`/items/${task.itemId}`} className="font-medium hover:underline">
               {task.item?.name ?? task.itemId}
             </Link>
-            <p className="text-xs text-muted-foreground font-mono">
-              {task.item?.sku ?? "—"}
-            </p>
+            <p className="text-xs text-muted-foreground font-mono">{task.item?.sku ?? "—"}</p>
           </CardContent>
         </Card>
         <Card>

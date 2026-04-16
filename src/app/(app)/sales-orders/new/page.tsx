@@ -1,11 +1,11 @@
 // Create sales order page
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { createSalesOrderAction } from "../actions";
 
 export default function NewSalesOrderPage() {
@@ -38,7 +38,9 @@ export default function NewSalesOrderPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Order Number (auto-generate if empty)</label>
+            <label className="block text-sm font-medium mb-1">
+              Order Number (auto-generate if empty)
+            </label>
             <Input name="orderNumber" placeholder="SO-0001" />
           </div>
 

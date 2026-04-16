@@ -157,15 +157,16 @@ export default async function ItemsPage({
 
   // Pre-aggregate stock quantities: 1 GROUP BY query replaces N×M includes.
   const allItemIds = items.map((i) => i.id);
-  const stockTotals = allItemIds.length > 0
-    ? await db.$queryRaw<Array<{ itemId: string; total: number }>>`
+  const stockTotals =
+    allItemIds.length > 0
+      ? await db.$queryRaw<Array<{ itemId: string; total: number }>>`
         SELECT "itemId", COALESCE(SUM(quantity), 0)::int as total
         FROM "StockLevel"
         WHERE "itemId" IN (${Prisma.join(allItemIds)})
           AND "organizationId" = ${membership.organizationId}
         GROUP BY "itemId"
       `
-    : [];
+      : [];
   const stockMap = new Map(stockTotals.map((s) => [s.itemId, s.total]));
 
   // Phase 2 — client-side text filter (search mode only, PAGE_SIZE or fewer rows).

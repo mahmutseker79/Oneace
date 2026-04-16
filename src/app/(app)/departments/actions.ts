@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
+import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type CreateDepartmentInput,
   type DeleteDepartmentInput,
@@ -15,7 +16,6 @@ import {
   deleteDepartmentSchema,
   updateDepartmentSchema,
 } from "@/lib/validation/department";
-import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 
 /**
  * Create a new department.

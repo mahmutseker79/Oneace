@@ -1,9 +1,9 @@
 import { Download, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -50,8 +50,7 @@ export default async function PrivacyPage() {
               {t.privacy?.exportData?.title || "Export Your Data"}
             </CardTitle>
             <CardDescription>
-              {t.privacy?.exportData?.subtitle ||
-                "Download a copy of all your data in JSON format"}
+              {t.privacy?.exportData?.subtitle || "Download a copy of all your data in JSON format"}
             </CardDescription>
           </CardHeader>
           <CardContent>

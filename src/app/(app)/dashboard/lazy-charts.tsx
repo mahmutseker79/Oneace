@@ -2,21 +2,18 @@
 
 import dynamic from "next/dynamic";
 
-import type { TopItemsData } from "./top-items-chart";
 import type { CategoryValueData } from "./category-value-chart";
 import type { LowStockTrendPoint } from "./low-stock-trend-chart";
+import type { TopItemsData } from "./top-items-chart";
 
-const TopItemsChart = dynamic(
-  () => import("./top-items-chart").then((mod) => mod.TopItemsChart),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-        Loading chart...
-      </div>
-    ),
-  },
-);
+const TopItemsChart = dynamic(() => import("./top-items-chart").then((mod) => mod.TopItemsChart), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+      Loading chart...
+    </div>
+  ),
+});
 
 const CategoryValueChart = dynamic(
   () => import("./category-value-chart").then((mod) => mod.CategoryValueChart),

@@ -25,12 +25,13 @@ export function TopItemsChart({ data }: TopItemsChartProps) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        data={data}
-        layout="vertical"
-        margin={{ top: 4, right: 12, bottom: 4, left: 4 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} horizontal={false} />
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="currentColor"
+          strokeOpacity={0.06}
+          horizontal={false}
+        />
         <XAxis
           type="number"
           tick={{ fontSize: 11 }}

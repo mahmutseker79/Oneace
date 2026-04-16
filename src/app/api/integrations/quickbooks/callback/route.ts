@@ -5,12 +5,12 @@
  * Exchanges the authorization code for an access token.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
 import { db } from "@/lib/db";
-import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { QBOClient } from "@/lib/integrations/quickbooks/qbo-client";
+import { logger } from "@/lib/logger";
+import { type NextRequest, NextResponse } from "next/server";
 
 function verifyOAuthState(
   state: string,
@@ -20,9 +20,7 @@ function verifyOAuthState(
   if (parts.length !== 3) return null; // expect orgId|userId|signature
   const [organizationId, userId, signature] = parts;
   if (!organizationId || !userId || !signature) return null;
-  const expected = createHmac("sha256", secret)
-    .update(`${organizationId}|${userId}`)
-    .digest("hex");
+  const expected = createHmac("sha256", secret).update(`${organizationId}|${userId}`).digest("hex");
   if (signature !== expected) return null;
   return { organizationId, userId };
 }
@@ -35,10 +33,7 @@ export async function GET(request: NextRequest) {
     const realmId = searchParams.get("realmId");
 
     if (!code || !state || !realmId) {
-      return NextResponse.json(
-        { error: "Missing OAuth parameters" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing OAuth parameters" }, { status: 400 });
     }
 
     // Verify state parameter with HMAC signature
@@ -47,10 +42,7 @@ export async function GET(request: NextRequest) {
       logger.warn("QuickBooks OAuth state verification failed", {
         state,
       });
-      return NextResponse.json(
-        { error: "Invalid state parameter" },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: "Invalid state parameter" }, { status: 403 });
     }
 
     const { organizationId, userId } = verified;
@@ -87,19 +79,13 @@ export async function GET(request: NextRequest) {
 
     // Redirect to settings page with success message
     return NextResponse.redirect(
-      new URL(
-        "/settings/integrations/quickbooks?status=success",
-        request.url,
-      ),
+      new URL("/settings/integrations/quickbooks?status=success", request.url),
     );
   } catch (error) {
     logger.error("QuickBooks OAuth callback error", { error });
 
     return NextResponse.redirect(
-      new URL(
-        "/settings/integrations/quickbooks?status=error",
-        request.url,
-      ),
+      new URL("/settings/integrations/quickbooks?status=error", request.url),
     );
   }
 }

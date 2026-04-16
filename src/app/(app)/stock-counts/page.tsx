@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
   TableBody,
@@ -21,7 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ResponsiveTable, MobileCard } from "@/components/ui/responsive-table";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -72,7 +72,10 @@ export default async function StockCountsPage() {
 
   function methodologyBadge(methodology: Methodology) {
     return (
-      <Badge variant="outline" className="bg-muted text-xs font-mono rounded px-1.5 py-0.5 border-0">
+      <Badge
+        variant="outline"
+        className="bg-muted text-xs font-mono rounded px-1.5 py-0.5 border-0"
+      >
         {t.stockCounts.methodology[methodology]}
       </Badge>
     );
@@ -153,7 +156,9 @@ export default async function StockCountsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.stockCounts.heading}</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            {t.stockCounts.heading}
+          </h1>
           <p className="text-sm text-muted-foreground">{t.stockCounts.subtitle}</p>
         </div>
         {canCreate ? (

@@ -6,7 +6,11 @@
  * the actual QBO API endpoints.
  */
 
-import { IntegrationClient, type OAuthConfig, type OAuthToken } from "@/lib/integrations/base-client";
+import {
+  IntegrationClient,
+  type OAuthConfig,
+  type OAuthToken,
+} from "@/lib/integrations/base-client";
 import { logger } from "@/lib/logger";
 
 const QBO_OAUTH_CONFIG: OAuthConfig = {
@@ -54,7 +58,7 @@ export interface QBOPurchaseOrder {
  * QuickBooks Online integration client.
  */
 export class QBOClient extends IntegrationClient {
-  private realmId: string = "";
+  private realmId = "";
 
   constructor(credentials: OAuthToken, realmId: string) {
     super(QBO_OAUTH_CONFIG, credentials);
@@ -66,16 +70,14 @@ export class QBOClient extends IntegrationClient {
    * Get the authorization URL for OAuth flow.
    */
   getAuthorizationUrl(state: string): string {
-    return super.getAuthorizationUrl(state, [
-      "com.intuit.quickbooks.accounting",
-    ]);
+    return super.getAuthorizationUrl(state, ["com.intuit.quickbooks.accounting"]);
   }
 
   /**
    * Fetch items from QuickBooks.
    * Placeholder - actual implementation would query the Item endpoint.
    */
-  async getItems(limit: number = 100): Promise<QBOItem[]> {
+  async getItems(limit = 100): Promise<QBOItem[]> {
     try {
       const response = await this.apiCall<{
         QueryResponse: { Item?: Array<Record<string, unknown>> };
@@ -104,7 +106,7 @@ export class QBOClient extends IntegrationClient {
   /**
    * Fetch vendors (suppliers) from QuickBooks.
    */
-  async getVendors(limit: number = 100): Promise<QBOSupplier[]> {
+  async getVendors(limit = 100): Promise<QBOSupplier[]> {
     try {
       const response = await this.apiCall<{
         QueryResponse: { Vendor?: Array<Record<string, unknown>> };
@@ -132,10 +134,7 @@ export class QBOClient extends IntegrationClient {
   /**
    * Fetch purchase orders from QuickBooks.
    */
-  async getPurchaseOrders(
-    limit: number = 100,
-    updatedAfter?: Date,
-  ): Promise<QBOPurchaseOrder[]> {
+  async getPurchaseOrders(limit = 100, updatedAfter?: Date): Promise<QBOPurchaseOrder[]> {
     try {
       let query = `SELECT * FROM PurchaseOrder MAXRESULTS ${limit}`;
 
@@ -162,24 +161,24 @@ export class QBOClient extends IntegrationClient {
         dueDate: String(order.DueDate ?? ""),
         status: "OPEN",
         lineItems: Array.isArray(order.Line)
-          ? order.Line.map(
-              (line: Record<string, unknown>) => ({
-                id: String(line.Id),
-                itemId: String(
-                  ((line.DetailType === "ItemBasedExpenseLineDetail"
+          ? order.Line.map((line: Record<string, unknown>) => ({
+              id: String(line.Id),
+              itemId: String(
+                (
+                  (line.DetailType === "ItemBasedExpenseLineDetail"
                     ? (line.ItemBasedExpenseLineDetail as any)
-                    : (line.DescriptionOnlyLineDetail as any)
-                  ) as any)?.ItemRef?.value ?? ""
-                ),
-                quantity: Number(line.Qty ?? 0),
-                unitPrice: Number(
-                  ((line.DetailType === "ItemBasedExpenseLineDetail"
+                    : (line.DescriptionOnlyLineDetail as any)) as any
+                )?.ItemRef?.value ?? "",
+              ),
+              quantity: Number(line.Qty ?? 0),
+              unitPrice: Number(
+                (
+                  (line.DetailType === "ItemBasedExpenseLineDetail"
                     ? (line.ItemBasedExpenseLineDetail as any)
-                    : (line.DescriptionOnlyLineDetail as any)
-                  ) as any)?.UnitPrice ?? 0
-                ),
-              }),
-            )
+                    : (line.DescriptionOnlyLineDetail as any)) as any
+                )?.UnitPrice ?? 0,
+              ),
+            }))
           : [],
       }));
     } catch (error) {
@@ -201,13 +200,10 @@ export class QBOClient extends IntegrationClient {
         UnitPrice: item.unitPrice,
       };
 
-      const response = await this.apiCall<{ Item: Record<string, unknown> }>(
-        "/item",
-        {
-          method: "POST",
-          body: payload,
-        },
-      );
+      const response = await this.apiCall<{ Item: Record<string, unknown> }>("/item", {
+        method: "POST",
+        body: payload,
+      });
 
       const created = response.data.Item;
 
@@ -228,10 +224,7 @@ export class QBOClient extends IntegrationClient {
   /**
    * Update an item in QuickBooks.
    */
-  async updateItem(
-    id: string,
-    updates: Partial<QBOItem>,
-  ): Promise<QBOItem> {
+  async updateItem(id: string, updates: Partial<QBOItem>): Promise<QBOItem> {
     try {
       const payload = {
         Id: id,
@@ -242,13 +235,10 @@ export class QBOClient extends IntegrationClient {
         UnitPrice: updates.unitPrice,
       };
 
-      const response = await this.apiCall<{ Item: Record<string, unknown> }>(
-        `/item/${id}`,
-        {
-          method: "POST",
-          body: payload,
-        },
-      );
+      const response = await this.apiCall<{ Item: Record<string, unknown> }>(`/item/${id}`, {
+        method: "POST",
+        body: payload,
+      });
 
       const updated = response.data.Item;
 
@@ -273,15 +263,9 @@ export class QBOClient extends IntegrationClient {
     try {
       const payload = {
         DisplayName: supplier.name,
-        PrimaryEmailAddr: supplier.email
-          ? { Address: supplier.email }
-          : undefined,
-        PrimaryPhone: supplier.phone
-          ? { FreeFormNumber: supplier.phone }
-          : undefined,
-        BillAddr: supplier.address
-          ? { CountrySubDivisionCode: supplier.address }
-          : undefined,
+        PrimaryEmailAddr: supplier.email ? { Address: supplier.email } : undefined,
+        PrimaryPhone: supplier.phone ? { FreeFormNumber: supplier.phone } : undefined,
+        BillAddr: supplier.address ? { CountrySubDivisionCode: supplier.address } : undefined,
       };
 
       const response = await this.apiCall<{
@@ -313,7 +297,7 @@ export class QBOClient extends IntegrationClient {
     try {
       const response = await this.apiCall<{
         CompanyInfo: Record<string, unknown>;
-      }>("/companyinfo/" + this.realmId);
+      }>(`/companyinfo/${this.realmId}`);
 
       return response.data.CompanyInfo;
     } catch (error) {

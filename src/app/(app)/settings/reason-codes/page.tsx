@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
-import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import type { ReasonCategory, ReasonCode } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
-import type { ReasonCategory, ReasonCode } from "@/generated/prisma";
+import type { Metadata } from "next";
 import { ReasonCodeTableClient } from "./reason-code-table-client";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,7 +28,7 @@ export default async function ReasonCodesPage() {
     if (!grouped.has(code.category)) {
       grouped.set(code.category, []);
     }
-    grouped.get(code.category)!.push(code);
+    grouped.get(code.category)?.push(code);
   }
 
   const categoryLabels: Record<ReasonCategory, string> = {

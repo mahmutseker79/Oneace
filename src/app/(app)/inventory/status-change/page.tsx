@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -49,9 +49,7 @@ export default async function StatusChangePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-semibold">Change Stock Status</h1>
-          <p className="text-muted-foreground">
-            Move stock between different status categories
-          </p>
+          <p className="text-muted-foreground">Move stock between different status categories</p>
         </div>
       </div>
 

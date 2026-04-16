@@ -26,7 +26,9 @@ export const createLocationLevelSchema = z.object({
 export type CreateLocationLevelInput = z.input<typeof createLocationLevelSchema>;
 export type CreateLocationLevelOutput = z.output<typeof createLocationLevelSchema>;
 
-export const updateLocationLevelSchema = createLocationLevelSchema.partial().omit({ warehouseId: true });
+export const updateLocationLevelSchema = createLocationLevelSchema
+  .partial()
+  .omit({ warehouseId: true });
 
 export type UpdateLocationLevelInput = z.input<typeof updateLocationLevelSchema>;
 export type UpdateLocationLevelOutput = z.output<typeof updateLocationLevelSchema>;

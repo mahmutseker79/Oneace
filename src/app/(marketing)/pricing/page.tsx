@@ -309,7 +309,9 @@ export default function PricingPage() {
       {/* Full feature comparison */}
       <section className="px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-4xl space-y-6">
-          <h2 className="text-center text-2xl font-semibold tracking-tight">Full feature comparison</h2>
+          <h2 className="text-center text-2xl font-semibold tracking-tight">
+            Full feature comparison
+          </h2>
 
           <div className="overflow-x-auto rounded-lg border border-border/60">
             <table className="w-full text-sm">

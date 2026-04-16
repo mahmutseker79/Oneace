@@ -8,9 +8,9 @@
  * - Error collection with row/column context
  */
 
-import { z } from "zod";
 import type { ImportEntity } from "@/generated/prisma";
 import type { FieldMapping } from "@/lib/import/field-mapper";
+import { z } from "zod";
 
 export interface RowValidationError {
   rowIndex: number;
@@ -96,11 +96,7 @@ export class RowProcessor {
   private mappings: FieldMapping[];
   private options: RowProcessorOptions;
 
-  constructor(
-    entity: ImportEntity,
-    mappings: FieldMapping[],
-    options: RowProcessorOptions = {},
-  ) {
+  constructor(entity: ImportEntity, mappings: FieldMapping[], options: RowProcessorOptions = {}) {
     this.schema = ENTITY_SCHEMAS[entity];
     this.mappings = mappings;
     this.options = {
@@ -164,9 +160,7 @@ export class RowProcessor {
 
         for (const issue of validationResult.error.issues) {
           const field = String(issue.path[0]);
-          const mapping = this.mappings.find(
-            (m) => m.targetField === field,
-          );
+          const mapping = this.mappings.find((m) => m.targetField === field);
 
           result.errors.push({
             rowIndex,
@@ -187,7 +181,7 @@ export class RowProcessor {
    */
   processRows(
     rows: (string | null)[][],
-    startIndex: number = 0,
+    startIndex = 0,
   ): {
     valid: ValidatedRow[];
     invalid: ValidatedRow[];
@@ -225,7 +219,7 @@ export class RowProcessor {
 
       case "number": {
         const num = Number(value);
-        if (isNaN(num)) {
+        if (Number.isNaN(num)) {
           throw new Error(`"${value}" is not a valid number`);
         }
         return num;
@@ -244,7 +238,7 @@ export class RowProcessor {
 
       case "date": {
         const date = new Date(value);
-        if (isNaN(date.getTime())) {
+        if (Number.isNaN(date.getTime())) {
           throw new Error(`"${value}" is not a valid date`);
         }
         return date;

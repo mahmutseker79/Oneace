@@ -1,5 +1,5 @@
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import * as OTPAuth from "otpauth";
-import { randomBytes, createHash, timingSafeEqual } from "crypto";
 
 /**
  * Result of TOTP secret generation.
@@ -105,7 +105,7 @@ export function verifyTotpCode(secret: string, code: string): boolean {
  * @param count Number of codes to generate (default: 10)
  * @returns Object with plain and hashed codes
  */
-export function generateBackupCodes(count: number = 10): { plain: string[]; hashed: string[] } {
+export function generateBackupCodes(count = 10): { plain: string[]; hashed: string[] } {
   const plain: string[] = [];
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -135,7 +135,10 @@ export function generateBackupCodes(count: number = 10): { plain: string[]; hash
  * @param storedHashes Array of stored hashed backup codes
  * @returns Object indicating validity and the index of the matched code (if valid)
  */
-export function verifyBackupCode(input: string, storedHashes: string[]): { valid: boolean; index: number } {
+export function verifyBackupCode(
+  input: string,
+  storedHashes: string[],
+): { valid: boolean; index: number } {
   const inputHash = hashBackupCode(input);
   const inputBuf = Buffer.from(inputHash, "hex");
 

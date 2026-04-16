@@ -8,9 +8,9 @@
  * - Delivery log tracking
  */
 
+import { createHmac } from "node:crypto";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { createHmac } from "crypto";
 
 export interface WebhookPayload {
   event: string;
@@ -71,12 +71,13 @@ export class WebhookDispatcher {
     data: Record<string, unknown>,
   ): Promise<WebhookDeliveryResult[]> {
     try {
-      const webhooks = await (db as any).webhook?.findMany({
-        where: {
-          organizationId,
-          active: true,
-        },
-      }) ?? [];
+      const webhooks =
+        (await (db as any).webhook?.findMany({
+          where: {
+            organizationId,
+            active: true,
+          },
+        })) ?? [];
 
       if (webhooks.length === 0) {
         return [];
@@ -126,10 +127,7 @@ export class WebhookDispatcher {
       };
 
       const controller = new AbortController();
-      const timeoutHandle = setTimeout(
-        () => controller.abort(),
-        this.timeout,
-      );
+      const timeoutHandle = setTimeout(() => controller.abort(), this.timeout);
 
       try {
         const response = await fetch(attempt.url, {
@@ -156,7 +154,8 @@ export class WebhookDispatcher {
             responseTime,
             attempts: attempt.attempt,
           };
-        } else if (response.status >= 400 && response.status < 500) {
+        }
+        if (response.status >= 400 && response.status < 500) {
           // Client error - don't retry
           logger.warn("Webhook delivery failed (client error)", {
             webhookId: attempt.webhookId,
@@ -171,27 +170,23 @@ export class WebhookDispatcher {
             error: `HTTP ${response.status}`,
             attempts: attempt.attempt,
           };
-        } else {
-          // Server error or rate limit - retry
-          if (attempt.attempt < attempt.maxRetries) {
-            return this.retryWithBackoff(attempt, responseTime);
-          }
-
-          return {
-            success: false,
-            statusCode: response.status,
-            responseTime,
-            error: `HTTP ${response.status} after ${attempt.attempt} attempts`,
-            attempts: attempt.attempt,
-          };
         }
+        // Server error or rate limit - retry
+        if (attempt.attempt < attempt.maxRetries) {
+          return this.retryWithBackoff(attempt, responseTime);
+        }
+
+        return {
+          success: false,
+          statusCode: response.status,
+          responseTime,
+          error: `HTTP ${response.status} after ${attempt.attempt} attempts`,
+          attempts: attempt.attempt,
+        };
       } catch (fetchError) {
         clearTimeout(timeoutHandle);
 
-        if (
-          fetchError instanceof Error &&
-          fetchError.name === "AbortError"
-        ) {
+        if (fetchError instanceof Error && fetchError.name === "AbortError") {
           // Timeout - retry
           if (attempt.attempt < attempt.maxRetries) {
             return this.retryWithBackoff(attempt, Date.now() - startTime);
@@ -213,9 +208,7 @@ export class WebhookDispatcher {
         return {
           success: false,
           responseTime: Date.now() - startTime,
-          error: fetchError instanceof Error
-            ? fetchError.message
-            : "Network error",
+          error: fetchError instanceof Error ? fetchError.message : "Network error",
           attempts: attempt.attempt,
         };
       }
@@ -244,7 +237,7 @@ export class WebhookDispatcher {
   ): Promise<WebhookDeliveryResult> {
     const multiplier = attempt.backoffMultiplier || 2;
     const backoffMs = Math.min(
-      this.baseBackoff * Math.pow(multiplier, attempt.attempt - 1),
+      this.baseBackoff * multiplier ** (attempt.attempt - 1),
       this.maxBackoff,
     );
 
@@ -268,9 +261,7 @@ export class WebhookDispatcher {
    */
   private generateSignature(payload: WebhookPayload): string {
     const body = JSON.stringify(payload);
-    const signature = createHmac("sha256", this.secret)
-      .update(body)
-      .digest("hex");
+    const signature = createHmac("sha256", this.secret).update(body).digest("hex");
 
     return `sha256=${signature}`;
   }
@@ -278,14 +269,8 @@ export class WebhookDispatcher {
   /**
    * Verify a webhook signature (for inbound validation).
    */
-  static verifySignature(
-    payload: string,
-    signature: string,
-    secret: string,
-  ): boolean {
-    const expected = createHmac("sha256", secret)
-      .update(payload)
-      .digest("hex");
+  static verifySignature(payload: string, signature: string, secret: string): boolean {
+    const expected = createHmac("sha256", secret).update(payload).digest("hex");
 
     const providedSignature = signature.replace("sha256=", "");
 
@@ -296,7 +281,10 @@ export class WebhookDispatcher {
   /**
    * Test a webhook endpoint with a ping event.
    */
-  async testWebhook(webhookId: string, url: string): Promise<{
+  async testWebhook(
+    webhookId: string,
+    url: string,
+  ): Promise<{
     success: boolean;
     statusCode?: number;
     responseTime: number;
@@ -321,10 +309,7 @@ export class WebhookDispatcher {
       };
 
       const controller = new AbortController();
-      const timeoutHandle = setTimeout(
-        () => controller.abort(),
-        this.timeout,
-      );
+      const timeoutHandle = setTimeout(() => controller.abort(), this.timeout);
 
       const response = await fetch(url, {
         method: "POST",

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { hasPlanCapability } from "@/lib/plans";
-import { requireActiveMembership } from "@/lib/session";
-import { getRegion } from "@/lib/i18n";
 import { exportStockValuePdf } from "@/lib/export/pdf";
-import { rateLimit, RATE_LIMITS } from "@/lib/rate-limit";
+import { getRegion } from "@/lib/i18n";
+import { hasPlanCapability } from "@/lib/plans";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
+import { requireActiveMembership } from "@/lib/session";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const { membership } = await requireActiveMembership();
@@ -12,10 +12,10 @@ export async function GET() {
   // Rate limit export endpoint: 10 per hour per user
   const rl = await rateLimit(`export:${membership.userId}`, RATE_LIMITS.export);
   if (!rl.ok) {
-    return new Response(
-      JSON.stringify({ error: "Export rate limit exceeded. Try again later." }),
-      { status: 429, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Export rate limit exceeded. Try again later." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   // Phase 13.2 — exports require PRO or BUSINESS plan
@@ -32,7 +32,10 @@ export async function GET() {
 
   // Get organization region for currency formatting
   const region = await getRegion();
-  const currency = new Intl.NumberFormat(region.numberLocale, { style: "currency", currency: "USD" })
+  const currency = new Intl.NumberFormat(region.numberLocale, {
+    style: "currency",
+    currency: "USD",
+  })
     .format(0)
     .replace(/[\d.,]/g, "")
     .trim();

@@ -1,8 +1,8 @@
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { randomBytes } from "crypto";
-import { requireActiveMembership } from "@/lib/session";
+import { randomBytes } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveMembership } from "@/lib/session";
 import { NextResponse } from "next/server";
 
 /**
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
           headers: {
             "Retry-After": String(Math.max(0, result.reset - Math.floor(Date.now() / 1000))),
           },
-        }
+        },
       );
     }
 
@@ -89,16 +89,13 @@ export async function POST(request: Request) {
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
         { error: "Only JPEG, PNG, and WebP images are allowed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "Image must be under 5MB" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Image must be under 5MB" }, { status: 400 });
     }
 
     // Read file buffer
@@ -109,7 +106,7 @@ export async function POST(request: Request) {
     if (!isValidFile) {
       return NextResponse.json(
         { error: "Invalid file. File content does not match declared type." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -126,15 +123,9 @@ export async function POST(request: Request) {
     await writeFile(filePath, Buffer.from(buffer));
 
     // Return public URL
-    return NextResponse.json(
-      { url: `/uploads/items/${filename}` },
-      { status: 200 }
-    );
+    return NextResponse.json({ url: `/uploads/items/${filename}` }, { status: 200 });
   } catch (err) {
     console.error("Image upload failed:", err);
-    return NextResponse.json(
-      { error: "Failed to upload image" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
   }
 }

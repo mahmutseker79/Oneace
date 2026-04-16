@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
+import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
   type CreateAssignmentInput,
   type RemoveAssignmentInput,
@@ -15,7 +16,6 @@ import {
   removeAssignmentSchema,
   updateAssignmentSchema,
 } from "@/lib/validation/count-assignment";
-import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 
 /**
  * Create a count assignment.

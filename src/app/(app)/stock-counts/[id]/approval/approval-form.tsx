@@ -11,10 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-import {
-  approveCountAction,
-  rejectCountAction,
-} from "./actions";
+import { approveCountAction, rejectCountAction } from "./actions";
 
 interface ApprovalFormProps {
   countId: string;
@@ -71,19 +68,11 @@ export function ApprovalForm({ countId, approval }: ApprovalFormProps) {
       </div>
 
       <div className="flex gap-2">
-        <Button
-          onClick={handleApprove}
-          disabled={isPending}
-          variant="default"
-        >
+        <Button onClick={handleApprove} disabled={isPending} variant="default">
           {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Approve
         </Button>
-        <Button
-          onClick={handleReject}
-          disabled={isPending}
-          variant="destructive"
-        >
+        <Button onClick={handleReject} disabled={isPending} variant="destructive">
           {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Reject
         </Button>
