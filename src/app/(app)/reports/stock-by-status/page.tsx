@@ -70,7 +70,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default async function StockByStatusReportPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
   const region = await getRegion();
 
   const stockLevels = await db.stockLevel.findMany({

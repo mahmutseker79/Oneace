@@ -37,7 +37,7 @@ type SetupStep = "step1" | "step2" | "step3";
 export function TwoFactorSetup({ labels }: TwoFactorSetupProps) {
   const [step, setStep] = useState<SetupStep>("step1");
   const [secret, setSecret] = useState<string>("");
-  const [_uri, setUri] = useState<string>("");
+  const [, setUri] = useState<string>("");
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [code, setCode] = useState<string>("");
   const [error, setError] = useState<string | null>(null);

@@ -197,7 +197,6 @@ export default async function ReportsPage() {
       : []),
   ];
 
-  const _reports = [...coreReports, ...conditionalReports, ...advancedReports];
 
   // Helper for premium report card rendering
   function renderReportCard(report: {

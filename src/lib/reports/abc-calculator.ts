@@ -82,7 +82,7 @@ export function calculateABC(
 
   if (grandTotal === 0) {
     // All items are zero-value; classify as C
-    return sorted.map((item, _idx) => ({
+    return sorted.map((item) => ({
       itemId: item.id,
       sku: item.sku,
       name: item.name,

@@ -65,6 +65,7 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { CachedPendingOp } from "@/lib/offline/db";
@@ -260,12 +261,12 @@ function OfflineQueueFrame({
       </div>
       {children}
       <div className="mt-10 text-center">
-        <a
+        <Link
           href="/"
           className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           {labels.backHome}
-        </a>
+        </Link>
       </div>
     </div>
   );

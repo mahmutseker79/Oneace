@@ -34,6 +34,7 @@
  */
 
 import { CloudOff, Database, Package } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { CacheMeta, CachedItem } from "@/lib/offline/db";
@@ -147,12 +148,12 @@ export function OfflineItemsView({ labels }: { labels: OfflineItemsViewLabels })
           </div>
           <h2 className="text-base font-medium">{labels.emptyTitle}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{labels.emptyBody}</p>
-          <a
+          <Link
             href="/"
             className="mt-6 inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             {labels.backHome}
-          </a>
+          </Link>
         </div>
       ) : null}
 
@@ -201,12 +202,12 @@ export function OfflineItemsView({ labels }: { labels: OfflineItemsViewLabels })
             </table>
           </div>
           <div className="text-center">
-            <a
+            <Link
               href="/"
               className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               {labels.backHome}
-            </a>
+            </Link>
           </div>
         </div>
       ) : null}

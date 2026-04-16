@@ -164,8 +164,6 @@ describe("cancel_at_period_end handling", () => {
   });
 
   it("subscription deletion should clear all billing state", () => {
-    const _org: OrgState = { plan: "PRO", cancelAtPeriodEnd: true, cancelAt: new Date() };
-
     // Simulate subscription.deleted handler behavior
     const afterDeletion: OrgState = {
       plan: "FREE",

@@ -14,10 +14,6 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useState(() => {
-    // TODO: Fetch sales order and initialize quantities
-  });
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsLoading(true);

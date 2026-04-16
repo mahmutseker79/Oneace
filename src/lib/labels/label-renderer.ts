@@ -164,10 +164,9 @@ export function generateQRValue(entityData: Record<string, unknown>): string {
  * Generate a barcode value for a label.
  *
  * @param entityData - The entity data
- * @param format - The barcode format
  * @returns The barcode value
  */
-export function generateBarcodeValue(entityData: Record<string, unknown>, _format: string): string {
+export function generateBarcodeValue(entityData: Record<string, unknown>): string {
   const code = entityData.code as string | undefined;
   return code || "";
 }

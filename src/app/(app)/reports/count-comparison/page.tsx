@@ -55,7 +55,7 @@ export default function CountComparisonPage() {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [t, setT] = useState<any>(null);
-  const [_region, setRegion] = useState<any>(null);
+  const [, setRegion] = useState<any>(null);
   const [plan, setPlan] = useState<"FREE" | "PRO" | "BUSINESS">("FREE");
 
   useEffect(() => {

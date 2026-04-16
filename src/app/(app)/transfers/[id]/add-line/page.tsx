@@ -14,7 +14,7 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({ params: _params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(_props: PageProps): Promise<Metadata> {
   return { title: "Add Transfer Line" };
 }
 

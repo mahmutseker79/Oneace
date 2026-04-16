@@ -29,8 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t.labels?.metaTitle || "Label Templates" };
 }
 
-export default async function LabelsPage({ params }: PageProps) {
-  await params; // Satisfy the unused param lint rule
+export default async function LabelsPage({ params: _params }: PageProps) {
   const { membership } = await requireActiveMembership();
   const _t = await getMessages();
 

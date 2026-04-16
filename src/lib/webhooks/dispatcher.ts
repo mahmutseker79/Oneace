@@ -173,7 +173,7 @@ export class WebhookDispatcher {
         }
         // Server error or rate limit - retry
         if (attempt.attempt < attempt.maxRetries) {
-          return this.retryWithBackoff(attempt, responseTime);
+          return this.retryWithBackoff(attempt);
         }
 
         return {
@@ -189,7 +189,7 @@ export class WebhookDispatcher {
         if (fetchError instanceof Error && fetchError.name === "AbortError") {
           // Timeout - retry
           if (attempt.attempt < attempt.maxRetries) {
-            return this.retryWithBackoff(attempt, Date.now() - startTime);
+            return this.retryWithBackoff(attempt);
           }
 
           return {
@@ -202,7 +202,7 @@ export class WebhookDispatcher {
 
         // Other network error - retry
         if (attempt.attempt < attempt.maxRetries) {
-          return this.retryWithBackoff(attempt, Date.now() - startTime);
+          return this.retryWithBackoff(attempt);
         }
 
         return {
@@ -233,7 +233,6 @@ export class WebhookDispatcher {
    */
   private async retryWithBackoff(
     attempt: WebhookDeliveryAttempt,
-    _lastResponseTime: number,
   ): Promise<WebhookDeliveryResult> {
     const multiplier = attempt.backoffMultiplier || 2;
     const backoffMs = Math.min(

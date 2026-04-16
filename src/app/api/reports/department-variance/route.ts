@@ -17,7 +17,7 @@ const ExportSchema = z.object({
   data: z.array(z.any()),
 });
 
-async function handleGetVariance(_req: Request) {
+async function handleGetVariance(_req?: Request) {
   try {
     const { membership } = await requireActiveMembership();
 

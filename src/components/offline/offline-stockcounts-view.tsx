@@ -33,6 +33,7 @@
  */
 
 import { ArrowLeft, CloudOff, Database, ListChecks } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import type { CachedStockCount, CachedStockCountRow } from "@/lib/offline/db";
@@ -231,12 +232,12 @@ function OfflineStockCountsView({ labels, selectedCountId }: OfflineStockCountsV
           </div>
           <h2 className="text-base font-medium">{labels.emptyTitle}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{labels.emptyBody}</p>
-          <a
+          <Link
             href="/"
             className="mt-6 inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             {labels.backHome}
-          </a>
+          </Link>
         </div>
       ) : null}
 
@@ -375,12 +376,12 @@ function OfflineStockCountList({
         </table>
       </div>
       <div className="text-center">
-        <a
+        <Link
           href="/"
           className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           {labels.backHome}
-        </a>
+        </Link>
       </div>
     </div>
   );

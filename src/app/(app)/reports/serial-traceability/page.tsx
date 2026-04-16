@@ -56,7 +56,6 @@ export default async function SerialTraceabilityReportPage({
   searchParams?: Promise<SearchParams>;
 }) {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
   const region = await getRegion();
 
   const params = await searchParams;

@@ -55,7 +55,6 @@ export const createTemplateSchema = z.object({
     .optional()
     .transform((value) => (value === "" || value === undefined ? null : value)),
 });
-export type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
 
 /**
  * Update a count template.
@@ -77,7 +76,6 @@ export const updateTemplateSchema = z.object({
     .optional()
     .transform((value) => (value === "" || value === undefined ? null : value)),
 });
-export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
 
 /**
  * Delete a count template.
@@ -85,4 +83,3 @@ export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
 export const deleteTemplateSchema = z.object({
   id: requiredId("Template ID required"),
 });
-export type DeleteTemplateInput = z.infer<typeof deleteTemplateSchema>;

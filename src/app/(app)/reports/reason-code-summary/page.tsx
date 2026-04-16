@@ -41,7 +41,6 @@ type ChartData = {
 
 export default async function ReasonCodeSummaryReportPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
   const region = await getRegion();
 
   // Fetch all movements with reason codes

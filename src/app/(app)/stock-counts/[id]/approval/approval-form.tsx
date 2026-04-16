@@ -15,7 +15,7 @@ import { approveCountAction, rejectCountAction } from "./actions";
 
 interface ApprovalFormProps {
   countId: string;
-  approval: CountApproval;
+  approval?: CountApproval | null;
 }
 
 export function ApprovalForm({ countId, approval: _approval }: ApprovalFormProps) {

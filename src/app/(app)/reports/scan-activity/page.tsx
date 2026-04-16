@@ -28,13 +28,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type ScanHistoryEntry, getScanHistory } from "@/lib/scanner/scan-history";
-// i18n format is server-only; inline helper for client component
-function _format(tpl: string, vars: Record<string, string>) {
-  return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), tpl);
-}
-
 export default function ScanActivityReportPage() {
-  const [entries, _setEntries] = useState<ScanHistoryEntry[]>(() => getScanHistory());
+  const [entries] = useState<ScanHistoryEntry[]>(() => getScanHistory());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

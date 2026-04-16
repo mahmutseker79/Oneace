@@ -37,7 +37,6 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
   const region = await getRegion();
 
   const canCreateSerial = hasCapability(membership.role, "items.serials.create");
-  const _canDeleteSerial = hasCapability(membership.role, "items.serials.delete");
 
   const item = await db.item.findFirst({
     where: { id: itemId, organizationId: membership.organizationId },

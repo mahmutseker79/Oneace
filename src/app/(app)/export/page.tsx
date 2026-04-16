@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ExportPage() {
-  await requireActiveMembership();
-  await getMessages();
+  const { membership: _membership } = await requireActiveMembership();
+  const _t = await getMessages();
 
   const exportOptions = [
     {

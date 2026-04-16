@@ -29,7 +29,7 @@ const ExportSchema = z.object({
  * GET /api/reports/count-comparison/counts
  * List all completed/in-progress stock counts
  */
-async function handleGetCounts(_req: Request) {
+async function handleGetCounts(_req?: Request) {
   try {
     const { membership } = await requireActiveMembership();
 

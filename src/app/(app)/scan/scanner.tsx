@@ -219,6 +219,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
 
   const tickRef = useRef<() => void>(() => {});
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handleLookup already captures continuousMode
   useEffect(() => {
     const tick = () => {
       if (!detectorRef.current || !videoRef.current || pausedRef.current) {
@@ -331,6 +332,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount; deps are stable refs
   }, []);
 
   function handleManualSubmit(event: React.FormEvent<HTMLFormElement>) {

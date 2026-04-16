@@ -20,7 +20,6 @@ export const submitForApprovalSchema = z.object({
   countId: requiredId("Count ID required"),
   comment: optionalNote,
 });
-export type SubmitForApprovalInput = z.infer<typeof submitForApprovalSchema>;
 
 /**
  * Approve a pending count. Transitions from PENDING_APPROVAL to APPROVED.
@@ -29,7 +28,6 @@ export const approveCountSchema = z.object({
   countId: requiredId("Count ID required"),
   comment: optionalNote,
 });
-export type ApproveCountInput = z.infer<typeof approveCountSchema>;
 
 /**
  * Reject a pending count. Transitions from PENDING_APPROVAL back to IN_PROGRESS.
@@ -42,7 +40,6 @@ export const rejectCountSchema = z.object({
     .min(1, { message: "Rejection reason required" })
     .max(1000, { message: "Comment too long" }),
 });
-export type RejectCountInput = z.infer<typeof rejectCountSchema>;
 
 /**
  * Rollback a completed count.
@@ -55,4 +52,3 @@ export const rollbackCountSchema = z.object({
     .min(1, { message: "Rollback reason required" })
     .max(1000, { message: "Reason too long" }),
 });
-export type RollbackCountInput = z.infer<typeof rollbackCountSchema>;

@@ -56,10 +56,6 @@ interface ABCData {
   cumulativePercentage: number;
 }
 
-interface _ParetoPoint {
-  percentage: number;
-  cumulativeValue: number;
-}
 
 async function fetchABCData(orgId: string): Promise<ABCData[]> {
   const res = await fetch("/api/reports/abc-analysis", {
@@ -205,7 +201,7 @@ export default function ABCAnalysisPage() {
   const totalValue = data.reduce((sum, d) => sum + d.totalValue, 0);
 
   // Pareto chart data
-  const paretoData = data.map((item, _idx) => ({
+  const paretoData = data.map((item) => ({
     name: item.sku,
     value: item.totalValue,
     cumulativePercent: item.cumulativePercentage,

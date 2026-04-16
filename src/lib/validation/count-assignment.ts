@@ -26,7 +26,6 @@ export const createAssignmentSchema = z.object({
   warehouseId: optionalId,
   role: countRoleEnum.default("COUNTER"),
 });
-export type CreateAssignmentInput = z.infer<typeof createAssignmentSchema>;
 
 /**
  * Update assignment status or role.
@@ -37,7 +36,6 @@ export const updateAssignmentSchema = z.object({
   status: assignmentStatusEnum.optional(),
   itemsCounted: z.number().int().min(0).optional(),
 });
-export type UpdateAssignmentInput = z.infer<typeof updateAssignmentSchema>;
 
 /**
  * Remove an assignment.
@@ -45,4 +43,3 @@ export type UpdateAssignmentInput = z.infer<typeof updateAssignmentSchema>;
 export const removeAssignmentSchema = z.object({
   id: requiredId("Assignment ID required"),
 });
-export type RemoveAssignmentInput = z.infer<typeof removeAssignmentSchema>;

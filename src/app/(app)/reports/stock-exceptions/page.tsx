@@ -38,7 +38,6 @@ type ExceptionRow = {
 
 export default async function StockExceptionsReportPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
   const region = await getRegion();
 
   // Fetch stock levels with quantity <= 0
@@ -108,7 +107,6 @@ export default async function StockExceptionsReportPage() {
   const zeroStock = rows.filter((r) => r.status === "zero");
 
   const totalNegativeQty = negativeStock.reduce((s, r) => s + Math.abs(r.currentQty), 0);
-  const _totalZeroQty = zeroStock.length;
 
   const dateFmt = new Intl.DateTimeFormat(region.numberLocale, {
     dateStyle: "medium",

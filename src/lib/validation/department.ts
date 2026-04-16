@@ -34,7 +34,6 @@ export const createDepartmentSchema = z.object({
   managerId: optionalId,
   warehouseId: optionalId,
 });
-export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 
 /**
  * Update department fields (all optional).
@@ -53,7 +52,6 @@ export const updateDepartmentSchema = z.object({
   warehouseId: optionalId,
   isActive: z.boolean().optional(),
 });
-export type UpdateDepartmentInput = z.infer<typeof updateDepartmentSchema>;
 
 /**
  * Delete department by ID.
@@ -61,4 +59,3 @@ export type UpdateDepartmentInput = z.infer<typeof updateDepartmentSchema>;
 export const deleteDepartmentSchema = z.object({
   id: requiredId("Department ID required"),
 });
-export type DeleteDepartmentInput = z.infer<typeof deleteDepartmentSchema>;

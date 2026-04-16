@@ -98,6 +98,7 @@ export function useLiveQuery<T>(
     return () => {
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps is caller-provided array; querier is stable
   }, deps);
 
   return result;

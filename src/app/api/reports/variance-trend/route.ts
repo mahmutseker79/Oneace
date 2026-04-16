@@ -16,7 +16,7 @@ const ExportSchema = z.object({
   data: z.array(z.any()),
 });
 
-async function handleGetTrend(_req: Request) {
+async function handleGetTrend(_req?: Request) {
   try {
     await requireActiveMembership();
 

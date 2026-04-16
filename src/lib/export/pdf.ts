@@ -113,8 +113,8 @@ export function addTable(
   startY: number,
 ): number {
   const margin = 10;
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const _contentHeight = pageHeight - margin - 15; // Leave room for footer
+  const _pageHeight = doc.internal.pageSize.getHeight();
+  const _contentHeight = _pageHeight - margin - 15; // Leave room for footer
 
   autoTable(doc, {
     columns: columns.map((col) => ({

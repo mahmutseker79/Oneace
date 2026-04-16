@@ -43,7 +43,6 @@ const MARGIN = MARGIN_IN * INCHES_TO_MM;
 // Layout: 3 columns × 10 rows
 const COLS = 3;
 const ROWS = 10;
-const _LABELS_PER_PAGE = COLS * ROWS;
 
 /**
  * Calculate the X position for a label column (0-indexed)

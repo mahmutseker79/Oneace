@@ -3,11 +3,7 @@ import { generateBinLabelsPdf } from "@/lib/labels/bin-label-pdf";
 import { requireActiveMembership } from "@/lib/session";
 import { NextResponse } from "next/server";
 
-interface RouteContext {
-  searchParams?: Promise<{ warehouseId?: string }>;
-}
-
-export async function GET(request: Request, _context?: RouteContext) {
+export async function GET(request: Request) {
   const { membership } = await requireActiveMembership();
 
   // Get warehouseId from query params

@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
-import { getMessages, getRegion } from "@/lib/i18n";
+import { getRegion } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canCancel, canReceive, canShip, isTerminal, statusLabel } from "@/lib/transfer/machine";
@@ -40,11 +40,6 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
   };
 }
 
-function _fmtDate(value: Date | null | undefined, locale: string): string {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(value);
-}
-
 function fmtDateOnly(value: Date | null | undefined, locale: string): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(value);
@@ -53,7 +48,6 @@ function fmtDateOnly(value: Date | null | undefined, locale: string): string {
 export default async function TransferDetailPage({ params }: DetailPageProps) {
   const { id } = await params;
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
   const region = await getRegion();
 
   const canCreate = hasCapability(membership.role, "transfers.create");

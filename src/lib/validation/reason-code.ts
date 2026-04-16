@@ -43,10 +43,8 @@ export const createReasonCodeSchema = z.object({
   category: reasonCategoryEnum,
   description: optionalDescription,
 });
-export type CreateReasonCodeInput = z.infer<typeof createReasonCodeSchema>;
 
 /**
  * Update an existing reason code. All fields are optional.
  */
 export const updateReasonCodeSchema = createReasonCodeSchema.partial();
-export type UpdateReasonCodeInput = z.infer<typeof updateReasonCodeSchema>;

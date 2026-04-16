@@ -80,7 +80,6 @@ function bucketFor(days: number): Bucket {
 
 export default async function StockAgingReportPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
   const region = await getRegion();
   const plan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
 
