@@ -1,6 +1,8 @@
 import { Plus } from "lucide-react";import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Prisma } from "@/generated/prisma";
+import { $Enums } from "@/generated/prisma";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,12 +61,20 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
   const itemLabel = item.name;
 
   // Fetch serials, optionally filtered by status
+  const isValidStatus = (s: unknown): s is $Enums.SerialStatus =>
+    s === "ACTIVE" || s === "ISSUED" || s === "RETURNED" || s === "DISPOSED";
+
+  const whereInput: Prisma.SerialNumberWhereInput = {
+    organizationId: membership.organizationId,
+    itemId: item.id,
+  };
+
+  if (isValidStatus(status)) {
+    whereInput.status = status;
+  }
+
   const serials = await db.serialNumber.findMany({
-    where: {
-      organizationId: membership.organizationId,
-      itemId: item.id,
-      ...(status ? { status: status as any } : {}),
-    },
+    where: whereInput,
     include: {
       item: { select: { id: true, name: true } },
       history: {

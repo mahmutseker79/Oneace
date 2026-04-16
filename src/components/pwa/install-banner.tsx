@@ -64,11 +64,11 @@ export function InstallBanner() {
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
-    const prompt = deferredPrompt as any;
+    const prompt = deferredPrompt as unknown as { prompt?: () => void; userChoice?: Promise<{ outcome: string }> };
     prompt.prompt?.();
     const choice = await prompt.userChoice;
 
-    if (choice.outcome === "accepted") {
+    if (choice && choice.outcome === "accepted") {
       localStorage.setItem("oneace-install-banner-dismissed", "true");
       setShown(false);
     }

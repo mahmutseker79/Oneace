@@ -2,6 +2,8 @@
 
 > Inventory management, stock counting, and barcode-first workflows for growing businesses worldwide. Faster, cheaper, and friendlier than Sortly and inFlow.
 
+[![CI](https://github.com/mahmutseker79/Oneace/actions/workflows/ci.yml/badge.svg)](https://github.com/mahmutseker79/Oneace/actions/workflows/ci.yml)
+
 **Status:** Sprint 0 complete (auth + app shell + dashboard scaffold). See the full plan in [`../OneAce_Roadmap.md`](../OneAce_Roadmap.md).
 
 ## Tech Stack

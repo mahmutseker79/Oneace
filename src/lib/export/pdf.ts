@@ -15,6 +15,12 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+interface jsPDFWithAutoTable extends jsPDF {
+  lastAutoTable?: {
+    finalY: number;
+  };
+}
+
 export interface PdfOptions {
   orgName: string;
   reportTitle: string;
@@ -155,7 +161,7 @@ export function addTable(
     },
   });
 
-  return (doc as any).lastAutoTable?.finalY ?? startY + 20;
+  return (doc as jsPDFWithAutoTable).lastAutoTable?.finalY ?? startY + 20;
 }
 
 /**

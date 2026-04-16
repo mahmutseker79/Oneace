@@ -48,7 +48,7 @@ export default async function RollbackPage({
 
   const countLabel = count.name;
 
-  if (!canRollback(count.state as any)) {
+  if (!canRollback(count.state as typeof count.state)) {
     return (
       <div className="space-y-6">
         <PageHeader

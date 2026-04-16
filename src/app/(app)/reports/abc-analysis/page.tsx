@@ -85,8 +85,8 @@ export default function ABCAnalysisPage() {
   const [exporting, setExporting] = useState(false);
   const [classifying, setClassifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [t, setT] = useState<any>(null);
-  const [region, setRegion] = useState<any>(null);
+  const [t, setT] = useState<{ reports?: { heading?: string } } | null>(null);
+  const [region, setRegion] = useState<{ numberLocale: string; currency: string } | null>(null);
   const [plan, setPlan] = useState<"FREE" | "PRO" | "BUSINESS">("FREE");
   const [orgId, setOrgId] = useState<string>("");
 

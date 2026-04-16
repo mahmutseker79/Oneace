@@ -71,7 +71,7 @@ export async function createImportJobAction(
     const importJob = await db.importJob.create({
       data: {
         organizationId: membership.organizationId,
-        entityType: entity as any,
+        entityType: entity as typeof entity,
         source,
         templateId,
         status: "PENDING",

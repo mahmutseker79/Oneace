@@ -278,7 +278,7 @@ export async function updateSerialStatusAction(
     await db.serialNumber.update({
       where: { id: data.serialNumberId },
       data: {
-        status: data.status as any,
+        status: data.status as typeof data.status,
         lastMovedAt: new Date(),
       },
     });

@@ -65,7 +65,7 @@ export function CategoryValueChart({ data }: CategoryValueChartProps) {
           paddingAngle={2}
           dataKey="value"
           nameKey="category"
-          label={(entry: any) => {
+          label={(entry: { percent?: number }) => {
             const percent = entry.percent ?? 0;
             return percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : "";
           }}

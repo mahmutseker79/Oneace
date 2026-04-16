@@ -31,14 +31,14 @@ export default function VarianceTrendPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [t, setT] = useState<any>(null);
+  const [t, setT] = useState<{ reports?: { heading?: string } } | null>(null);
   const [plan, setPlan] = useState<"FREE" | "PRO" | "BUSINESS">("FREE");
 
   useEffect(() => {
     async function init() {
       try {
         // server-only: use defaults instead
-        const messages = { reports: { heading: "Reports" } } as any;
+        const messages = { reports: { heading: "Reports" } };
         setT(messages);
 
         const sessionRes = await fetch("/api/session");

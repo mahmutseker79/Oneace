@@ -13,6 +13,17 @@ import {
   updateSavedViewSchema,
 } from "@/lib/validation/saved-view";
 
+interface SavedViewItem {
+  id: string;
+  name: string;
+  filters: unknown;
+  sortBy: string | null;
+  sortOrder: string | null;
+  columns: unknown;
+  isDefault: boolean;
+  isShared: boolean;
+}
+
 export async function createSavedViewAction(input: Record<string, unknown>): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
@@ -168,7 +179,7 @@ export async function deleteSavedViewAction(id: string): Promise<ActionResult> {
   }
 }
 
-export async function getSavedViewsAction(page: string): Promise<ActionResult<{ views: any[] }>> {
+export async function getSavedViewsAction(page: string): Promise<ActionResult<{ views: SavedViewItem[] }>> {
   const { membership } = await requireActiveMembership();
 
   try {

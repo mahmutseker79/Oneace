@@ -38,6 +38,18 @@ export const AnalyticsEvents = {
   ITEM_IMAGE_UPLOADED: "item_image_uploaded",
 } as const;
 
+interface PostHogClient {
+  capture?: (event: string, properties?: Record<string, unknown>) => void;
+  identify?: (userId: string, properties?: Record<string, unknown>) => void;
+  reset?: () => void;
+}
+
+declare global {
+  interface Window {
+    posthog?: PostHogClient;
+  }
+}
+
 /**
  * Track a product event with optional properties.
  *
@@ -48,7 +60,7 @@ export function trackEvent(event: string, properties?: Record<string, unknown>) 
   if (typeof window === "undefined") return;
 
   try {
-    const posthog = (window as any).posthog;
+    const posthog = window.posthog;
     if (posthog?.capture) {
       posthog.capture(event, properties);
     }
@@ -66,7 +78,7 @@ export function identifyUser(userId: string, properties?: Record<string, unknown
   if (typeof window === "undefined") return;
 
   try {
-    const posthog = (window as any).posthog;
+    const posthog = window.posthog;
     if (posthog?.identify) {
       posthog.identify(userId, properties);
     }
@@ -82,7 +94,7 @@ export function resetUser() {
   if (typeof window === "undefined") return;
 
   try {
-    const posthog = (window as any).posthog;
+    const posthog = window.posthog;
     if (posthog?.reset) {
       posthog.reset();
     }

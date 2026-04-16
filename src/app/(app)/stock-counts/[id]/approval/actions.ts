@@ -50,7 +50,7 @@ export async function submitForApprovalAction(
     return { ok: false, error: "Stock count not found" };
   }
 
-  if (!canSubmitForApproval(count.state as any)) {
+  if (!canSubmitForApproval(count.state as typeof count.state)) {
     return { ok: false, error: "Count not eligible for approval submission" };
   }
 
@@ -130,7 +130,7 @@ export async function approveCountAction(input: unknown): Promise<ActionResult<{
     return { ok: false, error: "Stock count not found" };
   }
 
-  if (!canApprove(count.state as any)) {
+  if (!canApprove(count.state as typeof count.state)) {
     return { ok: false, error: "Count not pending approval" };
   }
 
@@ -204,7 +204,7 @@ export async function rejectCountAction(input: unknown): Promise<ActionResult<{ 
     return { ok: false, error: "Stock count not found" };
   }
 
-  if (!canReject(count.state as any)) {
+  if (!canReject(count.state as typeof count.state)) {
     return { ok: false, error: "Count not pending approval" };
   }
 

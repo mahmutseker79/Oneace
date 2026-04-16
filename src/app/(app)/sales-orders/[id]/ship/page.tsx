@@ -7,9 +7,24 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { shipSalesOrderAction } from "../../actions";
 
+interface SalesOrderLine {
+  id: string;
+  itemId: string;
+  warehouseId: string;
+  orderedQty: number;
+  shippedQty: number;
+  allocatedQty: number;
+}
+
+interface SalesOrder {
+  id: string;
+  orderNumber: string;
+  lines: SalesOrderLine[];
+}
+
 export default function ShipSalesOrderPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const [order] = useState<any>(null);
+  const [order] = useState<SalesOrder | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +39,7 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
     formData.append(
       "lines",
       JSON.stringify(
-        order?.lines.map((line: any) => ({
+        order?.lines.map((line) => ({
           lineId: line.id,
           shippedQty: quantities[line.id] || 0,
         })) || [],
@@ -68,7 +83,7 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
               </tr>
             </thead>
             <tbody className="divide-y">
-              {order.lines?.map((line: any) => {
+              {order.lines?.map((line) => {
                 const remaining = line.allocatedQty - line.shippedQty;
                 return (
                   <tr key={line.id} className="hover:bg-muted/50">

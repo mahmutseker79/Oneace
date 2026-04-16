@@ -11,15 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: Typecheck · Biome · Prisma validate
+  lint-and-type-check:
+    name: Lint · Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
-    env:
-      # Prisma validate needs parseable URLs for env("...") references in schema
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
 
     steps:
       - name: Checkout
@@ -39,23 +34,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Prisma client
-        run: pnpm db:generate
-
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Biome check
+      - name: Lint (Biome)
         run: pnpm lint
 
-      - name: Validate Prisma schema
-        run: pnpm prisma validate
-
   test:
-    name: Vitest (pure-function tests)
+    name: Vitest
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: check
+    needs: lint-and-type-check
 
     steps:
       - name: Checkout
@@ -78,19 +67,14 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-  build:
-    name: Next build (smoke)
+  prisma-validate:
+    name: Prisma Validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: check
+    timeout-minutes: 10
 
     env:
-      # Fake values — Next's build doesn't need a reachable DB, only a parseable URL
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
-      BETTER_AUTH_SECRET: ci-smoke-build-secret-not-for-production-use-abcdef0123456789
-      BETTER_AUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
     steps:
       - name: Checkout
@@ -110,5 +94,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Validate Prisma schema
+        run: pnpm prisma validate

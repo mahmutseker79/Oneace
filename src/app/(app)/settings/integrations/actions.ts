@@ -85,8 +85,8 @@ export async function connectIntegrationAction(
         organizationId: membership.organizationId,
         provider,
         status: "CONNECTED",
-        credentials: credentials as any,
-        settings: metadata as any,
+        credentials: JSON.parse(JSON.stringify(credentials)),
+        settings: metadata ? JSON.parse(JSON.stringify(metadata)) : null,
         lastSyncAt: null,
       },
     });
@@ -145,7 +145,7 @@ export async function disconnectIntegrationAction(input: unknown): Promise<Actio
       where: { id: integrationId },
       data: {
         status: "DISCONNECTED",
-        credentials: null as any,
+        credentials: undefined,
       },
     });
 

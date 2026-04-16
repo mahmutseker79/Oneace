@@ -59,7 +59,7 @@ export async function uploadAttachmentAction(
         itemId: data.itemId,
         fileName: data.fileName,
         fileUrl: data.fileUrl,
-        fileType: data.fileType as any,
+        fileType: data.fileType as "IMAGE" | "DOCUMENT" | "DATASHEET" | "CERTIFICATE" | "OTHER",
         fileSize: data.fileSize,
         sortOrder: (maxSort?.sortOrder ?? 0) + 1,
         uploadedByUserId: session.user.id,

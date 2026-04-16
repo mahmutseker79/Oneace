@@ -5,8 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
+interface Kit {
+  name: string;
+  parentItemId: string;
+  type: string;
+  components?: Array<{ id: string; componentItemId: string; variantId?: string; quantityPerKit: number }>;
+  active: boolean;
+}
+
 export default function KitDetailPage({ params: _params }: { params: { id: string } }) {
-  const [kit] = useState<any>(null);
+  const [kit] = useState<Kit | null>(null);
   const [assembleQty, setAssembleQty] = useState(1);
   const [disassembleQty, setDisassembleQty] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +68,7 @@ export default function KitDetailPage({ params: _params }: { params: { id: strin
             </tr>
           </thead>
           <tbody className="divide-y">
-            {kit.components?.map((comp: any) => (
+            {kit.components?.map((comp) => (
               <tr key={comp.id} className="hover:bg-muted/50">
                 <td className="px-6 py-3 text-sm font-medium">{comp.componentItemId}</td>
                 <td className="px-6 py-3 text-sm text-muted-foreground">{comp.variantId || "—"}</td>

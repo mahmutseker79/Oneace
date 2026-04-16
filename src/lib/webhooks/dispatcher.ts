@@ -12,6 +12,13 @@ import { createHmac } from "node:crypto";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
+interface WebhookRecord {
+  id: string;
+  url: string;
+  active?: boolean;
+  [key: string]: unknown;
+}
+
 export interface WebhookPayload {
   event: string;
   timestamp: Date;
@@ -71,7 +78,8 @@ export class WebhookDispatcher {
     data: Record<string, unknown>,
   ): Promise<WebhookDeliveryResult[]> {
     try {
-      const webhooks =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const webhooks: WebhookRecord[] =
         (await (db as any).webhook?.findMany({
           where: {
             organizationId,
@@ -91,7 +99,7 @@ export class WebhookDispatcher {
       };
 
       const results = await Promise.all(
-        webhooks.map((webhook: any) =>
+        webhooks.map((webhook) =>
           this.dispatchToEndpoint({
             webhookId: webhook.id,
             url: webhook.url,

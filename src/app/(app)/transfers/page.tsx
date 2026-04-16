@@ -114,7 +114,7 @@ export default async function TransfersPage() {
                 href={`/transfers/${transfer.id}`}
                 title={transfer.transferNumber}
                 badge={
-                  <Badge variant={statusBadgeVariant(transfer.status) as any}>
+                  <Badge variant={statusBadgeVariant(transfer.status) as "default" | "secondary" | "destructive" | "outline"}>
                     {statusLabel(transfer.status)}
                   </Badge>
                 }
@@ -165,7 +165,7 @@ export default async function TransfersPage() {
                     <TableCell>{transfer.fromWarehouse.name}</TableCell>
                     <TableCell>{transfer.toWarehouse.name}</TableCell>
                     <TableCell>
-                      <Badge variant={statusBadgeVariant(transfer.status) as any}>
+                      <Badge variant={statusBadgeVariant(transfer.status) as "default" | "secondary" | "destructive" | "outline"}>
                         {statusLabel(transfer.status)}
                       </Badge>
                     </TableCell>

@@ -82,7 +82,7 @@ export async function createLocationLevelAction(
         organizationId: membership.organizationId,
         warehouseId: data.warehouseId,
         parentId: data.parentId ?? null,
-        type: data.type as any,
+        type: data.type as typeof data.type,
         name: data.name,
         code: data.code,
         barcodeValue: data.barcodeValue ?? null,
@@ -150,7 +150,7 @@ export async function updateLocationLevelAction(
       where: { id },
       data: {
         ...(data.parentId !== undefined && { parentId: data.parentId }),
-        ...(data.type && { type: data.type as any }),
+        ...(data.type && { type: data.type as typeof data.type }),
         ...(data.name && { name: data.name }),
         ...(data.code && { code: data.code }),
         ...(data.barcodeValue !== undefined && { barcodeValue: data.barcodeValue }),

@@ -89,22 +89,27 @@ export async function processScheduledReports(): Promise<ScheduledReportExecutio
         // Generate the report (simplified—actual implementation would call report generators)
         const reportContent = await generateReport(
           report.organization.id,
-          report.reportType as string,
-          report.filters as Record<string, any>,
-          report.format as string,
+          typeof report.reportType === "string" ? report.reportType : "unknown",
+          typeof report.filters === "object" && report.filters !== null
+            ? (report.filters as Record<string, unknown>)
+            : {},
+          typeof report.format === "string" ? report.format : "pdf",
         );
 
         // Send email to recipients (simplified)
         await sendReportEmail(
-          report.recipientEmails,
+          Array.isArray(report.recipientEmails) ? report.recipientEmails : [],
           report.name,
           report.organization.name,
           reportContent,
-          report.format as string,
+          typeof report.format === "string" ? report.format : "pdf",
         );
 
         // Update last sent time and calculate next run
-        const nextSendAt = calculateNextRunTime(report.cronExpression as string, now);
+        const nextSendAt = calculateNextRunTime(
+          typeof report.cronExpression === "string" ? report.cronExpression : "0 9 * * *",
+          now,
+        );
 
         await db.scheduledReport.update({
           where: { id: report.id },
@@ -147,7 +152,7 @@ export async function processScheduledReports(): Promise<ScheduledReportExecutio
 async function generateReport(
   _orgId: string,
   _reportType: string,
-  _filters: Record<string, any>,
+  _filters: Record<string, unknown>,
   _format: string,
 ): Promise<Buffer> {
   // Placeholder: in reality, this would:

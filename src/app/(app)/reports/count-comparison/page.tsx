@@ -54,15 +54,15 @@ export default function CountComparisonPage() {
   const [comparing, setComparing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [t, setT] = useState<any>(null);
-  const [, setRegion] = useState<any>(null);
+  const [t, setT] = useState<{ reports?: { heading?: string } } | null>(null);
+  const [, setRegion] = useState<{ numberLocale: string; currency: string } | null>(null);
   const [plan, setPlan] = useState<"FREE" | "PRO" | "BUSINESS">("FREE");
 
   useEffect(() => {
     async function init() {
       try {
         // server-only: use defaults instead
-        const messages = { reports: { heading: "Reports" } } as any;
+        const messages = { reports: { heading: "Reports" } };
         const regionData = { numberLocale: "en-US", currency: "USD" };
         setT(messages);
         setRegion(regionData);

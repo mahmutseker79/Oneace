@@ -21,6 +21,44 @@ const QBO_OAUTH_CONFIG: OAuthConfig = {
   revokeUrl: "https://developer.api.intuit.com/v2/oauth/tokens/revoke",
 };
 
+interface QBOItemRaw {
+  Id?: string;
+  Name?: string;
+  Sku?: string;
+  Description?: string;
+  UnitPrice?: number;
+  Type?: string;
+  [key: string]: unknown;
+}
+
+interface QBOVendorRaw {
+  Id?: string;
+  DisplayName?: string;
+  PrimaryEmailAddr?: { Address?: string };
+  PrimaryPhone?: { FreeFormNumber?: string };
+  BillAddr?: { CountrySubDivisionCode?: string };
+  [key: string]: unknown;
+}
+
+interface QBOLineRaw {
+  Id?: string;
+  DetailType?: string;
+  ItemBasedExpenseLineDetail?: { ItemRef?: { value?: string }; UnitPrice?: number };
+  DescriptionOnlyLineDetail?: unknown;
+  Qty?: number;
+  [key: string]: unknown;
+}
+
+interface QBOPurchaseOrderRaw {
+  Id?: string;
+  DocNumber?: string;
+  VendorRef?: { value?: string };
+  TotalAmt?: number;
+  DueDate?: string;
+  Line?: QBOLineRaw[];
+  [key: string]: unknown;
+}
+
 export interface QBOItem {
   id: string;
   name: string;
@@ -85,11 +123,11 @@ export class QBOClient extends IntegrationClient {
         },
       });
 
-      const items = response.data.QueryResponse?.Item ?? [];
+      const items = (response.data.QueryResponse?.Item ?? []) as QBOItemRaw[];
 
       return items.map((item) => ({
-        id: String(item.Id),
-        name: String(item.Name),
+        id: String(item.Id ?? ""),
+        name: String(item.Name ?? ""),
         sku: String(item.Sku ?? ""),
         description: String(item.Description ?? ""),
         unitPrice: Number(item.UnitPrice ?? 0),
@@ -114,14 +152,14 @@ export class QBOClient extends IntegrationClient {
         },
       });
 
-      const vendors = response.data.QueryResponse?.Vendor ?? [];
+      const vendors = (response.data.QueryResponse?.Vendor ?? []) as QBOVendorRaw[];
 
-      return vendors.map((vendor: any) => ({
-        id: String(vendor.Id),
-        name: String(vendor.DisplayName),
-        email: String((vendor.PrimaryEmailAddr as any)?.Address ?? ""),
-        phone: String((vendor.PrimaryPhone as any)?.FreeFormNumber ?? ""),
-        address: String((vendor.BillAddr as any)?.CountrySubDivisionCode ?? ""),
+      return vendors.map((vendor) => ({
+        id: String(vendor.Id ?? ""),
+        name: String(vendor.DisplayName ?? ""),
+        email: String(vendor.PrimaryEmailAddr?.Address ?? ""),
+        phone: String(vendor.PrimaryPhone?.FreeFormNumber ?? ""),
+        address: String(vendor.BillAddr?.CountrySubDivisionCode ?? ""),
       }));
     } catch (error) {
       logger.error("Failed to fetch QBO vendors", { error });
@@ -149,34 +187,28 @@ export class QBOClient extends IntegrationClient {
         params: { query },
       });
 
-      const orders = response.data.QueryResponse?.PurchaseOrder ?? [];
+      const orders = (response.data.QueryResponse?.PurchaseOrder ?? []) as QBOPurchaseOrderRaw[];
 
-      return orders.map((order: any) => ({
-        id: String(order.Id),
-        docNumber: String(order.DocNumber),
-        vendorId: String((order.VendorRef as any)?.value ?? ""),
+      return orders.map((order) => ({
+        id: String(order.Id ?? ""),
+        docNumber: String(order.DocNumber ?? ""),
+        vendorId: String(order.VendorRef?.value ?? ""),
         amount: Number(order.TotalAmt ?? 0),
         dueDate: String(order.DueDate ?? ""),
-        status: "OPEN",
+        status: "OPEN" as const,
         lineItems: Array.isArray(order.Line)
-          ? order.Line.map((line: Record<string, unknown>) => ({
-              id: String(line.Id),
-              itemId: String(
-                (
-                  (line.DetailType === "ItemBasedExpenseLineDetail"
-                    ? (line.ItemBasedExpenseLineDetail as any)
-                    : (line.DescriptionOnlyLineDetail as any)) as any
-                )?.ItemRef?.value ?? "",
-              ),
-              quantity: Number(line.Qty ?? 0),
-              unitPrice: Number(
-                (
-                  (line.DetailType === "ItemBasedExpenseLineDetail"
-                    ? (line.ItemBasedExpenseLineDetail as any)
-                    : (line.DescriptionOnlyLineDetail as any)) as any
-                )?.UnitPrice ?? 0,
-              ),
-            }))
+          ? order.Line.map((line) => {
+              const detailData =
+                line.DetailType === "ItemBasedExpenseLineDetail"
+                  ? (line.ItemBasedExpenseLineDetail as { ItemRef?: { value?: string }; UnitPrice?: number } | undefined)
+                  : undefined;
+              return {
+                id: String(line.Id ?? ""),
+                itemId: String(detailData?.ItemRef?.value ?? ""),
+                quantity: Number(line.Qty ?? 0),
+                unitPrice: Number(detailData?.UnitPrice ?? 0),
+              };
+            })
           : [],
       }));
     } catch (error) {
@@ -203,11 +235,11 @@ export class QBOClient extends IntegrationClient {
         body: payload,
       });
 
-      const created = response.data.Item;
+      const created = response.data.Item as QBOItemRaw;
 
       return {
-        id: String(created.Id),
-        name: String(created.Name),
+        id: String(created.Id ?? ""),
+        name: String(created.Name ?? ""),
         sku: String(created.Sku ?? ""),
         description: String(created.Description ?? ""),
         unitPrice: Number(created.UnitPrice ?? 0),
@@ -238,11 +270,11 @@ export class QBOClient extends IntegrationClient {
         body: payload,
       });
 
-      const updated = response.data.Item;
+      const updated = response.data.Item as QBOItemRaw;
 
       return {
-        id: String(updated.Id),
-        name: String(updated.Name),
+        id: String(updated.Id ?? ""),
+        name: String(updated.Name ?? ""),
         sku: String(updated.Sku ?? ""),
         description: String(updated.Description ?? ""),
         unitPrice: Number(updated.UnitPrice ?? 0),
@@ -273,14 +305,14 @@ export class QBOClient extends IntegrationClient {
         body: payload,
       });
 
-      const created = response.data.Vendor;
+      const created = response.data.Vendor as QBOVendorRaw;
 
       return {
-        id: String(created.Id),
-        name: String(created.DisplayName),
-        email: String((created.PrimaryEmailAddr as any)?.Address ?? ""),
-        phone: String((created.PrimaryPhone as any)?.FreeFormNumber ?? ""),
-        address: String((created.BillAddr as any)?.CountrySubDivisionCode ?? ""),
+        id: String(created.Id ?? ""),
+        name: String(created.DisplayName ?? ""),
+        email: String(created.PrimaryEmailAddr?.Address ?? ""),
+        phone: String(created.PrimaryPhone?.FreeFormNumber ?? ""),
+        address: String(created.BillAddr?.CountrySubDivisionCode ?? ""),
       };
     } catch (error) {
       logger.error("Failed to create QBO vendor", { error });

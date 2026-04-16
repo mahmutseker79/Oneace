@@ -45,7 +45,7 @@ export async function rollbackCountAction(input: unknown): Promise<ActionResult<
     return { ok: false, error: "Stock count not found" };
   }
 
-  if (!canRollback(count.state as any)) {
+  if (!canRollback(count.state as typeof count.state)) {
     return { ok: false, error: "Count cannot be rolled back" };
   }
 

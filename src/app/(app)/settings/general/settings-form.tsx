@@ -42,7 +42,7 @@ interface GeneralSettingsFormProps {
 }
 
 export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
-  const [state, setState] = useState<ActionResult<{ data: any }>>({ ok: false, error: "" });
+  const [state, setState] = useState<ActionResult<{ data: Record<string, unknown> }>>({ ok: false, error: "" });
 
   const [formData, setFormData] = useState({
     transferNumberPrefix: settings.transferNumberPrefix,
@@ -69,10 +69,10 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
       requireCountApproval: formData.requireCountApproval,
       varianceThreshold: Number.parseFloat(formData.varianceThreshold),
       recountOnThreshold: formData.recountOnThreshold,
-      defaultCountMethodology: formData.defaultCountMethodology as any,
+      defaultCountMethodology: formData.defaultCountMethodology as "CYCLE" | "FULL" | "SPOT" | "BLIND" | "DOUBLE_BLIND" | "DIRECTED" | "PARTIAL",
       allowNegativeStock: formData.allowNegativeStock,
-      defaultStockStatus: formData.defaultStockStatus as any,
-      dateFormat: formData.dateFormat as any,
+      defaultStockStatus: formData.defaultStockStatus as "AVAILABLE" | "HOLD" | "DAMAGED" | "QUARANTINE" | "EXPIRED" | "IN_TRANSIT" | "RESERVED",
+      dateFormat: formData.dateFormat as "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD",
       currencySymbol: formData.currencySymbol,
     };
 

@@ -12,7 +12,9 @@
 import type { ImportEntity, ImportStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { FieldMapper } from "@/lib/import/field-mapper";
+import type { FieldMapping } from "@/lib/import/field-mapper";
 import { RowProcessor } from "@/lib/import/row-processor";
+import type { ValidatedRow } from "@/lib/import/row-processor";
 import { logger } from "@/lib/logger";
 
 export interface ParsedFile {
@@ -62,15 +64,11 @@ export class ImportEngine {
 
   constructor(
     entity: ImportEntity,
-    fieldMappings: Array<{
-      columnIndex: number;
-      columnName: string;
-      targetField: string;
-    }>,
+    fieldMappings: FieldMapping[],
     options: ImportOptions = {},
   ) {
     this.fieldMapper = new FieldMapper(entity);
-    this.rowProcessor = new RowProcessor(entity, fieldMappings as any, {
+    this.rowProcessor = new RowProcessor(entity, fieldMappings, {
       skipEmptyRows: true,
       trimValues: true,
       strictValidation: !options.skipValidation,
@@ -206,7 +204,7 @@ export class ImportEngine {
   private async insertBatch(
     organizationId: string,
     entity: ImportEntity,
-    rows: any[],
+    rows: ValidatedRow[],
     _result: ImportResult,
   ): Promise<void> {
     try {
@@ -239,30 +237,31 @@ export class ImportEngine {
   /**
    * Insert items.
    */
-  private async insertItems(organizationId: string, rows: any[]): Promise<void> {
+  private async insertItems(organizationId: string, rows: ValidatedRow[]): Promise<void> {
     for (const row of rows) {
-      const data = row.data;
+      const data = row.data as Record<string, unknown>;
 
       // Find or create category
       let categoryId: string | null = null;
 
-      if (data.category) {
+      const categoryName = typeof data.category === "string" ? data.category : null;
+      if (categoryName) {
         let category = await db.category.findFirst({
           where: {
             organizationId,
-            name: data.category,
+            name: categoryName,
           },
         });
 
         if (!category) {
-          const slug = data.category
+          const slug = categoryName
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-+|-+$/g, "");
           category = await db.category.create({
             data: {
               organizationId,
-              name: data.category,
+              name: categoryName,
               slug,
             },
           });
@@ -272,23 +271,27 @@ export class ImportEngine {
       }
 
       // Upsert item
+      const itemName = typeof data.name === "string" ? data.name : "Unnamed";
+      const itemSku = typeof data.sku === "string" ? data.sku : "";
+      const itemDescription = typeof data.description === "string" ? data.description : undefined;
+
       await db.item.upsert({
         where: {
           organizationId_sku: {
             organizationId,
-            sku: data.sku,
+            sku: itemSku,
           },
         },
         create: {
           organizationId,
-          name: data.name,
-          sku: data.sku,
-          description: data.description,
+          name: itemName,
+          sku: itemSku,
+          description: itemDescription,
           categoryId,
         },
         update: {
-          name: data.name,
-          description: data.description,
+          name: itemName,
+          description: itemDescription,
           categoryId,
         },
       });
@@ -298,22 +301,24 @@ export class ImportEngine {
   /**
    * Insert suppliers.
    */
-  private async insertSuppliers(organizationId: string, rows: any[]): Promise<void> {
+  private async insertSuppliers(organizationId: string, rows: ValidatedRow[]): Promise<void> {
     for (const row of rows) {
-      const data = row.data;
-      const code = data.code || data.name.substring(0, 4).toUpperCase();
+      const data = row.data as Record<string, unknown>;
+      const supplierName = typeof data.name === "string" ? data.name : "Unnamed";
+      const code =
+        typeof data.code === "string" ? data.code : supplierName.substring(0, 4).toUpperCase();
 
       await db.supplier
         .create({
           data: {
             organizationId,
-            name: data.name,
+            name: supplierName,
             code,
-            email: data.email,
-            phone: data.phone,
-            addressLine1: data.address,
-            city: data.city,
-            country: data.country,
+            email: typeof data.email === "string" ? data.email : null,
+            phone: typeof data.phone === "string" ? data.phone : null,
+            addressLine1: typeof data.address === "string" ? data.address : null,
+            city: typeof data.city === "string" ? data.city : null,
+            country: typeof data.country === "string" ? data.country : null,
           },
         })
         .catch(async () => {
@@ -321,11 +326,11 @@ export class ImportEngine {
           return db.supplier.updateMany({
             where: {
               organizationId,
-              name: data.name,
+              name: supplierName,
             },
             data: {
-              email: data.email,
-              phone: data.phone,
+              email: typeof data.email === "string" ? data.email : null,
+              phone: typeof data.phone === "string" ? data.phone : null,
             },
           });
         });
@@ -335,21 +340,22 @@ export class ImportEngine {
   /**
    * Insert purchase orders.
    */
-  private async insertPurchaseOrders(organizationId: string, rows: any[]): Promise<void> {
+  private async insertPurchaseOrders(organizationId: string, rows: ValidatedRow[]): Promise<void> {
     for (const row of rows) {
-      const data = row.data;
+      const data = row.data as Record<string, unknown>;
 
       // Find supplier
+      const supplierName = typeof data.supplierName === "string" ? data.supplierName : "";
       const supplier = await db.supplier.findFirst({
         where: {
           organizationId,
-          name: data.supplierName,
+          name: supplierName,
         },
       });
 
       if (!supplier) {
         logger.warn("Supplier not found for PO import", {
-          supplierName: data.supplierName,
+          supplierName,
         });
         continue;
       }
@@ -369,26 +375,32 @@ export class ImportEngine {
         continue;
       }
 
+      const poNumber = typeof data.poNumber === "string" ? data.poNumber : "";
+      const notes = typeof data.notes === "string" ? data.notes : null;
+      const orderDate = typeof data.orderDate === "string" ? new Date(data.orderDate) : new Date();
+      const dueDate =
+        typeof data.dueDate === "string" ? new Date(data.dueDate) : undefined;
+
       await db.purchaseOrder.upsert({
         where: {
           organizationId_poNumber: {
             organizationId,
-            poNumber: data.poNumber,
+            poNumber,
           },
         },
         create: {
           organizationId,
           supplierId: supplier.id,
           warehouseId: warehouse.id,
-          poNumber: data.poNumber,
+          poNumber,
           status: "DRAFT",
-          notes: data.notes,
-          orderedAt: data.orderDate ? new Date(data.orderDate) : new Date(),
-          expectedAt: data.dueDate ? new Date(data.dueDate) : undefined,
+          notes,
+          orderedAt: orderDate,
+          expectedAt: dueDate,
         },
         update: {
-          notes: data.notes,
-          expectedAt: data.dueDate ? new Date(data.dueDate) : undefined,
+          notes,
+          expectedAt: dueDate,
         },
       });
     }
@@ -397,21 +409,22 @@ export class ImportEngine {
   /**
    * Insert stock movements.
    */
-  private async insertStockMovements(organizationId: string, rows: any[]): Promise<void> {
+  private async insertStockMovements(organizationId: string, rows: ValidatedRow[]): Promise<void> {
     for (const row of rows) {
-      const data = row.data;
+      const data = row.data as Record<string, unknown>;
 
       // Find item by SKU
+      const itemSku = typeof data.itemSku === "string" ? data.itemSku : "";
       const item = await db.item.findFirst({
         where: {
           organizationId,
-          sku: data.itemSku,
+          sku: itemSku,
         },
       });
 
       if (!item) {
         logger.warn("Item not found for stock movement", {
-          itemSku: data.itemSku,
+          itemSku,
         });
         continue;
       }
@@ -432,15 +445,21 @@ export class ImportEngine {
       }
 
       // Create stock movement
+      const typeStr = typeof data.type === "string" ? data.type : "ADJUSTMENT";
+      const validTypes = ["RECEIPT", "ISSUE", "ADJUSTMENT", "TRANSFER", "COUNT", "BIN_TRANSFER"];
+      const movementType = validTypes.includes(typeStr)
+        ? (typeStr as "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "COUNT" | "BIN_TRANSFER")
+        : ("ADJUSTMENT" as const);
+
       await db.stockMovement.create({
         data: {
           organizationId,
           itemId: item.id,
           warehouseId: warehouse.id,
-          type: (data.type as any) || "ADJUSTMENT",
-          quantity: data.quantity,
+          type: movementType,
+          quantity: typeof data.quantity === "number" ? data.quantity : 0,
           direction: 1,
-          note: data.notes,
+          note: typeof data.notes === "string" ? data.notes : undefined,
         },
       });
     }
