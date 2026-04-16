@@ -2,8 +2,7 @@
  * Phase E: QuickBooks Online OAuth 2.0 client.
  *
  * Handles OAuth flow, token management, and API calls to QuickBooks Online.
- * Actual API implementations are placeholder - full implementation would call
- * the actual QBO API endpoints.
+ * Uses the QBO V2 REST API with query-based reads and POST-based writes.
  */
 
 import {
@@ -74,8 +73,7 @@ export class QBOClient extends IntegrationClient {
   }
 
   /**
-   * Fetch items from QuickBooks.
-   * Placeholder - actual implementation would query the Item endpoint.
+   * Fetch items from QuickBooks via the query endpoint.
    */
   async getItems(limit = 100): Promise<QBOItem[]> {
     try {

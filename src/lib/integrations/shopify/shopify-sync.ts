@@ -229,9 +229,31 @@ export class ShopifySyncEngine extends SyncEngine {
   }
 
   protected async pushToExternal(entities: SyncEntity[]): Promise<SyncEntity[]> {
-    // Shopify product creation would require different API - placeholder for now
-    logger.warn("Shopify push not yet implemented");
-    return entities;
+    // Push local inventory level updates to Shopify.
+    // Product creation requires Shopify Admin API mutations (productCreate)
+    // which need additional scopes — only inventory adjustments are supported
+    // for now.
+    const pushed: SyncEntity[] = [];
+
+    for (const entity of entities) {
+      try {
+        if (entity.data?.inventoryItemId && entity.data?.available != null) {
+          await this.client.updateInventory(
+            String(entity.data.inventoryItemId),
+            Number(entity.data.available),
+          );
+          pushed.push(entity);
+        } else {
+          logger.warn("Shopify push skipped — entity missing inventory fields", {
+            entityId: entity.id,
+          });
+        }
+      } catch (error) {
+        logger.error("Shopify push failed for entity", { entityId: entity.id, error });
+      }
+    }
+
+    return pushed;
   }
 
   protected async pullFromExternal(entities: SyncEntity[]): Promise<SyncEntity[]> {
