@@ -278,7 +278,15 @@ export function requiredPlanFor(capability: PlanCapability): Exclude<Plan, "FREE
 //   - Template library (countTemplates)
 // ---------------------------------------------------------------------------
 
-export type CountMethodology = "BLIND" | "RECOUNT" | "DUAL_BLIND" | "CONTINUOUS";
+// Aligned with Prisma CountMethodology enum (schema.prisma).
+export type CountMethodology =
+  | "CYCLE"
+  | "FULL"
+  | "SPOT"
+  | "BLIND"
+  | "DOUBLE_BLIND"
+  | "DIRECTED"
+  | "PARTIAL";
 export type CountScope = "FULL" | "PARTIAL" | "DEPARTMENT";
 export type ImportSource =
   | "CSV"
@@ -314,7 +322,8 @@ export interface PlanCapabilityExtended {
 
 export const PLAN_CAPABILITIES_EXTENDED: Record<Plan, PlanCapabilityExtended> = {
   FREE: {
-    countMethodologies: ["BLIND"],
+    // Basic: full warehouse or spot checks, blind-count only
+    countMethodologies: ["FULL", "SPOT", "BLIND"],
     countScope: ["FULL", "PARTIAL"],
     importSources: ["CSV"],
     exportFormats: ["CSV"],
@@ -326,7 +335,8 @@ export const PLAN_CAPABILITIES_EXTENDED: Record<Plan, PlanCapabilityExtended> = 
     countTemplates: false,
   },
   PRO: {
-    countMethodologies: ["BLIND", "RECOUNT", "CONTINUOUS"],
+    // Adds cycle counts, directed counts, and partial methodology
+    countMethodologies: ["FULL", "SPOT", "BLIND", "CYCLE", "DIRECTED", "PARTIAL"],
     countScope: ["FULL", "PARTIAL", "DEPARTMENT"],
     importSources: ["CSV", "XLSX", "QBO", "SHOPIFY", "WOOCOMMERCE"],
     exportFormats: ["CSV", "XLSX", "PDF"],
@@ -338,7 +348,8 @@ export const PLAN_CAPABILITIES_EXTENDED: Record<Plan, PlanCapabilityExtended> = 
     countTemplates: true,
   },
   BUSINESS: {
-    countMethodologies: ["BLIND", "RECOUNT", "DUAL_BLIND", "CONTINUOUS"],
+    // All methodologies including double-blind for high-value audits
+    countMethodologies: ["CYCLE", "FULL", "SPOT", "BLIND", "DOUBLE_BLIND", "DIRECTED", "PARTIAL"],
     countScope: ["FULL", "PARTIAL", "DEPARTMENT"],
     importSources: ["CSV", "XLSX", "QBO", "QBD", "SHOPIFY", "WOOCOMMERCE", "XERO", "AMAZON"],
     exportFormats: ["CSV", "XLSX", "PDF", "JSON"],

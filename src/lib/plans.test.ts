@@ -10,9 +10,14 @@ import {
   checkPlanLimit,
   getPlanLimit,
   hasPlanCapability,
+  hasExtendedCapability,
   planCapabilityError,
   planLimitError,
   requiredPlanFor,
+  supportsCountMethodology,
+  supportsCountScope,
+  supportsExportFormat,
+  supportsImportSource,
 } from "./plans";
 
 // ---------------------------------------------------------------------------
@@ -224,5 +229,118 @@ describe("requiredPlanFor", () => {
 
   it("transfers requires PRO", () => {
     expect(requiredPlanFor("transfers")).toBe("PRO");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Extended capabilities (Sprint 1 — PLAN_CAPABILITIES_EXTENDED)
+// ---------------------------------------------------------------------------
+
+describe("supportsCountMethodology", () => {
+  // FREE gets basic methods
+  it("FREE: FULL allowed", () => expect(supportsCountMethodology("FREE", "FULL")).toBe(true));
+  it("FREE: SPOT allowed", () => expect(supportsCountMethodology("FREE", "SPOT")).toBe(true));
+  it("FREE: BLIND allowed", () => expect(supportsCountMethodology("FREE", "BLIND")).toBe(true));
+  it("FREE: CYCLE blocked", () => expect(supportsCountMethodology("FREE", "CYCLE")).toBe(false));
+  it("FREE: DOUBLE_BLIND blocked", () =>
+    expect(supportsCountMethodology("FREE", "DOUBLE_BLIND")).toBe(false));
+  it("FREE: DIRECTED blocked", () =>
+    expect(supportsCountMethodology("FREE", "DIRECTED")).toBe(false));
+
+  // PRO gets cycle + directed + partial
+  it("PRO: CYCLE allowed", () => expect(supportsCountMethodology("PRO", "CYCLE")).toBe(true));
+  it("PRO: DIRECTED allowed", () =>
+    expect(supportsCountMethodology("PRO", "DIRECTED")).toBe(true));
+  it("PRO: PARTIAL allowed", () =>
+    expect(supportsCountMethodology("PRO", "PARTIAL")).toBe(true));
+  it("PRO: DOUBLE_BLIND blocked", () =>
+    expect(supportsCountMethodology("PRO", "DOUBLE_BLIND")).toBe(false));
+
+  // BUSINESS gets everything
+  it("BUSINESS: DOUBLE_BLIND allowed", () =>
+    expect(supportsCountMethodology("BUSINESS", "DOUBLE_BLIND")).toBe(true));
+  it("BUSINESS: all 7 methods", () => {
+    const methods = [
+      "CYCLE",
+      "FULL",
+      "SPOT",
+      "BLIND",
+      "DOUBLE_BLIND",
+      "DIRECTED",
+      "PARTIAL",
+    ] as const;
+    for (const m of methods) {
+      expect(supportsCountMethodology("BUSINESS", m)).toBe(true);
+    }
+  });
+});
+
+describe("supportsCountScope", () => {
+  it("FREE: FULL + PARTIAL", () => {
+    expect(supportsCountScope("FREE", "FULL")).toBe(true);
+    expect(supportsCountScope("FREE", "PARTIAL")).toBe(true);
+    expect(supportsCountScope("FREE", "DEPARTMENT")).toBe(false);
+  });
+  it("PRO: all three", () => {
+    expect(supportsCountScope("PRO", "DEPARTMENT")).toBe(true);
+  });
+  it("BUSINESS: all three", () => {
+    expect(supportsCountScope("BUSINESS", "DEPARTMENT")).toBe(true);
+  });
+});
+
+describe("supportsImportSource", () => {
+  it("FREE: CSV only", () => {
+    expect(supportsImportSource("FREE", "CSV")).toBe(true);
+    expect(supportsImportSource("FREE", "XLSX")).toBe(false);
+    expect(supportsImportSource("FREE", "SHOPIFY")).toBe(false);
+  });
+  it("PRO: CSV + XLSX + QBO + SHOPIFY + WOOCOMMERCE", () => {
+    expect(supportsImportSource("PRO", "XLSX")).toBe(true);
+    expect(supportsImportSource("PRO", "SHOPIFY")).toBe(true);
+    expect(supportsImportSource("PRO", "XERO")).toBe(false);
+  });
+  it("BUSINESS: all 8 sources", () => {
+    expect(supportsImportSource("BUSINESS", "XERO")).toBe(true);
+    expect(supportsImportSource("BUSINESS", "AMAZON")).toBe(true);
+    expect(supportsImportSource("BUSINESS", "QBD")).toBe(true);
+  });
+});
+
+describe("supportsExportFormat", () => {
+  it("FREE: CSV only", () => {
+    expect(supportsExportFormat("FREE", "CSV")).toBe(true);
+    expect(supportsExportFormat("FREE", "XLSX")).toBe(false);
+    expect(supportsExportFormat("FREE", "PDF")).toBe(false);
+  });
+  it("PRO: CSV + XLSX + PDF", () => {
+    expect(supportsExportFormat("PRO", "PDF")).toBe(true);
+    expect(supportsExportFormat("PRO", "JSON")).toBe(false);
+  });
+  it("BUSINESS: all 4 including JSON", () => {
+    expect(supportsExportFormat("BUSINESS", "JSON")).toBe(true);
+  });
+});
+
+describe("hasExtendedCapability", () => {
+  it("FREE: no extended capabilities", () => {
+    expect(hasExtendedCapability("FREE", "webhooks")).toBe(false);
+    expect(hasExtendedCapability("FREE", "departments")).toBe(false);
+    expect(hasExtendedCapability("FREE", "approvalWorkflow")).toBe(false);
+    expect(hasExtendedCapability("FREE", "countComparison")).toBe(false);
+    expect(hasExtendedCapability("FREE", "integrations")).toBe(false);
+    expect(hasExtendedCapability("FREE", "countTemplates")).toBe(false);
+  });
+  it("PRO: all except webhooks", () => {
+    expect(hasExtendedCapability("PRO", "approvalWorkflow")).toBe(true);
+    expect(hasExtendedCapability("PRO", "countComparison")).toBe(true);
+    expect(hasExtendedCapability("PRO", "departments")).toBe(true);
+    expect(hasExtendedCapability("PRO", "integrations")).toBe(true);
+    expect(hasExtendedCapability("PRO", "countTemplates")).toBe(true);
+    expect(hasExtendedCapability("PRO", "webhooks")).toBe(false);
+  });
+  it("BUSINESS: everything including webhooks", () => {
+    expect(hasExtendedCapability("BUSINESS", "webhooks")).toBe(true);
+    expect(hasExtendedCapability("BUSINESS", "integrations")).toBe(true);
   });
 });

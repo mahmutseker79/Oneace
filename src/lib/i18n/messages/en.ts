@@ -931,6 +931,7 @@ export const en = {
       BLIND: "Blind",
       DOUBLE_BLIND: "Double-blind",
       DIRECTED: "Directed",
+      PARTIAL: "Partial",
     },
     methodologyHelp: {
       CYCLE: "Rolling subset of items as part of a monthly or quarterly program.",
@@ -939,6 +940,7 @@ export const en = {
       BLIND: "Counter doesn't see the expected quantity — an honesty test.",
       DOUBLE_BLIND: "Two counters count independently and the system reconciles their results.",
       DIRECTED: "System-selected items, typically high-value or high-variance drivers.",
+      PARTIAL: "Subset of items — e.g. a specific department, category, or ABC class.",
     },
     createHeading: "New stock count",
     createSubtitle: "Freeze your scope and start counting.",
@@ -1064,6 +1066,11 @@ export const en = {
       metaTitle: "Rollback count",
       heading: "Rollback count",
       subtitle: "Reverse this completed count and revert stock adjustments",
+    },
+    varianceDetail: {
+      metaTitle: "Variance detail",
+      heading: "Variance Detail",
+      subtitle: "Side-by-side expected vs counted breakdown with financial impact.",
     },
   },
 

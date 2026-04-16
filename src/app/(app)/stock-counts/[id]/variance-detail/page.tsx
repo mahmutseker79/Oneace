@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import {
   type VarianceRow,
@@ -44,16 +45,16 @@ type PageProps = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  // Namespace not yet added to the strict i18n dictionary; hardcode until
-  // translation keys land (tracked in the i18n backlog).
+  const t = await getMessages();
   return {
-    title: "Variance Detail — OneAce",
+    title: `${t.stockCounts.varianceDetail.metaTitle} — OneAce`,
   };
 }
 
 export default async function VarianceDetailPage({ params }: PageProps) {
   const { id } = await params;
   const { membership } = await requireActiveMembership();
+  const t = await getMessages();
 
   const count = await db.stockCount.findFirst({
     where: { id, organizationId: membership.organizationId },
@@ -143,13 +144,13 @@ export default async function VarianceDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Variance Detail"
-        description="Side-by-side expected vs counted breakdown with financial impact."
+        title={t.stockCounts.varianceDetail.heading}
+        description={t.stockCounts.varianceDetail.subtitle}
         backHref={`/stock-counts/${count.id}`}
         breadcrumb={[
-          { label: "Stock Counts", href: "/stock-counts" },
+          { label: t.stockCounts.heading, href: "/stock-counts" },
           { label: countLabel },
-          { label: "Variance Detail" },
+          { label: t.stockCounts.varianceDetail.heading },
         ]}
       />
 

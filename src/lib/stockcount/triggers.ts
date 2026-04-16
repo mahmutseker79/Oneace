@@ -73,10 +73,17 @@ export function parseCron(expr: string): ParsedCron | null {
   if (minute === null || hour === null) return null;
   if (minute < 0 || minute > 59 || hour < 0 || hour > 23) return null;
 
-  const dom = domStr === "*" ? null : toNumber(domStr);
-  const dow = dowStr === "*" ? null : toNumber(dowStr);
-  if (dom !== null && (dom === null || dom < 1 || dom > 31)) return null;
-  if (dow !== null && (dow === null || dow < 0 || dow > 6)) return null;
+  // Non-wildcard fields must be valid numbers — reject ranges, lists, steps.
+  let dom: number | null = null;
+  if (domStr !== "*") {
+    dom = toNumber(domStr);
+    if (dom === null || dom < 1 || dom > 31) return null;
+  }
+  let dow: number | null = null;
+  if (dowStr !== "*") {
+    dow = toNumber(dowStr);
+    if (dow === null || dow < 0 || dow > 6) return null;
+  }
 
   // Reject both-specified (our UI never builds these)
   if (dom !== null && dow !== null) return null;

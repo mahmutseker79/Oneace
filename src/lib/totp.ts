@@ -162,5 +162,5 @@ export function verifyBackupCode(
  * @returns Hex-encoded SHA-256 hash of the uppercase code
  */
 export function hashBackupCode(code: string): string {
-  return createHash("sha256").update(code.toUpperCase()).digest("hex");
+  return createHash("sha256").update(code.replace(/\s+/g, "").toUpperCase()).digest("hex");
 }

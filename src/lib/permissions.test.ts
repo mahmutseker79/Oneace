@@ -20,7 +20,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "MEMBER", "VIEWER"];
+const ROLES: Role[] = ["OWNER", "ADMIN", "MANAGER", "MEMBER", "APPROVER", "COUNTER", "VIEWER"];
 
 function rolesWithCapability(cap: Capability): Role[] {
   return ROLES.filter((role) => hasCapability(role, cap));
@@ -124,10 +124,15 @@ describe("MEMBER (Operator) role", () => {
 // ---------------------------------------------------------------------------
 
 describe("MANAGER role (legacy)", () => {
-  it("has the same capabilities as MEMBER", () => {
+  it("is a superset of MEMBER (has extra confirm/assign capabilities)", () => {
     const managerCaps = capabilitiesForRole("MANAGER");
     const memberCaps = capabilitiesForRole("MEMBER");
-    expect(managerCaps).toEqual(memberCaps);
+    // Every MEMBER capability should exist in MANAGER
+    for (const cap of memberCaps) {
+      expect(managerCaps.has(cap)).toBe(true);
+    }
+    // MANAGER has additional capabilities MEMBER doesn't (salesOrders.confirm, picks.assign, etc.)
+    expect(managerCaps.size).toBeGreaterThanOrEqual(memberCaps.size);
   });
 });
 
@@ -233,7 +238,7 @@ describe("capability map invariants", () => {
   });
 
   it("ASSIGNABLE_ROLES excludes MANAGER", () => {
-    expect(ASSIGNABLE_ROLES).toEqual(["OWNER", "ADMIN", "MEMBER", "VIEWER"]);
+    expect(ASSIGNABLE_ROLES).toEqual(["OWNER", "ADMIN", "MEMBER", "APPROVER", "COUNTER", "VIEWER"]);
     expect(ASSIGNABLE_ROLES).not.toContain("MANAGER");
   });
 });
