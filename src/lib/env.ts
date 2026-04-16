@@ -240,6 +240,23 @@ function parseEnv() {
     } as any);
   }
 
+  // Skip strict validation during `next build` "Collecting page data" phase.
+  // Vercel injects runtime secrets (DATABASE_URL, BETTER_AUTH_SECRET, etc.)
+  // only at runtime, not during the build step. Any route or page that
+  // transitively imports this module (via db.ts, session.ts, etc.) would
+  // crash the build. NEXT_PHASE is set by Next.js itself during build.
+  const { PHASE_PRODUCTION_BUILD } = require("next/constants");
+  if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) {
+    return Object.freeze({
+      NODE_ENV: process.env.NODE_ENV ?? "production",
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "",
+      NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "",
+      NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN ?? "",
+      NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
+      REGISTRATION_ENABLED: true,
+    } as any);
+  }
+
   const result = schemaWithRefinements.safeParse(process.env);
   if (!result.success) {
     const lines = result.error.issues.map((issue) => {
