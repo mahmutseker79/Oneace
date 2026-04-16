@@ -32,7 +32,7 @@ export function AssignmentForm({
   members,
   departments,
   warehouses,
-  isNew,
+
 }: AssignmentFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();

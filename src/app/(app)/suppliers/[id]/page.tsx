@@ -1,12 +1,10 @@
-import { CalendarClock, ChevronRight, ExternalLink, Pencil, Plus, Truck } from "lucide-react";
-import type { Metadata } from "next";
+import { CalendarClock, ChevronRight, ExternalLink, Pencil, Plus } from "lucide-react";import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CopyButton } from "@/components/ui/copy-button";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,

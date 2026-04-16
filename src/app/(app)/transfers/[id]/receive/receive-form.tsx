@@ -98,7 +98,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
 
       // Redirect back to transfer detail
       router.push(`/transfers/${transferId}`);
-    } catch (err) {
+    } catch (_err) {
       setError("An unexpected error occurred");
       setIsLoading(false);
     }

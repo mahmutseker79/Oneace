@@ -1,7 +1,7 @@
 # OneAce Project Memory
 
 ## Quick Reference
-- **Version**: v1.0.0-rc1 (tag: `v1.0.0-rc1`)
+- **Version**: v1.0.0-rc3 (tag: `v1.0.0-rc3`)
 - **Branch**: main
 - **Stable**: `stable` branch = last verified state
 - **Deploy**: https://oneace-next-local.vercel.app
@@ -54,6 +54,8 @@ git status --short                            # Should show only untracked temp 
 ## Version History (Recent)
 | Tag | Description |
 |---|---|
+| v1.0.0-rc3 | Sprint 2+3: low-stock SQL opt, email rate limit, webhook hardening |
+| v1.0.0-rc2 | Sprint 0+1: 3 critical + 5 high security fixes, CHECK constraints, 9 indexes |
 | v1.0.0-rc1 | Full audit passed, version management added |
 | v0.49.0-deployment-fixes | Build/deployment fixes |
 | v0.48.0-security-hardening | Sprint 0-3 security hardening |

@@ -11,7 +11,7 @@ import { requireActiveMembership } from "@/lib/session";
 import type { ActionResult } from "@/lib/validation/action-result";
 import {
   createLocationLevelSchema,
-  deleteLocationLevelSchema,
+
   reorderLocationLevelsSchema,
   updateLocationLevelSchema,
 } from "@/lib/validation/location-level";
@@ -217,7 +217,7 @@ export async function deleteLocationLevelAction(
     });
 
     return { ok: true, id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.locations?.errors?.deleteFailed || "Failed to delete location" };
   }
 }
@@ -265,7 +265,7 @@ export async function reorderLocationLevelsAction(
     });
 
     return { ok: true, id: data.warehouseId };
-  } catch (error) {
+  } catch (_error) {
     return {
       ok: false,
       error: t.locations?.errors?.reorderFailed || "Failed to reorder locations",

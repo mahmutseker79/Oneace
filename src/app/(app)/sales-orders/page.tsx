@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function SalesOrdersPage({ searchParams }: { searchParams?: SearchParams }) {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
   const region = await getRegion();
 
   const params = (await searchParams) ?? {};

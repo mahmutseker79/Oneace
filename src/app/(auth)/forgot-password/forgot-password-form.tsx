@@ -11,7 +11,6 @@
 
 import { authClient } from "@/lib/auth-client";
 import { Loader2, Mail } from "lucide-react";
-import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";

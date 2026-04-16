@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     let parsed: { event: string; organizationId: string; data: Record<string, unknown> };
     try {
       parsed = JSON.parse(body);
-    } catch (err) {
+    } catch (_err) {
       logger.warn("Webhook JSON parse failed", { deliveryId });
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }

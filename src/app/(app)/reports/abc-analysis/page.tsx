@@ -2,14 +2,13 @@
 
 import {
   AlertCircle,
-  BarChart3,
+
   DollarSign,
   Download,
   Package,
   TrendingUp,
   Zap,
 } from "lucide-react";
-import type { Metadata } from "next";
 import { useEffect, useState } from "react";
 import {
   Bar,

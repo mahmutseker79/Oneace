@@ -56,7 +56,7 @@ export function CreateTransferForm({ warehouses }: CreateTransferFormProps) {
 
       // Redirect to detail page to add lines
       router.push(`/transfers/${result.id}`);
-    } catch (err) {
+    } catch (_err) {
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);

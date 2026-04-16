@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 
-import { Prisma } from "@/generated/prisma";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -172,7 +171,7 @@ export async function changeStockStatusAction(
     });
 
     return { ok: true, movementId: result.id, updatedQuantity: data.quantity };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: "Failed to update stock status" };
   }
 }

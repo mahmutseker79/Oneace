@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 import { recordAudit } from "@/lib/audit";
@@ -10,7 +9,7 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import type { ActionResult } from "@/lib/validation/action-result";
 import {
-  deleteAttachmentSchema,
+
   reorderAttachmentsSchema,
   uploadAttachmentSchema,
 } from "@/lib/validation/attachment";
@@ -79,7 +78,7 @@ export async function uploadAttachmentAction(
     });
 
     return { ok: true, id: attachment.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.items.errors.attachmentFailed || "Failed to upload attachment" };
   }
 }
@@ -130,7 +129,7 @@ export async function deleteAttachmentAction(
     });
 
     return { ok: true, id: attachmentId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.items.errors.attachmentFailed || "Failed to delete attachment" };
   }
 }
@@ -188,7 +187,7 @@ export async function reorderAttachmentsAction(
     });
 
     return { ok: true, id: data.itemId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.items.errors.attachmentFailed || "Failed to reorder attachments" };
   }
 }

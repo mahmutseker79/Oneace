@@ -11,13 +11,13 @@ import { requireActiveMembership } from "@/lib/session";
 import { StatusChangeForm } from "./status-change-form";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getMessages();
+  const _t = await getMessages();
   return { title: "Change Stock Status" };
 }
 
 export default async function StatusChangePage() {
   const { session, membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   // Fetch data for dropdowns
   const [items, warehouses, reasonCodes] = await Promise.all([

@@ -24,7 +24,7 @@ type PageProps = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getMessages();
+  const _t = await getMessages();
   return { title: "Label Designer" };
 }
 
@@ -32,7 +32,7 @@ export default async function LabelDesignerPage({ params, searchParams }: PagePr
   await params; // Satisfy the unused param lint rule
   const { id } = await searchParams;
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   let template = null;
   if (id && typeof id === "string") {

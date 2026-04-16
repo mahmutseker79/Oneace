@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
@@ -15,7 +14,7 @@ import { ApprovalForm } from "./approval-form";
  * Stock count approval page. Shows approval details and allows approve/reject.
  */
 export async function generateMetadata({
-  params,
+
 }: {
   params: { id: string };
 }): Promise<Metadata> {

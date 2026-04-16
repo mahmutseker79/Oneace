@@ -1,9 +1,6 @@
-import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";

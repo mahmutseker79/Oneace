@@ -1,8 +1,8 @@
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronLeft,
-  Download,
+
+
   Package,
   ShoppingCart,
   Truck,

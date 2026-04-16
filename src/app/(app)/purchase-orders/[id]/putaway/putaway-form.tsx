@@ -1,12 +1,10 @@
 "use client";
 
-import { CheckCircle2, ChevronLeft, Loader2, PackageOpen, TriangleAlert } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { CheckCircle2, Loader2, PackageOpen, TriangleAlert } from "lucide-react";import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -96,7 +94,7 @@ function generateIdempotencyKey(): string {
 
 export function PutawayForm({
   warehouseId,
-  purchaseOrderId,
+
   backHref,
   items,
   bins,

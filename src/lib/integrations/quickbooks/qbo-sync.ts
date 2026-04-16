@@ -6,8 +6,7 @@
  */
 
 import { db } from "@/lib/db";
-import type { QBOClient, QBOItem } from "@/lib/integrations/quickbooks/qbo-client";
-import {
+import type { QBOClient } from "@/lib/integrations/quickbooks/qbo-client";import {
   type SyncContext,
   SyncEngine,
   type SyncEntity,

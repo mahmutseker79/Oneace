@@ -34,7 +34,7 @@ export default async function PickTaskDetailPage({
 }) {
   const { id } = await params;
   const { membership, session } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   const task = await db.pickTask.findFirst({
     where: { id, organizationId: membership.organizationId },

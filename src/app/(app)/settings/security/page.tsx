@@ -1,6 +1,3 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -8,7 +5,7 @@ import { TwoFactorCard } from "./two-factor-card";
 
 export default async function SecuritySettingsPage() {
   const { session } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   // These labels would come from i18n, but since we haven't added them yet,
   // we'll provide defaults. In the next step, these would be replaced with

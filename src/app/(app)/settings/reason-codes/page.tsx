@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import type { ReasonCategory, ReasonCode } from "@/generated/prisma";
 import { db } from "@/lib/db";
@@ -8,13 +7,13 @@ import type { Metadata } from "next";
 import { ReasonCodeTableClient } from "./reason-code-table-client";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getMessages();
+  const _t = await getMessages();
   return { title: "Reason Codes" };
 }
 
 export default async function ReasonCodesPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   // Fetch all reason codes for the organization
   const reasonCodes = await db.reasonCode.findMany({

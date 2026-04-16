@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default async function ImportPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   // Fetch recent import jobs
   const recentJobs = await db.importJob.findMany({

@@ -2,13 +2,13 @@ import {
   AlertTriangle,
   ArrowLeftRight,
   ArrowRight,
-  ArrowUpDown,
+
   BarChart3,
   Check,
   CheckCircle2,
   Circle,
   Download,
-  Eye,
+
   FileUp,
   Info,
   Package,
@@ -23,18 +23,17 @@ import { ItemsCacheBanner } from "@/components/offline/items-cache-banner";
 import { ItemsCacheSync } from "@/components/offline/items-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+
+
+
+
+
+
 } from "@/components/ui/table";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { Prisma } from "@/generated/prisma";
@@ -45,7 +44,6 @@ import type { ItemSnapshotRow } from "@/lib/offline/items-cache";
 import { hasCapability } from "@/lib/permissions";
 import { UNLIMITED, getPlanLimit, hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
-import { formatCurrency } from "@/lib/utils";
 
 import { CompactBridge } from "@/components/bridge/compact-bridge";
 

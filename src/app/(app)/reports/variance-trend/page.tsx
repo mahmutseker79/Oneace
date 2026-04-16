@@ -1,7 +1,6 @@
 "use client";
 
-import { AlertCircle, Download, LineChart as LineChartIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, Download } from "lucide-react";import { useEffect, useState } from "react";
 import {
   CartesianGrid,
   Legend,

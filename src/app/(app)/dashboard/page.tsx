@@ -10,7 +10,7 @@ import {
   ScanLine,
   ShoppingCart,
   TrendingUp,
-  Users,
+
   Warehouse,
 } from "lucide-react";
 import type { Metadata } from "next";

@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  */
 export default async function DepartmentsPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   const canCreate = hasCapability(membership.role, "departments.create");
 

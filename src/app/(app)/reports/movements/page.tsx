@@ -1,7 +1,7 @@
 import {
   ArrowLeftRight,
   ArrowUpDown,
-  Download,
+
   ExternalLink,
   TrendingDown,
   TrendingUp,

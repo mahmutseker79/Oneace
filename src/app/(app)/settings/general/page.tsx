@@ -1,5 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";import { PageHeader } from "@/components/ui/page-header";
 import { requireActiveMembership } from "@/lib/session";
 import { getOrCreateOrgSettingsAction } from "./actions";
 import { GeneralSettingsForm } from "./settings-form";

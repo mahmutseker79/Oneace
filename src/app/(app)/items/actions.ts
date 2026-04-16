@@ -10,8 +10,8 @@ import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
 import {
   checkPlanLimit,
-  hasPlanCapability,
-  planCapabilityError,
+
+
   planLimitError,
 } from "@/lib/plans";
 // Phase 6A / P2 — narrow rate-limit surface for bulk import. See

@@ -1,5 +1,4 @@
-import { ArrowLeft, ClipboardCheck, Info } from "lucide-react";
-import type { Metadata } from "next";
+import { ClipboardCheck, Info } from "lucide-react";import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

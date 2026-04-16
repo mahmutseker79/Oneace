@@ -1,5 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";import { Skeleton } from "@/components/ui/skeleton";
 
 const ROWS = ["r0", "r1", "r2", "r3", "r4"];
 

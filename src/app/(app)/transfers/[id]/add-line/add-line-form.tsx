@@ -63,7 +63,7 @@ export function AddLineForm({ transferId, items }: AddLineFormProps) {
 
       // Redirect back to transfer detail
       router.push(`/transfers/${transferId}`);
-    } catch (err) {
+    } catch (_err) {
       setError("An unexpected error occurred");
       setIsLoading(false);
     }

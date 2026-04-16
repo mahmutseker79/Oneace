@@ -28,7 +28,7 @@ type ReasonCodeTableClientProps = {
 export function ReasonCodeTableClient({
   reasonCodes,
   categoryLabels,
-  categoryColors,
+
 }: ReasonCodeTableClientProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState<ReasonCode | null>(null);

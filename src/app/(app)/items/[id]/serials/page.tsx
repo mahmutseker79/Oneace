@@ -1,5 +1,4 @@
-import { ArrowLeft, Plus } from "lucide-react";
-import type { Metadata } from "next";
+import { Plus } from "lucide-react";import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

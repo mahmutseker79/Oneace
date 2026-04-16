@@ -33,7 +33,7 @@ interface IntegrationCard {
 
 export default async function IntegrationsPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   const canConnect = hasCapability(membership.role, "integrations.connect");
   const canDisconnect = hasCapability(membership.role, "integrations.disconnect");

@@ -167,7 +167,7 @@ export async function bulkCreateSerialsAction(
     });
 
     return { ok: true, id: data.itemId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.items.errors.createFailed };
   }
 }
@@ -231,7 +231,7 @@ export async function moveSerialAction(input: Record<string, unknown>): Promise<
     });
 
     return { ok: true, id: data.serialNumberId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: "Failed to move serial" };
   }
 }
@@ -305,7 +305,7 @@ export async function updateSerialStatusAction(
     });
 
     return { ok: true, id: data.serialNumberId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: "Failed to update serial status" };
   }
 }

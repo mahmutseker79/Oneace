@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PickTasksPage({ searchParams }: { searchParams?: SearchParams }) {
   const { membership, session } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
   const region = await getRegion();
 
   const params = (await searchParams) ?? {};

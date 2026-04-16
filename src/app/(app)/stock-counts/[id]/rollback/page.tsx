@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
@@ -8,7 +7,6 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canRollback } from "@/lib/stockcount/machine";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { RollbackForm } from "./rollback-form";
@@ -17,7 +15,7 @@ import { RollbackForm } from "./rollback-form";
  * Rollback page. Allows rolling back a completed count.
  */
 export async function generateMetadata({
-  params,
+
 }: {
   params: { id: string };
 }): Promise<Metadata> {

@@ -1,7 +1,6 @@
 "use client";
 
-import { AlertCircle, GitCompareIcon as CompareIcon, Download } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, Download } from "lucide-react";import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +26,7 @@ import {
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 // Note: getMessages/getRegion are server-only. This client component uses hardcoded strings.
 import { hasPlanCapability } from "@/lib/plans";
-import { cn, formatCurrency } from "@/lib/utils";
-
+import { cn } from "@/lib/utils";
 interface CountData {
   id: string;
   name: string;

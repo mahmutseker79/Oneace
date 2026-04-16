@@ -4,8 +4,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent } from "@/components/ui/card";import { EmptyState } from "@/components/ui/empty-state";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
@@ -16,13 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
-import { format, getMessages, getRegion } from "@/lib/i18n";
-import { hasCapability } from "@/lib/permissions";
+import { getMessages, getRegion } from "@/lib/i18n";import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { statusBadgeVariant, statusLabel } from "@/lib/transfer/machine";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getMessages();
+  const _t = await getMessages();
   return { title: "Stock Transfers" };
 }
 
@@ -33,7 +31,7 @@ function fmtDate(value: Date | null | undefined, locale: string): string {
 
 export default async function TransfersPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
   const region = await getRegion();
 
   const canCreate = hasCapability(membership.role, "transfers.create");

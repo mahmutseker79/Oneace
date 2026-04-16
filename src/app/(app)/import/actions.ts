@@ -6,8 +6,7 @@
 
 "use server";
 
-import type { ImportEntity, ImportStatus } from "@/generated/prisma";
-import { recordAudit } from "@/lib/audit";
+import type { ImportStatus } from "@/generated/prisma";import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -264,7 +263,7 @@ export async function getImportJobStatusAction(jobId: string): Promise<
         completedAt: importJob.completedAt,
       },
     };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: "Failed to get import status" };
   }
 }

@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 import { recordAudit } from "@/lib/audit";
@@ -56,7 +55,7 @@ export async function createSavedViewAction(input: Record<string, unknown>): Pro
     });
 
     return { ok: true, id: view.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.common.operationFailed || "Failed to create saved view" };
   }
 }
@@ -122,7 +121,7 @@ export async function updateSavedViewAction(
     });
 
     return { ok: true, id: updated.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.common.operationFailed || "Failed to update saved view" };
   }
 }
@@ -164,7 +163,7 @@ export async function deleteSavedViewAction(id: string): Promise<ActionResult> {
     });
 
     return { ok: true, id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.common.operationFailed || "Failed to delete saved view" };
   }
 }
@@ -193,7 +192,7 @@ export async function getSavedViewsAction(page: string): Promise<ActionResult<{ 
     });
 
     return { ok: true, views };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: "Failed to fetch saved views" };
   }
 }
@@ -258,7 +257,7 @@ export async function setDefaultViewAction(input: Record<string, unknown>): Prom
     });
 
     return { ok: true, id: data.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.common.operationFailed || "Failed to set default view" };
   }
 }

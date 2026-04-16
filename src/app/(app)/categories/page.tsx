@@ -1,12 +1,10 @@
 import { FolderTree } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
 import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { DeleteButton } from "@/components/shell/delete-button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,

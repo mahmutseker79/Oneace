@@ -1,10 +1,7 @@
-import { ArrowLeft, Download, Trash2 } from "lucide-react";
-import type { Metadata } from "next";
-import Link from "next/link";
+import { Download } from "lucide-react";import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";

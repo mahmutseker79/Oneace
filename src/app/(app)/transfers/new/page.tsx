@@ -11,13 +11,13 @@ import { requireActiveMembership } from "@/lib/session";
 import { CreateTransferForm } from "./create-transfer-form";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getMessages();
+  const _t = await getMessages();
   return { title: "New Transfer" };
 }
 
 export default async function NewTransferPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   // Load all warehouses for the org
   const warehouses = await db.warehouse.findMany({

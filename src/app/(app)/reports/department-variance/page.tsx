@@ -1,7 +1,6 @@
 "use client";
 
-import { AlertCircle, Building2, Download, TrendingDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, Download, TrendingDown } from "lucide-react";import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -30,8 +29,7 @@ import {
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 // Note: getMessages/getRegion are server-only. This client component uses hardcoded strings.
 import { hasPlanCapability } from "@/lib/plans";
-import { cn, formatCurrency } from "@/lib/utils";
-
+import { cn } from "@/lib/utils";
 interface DepartmentVariance {
   departmentId: string;
   departmentName: string;

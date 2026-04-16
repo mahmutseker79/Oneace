@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 
-import { Prisma } from "@/generated/prisma";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";

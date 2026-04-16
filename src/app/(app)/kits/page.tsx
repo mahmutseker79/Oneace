@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function KitsPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   // P10.1 — capability flag for conditional UI rendering
   const canCreate = hasCapability(membership.role, "kits.create");

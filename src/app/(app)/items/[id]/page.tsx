@@ -1,7 +1,6 @@
 import { CopyButton } from "@/components/ui/copy-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { ArrowLeft, Pencil, Plus } from "lucide-react";
-import type { Metadata } from "next";
+import { Pencil, Plus } from "lucide-react";import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

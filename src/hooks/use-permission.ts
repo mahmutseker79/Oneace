@@ -15,7 +15,6 @@
  *   if (!canDeleteItems) return null;
  */
 
-import { hasCapability } from "@/lib/permissions";
 import type { Capability } from "@/lib/permissions";
 
 // TODO: Once a client-side session context is available (via SessionProvider

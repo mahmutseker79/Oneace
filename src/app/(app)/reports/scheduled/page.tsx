@@ -10,8 +10,7 @@
  * page 404-ing.
  */
 
-import { Clock, Mail, Pencil, Plus, Trash2 } from "lucide-react";
-import type { Metadata } from "next";
+import { Clock, Mail, Plus } from "lucide-react";import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";

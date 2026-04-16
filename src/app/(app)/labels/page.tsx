@@ -1,5 +1,4 @@
-import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
-import type { Metadata } from "next";
+import { Pencil, Plus } from "lucide-react";import type { Metadata } from "next";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
