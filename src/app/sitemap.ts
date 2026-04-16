@@ -1,14 +1,16 @@
 import type { MetadataRoute } from "next";
 
-import { env } from "@/lib/env";
-
 /**
  * Phase 12.5 — Dynamic sitemap covering all public pages.
  * Authenticated app routes are excluded — they require login and
  * are not crawlable by search engines.
+ *
+ * NOTE: Uses process.env directly instead of the validated `env`
+ * module because this metadata route is collected at build time
+ * when runtime-only secrets (DATABASE_URL, etc.) are unavailable.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = env.NEXT_PUBLIC_APP_URL ?? "https://oneace.app";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://oneace.app";
 
   return [
     {
