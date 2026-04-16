@@ -28,7 +28,7 @@ export default async function GeneralSettingsPage() {
             <CardTitle>Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-red-600">Failed to load settings: {settingsResult.error}</p>
+            <p className="text-sm text-destructive">Failed to load settings: {settingsResult.error}</p>
           </CardContent>
         </Card>
       </div>

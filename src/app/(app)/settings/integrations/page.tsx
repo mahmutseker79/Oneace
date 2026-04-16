@@ -97,8 +97,8 @@ export default async function IntegrationsPage() {
               <div
                 className={`px-2 py-1 rounded text-sm font-medium ${
                   integration.connected
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-800"
+                    ? "bg-success-light text-success"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {integration.connected ? "Connected" : "Disconnected"}
@@ -116,7 +116,7 @@ export default async function IntegrationsPage() {
                 <>
                   <Link
                     href={`/settings/integrations/${integration.id}`}
-                    className="flex-1 text-center px-3 py-2 text-sm font-medium border rounded hover:bg-gray-50"
+                    className="flex-1 text-center px-3 py-2 text-sm font-medium border rounded hover:bg-muted/50"
                   >
                     Settings
                   </Link>
@@ -149,7 +149,7 @@ export default async function IntegrationsPage() {
                 canConnect && (
                   <Link
                     href={`/settings/integrations/${integration.id}`}
-                    className="w-full text-center px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="w-full text-center px-3 py-2 text-sm font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90"
                   >
                     Connect
                   </Link>
@@ -166,7 +166,7 @@ export default async function IntegrationsPage() {
           <h2 className="text-2xl font-bold">Webhooks</h2>
           <Link
             href="/settings/webhooks"
-            className="text-sm font-medium text-blue-600 hover:text-blue-700"
+            className="text-sm font-medium text-primary hover:text-primary/80"
           >
             Manage webhooks
           </Link>

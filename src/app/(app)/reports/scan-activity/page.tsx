@@ -170,8 +170,8 @@ export default function ScanActivityReportPage() {
                           <span
                             className={`inline-block px-2 py-1 rounded text-xs font-medium ${
                               entry.found
-                                ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400"
-                                : "bg-orange-100 text-orange-800 dark:bg-orange-950/30 dark:text-orange-400"
+                                ? "bg-success-light text-success"
+                                : "bg-warning-light text-warning"
                             }`}
                           >
                             {entry.found ? "Found" : "Not Found"}

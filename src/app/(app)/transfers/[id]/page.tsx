@@ -186,7 +186,7 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       {line.discrepancy !== 0 ? (
-                        <span className={line.discrepancy > 0 ? "text-green-600" : "text-red-600"}>
+                        <span className={line.discrepancy > 0 ? "text-success" : "text-destructive"}>
                           {line.discrepancy > 0 ? "+" : ""}
                           {line.discrepancy}
                         </span>

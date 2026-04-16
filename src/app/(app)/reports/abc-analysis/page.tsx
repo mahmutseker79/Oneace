@@ -207,13 +207,13 @@ export default function ABCAnalysisPage() {
   const getClassColor = (cls: string) => {
     switch (cls) {
       case "A":
-        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+        return "bg-destructive-light text-destructive";
       case "B":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300";
+        return "bg-warning-light text-warning";
       case "C":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
+        return "bg-success-light text-success";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -394,7 +394,7 @@ export default function ABCAnalysisPage() {
           <div className="space-y-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-red-100 text-red-800">A</Badge>
+                <Badge className="bg-destructive-light text-destructive">A</Badge>
                 <span className="font-medium">High-Value Items</span>
               </div>
               <p className="text-sm text-muted-foreground ml-6">
@@ -403,7 +403,7 @@ export default function ABCAnalysisPage() {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-yellow-100 text-yellow-800">B</Badge>
+                <Badge className="bg-warning-light text-warning">B</Badge>
                 <span className="font-medium">Medium-Value Items</span>
               </div>
               <p className="text-sm text-muted-foreground ml-6">
@@ -412,7 +412,7 @@ export default function ABCAnalysisPage() {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-green-100 text-green-800">C</Badge>
+                <Badge className="bg-success-light text-success">C</Badge>
                 <span className="font-medium">Low-Value Items</span>
               </div>
               <p className="text-sm text-muted-foreground ml-6">

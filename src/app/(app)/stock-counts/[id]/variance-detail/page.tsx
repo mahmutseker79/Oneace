@@ -257,7 +257,7 @@ function SummaryTile({
   const display = signed && value > 0 ? `+${value}` : String(value);
   const toneClass =
     tone === "positive"
-      ? "text-emerald-600"
+      ? "text-success"
       : tone === "negative"
         ? "text-destructive"
         : "text-foreground";
@@ -284,7 +284,7 @@ function Stat({
 }) {
   const toneClass =
     tone === "positive"
-      ? "text-emerald-600"
+      ? "text-success"
       : tone === "negative"
         ? "text-destructive"
         : "text-foreground";
@@ -360,7 +360,7 @@ function VarianceTable({
                     {tone === "destructive" ? (
                       <Badge variant="destructive">Under</Badge>
                     ) : tone === "positive" ? (
-                      <Badge className="bg-emerald-600">Over</Badge>
+                      <Badge className="bg-success">Over</Badge>
                     ) : (
                       <Badge variant="secondary">Within</Badge>
                     )}

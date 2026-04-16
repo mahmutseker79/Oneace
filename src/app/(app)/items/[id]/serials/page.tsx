@@ -98,7 +98,7 @@ export default async function SerialsPage({ params, searchParams }: PageProps) {
       return <Badge variant="secondary">{t.serials.statusIssued || "Issued"}</Badge>;
     if (s === "SOLD") return <Badge>{t.serials.statusSold || "Sold"}</Badge>;
     if (s === "RETURNED")
-      return <Badge className="bg-blue-600">{t.serials.statusReturned || "Returned"}</Badge>;
+      return <Badge className="bg-info">{t.serials.statusReturned || "Returned"}</Badge>;
     if (s === "DISPOSED")
       return <Badge variant="destructive">{t.serials.statusDisposed || "Disposed"}</Badge>;
     if (s === "LOST") return <Badge variant="destructive">{t.serials.statusLost || "Lost"}</Badge>;

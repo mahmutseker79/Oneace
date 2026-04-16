@@ -6,7 +6,9 @@ import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banne
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
@@ -47,22 +49,20 @@ export default async function SuppliersPage() {
     <div className="space-y-6">
       <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t.suppliers.heading}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t.suppliers.subtitle}</p>
-        </div>
-        {canCreate ? (
-          <Button asChild>
-            <Link href="/suppliers/new">
-              <Plus className="h-4 w-4" />
-              {t.suppliers.newSupplier}
-            </Link>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title={t.suppliers.heading}
+        description={t.suppliers.subtitle}
+        actions={
+          canCreate ? (
+            <Button asChild>
+              <Link href="/suppliers/new">
+                <Plus className="h-4 w-4" />
+                {t.suppliers.newSupplier}
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {suppliers.length === 0 ? (
         <EmptyState

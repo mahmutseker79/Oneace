@@ -100,7 +100,7 @@ export function OrgProfileForm({ labels, initial, canEdit, forbiddenLabel }: Org
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {success ? <p className="text-sm text-emerald-600">{labels.saved}</p> : null}
+      {success ? <p className="text-sm text-success">{labels.saved}</p> : null}
       {!canEdit ? <p className="text-xs text-muted-foreground">{forbiddenLabel}</p> : null}
 
       <Button type="submit" disabled={!canEdit || isPending}>

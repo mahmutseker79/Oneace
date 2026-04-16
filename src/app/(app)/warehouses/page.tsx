@@ -15,6 +15,7 @@ import {
 
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
@@ -81,29 +82,27 @@ export default async function WarehousesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t.warehouses.heading}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t.warehouses.subtitle}</p>
-        </div>
-        {canCreate && whLimit === UNLIMITED ? (
-          <Button asChild>
-            <Link href="/warehouses/new">
-              <Plus className="h-4 w-4" />
-              {t.warehouses.newWarehouse}
-            </Link>
-          </Button>
-        ) : canCreate && whLimit !== UNLIMITED && warehouses.length < whLimit ? (
-          <Button asChild>
-            <Link href="/warehouses/new">
-              <Plus className="h-4 w-4" />
-              {t.warehouses.newWarehouse}
-            </Link>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title={t.warehouses.heading}
+        description={t.warehouses.subtitle}
+        actions={
+          canCreate && whLimit === UNLIMITED ? (
+            <Button asChild>
+              <Link href="/warehouses/new">
+                <Plus className="h-4 w-4" />
+                {t.warehouses.newWarehouse}
+              </Link>
+            </Button>
+          ) : canCreate && whLimit !== UNLIMITED && warehouses.length < whLimit ? (
+            <Button asChild>
+              <Link href="/warehouses/new">
+                <Plus className="h-4 w-4" />
+                {t.warehouses.newWarehouse}
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Phase 15.2 — warehouse limit upgrade banner */}
       {whLimit !== UNLIMITED && warehouses.length >= whLimit ? (

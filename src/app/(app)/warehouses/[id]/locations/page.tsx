@@ -58,12 +58,12 @@ export default async function LocationsPage({ params }: PageProps) {
 
   function typeBadge(type: string) {
     const colors: Record<string, string> = {
-      ZONE: "bg-blue-100 text-blue-800",
-      AISLE: "bg-green-100 text-green-800",
-      RACK: "bg-purple-100 text-purple-800",
-      SHELF: "bg-orange-100 text-orange-800",
-      BAY: "bg-pink-100 text-pink-800",
-      FLOOR: "bg-slate-100 text-slate-800",
+      ZONE: "bg-info-light text-info",
+      AISLE: "bg-success-light text-success",
+      RACK: "bg-primary/10 text-primary",
+      SHELF: "bg-warning-light text-warning",
+      BAY: "bg-destructive-light text-destructive",
+      FLOOR: "bg-muted text-muted-foreground",
     };
     return <span className={`text-xs px-2 py-1 rounded ${colors[type] || ""}`}>{type}</span>;
   }

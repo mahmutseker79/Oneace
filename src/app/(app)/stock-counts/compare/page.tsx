@@ -154,7 +154,7 @@ export default async function ComparePage({
                           {row.difference}
                         </TableCell>
                         <TableCell
-                          className={`text-right ${Math.abs(row.variancePercent) > 5 ? "text-red-600 font-semibold" : ""}`}
+                          className={`text-right ${Math.abs(row.variancePercent) > 5 ? "text-destructive font-semibold" : ""}`}
                         >
                           {row.variancePercent.toFixed(1)}%
                         </TableCell>

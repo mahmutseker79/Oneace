@@ -41,13 +41,13 @@ export default async function ReasonCodesPage() {
   };
 
   const categoryColors: Record<ReasonCategory, string> = {
-    VARIANCE: "bg-orange-100 text-orange-900",
-    ADJUSTMENT: "bg-blue-100 text-blue-900",
-    TRANSFER: "bg-purple-100 text-purple-900",
-    RETURN: "bg-green-100 text-green-900",
-    DISPOSAL: "bg-red-100 text-red-900",
-    COUNT: "bg-yellow-100 text-yellow-900",
-    OTHER: "bg-gray-100 text-gray-900",
+    VARIANCE: "bg-warning-light text-warning",
+    ADJUSTMENT: "bg-info-light text-info",
+    TRANSFER: "bg-primary/10 text-primary",
+    RETURN: "bg-success-light text-success",
+    DISPOSAL: "bg-destructive-light text-destructive",
+    COUNT: "bg-warning-light text-warning",
+    OTHER: "bg-muted text-foreground",
   };
 
   return (

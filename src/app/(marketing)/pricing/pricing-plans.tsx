@@ -172,7 +172,7 @@ function IntervalToggle({
         }`}
       >
         Annual
-        <Badge className="bg-emerald-600 px-1.5 py-0 text-[10px] text-white">
+        <Badge className="bg-success px-1.5 py-0 text-[10px] text-white">
           Save {ANNUAL_DISCOUNT_PCT}%
         </Badge>
       </button>
@@ -222,13 +222,13 @@ export function PricingPlans({ showAnnual }: { showAnnual: boolean }) {
                   <span className="text-sm text-muted-foreground">/ {pricing.note}</span>
                 </div>
                 {pricing.annualTotal ? (
-                  <p className="text-xs text-emerald-600 font-medium">{pricing.annualTotal}</p>
+                  <p className="text-xs text-success font-medium">{pricing.annualTotal}</p>
                 ) : null}
                 <p className="text-sm text-muted-foreground">{plan.description}</p>
                 {highlight ? (
-                  <div className="mt-1 flex items-start gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1.5 dark:bg-emerald-950/30">
-                    <TrendingDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400">{highlight}</p>
+                  <div className="mt-1 flex items-start gap-1.5 rounded-md bg-success-light px-2.5 py-1.5">
+                    <TrendingDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                    <p className="text-xs text-success">{highlight}</p>
                   </div>
                 ) : null}
               </CardHeader>

@@ -754,7 +754,7 @@ function SuccessStep({
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
           <CheckCircle2 className="h-6 w-6" />
         </div>
         <div className="space-y-1">

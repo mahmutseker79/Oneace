@@ -124,7 +124,7 @@ export function OfflineQueueBanner({ scope, labels }: OfflineQueueBannerProps) {
             {renderCount(labels.pendingOnline, counts.pending)}
           </span>
         ) : (
-          <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+          <span className="flex items-center gap-1.5 text-warning">
             <CloudOff className="h-3.5 w-3.5" aria-hidden />
             {renderCount(labels.pendingOffline, counts.pending)}
           </span>

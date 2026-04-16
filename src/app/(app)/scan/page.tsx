@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -31,10 +32,10 @@ export default async function ScanPage({
     <div className="space-y-6">
       <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
-      <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.scan.heading}</h1>
-        <p className="text-sm text-muted-foreground">{t.scan.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.scan.heading}
+        description={t.scan.subtitle}
+      />
 
       {/* Phase 5.4 — Browser compatibility notice.
           The BarcodeDetector API is only available natively in Chrome and Edge.

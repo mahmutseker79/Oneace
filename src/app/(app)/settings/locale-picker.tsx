@@ -55,7 +55,7 @@ export function LocalePicker({ options, initial, savedLabel }: LocalePickerProps
           ))}
         </SelectContent>
       </Select>
-      {saved ? <p className="text-xs text-emerald-600">{savedLabel}</p> : null}
+      {saved ? <p className="text-xs text-success">{savedLabel}</p> : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

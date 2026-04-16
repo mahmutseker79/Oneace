@@ -308,8 +308,8 @@ function Step3({
     return (
       <div className="space-y-6">
         <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40">
-            <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
+            <CheckCircle2 className="h-6 w-6 text-success" />
           </div>
           <div>
             <h2 className="text-xl font-semibold">{orgName} is ready!</h2>
@@ -317,7 +317,7 @@ function Step3({
               Invitations sent. Your teammates will receive an email with a link to join.
             </p>
           </div>
-          {inviteError ? <p className="text-xs text-amber-600">{inviteError}</p> : null}
+          {inviteError ? <p className="text-xs text-warning">{inviteError}</p> : null}
         </div>
         <Button className="w-full" onClick={onFinish}>
           Open your dashboard
@@ -350,7 +350,7 @@ function Step3({
         </p>
       </div>
 
-      {inviteError ? <p className="text-xs text-amber-600">{inviteError}</p> : null}
+      {inviteError ? <p className="text-xs text-warning">{inviteError}</p> : null}
 
       <div className="flex gap-3">
         <Button type="button" variant="outline" className="flex-1" onClick={onFinish}>

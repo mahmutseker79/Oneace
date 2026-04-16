@@ -42,9 +42,9 @@ export default async function AddLinePage({ params }: PageProps) {
           </Button>
         </Link>
 
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-warning/20 bg-warning-light">
           <CardContent className="pt-6">
-            <p className="text-sm text-orange-800">
+            <p className="text-sm text-warning">
               You can only add lines to a transfer that is in DRAFT status.
             </p>
           </CardContent>

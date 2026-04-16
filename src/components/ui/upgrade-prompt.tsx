@@ -62,10 +62,10 @@ export function UpgradePrompt({
 
   if (variant === "card") {
     return (
-      <Card className="border-amber-200/60 bg-amber-50/30 dark:border-amber-900/30 dark:bg-amber-950/10">
+      <Card className="border-warning/60 bg-warning-light">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Lock className="h-4 w-4 text-amber-500" />
+            <Lock className="h-4 w-4 text-warning" />
             {reason}
             <Badge variant="secondary" className="ml-1 text-xs">
               {planLabel} plan
@@ -87,8 +87,8 @@ export function UpgradePrompt({
 
   // variant === "banner"
   return (
-    <Alert className="border-amber-200/60 bg-amber-50/40 dark:border-amber-900/30 dark:bg-amber-950/10">
-      <Lock className="h-4 w-4 text-amber-500" />
+    <Alert className="border-warning/60 bg-warning-light">
+      <Lock className="h-4 w-4 text-warning" />
       <AlertDescription className="flex items-center justify-between gap-4">
         <span className="text-sm">
           {reason}{" "}

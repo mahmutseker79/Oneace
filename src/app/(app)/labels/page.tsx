@@ -1,9 +1,11 @@
-import { Pencil, Plus } from "lucide-react";import type { Metadata } from "next";
+import { Pencil, Plus } from "lucide-react";
+import type { Metadata } from "next";
 
 import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -60,17 +62,17 @@ export default async function LabelsPage({ params: _params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Label Templates</h1>
-          <p className="text-muted-foreground">Create and manage label templates for printing</p>
-        </div>
-        {canUseLabels && templates.length > 0 ? (
-          <Button variant="outline" asChild>
-            <a href="/labels/designer">New Template</a>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Label Templates"
+        description="Create and manage label templates for printing"
+        actions={
+          canUseLabels && templates.length > 0 ? (
+            <Button variant="outline" asChild>
+              <a href="/labels/designer">New Template</a>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Phase C — labels plan gate banner for FREE users */}
       {!canUseLabels ? (

@@ -137,9 +137,9 @@ export function TransferOwnershipCard({
   }
 
   return (
-    <Card className="border-amber-500/50 lg:col-span-2">
+    <Card className="border-warning/50 lg:col-span-2">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+        <CardTitle className="flex items-center gap-2 text-warning">
           <KeyRound className="h-5 w-5" aria-hidden="true" />
           {labels.heading}
         </CardTitle>
@@ -186,7 +186,7 @@ export function TransferOwnershipCard({
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
-                  className="border-amber-500 text-amber-700 hover:bg-amber-50 dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                  className="border-warning text-warning hover:bg-warning/5"
                   disabled={!selectedTarget || isPending}
                 >
                   {labels.transferCta}

@@ -68,9 +68,9 @@ export default async function PrivacyPage() {
         </Card>
 
         {/* Delete Account Card */}
-        <Card className="border-red-200 dark:border-red-800">
+        <Card className="border-destructive">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <CardTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-4 w-4" />
               {t.privacy?.deleteAccount?.title || "Delete Account"}
             </CardTitle>
@@ -80,16 +80,16 @@ export default async function PrivacyPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-md bg-red-50 p-4 dark:bg-red-950">
-              <p className="text-sm font-semibold text-red-900 dark:text-red-200">
+            <div className="rounded-md bg-destructive-light p-4">
+              <p className="text-sm font-semibold text-destructive">
                 {t.privacy?.deleteAccount?.warning ||
                   "Warning: This action cannot be undone. Your personal data will be deleted, but organization data (items, movements) will be preserved."}
               </p>
             </div>
 
             {isOrgOwner && (
-              <div className="rounded-md bg-yellow-50 p-4 dark:bg-yellow-950">
-                <p className="text-sm text-yellow-900 dark:text-yellow-200">
+              <div className="rounded-md bg-warning-light p-4">
+                <p className="text-sm text-warning">
                   {t.privacy?.deleteAccount?.ownerWarning ||
                     "You are the owner of one or more organizations. You must transfer ownership before deleting your account."}
                 </p>

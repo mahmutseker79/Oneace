@@ -55,8 +55,8 @@ export function ReportSummaryCard({ metrics, className }: ReportSummaryCardProps
                   className={cn(
                     "text-xs font-medium",
                     metric.trendDirection === "positive" &&
-                      "text-emerald-600 dark:text-emerald-400",
-                    metric.trendDirection === "negative" && "text-red-600 dark:text-red-400",
+                      "text-success",
+                    metric.trendDirection === "negative" && "text-destructive",
                     metric.trendDirection === "neutral" && "text-muted-foreground",
                     !metric.trendDirection && "text-muted-foreground",
                   )}

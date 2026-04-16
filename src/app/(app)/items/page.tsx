@@ -27,14 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import {
-
-
-
-
-
-
-} from "@/components/ui/table";
+import { PageHeader } from "@/components/ui/page-header";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { Prisma } from "@/generated/prisma";
 import { db } from "@/lib/db";
@@ -380,60 +373,60 @@ export default async function ItemsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.items.heading}</h1>
-          <p className="text-sm text-muted-foreground">{t.items.subtitle}</p>
-          <ItemsCacheBanner
-            scope={cacheScope}
-            locale={region.numberLocale}
-            labels={{
-              onlineFresh: t.offline.cacheStatus.onlineFresh,
-              onlineStale: t.offline.cacheStatus.onlineStale,
-              offlineCached: t.offline.cacheStatus.offlineCached,
-              offlineEmpty: t.offline.cacheStatus.offlineEmpty,
-              neverSynced: t.offline.cacheStatus.neverSynced,
-            }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Phase 9.1 — gate export/import by both role AND plan.
+      <PageHeader
+        title={t.items.heading}
+        description={t.items.subtitle}
+        actions={
+          <div className="flex items-center gap-2">
+            {/* Phase 9.1 — gate export/import by both role AND plan.
 						FREE plan users can't export; only PRO+ can use these features.
 						Role check (canExport/canImport) is also required. */}
-          {canExport && canExportByPlan ? (
-            <Button asChild variant="outline">
-              <Link href="/items/export">
-                <Download className="h-4 w-4" />
-                {t.common.exportCsv}
-              </Link>
-            </Button>
-          ) : null}
-          {canImport && canExportByPlan ? (
-            <Button asChild variant="outline">
-              <Link href="/items/import">
-                <FileUp className="h-4 w-4" />
-                {t.items.importCta}
-              </Link>
-            </Button>
-          ) : null}
-          {canCreate && !atItemLimit ? (
-            <Button asChild>
-              <Link href="/items/new">
+            {canExport && canExportByPlan ? (
+              <Button asChild variant="outline">
+                <Link href="/items/export">
+                  <Download className="h-4 w-4" />
+                  {t.common.exportCsv}
+                </Link>
+              </Button>
+            ) : null}
+            {canImport && canExportByPlan ? (
+              <Button asChild variant="outline">
+                <Link href="/items/import">
+                  <FileUp className="h-4 w-4" />
+                  {t.items.importCta}
+                </Link>
+              </Button>
+            ) : null}
+            {canCreate && !atItemLimit ? (
+              <Button asChild>
+                <Link href="/items/new">
+                  <Plus className="h-4 w-4" />
+                  {t.items.newItem}
+                </Link>
+              </Button>
+            ) : canCreate && atItemLimit ? (
+              <Button
+                disabled
+                title={`Item limit reached (${itemLimit}). Upgrade to Pro for unlimited items.`}
+              >
                 <Plus className="h-4 w-4" />
                 {t.items.newItem}
-              </Link>
-            </Button>
-          ) : canCreate && atItemLimit ? (
-            <Button
-              disabled
-              title={`Item limit reached (${itemLimit}). Upgrade to Pro for unlimited items.`}
-            >
-              <Plus className="h-4 w-4" />
-              {t.items.newItem}
-            </Button>
-          ) : null}
-        </div>
-      </div>
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
+      <ItemsCacheBanner
+        scope={cacheScope}
+        locale={region.numberLocale}
+        labels={{
+          onlineFresh: t.offline.cacheStatus.onlineFresh,
+          onlineStale: t.offline.cacheStatus.onlineStale,
+          offlineCached: t.offline.cacheStatus.offlineCached,
+          offlineEmpty: t.offline.cacheStatus.offlineEmpty,
+          neverSynced: t.offline.cacheStatus.neverSynced,
+        }}
+      />
 
       {/* Phase 2 — search + status filter row */}
       <div className="flex flex-wrap items-center gap-2">
@@ -584,8 +577,8 @@ export default async function ItemsPage({
 
       {/* ── P8.1: Low-stock alert banner ─────────────────────────────── */}
       {setupComplete && lowStockCount > 0 ? (
-        <Alert className="border-amber-500/40 bg-amber-500/10">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <Alert className="border-warning/40 bg-warning/10">
+          <AlertTriangle className="h-4 w-4 text-warning" />
           <AlertTitle className="text-sm">
             {t.setup.lowStockBannerTitle.replace("{count}", String(lowStockCount))}
           </AlertTitle>
@@ -689,8 +682,8 @@ export default async function ItemsPage({
 
           {/* ── P7.4 + P8.5b: Success moment — shown once, then flagged ── */}
           {showSuccessBanner ? (
-            <Alert className="border-emerald-500/40 bg-emerald-500/10">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <Alert className="border-success/40 bg-success/10">
+              <CheckCircle2 className="h-4 w-4 text-success" />
               <AlertTitle>{t.setup.complete}</AlertTitle>
               <AlertDescription className="text-sm text-muted-foreground">
                 {t.setup.completeBody}
@@ -948,7 +941,7 @@ export default async function ItemsPage({
               className="flex items-center gap-3 rounded-lg border bg-card p-3 text-sm transition-colors hover:bg-accent/50"
             >
               {step.done ? (
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
                   <Check className="h-3.5 w-3.5" />
                 </span>
               ) : (

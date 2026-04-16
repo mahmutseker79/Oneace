@@ -55,9 +55,9 @@ export default async function ReceivePage({ params }: PageProps) {
             { label: t.transfers?.receive?.heading || "Receive Transfer" },
           ]}
         />
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-warning bg-warning-light">
           <CardContent className="pt-6">
-            <p className="text-sm text-orange-800">
+            <p className="text-sm text-warning">
               You can only receive transfers that are in IN_TRANSIT status.
             </p>
           </CardContent>

@@ -79,7 +79,7 @@ export function RegionPicker({ options, initial, labels }: RegionPickerProps) {
         </dl>
       ) : null}
 
-      {saved ? <p className="text-xs text-emerald-600">{labels.saved}</p> : null}
+      {saved ? <p className="text-xs text-success">{labels.saved}</p> : null}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );

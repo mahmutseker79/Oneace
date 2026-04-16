@@ -110,7 +110,7 @@ export default async function ItemDetailPage({ params, searchParams }: PageProps
 
   function typeBadge(type: MovementType) {
     const label = t.movements.types[type];
-    if (type === "RECEIPT") return <Badge className="bg-emerald-600">{label}</Badge>;
+    if (type === "RECEIPT") return <Badge className="bg-success">{label}</Badge>;
     if (type === "ISSUE") return <Badge variant="destructive">{label}</Badge>;
     if (type === "ADJUSTMENT") return <Badge variant="secondary">{label}</Badge>;
     return <Badge variant="outline">{label}</Badge>;
@@ -355,7 +355,7 @@ export default async function ItemDetailPage({ params, searchParams }: PageProps
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        <span className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}>
+                        <span className={signedQty >= 0 ? "text-success" : "text-destructive"}>
                           {prefix}
                           {absQty} {item.unit}
                         </span>

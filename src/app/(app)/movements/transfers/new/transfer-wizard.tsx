@@ -641,13 +641,13 @@ export function TransferWizard({ warehouses, items, stockSnapshot, labels }: Tra
                 </div>
               ) : null}
               {scanStatus === "matched" ? (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                <div className="flex items-center gap-1.5 text-xs text-success">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   {labels.scanMatched}
                 </div>
               ) : null}
               {scanStatus === "incremented" ? (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                <div className="flex items-center gap-1.5 text-xs text-success">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   {labels.scanIncremented}
                 </div>
@@ -722,8 +722,8 @@ export function TransferWizard({ warehouses, items, stockSnapshot, labels }: Tra
                     <div className="flex items-center gap-1.5 text-xs">
                       {insufficient ? (
                         <>
-                          <TriangleAlert className="h-3.5 w-3.5 text-amber-500" />
-                          <span className="text-amber-600">
+                          <TriangleAlert className="h-3.5 w-3.5 text-warning" />
+                          <span className="text-warning">
                             {labels.onHandInsufficient} ({onHand} on hand)
                           </span>
                         </>
@@ -818,7 +818,7 @@ export function TransferWizard({ warehouses, items, stockSnapshot, labels }: Tra
                           <td className="px-3 py-2 text-right font-medium">{qty}</td>
                           <td className="px-3 py-2 text-right">
                             {insufficient ? (
-                              <span className="text-amber-600">
+                              <span className="text-warning">
                                 <TriangleAlert className="mr-1 inline h-3.5 w-3.5" />
                                 {onHand}
                               </span>

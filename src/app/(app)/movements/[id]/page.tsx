@@ -55,7 +55,7 @@ export default async function MovementDetailPage({ params }: PageProps) {
     movement.createdBy?.name ?? movement.createdBy?.email ?? t.movements.unknownUser;
 
   function _typeBadge(t: MovementType, label: string) {
-    if (t === "RECEIPT") return <Badge className="bg-emerald-600">{label}</Badge>;
+    if (t === "RECEIPT") return <Badge className="bg-success">{label}</Badge>;
     if (t === "ISSUE") return <Badge variant="destructive">{label}</Badge>;
     if (t === "ADJUSTMENT") return <Badge variant="secondary">{label}</Badge>;
     return <Badge variant="outline">{label}</Badge>;
@@ -86,7 +86,7 @@ export default async function MovementDetailPage({ params }: PageProps) {
             <span className="text-muted-foreground">{t.movements.detail.metaQuantity}</span>
             <span
               className={`font-mono tabular-nums ${
-                signedQty >= 0 ? "text-emerald-600" : "text-destructive"
+                signedQty >= 0 ? "text-success" : "text-destructive"
               }`}
             >
               {qtyPrefix}

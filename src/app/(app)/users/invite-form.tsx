@@ -162,11 +162,11 @@ export function InviteForm({ labels, defaultRole, locale }: InviteFormProps) {
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       {created ? (
-        <div className="space-y-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-          <p className="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+        <div className="space-y-2 rounded-md border border-success bg-success-light p-3">
+          <p className="text-sm font-medium text-success">
             {created.emailDelivered ? labels.successEmailSent : labels.successLinkOnly}
           </p>
-          <p className="text-xs text-emerald-800 dark:text-emerald-200">
+          <p className="text-xs text-success">
             {labels.linkHelp.replace("{email}", created.email).replace(
               "{expires}",
               new Intl.DateTimeFormat(locale, {

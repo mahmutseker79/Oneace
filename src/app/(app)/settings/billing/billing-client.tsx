@@ -150,7 +150,7 @@ function LimitBar({
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span
-          className={`font-medium tabular-nums ${isAt ? "text-destructive" : isNear ? "text-amber-600 dark:text-amber-400" : ""}`}
+          className={`font-medium tabular-nums ${isAt ? "text-destructive" : isNear ? "text-warning" : ""}`}
         >
           {current}
           <span className="text-muted-foreground font-normal"> / {max}</span>
@@ -160,7 +160,7 @@ function LimitBar({
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            isAt ? "bg-destructive" : isNear ? "bg-amber-500" : "bg-primary"
+            isAt ? "bg-destructive" : isNear ? "bg-warning" : "bg-primary"
           }`}
           style={{ width: `${Math.max(pct, 3)}%` }}
         />
@@ -248,8 +248,8 @@ export function BillingPage({
 
       {/* Phase 16.3 — Billing intent banner (shown when checkout failed during registration) */}
       {plan === "FREE" && intentPlan && hasStripe ? (
-        <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div className="flex items-start gap-2 rounded-md border border-info/30 bg-info/5 px-4 py-3 text-sm">
+          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-info" />
           <span>
             You selected the{" "}
             <strong>
@@ -262,7 +262,7 @@ export function BillingPage({
 
       {/* Phase 16.1 — Pending cancellation banner */}
       {cancelAtPeriodEnd && cancelAt ? (
-        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+        <div className="flex items-start gap-2 rounded-md border border-warning/20 bg-warning/5 px-4 py-3 text-sm text-warning">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             Your subscription is set to cancel on{" "}
@@ -280,14 +280,14 @@ export function BillingPage({
       {/* Portal return banner */}
       {portalReturn ? (
         <div className="flex items-center gap-2 rounded-md border px-4 py-3 text-sm text-muted-foreground">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
           Your billing details have been updated.
         </div>
       ) : null}
 
       {/* Success / cancellation banners */}
       {checkoutSuccess ? (
-        <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+        <div className="flex items-center gap-2 rounded-md border border-success/20 bg-success/5 px-4 py-3 text-sm text-success">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           Your plan has been upgraded. It may take a few moments to reflect.
         </div>
@@ -299,7 +299,7 @@ export function BillingPage({
       ) : null}
 
       {/* Current plan + usage — Phase 6C: gradient border for active plans */}
-      <Card className={plan !== "FREE" ? "border-primary/30 shadow-lg shadow-primary/5" : ""}>
+      <Card className={plan !== "FREE" ? "border-primary/30 shadow-lg shadow-primary/5" : ""} >
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             Current plan
@@ -391,7 +391,7 @@ export function BillingPage({
                 </button>
                 <span className="flex items-center gap-1.5 font-medium">
                   Annual
-                  <Badge className="bg-emerald-600 px-1.5 py-0 text-[10px] text-white">
+                  <Badge className="bg-success px-1.5 py-0 text-[10px] text-white">
                     Save 20%
                   </Badge>
                 </span>

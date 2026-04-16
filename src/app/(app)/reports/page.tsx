@@ -15,7 +15,9 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
@@ -232,10 +234,10 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.reports.heading}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t.reports.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.reports.heading}
+        description={t.reports.subtitle}
+      />
 
       {/* Phase 15.2 — exports upgrade prompt for FREE users */}
       {!canExportByPlan ? (

@@ -135,7 +135,7 @@ export function OrgDefaultsForm({
       <p className="text-xs text-muted-foreground">{labels.helpText}</p>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {success ? <p className="text-sm text-emerald-600">{labels.saved}</p> : null}
+      {success ? <p className="text-sm text-success">{labels.saved}</p> : null}
       {!canEdit ? <p className="text-xs text-muted-foreground">{labels.forbidden}</p> : null}
 
       <Button type="submit" disabled={!canEdit || isPending}>

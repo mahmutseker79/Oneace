@@ -384,7 +384,7 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
           <CardContent>
             {/* Phase 6.1 — RECEIVED = emerald (matches list page fix from Phase 3.7) */}
             {po.status === "RECEIVED" ? (
-              <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
+              <Badge className="bg-success text-success-foreground hover:bg-success/90">
                 {t.purchaseOrders.statusBadge[po.status]}
               </Badge>
             ) : (

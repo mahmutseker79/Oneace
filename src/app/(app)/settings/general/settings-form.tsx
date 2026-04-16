@@ -342,11 +342,11 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
 
       {/* Error/Success Messages */}
       {state && !state.ok && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-destructive/20 bg-destructive/5">
           <CardContent className="pt-6">
-            <p className="text-sm text-red-700">{state.error}</p>
+            <p className="text-sm text-destructive">{state.error}</p>
             {state.fieldErrors && Object.entries(state.fieldErrors).length > 0 && (
-              <ul className="mt-2 list-inside list-disc text-xs text-red-600">
+              <ul className="mt-2 list-inside list-disc text-xs text-destructive">
                 {Object.entries(state.fieldErrors).map(([field, errors]) => (
                   <li key={field}>
                     {field}: {errors.join(", ")}

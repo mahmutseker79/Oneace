@@ -279,12 +279,12 @@ export function ItemsTable({ items, canEdit, canDelete, labels, deleteButton }: 
                     <TableCell className="text-muted-foreground">
                       {item.categoryName ?? labels.none}
                     </TableCell>
-                    {/* Phase 16.1 — amber colour + dot when at/below reorder point */}
+                    {/* Phase 16.1 — warning colour + dot when at/below reorder point */}
                     <TableCell className="text-right tabular-nums">
                       <span
                         className={
                           item.reorderPoint > 0 && item.onHand <= item.reorderPoint
-                            ? "font-medium text-amber-600"
+                            ? "font-medium text-warning"
                             : undefined
                         }
                         title={
@@ -296,7 +296,7 @@ export function ItemsTable({ items, canEdit, canDelete, labels, deleteButton }: 
                         {item.onHand} {item.unit}
                         {item.reorderPoint > 0 && item.onHand <= item.reorderPoint ? (
                           <span
-                            className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-500 align-middle"
+                            className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-warning align-middle"
                             aria-label="Below reorder point"
                           />
                         ) : null}

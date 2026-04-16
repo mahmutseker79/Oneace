@@ -103,7 +103,7 @@ export function Header({
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-border/50 bg-background/80 px-4 backdrop-blur lg:px-6">
+    <header className="sticky top-0 z-[var(--z-header)] flex h-16 items-center gap-4 border-b border-border/50 bg-background/80 px-4 backdrop-blur-md lg:px-6 shadow-[var(--shadow-card)]">
       <Button
         variant="ghost"
         size="icon"

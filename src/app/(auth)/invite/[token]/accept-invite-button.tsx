@@ -48,14 +48,14 @@ export function AcceptInviteButton({ token, labels }: AcceptInviteButtonProps) {
 
   if (accepted) {
     return (
-      <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">
+      <div className="space-y-3 rounded-md border border-success bg-success-light p-4 text-sm">
         <div className="flex items-start gap-2">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
           <div className="space-y-1">
-            <p className="font-medium text-emerald-900 dark:text-emerald-100">
+            <p className="font-medium text-success">
               {labels.successTitle}
             </p>
-            <p className="text-emerald-800 dark:text-emerald-200">{labels.successBody}</p>
+            <p className="text-success">{labels.successBody}</p>
           </div>
         </div>
         <Button asChild size="sm">

@@ -188,7 +188,7 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
           />
 
           {state.ok === false && state.error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-900">{state.error}</div>
+            <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">{state.error}</div>
           )}
 
           <div className="flex justify-end gap-2 pt-4">

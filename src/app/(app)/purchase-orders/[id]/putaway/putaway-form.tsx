@@ -188,14 +188,14 @@ export function PutawayForm({
 
   if (success) {
     return (
-      <div className="rounded-md border border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-900/50 dark:bg-emerald-950/40">
+      <div className="rounded-md border border-success bg-success-light p-6">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <CheckCircle2 className="h-5 w-5 text-success" />
           <div className="flex-1 space-y-2">
-            <h2 className="text-base font-semibold text-emerald-900 dark:text-emerald-100">
+            <h2 className="text-base font-semibold text-success">
               {labels.successTitle}
             </h2>
-            <p className="text-sm text-emerald-900/80 dark:text-emerald-100/80">
+            <p className="text-sm text-success/80">
               {labels.successBody(success.count)}
             </p>
             <div className="flex gap-2 pt-2">
@@ -229,7 +229,7 @@ export function PutawayForm({
     return (
       <Card>
         <CardContent className="py-8 text-center space-y-3">
-          <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+          <CheckCircle2 className="mx-auto h-8 w-8 text-success" />
           <p className="text-sm text-muted-foreground">{labels.noUnbinnedStock}</p>
           <Button variant="outline" asChild size="sm">
             <a href={backHref}>{labels.viewPo}</a>

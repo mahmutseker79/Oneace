@@ -273,7 +273,7 @@ export default function CountComparisonPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{varianceStats.withVariance}</div>
+                <div className="text-2xl font-bold text-destructive">{varianceStats.withVariance}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {((varianceStats.withVariance / varianceStats.totalItems) * 100).toFixed(1)}% of
                   items
@@ -340,7 +340,7 @@ export default function CountComparisonPage() {
                     {comparison.map((item) => (
                       <TableRow
                         key={item.itemId}
-                        className={cn(item.variance !== 0 && "bg-red-50/50 dark:bg-red-950/20")}
+                        className={cn(item.variance !== 0 && "bg-destructive-light")}
                       >
                         <TableCell className="font-mono text-sm">{item.sku}</TableCell>
                         <TableCell>{item.name}</TableCell>
@@ -359,7 +359,7 @@ export default function CountComparisonPage() {
                         </TableCell>
                         <TableCell>
                           {item.variance === 0 ? (
-                            <Badge variant="outline" className="bg-green-50">
+                            <Badge variant="outline" className="bg-success-light">
                               Match
                             </Badge>
                           ) : (

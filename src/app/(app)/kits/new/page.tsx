@@ -34,7 +34,7 @@ export default function NewKitPage() {
       <h1 className="text-3xl font-bold">Create Kit</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-lg border p-6">
-        {error && <div className="rounded bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+        {error && <div className="rounded bg-destructive-light p-4 text-sm text-destructive">{error}</div>}
 
         <div>
           <label className="block text-sm font-medium mb-1">Parent Item *</label>

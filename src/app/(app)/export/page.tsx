@@ -8,6 +8,7 @@ import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Export",
@@ -64,12 +65,10 @@ export default async function ExportPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Export Data</h1>
-        <p className="text-muted-foreground mt-2">
-          Export inventory data from OneAce in various formats.
-        </p>
-      </div>
+      <PageHeader
+        title="Export Data"
+        description="Export inventory data from OneAce in various formats."
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         {exportOptions.map((option) => (
@@ -83,7 +82,7 @@ export default async function ExportPage() {
               {option.formats.map((format) => (
                 <button
                   key={format}
-                  className="w-full px-3 py-2 text-sm font-medium border rounded hover:bg-gray-50 transition"
+                  className="w-full px-3 py-2 text-sm font-medium border rounded hover:bg-muted transition"
                 >
                   Export as {format}
                 </button>
@@ -101,7 +100,7 @@ export default async function ExportPage() {
         </p>
         <Link
           href="/settings/scheduled-reports"
-          className="inline-block px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="inline-block px-4 py-2 text-sm font-medium bg-info text-white rounded hover:bg-info/90"
         >
           Configure Scheduled Exports
         </Link>

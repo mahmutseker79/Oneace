@@ -213,7 +213,7 @@ export default function DepartmentVariancePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={cn("text-2xl font-bold", criticalDepts > 0 && "text-red-600")}>
+            <div className={cn("text-2xl font-bold", criticalDepts > 0 && "text-destructive")}>
               {criticalDepts}
             </div>
           </CardContent>
@@ -256,8 +256,8 @@ export default function DepartmentVariancePage() {
                   <TableRow
                     key={dept.departmentId}
                     className={cn(
-                      dept.status === "critical" && "bg-red-50/50 dark:bg-red-950/20",
-                      dept.status === "warning" && "bg-yellow-50/50 dark:bg-yellow-950/20",
+                      dept.status === "critical" && "bg-destructive-light",
+                      dept.status === "warning" && "bg-warning-light",
                     )}
                   >
                     <TableCell className="font-medium">{dept.departmentName}</TableCell>
@@ -271,12 +271,12 @@ export default function DepartmentVariancePage() {
                     </TableCell>
                     <TableCell className="text-center">
                       {dept.status === "good" && (
-                        <Badge variant="outline" className="bg-green-50">
+                        <Badge variant="outline" className="bg-success-light">
                           Good
                         </Badge>
                       )}
                       {dept.status === "warning" && (
-                        <Badge variant="secondary" className="bg-yellow-100">
+                        <Badge variant="secondary" className="bg-warning-light">
                           Warning
                         </Badge>
                       )}

@@ -262,7 +262,7 @@ export default async function AdjustmentReportPage() {
                           : "—"}
                       </TableCell>
                       <TableCell
-                        className={`text-right text-sm font-medium ${row.variance !== 0 ? "text-orange-600" : ""}`}
+                        className={`text-right text-sm font-medium ${row.variance !== 0 ? "text-warning" : ""}`}
                       >
                         {row.variance !== 0
                           ? (row.variance > 0 ? "+" : "") +

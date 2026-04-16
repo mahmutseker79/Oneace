@@ -148,7 +148,7 @@ export function StatusChangeForm({ items, warehouses, reasonCodes }: StatusChang
         />
       </div>
 
-      <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50 p-4">
+      <div className="rounded-lg border border-dashed border-info bg-info-light p-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
             <FormField
@@ -177,7 +177,7 @@ export function StatusChangeForm({ items, warehouses, reasonCodes }: StatusChang
             />
           </div>
 
-          <ArrowRight className="h-5 w-5 text-blue-600 mt-6" />
+          <ArrowRight className="h-5 w-5 text-info mt-6" />
 
           <div className="flex-1">
             <FormField
@@ -270,11 +270,11 @@ export function StatusChangeForm({ items, warehouses, reasonCodes }: StatusChang
       />
 
       {state.ok === false && state.error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-900">{state.error}</div>
+        <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">{state.error}</div>
       )}
 
       {state.ok === true && (
-        <div className="rounded-md bg-green-50 p-3 text-sm text-green-900">
+        <div className="rounded-md bg-success-light p-3 text-sm text-success">
           Stock status changed successfully! ({state.updatedQuantity} units)
         </div>
       )}

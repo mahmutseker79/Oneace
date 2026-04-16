@@ -37,7 +37,7 @@ export function StatusTimeline({
                 className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors",
                   step.completed
-                    ? "border-emerald-500 bg-emerald-500 text-white"
+                    ? "border-success bg-success text-success-foreground"
                     : step.active
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-muted text-muted-foreground",
@@ -49,7 +49,7 @@ export function StatusTimeline({
                 <div
                   className={cn(
                     "w-0.5 flex-1 min-h-[24px]",
-                    step.completed ? "bg-emerald-500" : "bg-border",
+                    step.completed ? "bg-success" : "bg-border",
                   )}
                 />
               )}
@@ -89,7 +89,7 @@ export function StatusTimeline({
               className={cn(
                 "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors",
                 step.completed
-                  ? "border-emerald-500 bg-emerald-500 text-white"
+                  ? "border-success bg-success text-success-foreground"
                   : step.active
                     ? "border-primary bg-primary/10 text-primary ring-4 ring-primary/10"
                     : "border-border bg-muted text-muted-foreground",
@@ -116,7 +116,7 @@ export function StatusTimeline({
             <div
               className={cn(
                 "h-0.5 flex-1 min-w-[20px] -mt-5",
-                step.completed ? "bg-emerald-500" : "bg-border",
+                step.completed ? "bg-success" : "bg-border",
               )}
             />
           )}

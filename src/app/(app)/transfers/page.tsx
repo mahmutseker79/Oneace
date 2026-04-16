@@ -4,7 +4,9 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
@@ -50,21 +52,21 @@ export default async function TransfersPage() {
 
   if (transfers.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Stock Transfers</h1>
-            <p className="text-sm text-muted-foreground">Manage inter-warehouse transfers</p>
-          </div>
-          {canCreate && (
-            <Button asChild>
-              <Link href="/transfers/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Transfer
-              </Link>
-            </Button>
-          )}
-        </div>
+      <div className="space-y-6">
+        <PageHeader
+          title="Stock Transfers"
+          description="Manage inter-warehouse transfers"
+          actions={
+            canCreate ? (
+              <Button asChild>
+                <Link href="/transfers/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Transfer
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
 
         <EmptyState
           icon={ArrowLeftRight}
@@ -87,23 +89,21 @@ export default async function TransfersPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Stock Transfers</h1>
-          <p className="text-sm text-muted-foreground">
-            {transfers.length} transfer{transfers.length !== 1 ? "s" : ""}
-          </p>
-        </div>
-        {canCreate && (
-          <Button asChild>
-            <Link href="/transfers/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Transfer
-            </Link>
-          </Button>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Stock Transfers"
+        description={`${transfers.length} transfer${transfers.length !== 1 ? "s" : ""}`}
+        actions={
+          canCreate ? (
+            <Button asChild>
+              <Link href="/transfers/new">
+                <Plus className="mr-2 h-4 w-4" />
+                New Transfer
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       <Card>
         <CardContent className="p-0">

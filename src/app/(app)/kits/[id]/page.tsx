@@ -74,7 +74,7 @@ export default function KitDetailPage({ params: _params }: { params: { id: strin
                 <td className="px-6 py-3 text-sm text-muted-foreground">{comp.variantId || "—"}</td>
                 <td className="px-6 py-3 text-sm text-center">{comp.quantityPerKit}</td>
                 <td className="px-6 py-3 text-sm">
-                  <button className="text-red-600 hover:underline text-xs">Remove</button>
+                  <button className="text-destructive hover:underline text-xs">Remove</button>
                 </td>
               </tr>
             ))}

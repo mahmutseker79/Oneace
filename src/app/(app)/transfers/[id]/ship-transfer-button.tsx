@@ -37,7 +37,7 @@ export function ShipTransferButton({ transferId }: ShipTransferButtonProps) {
 
   return (
     <>
-      {error && <div className="w-full rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+      {error && <div className="w-full rounded-md bg-destructive-light p-3 text-sm text-destructive">{error}</div>}
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="default" disabled={isPending}>

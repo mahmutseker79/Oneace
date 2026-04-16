@@ -6,6 +6,7 @@ import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banne
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
@@ -185,32 +186,30 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
     <div className="space-y-6">
       <AdvancedFeatureBanner labels={t.advancedFeature} />
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t.purchaseOrders.heading}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t.purchaseOrders.subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canExport ? (
-            <Button asChild variant="outline">
-              <Link href={buildExportHref(filter)}>
-                <Download className="h-4 w-4" />
-                {t.common.exportCsv}
-              </Link>
-            </Button>
-          ) : null}
-          {canCreate ? (
-            <Button asChild>
-              <Link href="/purchase-orders/new">
-                <Plus className="h-4 w-4" />
-                {t.purchaseOrders.newPurchaseOrder}
-              </Link>
-            </Button>
-          ) : null}
-        </div>
-      </div>
+      <PageHeader
+        title={t.purchaseOrders.heading}
+        description={t.purchaseOrders.subtitle}
+        actions={
+          <div className="flex items-center gap-2">
+            {canExport ? (
+              <Button asChild variant="outline">
+                <Link href={buildExportHref(filter)}>
+                  <Download className="h-4 w-4" />
+                  {t.common.exportCsv}
+                </Link>
+              </Button>
+            ) : null}
+            {canCreate ? (
+              <Button asChild>
+                <Link href="/purchase-orders/new">
+                  <Plus className="h-4 w-4" />
+                  {t.purchaseOrders.newPurchaseOrder}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
 
       <PurchaseOrdersFilterBar
         initialStatus={filter.rawStatus}
@@ -275,7 +274,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
 
               const statusBadge =
                 po.status === "RECEIVED" ? (
-                  <Badge className="bg-emerald-600 text-[10px] text-white">
+                  <Badge className="bg-success text-[10px] text-white">
                     {t.purchaseOrders.statusBadge[po.status]}
                   </Badge>
                 ) : (
@@ -360,7 +359,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
                               not primary/indigo which reads as "active/in-progress". */}
                       <TableCell>
                         {po.status === "RECEIVED" ? (
-                          <Badge className="bg-emerald-600 text-white hover:bg-emerald-700">
+                          <Badge className="bg-success text-white hover:bg-success/90">
                             {t.purchaseOrders.statusBadge[po.status]}
                           </Badge>
                         ) : (

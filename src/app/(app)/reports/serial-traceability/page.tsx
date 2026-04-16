@@ -159,7 +159,7 @@ export default async function SerialTraceabilityReportPage({
 
       {serialData && (
         <>
-          <Card className="bg-blue-50 border-blue-200">
+          <Card className="bg-info-light border-info">
             <CardHeader>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>

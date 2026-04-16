@@ -10,6 +10,7 @@ import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Import",
@@ -73,12 +74,10 @@ export default async function ImportPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Import Data</h1>
-        <p className="text-muted-foreground mt-2">
-          Import data from CSV or Excel files into OneAce.
-        </p>
-      </div>
+      <PageHeader
+        title="Import Data"
+        description="Import data from CSV or Excel files into OneAce."
+      />
 
       {/* Entity type selector */}
       <div>
@@ -88,7 +87,7 @@ export default async function ImportPage() {
             <Link
               key={entity.id}
               href={`/import/new?type=${entity.id}`}
-              className="border rounded-lg p-4 hover:bg-gray-50 transition"
+              className="border rounded-lg p-4 hover:bg-muted transition"
             >
               <h3 className="font-semibold">{entity.label}</h3>
               <p className="text-sm text-muted-foreground">{entity.description}</p>
@@ -104,7 +103,7 @@ export default async function ImportPage() {
             <h2 className="text-xl font-semibold">Saved Templates</h2>
             <Link
               href="/import/templates"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-info hover:text-info/80"
             >
               View all
             </Link>
@@ -113,14 +112,14 @@ export default async function ImportPage() {
             {templates.map((template) => (
               <div
                 key={template.id}
-                className="border rounded-lg p-4 flex items-center justify-between hover:bg-gray-50"
+                className="border rounded-lg p-4 flex items-center justify-between hover:bg-muted"
               >
                 <div>
                   <h3 className="font-medium">{template.name}</h3>
                 </div>
                 <Link
                   href={`/import/new?template=${template.id}`}
-                  className="px-3 py-1 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-3 py-1 text-sm font-medium bg-info text-white rounded hover:bg-info/90"
                 >
                   Use
                 </Link>
@@ -136,7 +135,7 @@ export default async function ImportPage() {
           <h2 className="text-xl font-semibold mb-4">Recent Imports</h2>
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Entity</th>
                   <th className="text-left px-4 py-3 font-medium">Status</th>
@@ -146,16 +145,16 @@ export default async function ImportPage() {
               </thead>
               <tbody>
                 {recentJobs.map((job) => (
-                  <tr key={job.id} className="border-b hover:bg-gray-50">
+                  <tr key={job.id} className="border-b hover:bg-muted">
                     <td className="px-4 py-3">{job.entityType}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs font-medium px-2 py-1 rounded ${
                           job.status === "COMPLETED"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-success-light text-success"
                             : job.status === "PROCESSING"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-info-light text-info"
+                              : "bg-destructive-light text-destructive"
                         }`}
                       >
                         {job.status}
@@ -167,7 +166,7 @@ export default async function ImportPage() {
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/import/${job.id}`}
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-info hover:text-info/80"
                       >
                         View
                       </Link>

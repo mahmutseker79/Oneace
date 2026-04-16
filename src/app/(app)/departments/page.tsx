@@ -8,6 +8,7 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 
 /**
  * Department listing page. Shows all departments in the org with options
@@ -31,20 +32,20 @@ export default async function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Departments</h1>
-          <p className="text-sm text-muted-foreground">Organize your team and inventory</p>
-        </div>
-        {canCreate && (
-          <Link href="/departments/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Department
-            </Button>
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="Departments"
+        description="Organize your team and inventory"
+        actions={
+          canCreate ? (
+            <Link href="/departments/new">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Department
+              </Button>
+            </Link>
+          ) : undefined
+        }
+      />
 
       {departments.length === 0 ? (
         <Card>
@@ -71,7 +72,7 @@ export default async function DepartmentsPage() {
                       </div>
                     </div>
                     {!dept.isActive && (
-                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                      <span className="text-xs bg-destructive-light text-destructive px-2 py-1 rounded">
                         Inactive
                       </span>
                     )}

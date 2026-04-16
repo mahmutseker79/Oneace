@@ -134,15 +134,15 @@ export default async function TransferHistoryReportPage() {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "PENDING":
-        return "bg-gray-100 text-gray-800";
+        return "bg-muted text-muted-foreground";
       case "SHIPPED":
-        return "bg-blue-100 text-blue-800";
+        return "bg-info-light text-info";
       case "RECEIVED":
-        return "bg-green-100 text-green-800";
+        return "bg-success-light text-success";
       case "CANCELLED":
-        return "bg-red-100 text-red-800";
+        return "bg-destructive-light text-destructive";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -168,7 +168,7 @@ export default async function TransferHistoryReportPage() {
         <Card>
           <CardHeader>
             <CardDescription>Transfers with Discrepancy</CardDescription>
-            <CardTitle className="text-3xl text-orange-600">
+            <CardTitle className="text-3xl text-warning">
               {formatNumber(transfersWithDiscrepancy.length, region.numberLocale)}
             </CardTitle>
           </CardHeader>
@@ -222,7 +222,7 @@ export default async function TransferHistoryReportPage() {
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
-                <TableRow key={row.id} className={row.discrepancy !== 0 ? "bg-orange-50" : ""}>
+                <TableRow key={row.id} className={row.discrepancy !== 0 ? "bg-warning-light" : ""}>
                   <TableCell className="font-mono text-sm font-medium">
                     {row.transferNumber}
                   </TableCell>
@@ -245,7 +245,7 @@ export default async function TransferHistoryReportPage() {
                     {formatNumber(row.receivedQty, region.numberLocale)}
                   </TableCell>
                   <TableCell
-                    className={`text-right text-sm font-mono font-bold ${row.discrepancy !== 0 ? "text-orange-600" : ""}`}
+                    className={`text-right text-sm font-mono font-bold ${row.discrepancy !== 0 ? "text-warning" : ""}`}
                   >
                     {row.discrepancy !== 0
                       ? formatNumber(row.discrepancy, region.numberLocale)

@@ -150,7 +150,7 @@ export default async function StockExceptionsReportPage() {
         <Card>
           <CardHeader>
             <CardDescription>Negative Stock Items</CardDescription>
-            <CardTitle className="text-3xl text-red-600">
+            <CardTitle className="text-3xl text-destructive">
               {formatNumber(negativeStock.length, region.numberLocale)}
             </CardTitle>
           </CardHeader>
@@ -163,7 +163,7 @@ export default async function StockExceptionsReportPage() {
         <Card>
           <CardHeader>
             <CardDescription>Zero Stock Items</CardDescription>
-            <CardTitle className="text-3xl text-amber-600">
+            <CardTitle className="text-3xl text-warning">
               {formatNumber(zeroStock.length, region.numberLocale)}
             </CardTitle>
           </CardHeader>
@@ -203,11 +203,11 @@ export default async function StockExceptionsReportPage() {
               </TableHeader>
               <TableBody>
                 {negativeStock.map((row) => (
-                  <TableRow key={row.stockLevelId} className="bg-red-50">
+                  <TableRow key={row.stockLevelId} className="bg-destructive-light">
                     <TableCell className="font-mono text-sm">{row.sku}</TableCell>
                     <TableCell className="text-sm">{row.itemName}</TableCell>
                     <TableCell className="text-sm">{row.warehouseName}</TableCell>
-                    <TableCell className="text-right text-sm font-mono font-bold text-red-600">
+                    <TableCell className="text-right text-sm font-mono font-bold text-destructive">
                       {formatNumber(row.currentQty, region.numberLocale)}
                     </TableCell>
                     <TableCell className="text-sm">
@@ -242,7 +242,7 @@ export default async function StockExceptionsReportPage() {
               </TableHeader>
               <TableBody>
                 {zeroStock.map((row) => (
-                  <TableRow key={row.stockLevelId} className="bg-amber-50">
+                  <TableRow key={row.stockLevelId} className="bg-warning-light">
                     <TableCell className="font-mono text-sm">{row.sku}</TableCell>
                     <TableCell className="text-sm">{row.itemName}</TableCell>
                     <TableCell className="text-sm">{row.warehouseName}</TableCell>

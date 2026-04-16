@@ -138,7 +138,7 @@ export default async function ScheduledReportsPage() {
                     </TableCell>
                     <TableCell>
                       {r.isActive ? (
-                        <Badge className="bg-emerald-600">Active</Badge>
+                        <Badge className="bg-success">Active</Badge>
                       ) : (
                         <Badge variant="outline">Paused</Badge>
                       )}

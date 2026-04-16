@@ -36,9 +36,9 @@ export default async function NewTransferPage() {
           </Button>
         </Link>
 
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-warning bg-warning-light">
           <CardContent className="pt-6">
-            <p className="text-sm text-orange-800">
+            <p className="text-sm text-warning">
               You need at least two warehouses to create a transfer. Please add another warehouse
               before proceeding.
             </p>

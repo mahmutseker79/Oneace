@@ -185,7 +185,7 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
             <CardTitle className="flex items-center gap-2">
               {isEnabled ? (
                 <>
-                  <Lock className="h-5 w-5 text-green-600" />
+                  <Lock className="h-5 w-5 text-success" />
                   {labels.title}
                 </>
               ) : (
@@ -198,7 +198,7 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
             <CardDescription>{labels.subtitle}</CardDescription>
           </div>
           {isEnabled ? (
-            <Badge variant="outline" className="text-green-600 border-green-600">
+            <Badge variant="outline" className="text-success border-success">
               Enabled
             </Badge>
           ) : (
@@ -223,7 +223,7 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
         {success ? (
           <div
             role="alert"
-            className="rounded-md border border-green-500/50 bg-green-500/10 px-3 py-2 text-sm text-green-700"
+            className="rounded-md border border-success/50 bg-success/10 px-3 py-2 text-sm text-success"
           >
             {success}
           </div>

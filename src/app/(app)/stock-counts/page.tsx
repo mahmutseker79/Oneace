@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
@@ -154,22 +155,20 @@ export default async function StockCountsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t.stockCounts.heading}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t.stockCounts.subtitle}</p>
-        </div>
-        {canCreate ? (
-          <Button asChild>
-            <Link href="/stock-counts/new">
-              <Plus className="h-4 w-4" />
-              {t.stockCounts.newCount}
-            </Link>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title={t.stockCounts.heading}
+        description={t.stockCounts.subtitle}
+        actions={
+          canCreate ? (
+            <Button asChild>
+              <Link href="/stock-counts/new">
+                <Plus className="h-4 w-4" />
+                {t.stockCounts.newCount}
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {counts.length === 0 ? (
         <EmptyState

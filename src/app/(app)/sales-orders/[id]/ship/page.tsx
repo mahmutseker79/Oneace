@@ -65,7 +65,7 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
       <h1 className="text-3xl font-bold">Ship: {order.orderNumber}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && <div className="rounded bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+        {error && <div className="rounded bg-destructive-light p-4 text-sm text-destructive">{error}</div>}
 
         <div className="rounded-lg border overflow-hidden">
           <div className="bg-muted/50 border-b px-6 py-3">

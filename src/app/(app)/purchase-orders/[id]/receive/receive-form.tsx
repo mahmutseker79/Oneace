@@ -273,18 +273,18 @@ export function ReceiveForm({
 
   if (success) {
     return (
-      <div className="rounded-md border border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-900/50 dark:bg-emerald-950/40">
+      <div className="rounded-md border border-success bg-success-light p-6">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          <CheckCircle2 className="h-5 w-5 text-success" />
           <div className="flex-1 space-y-2">
-            <h2 className="text-base font-semibold text-emerald-900 dark:text-emerald-100">
+            <h2 className="text-base font-semibold text-success">
               {labels.successTitle}
             </h2>
-            <p className="text-sm text-emerald-900/80 dark:text-emerald-100/80">
+            <p className="text-sm text-success/80">
               {labels.successBody(success.receivedLineCount)}
             </p>
             {success.fullyReceived ? (
-              <p className="text-sm text-emerald-900/80 dark:text-emerald-100/80">
+              <p className="text-sm text-success/80">
                 {labels.successFullyReceived}
               </p>
             ) : null}
@@ -335,7 +335,7 @@ export function ReceiveForm({
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className={`h-full rounded-full transition-all ${pctReceived === 100 ? "bg-emerald-500" : "bg-primary"}`}
+              className={`h-full rounded-full transition-all ${pctReceived === 100 ? "bg-success" : "bg-primary"}`}
               style={{ width: `${pctReceived}%` }}
             />
           </div>
@@ -380,13 +380,13 @@ export function ReceiveForm({
           </div>
         ) : null}
         {scanStatus === "already-full" ? (
-          <div className="flex items-center gap-1.5 text-xs text-amber-600" role="alert">
+          <div className="flex items-center gap-1.5 text-xs text-warning" role="alert">
             <TriangleAlert className="h-3.5 w-3.5" />
             {labels.scanMatchAlreadyFull}
           </div>
         ) : null}
         {scanStatus === "matched" ? (
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+          <div className="flex items-center gap-1.5 text-xs text-success">
             <CheckCircle2 className="h-3.5 w-3.5" />
             {labels.scanMatchFound}
           </div>
@@ -417,7 +417,7 @@ export function ReceiveForm({
                     key={line.id}
                     className={
                       isHighlighted
-                        ? "bg-emerald-50 dark:bg-emerald-950/30 transition-colors"
+                        ? "bg-success-light transition-colors"
                         : undefined
                     }
                   >

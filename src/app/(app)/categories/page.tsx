@@ -4,7 +4,9 @@ import type { Metadata } from "next";
 import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
 import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { DeleteButton } from "@/components/shell/delete-button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -84,10 +86,10 @@ export default async function CategoriesPage() {
     <div className="space-y-6">
       <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.categories.heading}</h1>
-        <p className="text-sm text-muted-foreground">{t.categories.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.categories.heading}
+        description={t.categories.subtitle}
+      />
 
       {canCreate ? (
         <Card>

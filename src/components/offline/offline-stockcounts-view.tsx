@@ -300,9 +300,9 @@ function stateClassName(state: CachedStockCount["state"]): string {
     case "OPEN":
       return "border border-border bg-background text-foreground";
     case "IN_PROGRESS":
-      return "bg-amber-600 text-white";
+      return "bg-warning text-white";
     case "COMPLETED":
-      return "bg-emerald-600 text-white";
+      return "bg-success text-white";
     case "CANCELLED":
       return "bg-muted text-muted-foreground";
   }
@@ -515,7 +515,7 @@ function OfflineStockCountDetail({
       </div>
 
       {isBlind ? (
-        <output className="block rounded-md border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm">
+        <output className="block rounded-md border border-warning/50 bg-warning/10 px-4 py-3 text-sm">
           {labels.detailBlindBanner}
         </output>
       ) : null}
@@ -550,7 +550,7 @@ function OfflineStockCountDetail({
                 const variance = row.countedQuantity - row.expectedQuantity;
                 const varianceClass =
                   variance > 0
-                    ? "text-emerald-600"
+                    ? "text-success"
                     : variance < 0
                       ? "text-destructive"
                       : "text-muted-foreground";

@@ -109,7 +109,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+      {error && <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">{error}</div>}
 
       <Table>
         <TableHeader>
@@ -145,7 +145,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   {discrepancy !== 0 ? (
-                    <span className={discrepancy > 0 ? "text-green-600" : "text-red-600"}>
+                    <span className={discrepancy > 0 ? "text-success" : "text-destructive"}>
                       {discrepancy > 0 ? "+" : ""}
                       {discrepancy}
                     </span>
@@ -163,7 +163,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
             <TableCell className="text-right">
               {totalReceived - totalShipped !== 0 ? (
                 <span
-                  className={totalReceived - totalShipped > 0 ? "text-green-600" : "text-red-600"}
+                  className={totalReceived - totalShipped > 0 ? "text-success" : "text-destructive"}
                 >
                   {totalReceived - totalShipped > 0 ? "+" : ""}
                   {totalReceived - totalShipped}

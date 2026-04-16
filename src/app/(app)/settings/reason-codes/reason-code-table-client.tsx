@@ -129,11 +129,11 @@ export function ReasonCodeTableClient({
                             </TableCell>
                             <TableCell>
                               {code.isActive ? (
-                                <Badge variant="outline" className="bg-green-50">
+                                <Badge variant="outline" className="bg-success-light">
                                   Active
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="bg-gray-50">
+                                <Badge variant="outline" className="bg-muted">
                                   Inactive
                                 </Badge>
                               )}

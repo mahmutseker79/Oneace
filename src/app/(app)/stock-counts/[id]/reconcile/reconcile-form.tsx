@@ -69,9 +69,9 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
     const body =
       posted !== null && posted > 0 ? labels.successBody(posted) : labels.successBodyNone;
     return (
-      <output className="block space-y-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 p-6">
+      <output className="block space-y-4 rounded-md border border-success/40 bg-success/10 p-6">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" />
+          <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
           <div className="space-y-1">
             <p className="font-semibold">{labels.successTitle}</p>
             <p className="text-sm text-muted-foreground">{body}</p>
@@ -92,7 +92,7 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
   return (
     <div className="space-y-4">
       {/* P7.3 — Pre-completion trust messaging */}
-      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+      <Alert className="border-info/50 bg-info/10">
         <Info className="h-4 w-4" />
         <AlertTitle className="text-sm">{labels.consequenceTitle}</AlertTitle>
         <AlertDescription className="text-xs">{labels.consequenceBody}</AlertDescription>
@@ -111,7 +111,7 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
             </Label>
             <p className="text-xs text-muted-foreground">{labels.applyHelp}</p>
             {!applyAdjustments ? (
-              <p className="text-xs text-amber-600">{labels.applyWarning}</p>
+              <p className="text-xs text-warning">{labels.applyWarning}</p>
             ) : null}
           </div>
         </div>

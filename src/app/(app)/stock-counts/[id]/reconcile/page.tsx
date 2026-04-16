@@ -118,7 +118,7 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
     if (status === "within_tolerance")
       return <Badge variant="secondary">{t.stockCounts.variance.withinTolerance}</Badge>;
     if (status === "over")
-      return <Badge className="bg-emerald-600">{t.stockCounts.variance.over}</Badge>;
+      return <Badge className="bg-success">{t.stockCounts.variance.over}</Badge>;
     return <Badge variant="destructive">{t.stockCounts.variance.under}</Badge>;
   }
 
@@ -222,7 +222,7 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
                         <span
                           className={
                             row.variance > 0
-                              ? "text-emerald-600"
+                              ? "text-success"
                               : row.variance < 0
                                 ? "text-destructive"
                                 : "text-muted-foreground"
@@ -250,7 +250,7 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
           </CardContent>
         </Card>
       ) : (
-        <output className="block rounded-md border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm">
+        <output className="block rounded-md border border-warning/50 bg-warning/10 px-4 py-3 text-sm">
           {t.stockCounts.reconcile.cannotReconcile}
         </output>
       )}
@@ -268,7 +268,7 @@ type SummaryTileProps = {
 function SummaryTile({ label, value, tone = "neutral", signed = false }: SummaryTileProps) {
   const toneClass =
     tone === "positive"
-      ? "text-emerald-600"
+      ? "text-success"
       : tone === "negative"
         ? "text-destructive"
         : "text-foreground";

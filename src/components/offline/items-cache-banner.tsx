@@ -88,7 +88,7 @@ export function ItemsCacheBanner({ scope, locale, labels }: ItemsCacheBannerProp
       );
     }
     return (
-      <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+      <div className="flex items-center gap-2 text-xs text-warning">
         <CloudOff className="h-3.5 w-3.5" aria-hidden />
         <span>{labels.offlineEmpty}</span>
       </div>

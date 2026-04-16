@@ -282,8 +282,8 @@ export default async function StockCountDetailPage({ params, searchParams }: Pag
   function stateBadge(s: CountState) {
     const label = t.stockCounts.statusBadge[s];
     if (s === "OPEN") return <Badge variant="outline">{label}</Badge>;
-    if (s === "IN_PROGRESS") return <Badge className="bg-amber-600">{label}</Badge>;
-    if (s === "COMPLETED") return <Badge className="bg-emerald-600">{label}</Badge>;
+    if (s === "IN_PROGRESS") return <Badge className="bg-warning">{label}</Badge>;
+    if (s === "COMPLETED") return <Badge className="bg-success">{label}</Badge>;
     return <Badge variant="secondary">{label}</Badge>;
   }
 
@@ -292,7 +292,7 @@ export default async function StockCountDetailPage({ params, searchParams }: Pag
     if (status === "within_tolerance")
       return <Badge variant="secondary">{t.stockCounts.variance.withinTolerance}</Badge>;
     if (status === "over")
-      return <Badge className="bg-emerald-600">{t.stockCounts.variance.over}</Badge>;
+      return <Badge className="bg-success">{t.stockCounts.variance.over}</Badge>;
     return <Badge variant="destructive">{t.stockCounts.variance.under}</Badge>;
   }
 
@@ -371,7 +371,7 @@ export default async function StockCountDetailPage({ params, searchParams }: Pag
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                    className={`h-full rounded-full transition-all ${pct === 100 ? "bg-success" : "bg-primary"}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -424,8 +424,8 @@ export default async function StockCountDetailPage({ params, searchParams }: Pag
 
       {/* Blind mode banner */}
       {isBlind ? (
-        <output className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm">
-          <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+        <output className="flex items-start gap-2 rounded-md border border-warning/50 bg-warning/10 px-4 py-3 text-sm">
+          <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
           <p>{t.stockCounts.detail.blindBanner}</p>
         </output>
       ) : null}
@@ -526,7 +526,7 @@ export default async function StockCountDetailPage({ params, searchParams }: Pag
                               <span
                                 className={
                                   variance && variance.variance > 0
-                                    ? "text-emerald-600"
+                                    ? "text-success"
                                     : variance && variance.variance < 0
                                       ? "text-destructive"
                                       : "text-muted-foreground"

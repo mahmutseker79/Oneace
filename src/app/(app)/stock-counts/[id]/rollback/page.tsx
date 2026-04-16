@@ -99,11 +99,11 @@ export default async function RollbackPage({
                 <CardTitle>Rollback Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm">
-                  <p className="font-semibold text-red-900">
+                <div className="rounded-lg border border-destructive/20 bg-destructive-light p-4 text-sm">
+                  <p className="font-semibold text-destructive">
                     Warning: This action cannot be undone
                   </p>
-                  <p className="text-red-800 mt-2">
+                  <p className="text-destructive mt-2">
                     Rolling back this count will revert all stock adjustments made during
                     reconciliation.
                   </p>

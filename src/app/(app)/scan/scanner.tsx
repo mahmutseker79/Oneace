@@ -426,7 +426,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
                 />
                 {cameraState === "running" ? (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="h-[55%] w-[70%] rounded-md border-2 border-emerald-400/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+                    <div className="h-[55%] w-[70%] rounded-md border-2 border-success/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
                   </div>
                 ) : null}
                 {cameraState !== "running" ? (
@@ -439,7 +439,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
                 {cameraState === "running" ? (
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-xs text-white bg-black/50 rounded-full px-2 py-1">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
                       {labels.scanningStatus}
                     </span>
                     {continuousMode ? (
@@ -597,7 +597,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-emerald-500" />
+                    <Check className="h-5 w-5 text-success" />
                     <CardTitle>{labels.resultHeadingFound}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={handleClear}>
@@ -690,7 +690,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    <AlertTriangle className="h-5 w-5 text-warning" />
                     <CardTitle>{labels.resultHeadingNotFound}</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={handleClear}>
@@ -761,7 +761,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
                               <Check className="h-3 w-3" />
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-xs text-amber-600">
+                            <Badge variant="outline" className="text-xs text-warning">
                               <AlertTriangle className="h-3 w-3" />
                             </Badge>
                           )}

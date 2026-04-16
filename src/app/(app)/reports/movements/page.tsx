@@ -398,7 +398,7 @@ export default async function MovementHistoryReportPage({
                         </TableCell>
                         <TableCell
                           className={`text-right tabular-nums text-sm font-medium ${
-                            positive ? "text-emerald-600" : "text-destructive"
+                            positive ? "text-success" : "text-destructive"
                           }`}
                         >
                           {positive ? "+" : ""}

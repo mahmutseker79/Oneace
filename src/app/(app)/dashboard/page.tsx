@@ -350,8 +350,8 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{greeting}</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl text-gradient-primary">{greeting}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             <span className="text-foreground font-medium">{membership.organization.name}</span>
             {" · "}
             {t.dashboard.orgSubtitle}
@@ -509,12 +509,12 @@ export default async function DashboardPage() {
                       className={cn(
                         "flex items-center gap-3 rounded-md border px-3 py-2 transition-colors cursor-pointer",
                         step.complete
-                          ? "border-green-200 bg-green-50/50 hover:bg-green-100/50 dark:border-green-900/30 dark:bg-green-950/20"
+                          ? "border-success bg-success-light hover:bg-success-light/70"
                           : "border-border bg-background/80 hover:border-primary/40 hover:bg-background hover:shadow-sm",
                       )}
                     >
                       {step.complete ? (
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success text-white">
                           <CheckCircle2 className="h-4 w-4" />
                         </div>
                       ) : (
@@ -526,13 +526,13 @@ export default async function DashboardPage() {
                       <span
                         className={cn(
                           "text-sm",
-                          step.complete && "text-green-700 dark:text-green-400",
+                          step.complete && "text-success",
                         )}
                       >
                         {step.label}
                       </span>
                       {step.complete && (
-                        <span className="ml-auto text-xs font-medium text-green-600 dark:text-green-400">
+                        <span className="ml-auto text-xs font-medium text-success">
                           ✓ Done
                         </span>
                       )}

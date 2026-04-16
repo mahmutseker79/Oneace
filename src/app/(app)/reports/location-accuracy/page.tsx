@@ -261,7 +261,7 @@ export default async function LocationAccuracyReportPage() {
                     {formatNumber(row.accurateLines, region.numberLocale)}
                   </TableCell>
                   <TableCell
-                    className={`text-right text-sm font-medium ${row.accuracyPercent >= 95 ? "text-green-600" : row.accuracyPercent >= 85 ? "text-orange-600" : "text-red-600"}`}
+                    className={`text-right text-sm font-medium ${row.accuracyPercent >= 95 ? "text-success" : row.accuracyPercent >= 85 ? "text-warning" : "text-destructive"}`}
                   >
                     {formatNumber(row.accuracyPercent, region.numberLocale)}%
                   </TableCell>

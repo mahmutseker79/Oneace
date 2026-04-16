@@ -4,7 +4,9 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";import { EmptyState } from "@/components/ui/empty-state";
+import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
 import {
   Table,
@@ -138,40 +140,38 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t.movements.heading}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t.movements.subtitle}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canExport ? (
-            <Button asChild variant="outline">
-              <Link href={buildExportHref(filter)}>
-                <Download className="h-4 w-4" />
-                {t.common.exportCsv}
-              </Link>
-            </Button>
-          ) : null}
-          {canCreate ? (
-            <Button asChild variant="outline">
-              <Link href="/movements/transfers/new">
-                <ArrowRightLeft className="h-4 w-4" />
-                {t.movements.transfers.heading}
-              </Link>
-            </Button>
-          ) : null}
-          {canCreate ? (
-            <Button asChild>
-              <Link href="/movements/new">
-                <Plus className="h-4 w-4" />
-                {t.movements.newMovement}
-              </Link>
-            </Button>
-          ) : null}
-        </div>
-      </div>
+      <PageHeader
+        title={t.movements.heading}
+        description={t.movements.subtitle}
+        actions={
+          <div className="flex items-center gap-2">
+            {canExport ? (
+              <Button asChild variant="outline">
+                <Link href={buildExportHref(filter)}>
+                  <Download className="h-4 w-4" />
+                  {t.common.exportCsv}
+                </Link>
+              </Button>
+            ) : null}
+            {canCreate ? (
+              <Button asChild variant="outline">
+                <Link href="/movements/transfers/new">
+                  <ArrowRightLeft className="h-4 w-4" />
+                  {t.movements.transfers.heading}
+                </Link>
+              </Button>
+            ) : null}
+            {canCreate ? (
+              <Button asChild>
+                <Link href="/movements/new">
+                  <Plus className="h-4 w-4" />
+                  {t.movements.newMovement}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
 
       <MovementsFilterBar
         initialFrom={filter.rawFrom}
@@ -249,7 +249,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                           label: t.movements.columnQuantity,
                           value: (
                             <span
-                              className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}
+                              className={signedQty >= 0 ? "text-success" : "text-destructive"}
                             >
                               {qtyPrefix}
                               {absQty} {m.item.unit}
@@ -315,7 +315,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                           <TableCell className="text-sm">{warehouseCell}</TableCell>
                           <TableCell className="text-right tabular-nums">
                             <span
-                              className={signedQty >= 0 ? "text-emerald-600" : "text-destructive"}
+                              className={signedQty >= 0 ? "text-success" : "text-destructive"}
                             >
                               {qtyPrefix}
                               {absQty} {m.item.unit}

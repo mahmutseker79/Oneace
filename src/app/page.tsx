@@ -164,9 +164,9 @@ export default async function LandingPage() {
             <div className="overflow-hidden rounded-xl border border-border/60 shadow-2xl">
               {/* Browser chrome */}
               <div className="flex items-center gap-1.5 border-b border-border/60 bg-muted/60 px-4 py-2.5">
-                <span className="h-3 w-3 rounded-full bg-red-400/70" />
-                <span className="h-3 w-3 rounded-full bg-amber-400/70" />
-                <span className="h-3 w-3 rounded-full bg-emerald-400/70" />
+                <span className="h-3 w-3 rounded-full bg-destructive/70" />
+                <span className="h-3 w-3 rounded-full bg-warning/70" />
+                <span className="h-3 w-3 rounded-full bg-success/70" />
                 <span className="mx-auto font-mono text-xs text-muted-foreground">
                   app.oneace.app/items
                 </span>
@@ -229,31 +229,31 @@ export default async function LandingPage() {
                         sku: "BOLT-M6-SS",
                         name: "M6 Stainless Bolt (50pk)",
                         stock: "1,240 pcs",
-                        status: "bg-emerald-500",
+                        status: "bg-success",
                       },
                       {
                         sku: "CABLE-USB-C",
                         name: "USB-C Cable 2m",
                         stock: "88 ea",
-                        status: "bg-amber-500",
+                        status: "bg-warning",
                       },
                       {
                         sku: "FILTER-OIL-4L",
                         name: "Oil Filter — 4L Capacity",
                         stock: "34 ea",
-                        status: "bg-emerald-500",
+                        status: "bg-success",
                       },
                       {
                         sku: "GLOVE-NITR-L",
                         name: "Nitrile Gloves Large (100pk)",
                         stock: "12 box",
-                        status: "bg-red-500",
+                        status: "bg-destructive",
                       },
                       {
                         sku: "LABEL-A4-WHT",
                         name: "A4 White Label Sheets",
                         stock: "200 sh",
-                        status: "bg-emerald-500",
+                        status: "bg-success",
                       },
                     ].map((row) => (
                       <div

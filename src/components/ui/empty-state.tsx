@@ -56,12 +56,12 @@ export function EmptyState({
     variant === "filtered"
       ? "bg-muted/60 ring-1 ring-border/30"
       : variant === "unavailable"
-        ? "bg-amber-50 ring-1 ring-amber-200/50 dark:bg-amber-950/30 dark:ring-amber-800/30"
+        ? "bg-warning-light ring-1 ring-warning/20"
         : "bg-primary/8 ring-1 ring-primary/10";
 
   const iconClass =
     variant === "unavailable"
-      ? "h-6 w-6 text-amber-500"
+      ? "h-6 w-6 text-warning"
       : variant === "filtered"
         ? "h-6 w-6 text-muted-foreground"
         : "h-6 w-6 text-primary";

@@ -425,7 +425,7 @@ function OfflineQueueView({ scope, labels }: OfflineQueueViewProps) {
       {toast ? (
         <output
           aria-live="polite"
-          className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-700 dark:text-emerald-300"
+          className="flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-4 py-2 text-sm text-success"
         >
           <CheckCircle2 className="h-4 w-4" aria-hidden />
           <span>{toast}</span>
@@ -679,7 +679,7 @@ function StatusBadge({
   }
   if (status === "in_flight") {
     return (
-      <span className="inline-flex items-center rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-600 dark:text-sky-300">
+      <span className="inline-flex items-center rounded-full bg-info/10 px-2 py-0.5 text-[11px] font-medium text-info">
         {labels.statusInFlight}
       </span>
     );
@@ -692,7 +692,7 @@ function StatusBadge({
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+    <span className="inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
       {labels.statusSucceeded}
     </span>
   );
