@@ -1,16 +1,7 @@
 "use client";
 
-import { AlertCircle, Download, TrendingDown } from "lucide-react";import { useEffect, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { AlertCircle, Download, TrendingDown } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +21,8 @@ import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 // Note: getMessages/getRegion are server-only. This client component uses hardcoded strings.
 import { hasPlanCapability } from "@/lib/plans";
 import { cn } from "@/lib/utils";
+import { VarianceChart } from "./lazy-variance-chart";
+
 interface DepartmentVariance {
   departmentId: string;
   departmentName: string;
@@ -235,16 +228,7 @@ export default function DepartmentVariancePage() {
             <CardDescription>Percentage variance across departments</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
-                <Legend />
-                <Bar dataKey="variance" fill="hsl(0, 84%, 60%)" name="Variance %" />
-              </BarChart>
-            </ResponsiveContainer>
+            <VarianceChart data={data} />
           </CardContent>
         </Card>
       )}

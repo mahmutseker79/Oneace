@@ -1,16 +1,7 @@
 "use client";
 
-import { AlertCircle, Download } from "lucide-react";import { useEffect, useState } from "react";
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { AlertCircle, Download } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -20,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 // Note: getMessages is server-only. This client component uses hardcoded strings.
 import { hasPlanCapability } from "@/lib/plans";
+import { VarianceTrendChart } from "./lazy-trend-chart";
 
 interface TrendPoint {
   date: string;
@@ -210,22 +202,7 @@ export default function VarianceTrendPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="variance"
-                  stroke="hsl(0, 84%, 60%)"
-                  dot={false}
-                  name="Variance %"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <VarianceTrendChart data={trendData} />
           </CardContent>
         </Card>
       )}

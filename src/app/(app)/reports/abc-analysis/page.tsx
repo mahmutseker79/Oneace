@@ -10,18 +10,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +31,8 @@ import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
 // This client component uses hardcoded strings instead.
 import { hasPlanCapability } from "@/lib/plans";
 import { cn, formatCurrency } from "@/lib/utils";
+import { DistributionChart } from "./lazy-distribution-chart";
+import { ParetoChart } from "./lazy-pareto-chart";
 
 interface ABCData {
   itemId: string;
@@ -326,22 +316,7 @@ export default function ABCAnalysisPage() {
             <CardDescription>Cumulative percentage of inventory value</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={paretoData.slice(0, 50)}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="sku" />
-                <YAxis />
-                <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="cumulativePercent"
-                  stroke="hsl(221, 83%, 53%)"
-                  dot={false}
-                  name="Cumulative %"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <ParetoChart data={paretoData} />
           </CardContent>
         </Card>
       )}
@@ -353,25 +328,7 @@ export default function ABCAnalysisPage() {
           <CardDescription>Items and value by ABC class</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={distributionData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis
-                yAxisId="left"
-                label={{ value: "Count", angle: -90, position: "insideLeft" }}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                label={{ value: "Value", angle: 90, position: "insideRight" }}
-              />
-              <Tooltip />
-              <Legend />
-              <Bar yAxisId="left" dataKey="count" fill="hsl(221, 83%, 53%)" name="Item Count" />
-              <Bar yAxisId="right" dataKey="value" fill="hsl(142, 71%, 45%)" name="Total Value" />
-            </BarChart>
-          </ResponsiveContainer>
+          <DistributionChart data={distributionData} />
         </CardContent>
       </Card>
 
