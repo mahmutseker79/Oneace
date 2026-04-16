@@ -78,8 +78,8 @@ export class WebhookDispatcher {
     data: Record<string, unknown>,
   ): Promise<WebhookDeliveryResult[]> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const webhooks: WebhookRecord[] =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic model access
         (await (db as any).webhook?.findMany({
           where: {
             organizationId,

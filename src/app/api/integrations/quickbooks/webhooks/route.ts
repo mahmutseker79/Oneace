@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
       const realmId = notification.realmId;
 
       // Look up the organization connected to this QBO realm.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic model access
       const integration = await (db as any).integration?.findFirst({
         where: { provider: "QUICKBOOKS", externalId: realmId },
         select: { organizationId: true, id: true },

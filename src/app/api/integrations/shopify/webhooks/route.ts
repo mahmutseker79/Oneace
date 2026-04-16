@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Look up the organization connected to this Shopify store.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma dynamic model access
     const integration = await (db as any).integration?.findFirst({
       where: { provider: "SHOPIFY", externalId: shopDomain },
       select: { organizationId: true, id: true },

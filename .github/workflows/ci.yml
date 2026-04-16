@@ -1,5 +1,10 @@
 name: CI
 
+# Required GitHub Secrets:
+#   DATABASE_URL         — PostgreSQL connection string for Prisma
+#   DIRECT_URL           — Direct PostgreSQL connection (for migrations)
+#   BETTER_AUTH_SECRET   — Auth encryption key
+
 on:
   push:
     branches: [main, next-port]
@@ -38,7 +43,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Lint (Biome)
-        run: pnpm lint
+        run: pnpm lint --max-warnings 0
 
   test:
     name: Vitest

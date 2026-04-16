@@ -132,7 +132,7 @@ export default function DepartmentVariancePage() {
     data.length > 0 ? data.reduce((sum, d) => sum + d.variancePercent, 0) / data.length : 0;
   const criticalDepts = data.filter((d) => d.status === "critical").length;
 
-  const chartData = data.map((d) => ({
+  const _chartData = data.map((d) => ({
     name: d.departmentName,
     variance: d.variancePercent,
     items: d.itemCount,
