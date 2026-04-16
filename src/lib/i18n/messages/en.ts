@@ -95,6 +95,7 @@ export const en = {
 		categories: "Categories",
 		warehouses: "Locations",
 		counts: "Stock Counts",
+		stockCounts: "Stock Counts",
 		scan: "Scan",
 		movements: "Movements",
 		suppliers: "Suppliers",
@@ -1091,6 +1092,19 @@ export const en = {
 			cannotReconcile:
 				"Only counts that are in progress can be reconciled. Add at least one entry first.",
 		},
+		rollback: {
+			metaTitle: "Rollback count",
+			heading: "Rollback count",
+			subtitle: "Reverse this completed count and revert stock adjustments",
+		},
+	},
+
+	transfers: {
+		receive: {
+			metaTitle: "Receive transfer",
+			heading: "Receive transfer",
+			subtitle: "Confirm arrival and accept inventory",
+		},
 	},
 
 	suppliers: {
@@ -1867,6 +1881,7 @@ export const en = {
 		newLocation: "New location",
 		newLocationHeading: "Create a new location",
 		editLocation: "Edit location",
+		addLocation: "Add location",
 		emptyTitle: "No locations yet",
 		emptyBody: "Create your first location to track inventory.",
 		created: "Location created",
