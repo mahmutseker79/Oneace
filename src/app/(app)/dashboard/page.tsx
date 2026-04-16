@@ -313,7 +313,7 @@ export default async function DashboardPage() {
 			label: t.dashboard.kpi.totalItems,
 			value: String(data.activeItemCount),
 			caption: totalItemsCaption,
-			icon: Package,
+			icon: <Package className="h-4.5 w-4.5" />,
 			href: "/items",
 		},
 		{
@@ -323,7 +323,7 @@ export default async function DashboardPage() {
 				locale: region.numberLocale,
 			}),
 			caption: stockValueCaption,
-			icon: TrendingUp,
+			icon: <TrendingUp className="h-4.5 w-4.5" />,
 			// Phase 6.4 — links to the stock value report (more relevant than /warehouses)
 			href: "/reports/stock-value",
 		},
@@ -331,14 +331,14 @@ export default async function DashboardPage() {
 			label: t.dashboard.kpi.lowStock,
 			value: String(lowStockCount),
 			caption: lowStockCaption,
-			icon: AlertTriangle,
+			icon: <AlertTriangle className="h-4.5 w-4.5" />,
 			href: "/reports/low-stock",
 		},
 		{
 			label: t.dashboard.kpi.activeCounts,
 			value: String(activeCountsTotal),
 			caption: activeCountsCaption,
-			icon: ClipboardCheck,
+			icon: <ClipboardCheck className="h-4.5 w-4.5" />,
 			href: "/stock-counts",
 		},
 	];

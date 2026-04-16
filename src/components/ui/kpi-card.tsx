@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ArrowDownRight, ArrowUpRight, type LucideIcon, Minus } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { Badge } from "./badge";
@@ -11,7 +11,7 @@ interface KpiCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon?: LucideIcon;
+  icon?: React.ReactNode;
   trend?: {
     value: number;
     label: string;
@@ -24,7 +24,7 @@ export function KpiCard({
   title,
   value,
   description,
-  icon: Icon,
+  icon,
   trend,
   className,
   href,
@@ -34,9 +34,9 @@ export function KpiCard({
       {/* Header: Icon + Title */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-overline text-muted-foreground">{title}</p>
-        {Icon && (
+        {icon && (
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/8 text-primary">
-            <Icon className="h-4.5 w-4.5" />
+            {icon}
           </div>
         )}
       </div>
