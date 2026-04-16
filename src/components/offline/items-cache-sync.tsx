@@ -55,8 +55,6 @@ export function ItemsCacheSync({ scope, rows }: ItemsCacheSyncProps) {
   const scopeRef = useRef(scope);
   const rowsRef = useRef(rows);
   const lastWrittenRef = useRef<string | null>(null);
-  scopeRef.current = scope;
-  rowsRef.current = rows;
 
   // Signature changes whenever the snapshot the user is looking at
   // changes: either the active org/user switched, or the rendered
@@ -65,6 +63,11 @@ export function ItemsCacheSync({ scope, rows }: ItemsCacheSyncProps) {
   // the items page renders newest-first and any mutation shows up
   // as an added/removed row or a fresh server navigation.
   const snapshotSignature = `${scope.orgId}:${scope.userId}:${rows.length}`;
+
+  useEffect(() => {
+    scopeRef.current = scope;
+    rowsRef.current = rows;
+  }, [scope, rows]);
 
   useEffect(() => {
     let cancelled = false;

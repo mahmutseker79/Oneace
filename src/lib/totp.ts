@@ -87,7 +87,7 @@ export function verifyTotpCode(secret: string, code: string): boolean {
 
     // validate returns null if invalid, or a delta number if valid
     return result !== null;
-  } catch (error) {
+  } catch (_error) {
     // If anything goes wrong during verification (invalid secret format, etc.),
     // return false rather than throwing
     return false;

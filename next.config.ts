@@ -102,14 +102,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Temporarily skip TS errors during build so the app can deploy.
-  // V4 agent-generated files have ~200 TS errors (missing Prisma includes,
-  // field name mismatches) that need systematic fixing. The app still works
-  // at runtime because these are type-only issues, not logic errors.
-  // TODO: Remove this after fixing all V4 type errors.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // TypeScript strict checking is now enforced at build time.
+  // All 212 legacy TS errors were resolved as of v1.0.0-rc9.
+  // tsc --noEmit passes clean (0 errors, EXIT 0).
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -57,7 +57,7 @@ export default function AppError({ error, reset }: AppErrorProps) {
     // no-op when NEXT_PUBLIC_SENTRY_DSN is unset (local dev / CI).
     captureException(error);
     // Client-side console breadcrumb for local dev triage.
-    // eslint-disable-next-line no-console
+     
     console.error("[app-error] route segment crashed", {
       digest: error.digest,
       message: error.message,

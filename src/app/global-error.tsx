@@ -31,7 +31,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
     // Send to Sentry — no-op when DSN is unset.
     captureException(error);
-    // eslint-disable-next-line no-console
+     
     console.error("[global-error] unhandled render error", {
       digest: error.digest,
       message: error.message,
@@ -75,7 +75,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             The app hit an unexpected error.
           </h1>
           <p style={{ color: "#475569", margin: "0 0 1.5rem 0", lineHeight: 1.5 }}>
-            We've logged what happened. You can try again, and if the problem persists please
+            We&apos;ve logged what happened. You can try again, and if the problem persists please
             refresh the page or contact support with the reference below.
           </p>
           {error.digest ? (

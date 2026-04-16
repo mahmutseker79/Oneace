@@ -72,7 +72,7 @@ export default async function EditDepartmentPage({
         </div>
       ) : (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm">
-          <p>You don't have permission to edit this department.</p>
+          <p>You don&apos;t have permission to edit this department.</p>
         </div>
       )}
     </div>

@@ -56,7 +56,7 @@ export default async function PrivacyPage() {
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
               You can request a complete copy of your personal data. This includes your profile,
-              account history, memberships, and all items/movements you've created.
+              account history, memberships, and all items/movements you&apos;ve created.
             </p>
             <Button asChild>
               <a href="/api/account/export" download>

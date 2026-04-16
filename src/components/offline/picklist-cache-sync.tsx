@@ -48,9 +48,12 @@ export type PicklistCacheSyncProps =
 
 export function PicklistCacheSync(props: PicklistCacheSyncProps) {
   const propsRef = useRef(props);
-  propsRef.current = props;
 
   const snapshotSignature = `${props.table}:${props.scope.orgId}:${props.scope.userId}:${props.rows.length}`;
+
+  useEffect(() => {
+    propsRef.current = props;
+  }, [props]);
 
   useEffect(() => {
     let cancelled = false;

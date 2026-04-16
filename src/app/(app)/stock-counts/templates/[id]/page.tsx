@@ -78,7 +78,7 @@ export default async function EditTemplatePage({
         </div>
       ) : (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm">
-          <p>You don't have permission to edit this template.</p>
+          <p>You don&apos;t have permission to edit this template.</p>
         </div>
       )}
     </div>

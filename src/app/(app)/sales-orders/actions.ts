@@ -210,7 +210,7 @@ export async function addSalesOrderLineAction(formData: FormData): Promise<Actio
     revalidatePath("/sales-orders");
     revalidatePath(`/sales-orders/${input.salesOrderId}`);
     return { ok: true, id: input.salesOrderId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.salesOrders?.errors?.addLineFailed ?? "Failed to add line" };
   }
 }
@@ -256,7 +256,7 @@ export async function removeSalesOrderLineAction(lineId: string): Promise<Action
     revalidatePath("/sales-orders");
     revalidatePath(`/sales-orders/${line.salesOrderId}`);
     return { ok: true, id: line.salesOrderId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.salesOrders?.errors?.deleteLineFailed ?? "Failed to remove line" };
   }
 }
@@ -580,7 +580,7 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
     revalidatePath("/sales-orders");
     revalidatePath(`/sales-orders/${existing.id}`);
     return { ok: true, id: existing.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.salesOrders?.errors?.shipFailed ?? "Failed to ship" };
   }
 }
@@ -664,7 +664,7 @@ export async function cancelSalesOrderAction(formData: FormData): Promise<Action
     revalidatePath("/sales-orders");
     revalidatePath(`/sales-orders/${existing.id}`);
     return { ok: true, id: existing.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.salesOrders?.errors?.cancelFailed ?? "Failed to cancel" };
   }
 }

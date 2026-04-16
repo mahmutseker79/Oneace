@@ -108,13 +108,11 @@ export default async function VarianceDetailPage({ params }: PageProps) {
   //
   // Multiply each row's signed variance by the item's cost price.
   // Items without a cost price contribute 0 to the total (cleanly opt-in).
-  let netFinancialImpact = 0;
   const enriched = varianceRows.map((row) => {
     const item = itemById.get(row.itemId);
     const warehouse = warehouseById.get(row.warehouseId);
     const cost = item?.costPrice ? Number(item.costPrice) : 0;
     const impact = row.variance * cost;
-    netFinancialImpact += impact;
     return {
       ...row,
       sku: item?.sku ?? row.itemId,
@@ -126,6 +124,8 @@ export default async function VarianceDetailPage({ params }: PageProps) {
       impact,
     };
   });
+
+  const netFinancialImpact = enriched.reduce((sum, row) => sum + row.impact, 0);
 
   // ---------------- Top-N tables per status ----------------
   type EnrichedRow = (typeof enriched)[number];
@@ -197,7 +197,7 @@ export default async function VarianceDetailPage({ params }: PageProps) {
             />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Impact uses each item's cost price. Items without a cost contribute 0.
+            Impact uses each item&apos;s cost price. Items without a cost contribute 0.
           </p>
         </CardContent>
       </Card>

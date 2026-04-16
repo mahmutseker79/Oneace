@@ -86,7 +86,7 @@ export async function createKitAction(formData: FormData): Promise<ActionResult>
 
     revalidatePath("/kits");
     return { ok: true, id: created.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.kits?.errors?.createFailed ?? "Failed to create kit" };
   }
 }
@@ -156,7 +156,7 @@ export async function addKitComponentAction(formData: FormData): Promise<ActionR
     revalidatePath("/kits");
     revalidatePath(`/kits/${input.kitId}`);
     return { ok: true, id: input.kitId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.kits?.errors?.addComponentFailed ?? "Failed to add component" };
   }
 }
@@ -195,7 +195,7 @@ export async function removeKitComponentAction(componentId: string): Promise<Act
     revalidatePath("/kits");
     revalidatePath(`/kits/${component.kitId}`);
     return { ok: true, id: component.kitId };
-  } catch (error) {
+  } catch (_error) {
     return {
       ok: false,
       error: t.kits?.errors?.removeComponentFailed ?? "Failed to remove component",

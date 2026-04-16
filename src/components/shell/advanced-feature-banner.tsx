@@ -16,7 +16,7 @@
 
 import { Info, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -41,18 +41,16 @@ export function AdvancedFeatureBanner({
   /** Current org plan. If PRO or BUSINESS, banner is hidden entirely. */
   plan?: "FREE" | "PRO" | "BUSINESS";
 }) {
-  // Default true (hidden) to avoid flash-of-content on hydration.
-  const [dismissed, setDismissed] = useState(true);
-
-  useEffect(() => {
+  const shouldDismiss = useMemo(() => {
     // Always hide for paid plans.
-    if (plan === "PRO" || plan === "BUSINESS") return;
+    if (plan === "PRO" || plan === "BUSINESS") return true;
     // Restore dismiss state from localStorage.
     const stored = localStorage.getItem(DISMISS_KEY);
-    if (stored !== "1") {
-      setDismissed(false);
-    }
+    return stored === "1";
   }, [plan]);
+
+  // Default true (hidden) to avoid flash-of-content on hydration.
+  const [dismissed, setDismissed] = useState(shouldDismiss);
 
   if (dismissed) return null;
 

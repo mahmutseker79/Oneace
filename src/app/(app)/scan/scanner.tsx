@@ -137,8 +137,13 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
 
   // Load initial state on mount
   useEffect(() => {
-    setMutedState(isMuted());
-    setHistory(getScanHistory());
+    const mutedState = isMuted();
+    const history = getScanHistory();
+
+    startTransition(() => {
+      setMutedState(mutedState);
+      setHistory(history);
+    });
   }, []);
 
   const toggleMute = useCallback(() => {
@@ -212,61 +217,66 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
     [labels.lookupError, continuousMode],
   );
 
-  const tick = useCallback(() => {
-    if (!detectorRef.current || !videoRef.current || pausedRef.current) {
-      rafRef.current = requestAnimationFrame(tick);
-      return;
-    }
-    const now = performance.now();
-    // Throttle detection to ~6 FPS
-    if (now - lastTickRef.current < 160) {
-      rafRef.current = requestAnimationFrame(tick);
-      return;
-    }
-    lastTickRef.current = now;
-    detectorRef.current
-      .detect(videoRef.current)
-      .then((codes) => {
-        if (codes.length > 0) {
-          const first = codes[0];
-          if (first) {
-            const value = first.rawValue.trim();
-            if (!value) {
-              rafRef.current = requestAnimationFrame(tick);
+  const tickRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const tick = () => {
+      if (!detectorRef.current || !videoRef.current || pausedRef.current) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      const now = performance.now();
+      // Throttle detection to ~6 FPS
+      if (now - lastTickRef.current < 160) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      lastTickRef.current = now;
+      detectorRef.current
+        .detect(videoRef.current)
+        .then((codes) => {
+          if (codes.length > 0) {
+            const first = codes[0];
+            if (first) {
+              const value = first.rawValue.trim();
+              if (!value) {
+                rafRef.current = requestAnimationFrame(tick);
+                return;
+              }
+
+              const now = performance.now();
+              // Dedup: ignore same barcode within DEDUP_WINDOW_MS
+              if (value === lastCodeRef.current && now - lastCodeTimeRef.current < DEDUP_WINDOW_MS) {
+                rafRef.current = requestAnimationFrame(tick);
+                return;
+              }
+
+              lastCodeRef.current = value;
+              lastCodeTimeRef.current = now;
+              setManualValue(value);
+              handleLookup(value, true);
+
+              if (continuousMode) {
+                // Pause scanning briefly, then resume
+                pausedRef.current = true;
+                cooldownRef.current = setTimeout(() => {
+                  pausedRef.current = false;
+                  cooldownRef.current = null;
+                }, COOLDOWN_MS);
+                rafRef.current = requestAnimationFrame(tick);
+              } else {
+                stopCamera();
+              }
               return;
             }
-
-            const now = performance.now();
-            // Dedup: ignore same barcode within DEDUP_WINDOW_MS
-            if (value === lastCodeRef.current && now - lastCodeTimeRef.current < DEDUP_WINDOW_MS) {
-              rafRef.current = requestAnimationFrame(tick);
-              return;
-            }
-
-            lastCodeRef.current = value;
-            lastCodeTimeRef.current = now;
-            setManualValue(value);
-            handleLookup(value, true);
-
-            if (continuousMode) {
-              // Pause scanning briefly, then resume
-              pausedRef.current = true;
-              cooldownRef.current = setTimeout(() => {
-                pausedRef.current = false;
-                cooldownRef.current = null;
-              }, COOLDOWN_MS);
-              rafRef.current = requestAnimationFrame(tick);
-            } else {
-              stopCamera();
-            }
-            return;
           }
-        }
-        rafRef.current = requestAnimationFrame(tick);
-      })
-      .catch(() => {
-        rafRef.current = requestAnimationFrame(tick);
-      });
+          rafRef.current = requestAnimationFrame(tick);
+        })
+        .catch(() => {
+          rafRef.current = requestAnimationFrame(tick);
+        });
+    };
+    tickRef.current = tick;
   }, [handleLookup, stopCamera, continuousMode]);
 
   const startCamera = useCallback(async () => {
@@ -300,7 +310,7 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
       lastCodeTimeRef.current = 0;
       pausedRef.current = false;
       setCameraState("running");
-      rafRef.current = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(() => tickRef.current());
     } catch (err) {
       const name = (err as { name?: string }).name;
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
@@ -309,12 +319,14 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
         setCameraState("error");
       }
     }
-  }, [tick]);
+  }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only effect
   useEffect(() => {
     if (initialQuery && initialQuery.trim().length > 0) {
-      handleLookup(initialQuery.trim());
+      startTransition(() => {
+        handleLookup(initialQuery.trim());
+      });
     }
     return () => {
       stopCamera();

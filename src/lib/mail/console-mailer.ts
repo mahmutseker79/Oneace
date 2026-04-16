@@ -16,14 +16,14 @@ import type { MailMessage, MailResult, Mailer } from "./mailer";
 
 export class ConsoleMailer implements Mailer {
   async send(message: MailMessage): Promise<MailResult> {
-    // eslint-disable-next-line no-console
+     
     console.info(
       `[mail] would deliver "${message.subject}" to ${message.to} ` +
         `(html=${message.html.length}b, text=${message.text.length}b)`,
     );
     // Echo the plain-text body so a dev copying the invite link out of
     // the terminal has something to work with even when Resend is off.
-    // eslint-disable-next-line no-console
+     
     console.info(`[mail] text body:\n${message.text}`);
     return { ok: true, id: `console-${Date.now()}` };
   }

@@ -135,7 +135,7 @@ export async function createTransferAction(input: CreateTransferInput): Promise<
 
     revalidatePath("/transfers");
     return { ok: true, id: result.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }
@@ -224,7 +224,7 @@ export async function addTransferLineAction(input: AddTransferLineInput): Promis
     revalidatePath("/transfers");
     revalidatePath(`/transfers/${transferId}`);
     return { ok: true, id: line.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }
@@ -284,7 +284,7 @@ export async function removeTransferLineAction(lineId: string): Promise<ActionRe
     revalidatePath("/transfers");
     revalidatePath(`/transfers/${line.transferId}`);
     return { ok: true, id: lineId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }
@@ -406,7 +406,7 @@ export async function shipTransferAction(transferId: string): Promise<ActionResu
     revalidatePath("/items");
     revalidatePath("/dashboard");
     return { ok: true, id: transferId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }
@@ -583,7 +583,7 @@ export async function receiveTransferAction(input: ReceiveTransferInput): Promis
     revalidatePath("/items");
     revalidatePath("/dashboard");
     return { ok: true, id: transferId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }
@@ -721,7 +721,7 @@ export async function cancelTransferAction(transferId: string): Promise<ActionRe
     revalidatePath("/items");
     revalidatePath("/dashboard");
     return { ok: true, id: transferId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }

@@ -13,7 +13,7 @@
  */
 
 import { CheckCircle2, Download, ScanLine, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,13 +34,13 @@ function format(tpl: string, vars: Record<string, string>) {
 }
 
 export default function ScanActivityReportPage() {
-  const [entries, setEntries] = useState<ScanHistoryEntry[]>([]);
+  const [entries, setEntries] = useState<ScanHistoryEntry[]>(() => getScanHistory());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const history = getScanHistory();
-    setEntries(history);
+    React.startTransition(() => {
+      setMounted(true);
+    });
   }, []);
 
   const handleExportCsv = () => {

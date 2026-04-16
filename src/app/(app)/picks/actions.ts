@@ -93,7 +93,7 @@ export async function createPickTaskAction(formData: FormData): Promise<ActionRe
 
     revalidatePath("/picks");
     return { ok: true, id: created.id };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.picks?.errors?.createFailed ?? "Failed to create pick task" };
   }
 }
@@ -176,7 +176,7 @@ export async function generatePicksFromSalesOrderAction(
 
     revalidatePath("/picks");
     return { ok: true, id: salesOrderId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.picks?.errors?.generateFailed ?? "Failed to generate pick tasks" };
   }
 }
@@ -237,7 +237,7 @@ export async function assignPickTaskAction(formData: FormData): Promise<ActionRe
     revalidatePath("/picks");
     revalidatePath(`/picks/${input.taskId}`);
     return { ok: true, id: input.taskId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.picks?.errors?.assignFailed ?? "Failed to assign task" };
   }
 }
@@ -283,7 +283,7 @@ export async function startPickTaskAction(taskId: string): Promise<ActionResult>
     revalidatePath("/picks");
     revalidatePath(`/picks/${taskId}`);
     return { ok: true, id: taskId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.picks?.errors?.startFailed ?? "Failed to start task" };
   }
 }
@@ -339,7 +339,7 @@ export async function completePickTaskAction(formData: FormData): Promise<Action
     revalidatePath("/picks");
     revalidatePath(`/picks/${input.taskId}`);
     return { ok: true, id: input.taskId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.picks?.errors?.completeFailed ?? "Failed to complete task" };
   }
 }
@@ -385,7 +385,7 @@ export async function verifyPickTaskAction(taskId: string): Promise<ActionResult
     revalidatePath("/picks");
     revalidatePath(`/picks/${taskId}`);
     return { ok: true, id: taskId };
-  } catch (error) {
+  } catch (_error) {
     return { ok: false, error: t.picks?.errors?.verifyFailed ?? "Failed to verify task" };
   }
 }

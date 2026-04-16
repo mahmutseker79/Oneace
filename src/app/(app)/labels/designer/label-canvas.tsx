@@ -348,7 +348,7 @@ export function LabelCanvas({ initial, onChange, sample }: LabelCanvasProps) {
           </ul>
           {fields.length === 0 && (
             <p className="text-xs text-muted-foreground">
-              No fields yet. Click "Add" to place one.
+              No fields yet. Click &quot;Add&quot; to place one.
             </p>
           )}
         </section>

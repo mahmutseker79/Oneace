@@ -118,7 +118,7 @@ export default async function RollbackPage({
             <Card>
               <CardContent className="pt-6">
                 <p className="text-center text-muted-foreground">
-                  You don't have permission to rollback counts
+                  You don&apos;t have permission to rollback counts
                 </p>
               </CardContent>
             </Card>

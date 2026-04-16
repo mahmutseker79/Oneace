@@ -38,8 +38,8 @@ export default function GettingStartedPage() {
 
       <h2>Step 3 — Set up a warehouse</h2>
       <p>
-        Navigate to <strong>Locations → New location</strong>. Give it a name (e.g. "Main
-        Warehouse") and a short code (e.g. "MAIN"). OneAce tracks stock independently per location.
+        Navigate to <strong>Locations → New location</strong>. Give it a name (e.g. &quot;Main
+        Warehouse&quot;) and a short code (e.g. &quot;MAIN&quot;). OneAce tracks stock independently per location.
       </p>
       <p>
         The Free plan includes one location. Pro and Business plans include unlimited locations.

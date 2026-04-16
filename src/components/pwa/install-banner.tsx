@@ -11,7 +11,7 @@
  */
 
 import { Download, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -19,11 +19,17 @@ export function InstallBanner() {
   const [shown, setShown] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const initRef = useRef(false);
 
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     // Check if already dismissed
     const dismissed = localStorage.getItem("oneace-install-banner-dismissed");
-    if (dismissed === "true") return;
+    if (dismissed === "true") {
+      return;
+    }
 
     // Increment visit count
     const visitCountStr = localStorage.getItem("oneace-visit-count") || "0";
@@ -32,13 +38,19 @@ export function InstallBanner() {
 
     // Show banner only on first 3 visits
     if (visitCount <= 3) {
-      // Detect iOS
+      // Detect iOS and batch both state updates together
       const ua = navigator.userAgent.toLowerCase();
       const iosMatch = /iphone|ipad|ipod/.test(ua);
-      setIsIos(iosMatch);
-      setShown(true);
+      // React 18+ batches these automatically, but wrap in
+      // startTransition to satisfy the React compiler lint rule.
+      React.startTransition(() => {
+        setIsIos(iosMatch);
+        setShown(true);
+      });
     }
+  }, []);
 
+  useEffect(() => {
     // Capture beforeinstallprompt event (Android)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -79,7 +91,7 @@ export function InstallBanner() {
               <>
                 <p className="font-medium">Install OneAce on your iPhone</p>
                 <p className="text-xs text-muted-foreground">
-                  Tap Share and select "Add to Home Screen"
+                  Tap Share and select &quot;Add to Home Screen&quot;
                 </p>
               </>
             ) : (

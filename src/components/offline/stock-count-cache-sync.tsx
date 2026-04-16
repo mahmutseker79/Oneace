@@ -44,15 +44,18 @@ export function StockCountCacheSync({ scope, header, rows }: StockCountCacheSync
   const scopeRef = useRef(scope);
   const headerRef = useRef(header);
   const rowsRef = useRef(rows);
-  scopeRef.current = scope;
-  headerRef.current = header;
-  rowsRef.current = rows;
 
   // Holds the last signature we successfully wrote. Using a ref
   // (not state) keeps the dedupe entirely out of the React render
   // cycle — a write that "shouldn't have happened" is cheap but
   // pointless, so we skip it. Mirrors items-cache-sync.
   const lastWrittenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    scopeRef.current = scope;
+    headerRef.current = header;
+    rowsRef.current = rows;
+  }, [scope, header, rows]);
 
   // Signature changes on:
   //   - scope switch (different user / org)

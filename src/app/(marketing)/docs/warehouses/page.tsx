@@ -17,7 +17,7 @@ export default function WarehousesPage() {
       <h2>Creating a warehouse</h2>
       <p>
         Go to <strong>Locations → New location</strong>. Each warehouse has a name and a short code
-        (e.g. "WH-A"). You can optionally set address details for display purposes.
+        (e.g. &quot;WH-A&quot;). You can optionally set address details for display purposes.
       </p>
       <p>One warehouse can be marked as the default — it&apos;s pre-selected in movements.</p>
 
@@ -32,7 +32,7 @@ export default function WarehousesPage() {
           Open a warehouse and click <strong>Bins</strong>
         </li>
         <li>
-          Click <strong>New bin</strong> and enter a code (e.g. "A-01-03") and optional label
+          Click <strong>New bin</strong> and enter a code (e.g. &quot;A-01-03&quot;) and optional label
         </li>
         <li>
           Print barcode labels for your bins via the <strong>Print labels</strong> button
