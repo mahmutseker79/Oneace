@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
-import type { ReasonCategory } from "@/generated/prisma";
+import type { ReasonCategory, ReasonCode } from "@/generated/prisma";
 import { ReasonCodeTableClient } from "./reason-code-table-client";
 
 export async function generateMetadata(): Promise<Metadata> {

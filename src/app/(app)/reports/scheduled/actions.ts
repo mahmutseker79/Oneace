@@ -140,7 +140,7 @@ export async function updateScheduledReport(
 			},
 		});
 
-		return { ok: true };
+		return { ok: true } as ActionResult<void>;
 	} catch (error) {
 		if (error instanceof z.ZodError) {
 			return { ok: false, error: "Invalid input" };
@@ -177,7 +177,7 @@ export async function deleteScheduledReport(
 		// Delete
 		await db.scheduledReport.delete({ where: { id: reportId } });
 
-		return { ok: true };
+		return { ok: true } as ActionResult<void>;
 	} catch (error) {
 		console.error("Delete scheduled report error:", error);
 		return { ok: false, error: "Failed to delete report" };

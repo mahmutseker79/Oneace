@@ -62,6 +62,8 @@ export const en = {
 			MANAGER: "Operator",
 			MEMBER: "Operator",
 			VIEWER: "Viewer",
+			APPROVER: "Approver",
+			COUNTER: "Counter",
 		},
 		roleDescriptions: {
 			OWNER:
@@ -70,6 +72,8 @@ export const en = {
 			MEMBER:
 				"Day-to-day inventory operations: items, movements, counts, and purchase orders.",
 			VIEWER: "Read-only access. Cannot create, edit, or delete anything.",
+			APPROVER: "Approve stock counts and inventory adjustments.",
+			COUNTER: "Conduct stock counts and inventory counts.",
 		},
 	},
 
@@ -2027,6 +2031,8 @@ export const en = {
 			MANAGER: "Manager",
 			MEMBER: "Member",
 			VIEWER: "Viewer",
+			APPROVER: "Approver",
+			COUNTER: "Counter",
 		},
 		roleHelp: {
 			OWNER: "Full control, including billing and organization deletion.",
@@ -2034,6 +2040,8 @@ export const en = {
 			MANAGER: "Manage inventory, orders, and stock counts.",
 			MEMBER: "Read and write day-to-day inventory data.",
 			VIEWER: "Read-only access to reports and lists.",
+			APPROVER: "Approve stock counts and inventory adjustments.",
+			COUNTER: "Conduct stock counts and inventory counts.",
 		},
 		actions: {
 			changeRole: "Change role",

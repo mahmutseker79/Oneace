@@ -659,7 +659,7 @@ export async function completeStockCountAction(
       })),
     );
     if (batch.length < BATCH_SIZE) break;
-    cursor = batch[batch.length - 1].id;
+    cursor = batch[batch.length - 1]?.id ?? cursor;
   }
 
   // Stale-read note: snapshots/entries were read OUTSIDE the transaction

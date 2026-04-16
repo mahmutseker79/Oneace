@@ -118,7 +118,7 @@ export default function VarianceTrendPage() {
 		? trendData.reduce((sum, d) => sum + d.variance, 0) / trendData.length
 		: 0;
 
-	const latestVariance = trendData.length > 0 ? trendData[trendData.length - 1].variance : 0;
+	const latestVariance = trendData.length > 0 ? trendData[trendData.length - 1]?.variance ?? 0 : 0;
 	const trend = latestVariance < avgVariance ? "improving" : "worsening";
 
 	return (
@@ -215,7 +215,7 @@ export default function VarianceTrendPage() {
 								<CartesianGrid strokeDasharray="3 3" />
 								<XAxis dataKey="date" />
 								<YAxis />
-								<Tooltip formatter={(value) => `${value.toFixed(2)}%`} />
+								<Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
 								<Legend />
 								<Line
 									type="monotone"

@@ -130,10 +130,10 @@ export default async function LocationsPage({ params }: PageProps) {
         </div>
 
         {hasChildren &&
-          location.children.map((childId) => {
-            const child = locationMap.get(childId);
-            return child ? (
-              <LocationTreeNode key={child.id} location={child} depth={depth + 1} />
+          location.children.map((child) => {
+            const location_detail = locationMap.get(child.id);
+            return location_detail ? (
+              <LocationTreeNode key={location_detail.id} location={location_detail} depth={depth + 1} />
             ) : null;
           })}
       </div>

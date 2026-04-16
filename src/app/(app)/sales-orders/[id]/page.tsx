@@ -159,13 +159,13 @@ export default async function SalesOrderDetailPage({
             <form action={async () => { "use server"; await confirmSalesOrderAction(order.id); }}>
               <Button type="submit"><Package className="h-4 w-4 mr-1" /> Confirm Order</Button>
             </form>
-            <form action={async () => { "use server"; await cancelSalesOrderAction(order.id); }}>
+            <form action={async (formData: FormData) => { "use server"; const fd = new FormData(); fd.set("id", order.id); await cancelSalesOrderAction(fd); }}>
               <Button type="submit" variant="destructive">Cancel</Button>
             </form>
           </>
         )}
         {order.status === "CONFIRMED" && canEdit && (
-          <form action={async () => { "use server"; await allocateSalesOrderAction(order.id); }}>
+          <form action={async (formData: FormData) => { "use server"; const fd = new FormData(); fd.set("id", order.id); await allocateSalesOrderAction(fd); }}>
             <Button type="submit"><Package className="h-4 w-4 mr-1" /> Allocate Stock</Button>
           </form>
         )}
@@ -178,13 +178,13 @@ export default async function SalesOrderDetailPage({
         )}
       </div>
 
-      {order.notes && (
+      {order.note && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs text-muted-foreground font-normal">Notes</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{order.notes}</p>
+            <p className="text-sm whitespace-pre-wrap">{order.note}</p>
           </CardContent>
         </Card>
       )}
