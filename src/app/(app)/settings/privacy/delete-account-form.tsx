@@ -84,7 +84,6 @@ export function DeleteAccountForm({ isDisabled = false, labels }: DeleteAccountF
           variant="destructive"
           onClick={handleDelete}
           disabled={!isConfirmed || isDisabled || isLoading}
-          loading={isLoading}
         >
           {isLoading ? "Deleting..." : labels.button}
         </Button>

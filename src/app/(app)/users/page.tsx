@@ -33,6 +33,8 @@ const ROLE_ORDER: Record<Role, number> = {
   [Role.MANAGER]: 2,
   [Role.MEMBER]: 3,
   [Role.VIEWER]: 4,
+  [Role.APPROVER]: 5,
+  [Role.COUNTER]: 6,
 };
 
 const roleOptions = Object.values(Role).map((role) => ({

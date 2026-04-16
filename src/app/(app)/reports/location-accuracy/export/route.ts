@@ -55,7 +55,7 @@ export async function GET() {
     select: {
       countId: true,
       itemId: true,
-      systemQty: true,
+      expectedQuantity: true,
     },
   });
 
@@ -111,7 +111,7 @@ export async function GET() {
     for (const snap of countSnaps) {
       const entry = countEnts.find((e) => e.itemId === snap.itemId);
       const countedQty = entry?.countedQuantity ?? 0;
-      const variance = countedQty - snap.systemQty;
+      const variance = countedQty - snap.expectedQuantity;
 
       if (variance === 0) {
         wh.accurateLines += 1;

@@ -85,7 +85,7 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
       const input: ReceiveTransferInput = {
         transferId,
         lines: receiveLines,
-        note: note || undefined,
+        note: note ?? null,
       };
 
       const result = await receiveTransferAction(input);

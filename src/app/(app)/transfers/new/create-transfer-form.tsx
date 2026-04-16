@@ -44,7 +44,7 @@ export function CreateTransferForm({ warehouses }: CreateTransferFormProps) {
       const input: CreateTransferInput = {
         fromWarehouseId,
         toWarehouseId,
-        note: note || undefined,
+        note: note ?? null,
       };
 
       const result = await createTransferAction(input);

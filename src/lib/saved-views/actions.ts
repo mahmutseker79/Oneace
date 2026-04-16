@@ -192,7 +192,7 @@ export async function getSavedViewsAction(page: string): Promise<ActionResult<{ 
       },
     });
 
-    return { ok: true, id: "", views };
+    return { ok: true, views };
   } catch (error) {
     return { ok: false, error: "Failed to fetch saved views" };
   }

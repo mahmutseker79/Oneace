@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { updateOrgSettingsAction } from "./actions";
-import { useActionState } from "react";
 import { toast } from "sonner";
+import type { ActionResult } from "@/lib/validation/action-result";
 
 interface GeneralSettingsFormProps {
   settings: {
@@ -42,7 +42,7 @@ interface GeneralSettingsFormProps {
 }
 
 export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
-  const [state, formAction] = useActionState(updateOrgSettingsAction, { ok: false } as any);
+  const [state, setState] = useState<ActionResult<{ data: any }>>({ ok: false, error: "" });
 
   const [formData, setFormData] = useState({
     transferNumberPrefix: settings.transferNumberPrefix,
@@ -77,6 +77,7 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
     };
 
     const result = await updateOrgSettingsAction(formInput);
+    setState(result);
     if (result.ok) {
       toast.success("Settings saved successfully");
     } else {

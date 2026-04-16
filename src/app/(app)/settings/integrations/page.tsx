@@ -8,6 +8,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { IntegrationProvider } from "@/generated/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { requireActiveMembership } from "@/lib/session";
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
 
 interface IntegrationCard {
   id: string;
-  provider: string;
+  provider: IntegrationProvider;
   status: string;
   lastSyncAt: Date | null;
   icon: string;

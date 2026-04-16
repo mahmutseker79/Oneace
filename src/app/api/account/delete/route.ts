@@ -83,7 +83,6 @@ export async function POST(request: Request) {
         where: { userId: session.user.id },
       }),
       // Delete two-factor auth if exists
-      // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
       db.twoFactorAuth.deleteMany({
         where: { userId: session.user.id },
       }),

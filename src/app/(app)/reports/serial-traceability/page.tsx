@@ -1,5 +1,6 @@
 import { Barcode } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -29,8 +30,8 @@ export async function generateMetadata(): Promise<Metadata> {
 type SerialHistoryRow = {
   date: Date;
   action: string;
-  fromLocation: string;
-  toLocation: string;
+  fromWarehouse: string;
+  toWarehouse: string;
   user: string;
   reference: string;
   note: string;
@@ -82,15 +83,10 @@ export default async function SerialTraceabilityReportPage({
     if (serial) {
       const history = await db.serialHistory.findMany({
         where: { serialNumberId: serial.id },
-        select: {
-          id: true,
-          action: true,
-          fromLocation: true,
-          toLocation: true,
-          performedAt: true,
+        include: {
+          fromWarehouse: { select: { name: true } },
+          toWarehouse: { select: { name: true } },
           performedBy: { select: { name: true } },
-          reference: true,
-          note: true,
         },
         orderBy: { performedAt: "asc" },
       });
@@ -102,12 +98,12 @@ export default async function SerialTraceabilityReportPage({
         itemName: serial.item.name,
         itemSku: serial.item.sku,
         currentStatus: currentHistory?.action ?? "UNKNOWN",
-        currentLocation: currentHistory?.toLocation ?? currentHistory?.fromLocation ?? "Unknown",
+        currentLocation: currentHistory?.toWarehouse?.name ?? currentHistory?.fromWarehouse?.name ?? "Unknown",
         history: history.map((h) => ({
           date: h.performedAt,
           action: h.action,
-          fromLocation: h.fromLocation ?? "",
-          toLocation: h.toLocation ?? "",
+          fromWarehouse: h.fromWarehouse?.name ?? "",
+          toWarehouse: h.toWarehouse?.name ?? "",
           user: h.performedBy?.name ?? "",
           reference: h.reference ?? "",
           note: h.note ?? "",
@@ -202,8 +198,8 @@ export default async function SerialTraceabilityReportPage({
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Action</TableHead>
-                    <TableHead>From Location</TableHead>
-                    <TableHead>To Location</TableHead>
+                    <TableHead>From Warehouse</TableHead>
+                    <TableHead>To Warehouse</TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Reference</TableHead>
                     <TableHead>Note</TableHead>
@@ -216,8 +212,8 @@ export default async function SerialTraceabilityReportPage({
                         {dateFmt.format(entry.date)}
                       </TableCell>
                       <TableCell className="text-sm font-medium">{entry.action}</TableCell>
-                      <TableCell className="text-sm">{entry.fromLocation || "—"}</TableCell>
-                      <TableCell className="text-sm">{entry.toLocation || "—"}</TableCell>
+                      <TableCell className="text-sm">{entry.fromWarehouse || "—"}</TableCell>
+                      <TableCell className="text-sm">{entry.toWarehouse || "—"}</TableCell>
                       <TableCell className="text-sm">{entry.user || "—"}</TableCell>
                       <TableCell className="text-sm font-mono">{entry.reference || "—"}</TableCell>
                       <TableCell className="text-sm max-w-xs truncate">{entry.note || "—"}</TableCell>

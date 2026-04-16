@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { serializeCsv } from "./csv";
+import { serializeCsv, type CsvColumn } from "./csv";
 
 type Row = { name: string; qty: number | null; note: string | undefined };
 
@@ -11,7 +11,7 @@ const COLUMNS = [
   { header: "Name", value: (r: Row) => r.name },
   { header: "Qty", value: (r: Row) => r.qty },
   { header: "Note", value: (r: Row) => r.note },
-] as const;
+] as const as CsvColumn<Row>[];
 
 const BOM = "\ufeff";
 

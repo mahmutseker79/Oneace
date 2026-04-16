@@ -24,7 +24,6 @@ export async function enableTwoFactorAction() {
   const userId = session.user.id;
 
   // Check if user already has 2FA enabled
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
   const existing = await db.twoFactorAuth.findUnique({
     where: { userId },
   });
@@ -34,21 +33,20 @@ export async function enableTwoFactorAction() {
   }
 
   // Generate new secret and backup codes
-  const { secret, uri, backupCodes } = generateTotpSecret(session.user.email);
+  const { secret, uri, backupCodes, backupCodesHashed } = generateTotpSecret(session.user.email);
 
   // Store the secret (not yet enabled) in the database
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
   await db.twoFactorAuth.upsert({
     where: { userId },
     create: {
       userId,
       secret,
-      backupCodes,
+      backupCodes: backupCodesHashed,
       enabled: false,
     },
     update: {
       secret,
-      backupCodes,
+      backupCodes: backupCodesHashed,
       enabled: false,
       verifiedAt: null,
     },
@@ -81,7 +79,6 @@ export async function verifyAndActivateTwoFactorAction(code: string): Promise<bo
   const userId = session.user.id;
 
   // Get the pending 2FA setup
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
   const twoFactorAuth = await db.twoFactorAuth.findUnique({
     where: { userId },
   });
@@ -102,7 +99,6 @@ export async function verifyAndActivateTwoFactorAction(code: string): Promise<bo
 
   // Mark 2FA as enabled
   const now = new Date();
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
   await db.twoFactorAuth.update({
     where: { userId },
     data: {
@@ -132,7 +128,6 @@ export async function disableTwoFactorAction(code: string): Promise<boolean> {
   const userId = session.user.id;
 
   // Get the current 2FA setup
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
   const twoFactorAuth = await db.twoFactorAuth.findUnique({
     where: { userId },
   });
@@ -145,7 +140,6 @@ export async function disableTwoFactorAction(code: string): Promise<boolean> {
   const isTotpValid = verifyTotpCode(twoFactorAuth.secret, code);
   if (isTotpValid) {
     // Delete the entire 2FA record
-    // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
     await db.twoFactorAuth.delete({
       where: { userId },
     });
@@ -154,12 +148,10 @@ export async function disableTwoFactorAction(code: string): Promise<boolean> {
   }
 
   // Try backup code
-  const backupCodesCopy = [...twoFactorAuth.backupCodes];
-  const backupResult = verifyBackupCode(backupCodesCopy, code);
+  const backupResult = verifyBackupCode(code, twoFactorAuth.backupCodes);
 
   if (backupResult.valid) {
     // Delete the entire 2FA record (since they used a backup code to disable)
-    // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
     await db.twoFactorAuth.delete({
       where: { userId },
     });
@@ -186,7 +178,6 @@ export async function regenerateBackupCodesAction(code: string): Promise<string[
   const userId = session.user.id;
 
   // Get the current 2FA setup
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
   const twoFactorAuth = await db.twoFactorAuth.findUnique({
     where: { userId },
   });
@@ -202,18 +193,18 @@ export async function regenerateBackupCodesAction(code: string): Promise<string[
   }
 
   // Generate new backup codes
-  const newBackupCodes = generateBackupCodes(10);
+  const { plain, hashed } = generateBackupCodes(10);
 
-  // Update in database
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
+  // Update in database (store only hashed codes)
   await db.twoFactorAuth.update({
     where: { userId },
     data: {
-      backupCodes: newBackupCodes,
+      backupCodes: hashed,
     },
   });
 
-  return newBackupCodes;
+  // Return only plain codes to display to user
+  return plain;
 }
 
 /**
@@ -226,7 +217,6 @@ export async function getTwoFactorStatusAction() {
   const { session } = await requireActiveMembership();
   const userId = session.user.id;
 
-  // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
   const twoFactorAuth = await db.twoFactorAuth.findUnique({
     where: { userId },
     select: {

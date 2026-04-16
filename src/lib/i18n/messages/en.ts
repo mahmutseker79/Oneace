@@ -1894,6 +1894,15 @@ export const en = {
 		reordered: "Locations reordered",
 		deleteConfirmTitle: "Delete this location?",
 		deleteConfirmBody: "This action cannot be undone.",
+		errors: {
+			createFailed: "Failed to create location",
+			updateFailed: "Failed to update location",
+			deleteFailed: "Failed to delete location",
+			reorderFailed: "Failed to reorder locations",
+			notFound: "Location not found",
+			parentNotFound: "Parent location not found",
+			codeExists: "Location code already exists in this warehouse",
+		},
 	},
 
 	serials: {

@@ -51,7 +51,7 @@ export default async function StockExceptionsReportPage() {
     select: {
       id: true,
       quantity: true,
-      item: { select: { sku: true, name: true } },
+      item: { select: { id: true, sku: true, name: true } },
       warehouse: { select: { name: true } },
     },
     orderBy: [{ quantity: "asc" }],

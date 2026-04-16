@@ -3,12 +3,13 @@ import { randomBytes, createHash, timingSafeEqual } from "crypto";
 
 /**
  * Result of TOTP secret generation.
- * Includes the secret, provisioning URI for QR code scanning, and backup codes.
+ * Includes the secret, provisioning URI for QR code scanning, and backup codes (plain and hashed).
  */
 export interface GeneratedTotpSecret {
   secret: string;
   uri: string;
   backupCodes: string[];
+  backupCodesHashed: string[];
 }
 
 /**
@@ -47,12 +48,13 @@ export function generateTotpSecret(email: string): GeneratedTotpSecret {
   const uri = totp.toString();
 
   // Generate 10 backup codes (8-character alphanumeric strings)
-  const { plain: backupCodes } = generateBackupCodes(10);
+  const { plain: backupCodes, hashed: backupCodesHashed } = generateBackupCodes(10);
 
   return {
     secret,
     uri,
     backupCodes,
+    backupCodesHashed,
   };
 }
 
@@ -138,7 +140,7 @@ export function verifyBackupCode(input: string, storedHashes: string[]): { valid
   const inputBuf = Buffer.from(inputHash, "hex");
 
   for (let i = 0; i < storedHashes.length; i++) {
-    const storedBuf = Buffer.from(storedHashes[i], "hex");
+    const storedBuf = Buffer.from(storedHashes[i]!, "hex");
     if (inputBuf.length === storedBuf.length && timingSafeEqual(inputBuf, storedBuf)) {
       return { valid: true, index: i };
     }

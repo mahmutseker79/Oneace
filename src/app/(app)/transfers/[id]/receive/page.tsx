@@ -29,17 +29,13 @@ export default async function ReceivePage({ params }: PageProps) {
   // Verify transfer exists and is IN_TRANSIT
   const transfer = await db.stockTransfer.findFirst({
     where: { id, organizationId: membership.organizationId },
-    select: {
-      id: true,
-      status: true,
-      transferNumber: true,
+    include: {
       fromWarehouse: { select: { name: true } },
       toWarehouse: { select: { name: true } },
       lines: {
         include: {
           item: { select: { id: true, sku: true, name: true } },
         },
-        orderBy: { createdAt: "asc" },
       },
     },
   });

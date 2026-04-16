@@ -75,7 +75,6 @@ export async function POST(req: Request) {
     }
 
     // Get the user's 2FA configuration
-    // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
     const twoFactorAuth = await db.twoFactorAuth.findUnique({
       where: { userId },
       select: {
@@ -107,7 +106,6 @@ export async function POST(req: Request) {
       backupCodesCopy.splice(backupResult.index, 1);
 
       // Update the backup codes (one was consumed)
-      // @ts-expect-error - TwoFactorAuth model added in latest migration, Prisma client will be regenerated
       await db.twoFactorAuth.update({
         where: { userId },
         data: {

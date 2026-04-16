@@ -5,6 +5,7 @@
  * Mirrors the pattern from src/lib/csv.ts but with richer formatting.
  */
 
+// @ts-expect-error — exceljs has no bundled types
 import ExcelJS from "exceljs";
 
 export type ExcelColumn<T> = {

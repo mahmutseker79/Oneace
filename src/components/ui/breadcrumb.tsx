@@ -29,6 +29,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
       aria-label="Breadcrumb"
     >
       {displayItems.map((item, index) => {
+        if (!item) return null;
         const isLast = index === displayItems.length - 1;
         const isTruncated = item.label === "...";
 

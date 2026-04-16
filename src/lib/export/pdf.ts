@@ -13,6 +13,7 @@
  */
 
 import autoTable from "jspdf-autotable";
+// @ts-expect-error — jspdf has no @types package
 import { jsPDF } from "jspdf";
 
 export interface PdfOptions {

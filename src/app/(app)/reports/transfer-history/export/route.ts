@@ -30,19 +30,13 @@ export async function GET() {
 
   const transfers = await db.stockTransfer.findMany({
     where: { organizationId: membership.organizationId },
-    select: {
-      id: true,
-      transferNumber: true,
+    include: {
       fromWarehouse: { select: { name: true } },
       toWarehouse: { select: { name: true } },
-      status: true,
-      shippedAt: true,
-      receivedAt: true,
       lines: {
         select: {
-          quantity: true,
-          shippedQuantity: true,
-          receivedQuantity: true,
+          shippedQty: true,
+          receivedQty: true,
         },
       },
     },
@@ -55,9 +49,9 @@ export async function GET() {
   });
 
   const rows: ExportRow[] = transfers.map((t) => {
-    const shippedQty = t.lines.reduce((s, l) => s + (l.shippedQuantity ?? 0), 0);
-    const receivedQty = t.lines.reduce((s, l) => s + (l.receivedQuantity ?? 0), 0);
-    const discrepancy = shippedQty - receivedQty;
+    const shippedQty = t.lines.reduce((s, l) => s + (l.shippedQty ?? 0), 0);
+    const receivedQty = t.lines.reduce((s, l) => s + (l.receivedQty ?? 0), 0);
+    const discrepancy = receivedQty - shippedQty;
 
     return {
       transferNumber: t.transferNumber,

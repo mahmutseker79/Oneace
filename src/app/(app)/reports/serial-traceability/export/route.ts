@@ -7,8 +7,8 @@ import type { CsvColumn } from "@/lib/csv";
 type ExportRow = {
   date: string;
   action: string;
-  fromLocation: string;
-  toLocation: string;
+  fromWarehouse: string;
+  toWarehouse: string;
   user: string;
   reference: string;
   note: string;
@@ -32,8 +32,8 @@ export async function GET(request: Request) {
     const columns: CsvColumn<ExportRow>[] = [
       { header: "Date", value: (r) => r.date },
       { header: "Action", value: (r) => r.action },
-      { header: "From Location", value: (r) => r.fromLocation },
-      { header: "To Location", value: (r) => r.toLocation },
+      { header: "From Warehouse", value: (r) => r.fromWarehouse },
+      { header: "To Warehouse", value: (r) => r.toWarehouse },
       { header: "User", value: (r) => r.user },
       { header: "Reference", value: (r) => r.reference },
       { header: "Note", value: (r) => r.note },
@@ -60,8 +60,8 @@ export async function GET(request: Request) {
     const columns: CsvColumn<ExportRow>[] = [
       { header: "Date", value: (r) => r.date },
       { header: "Action", value: (r) => r.action },
-      { header: "From Location", value: (r) => r.fromLocation },
-      { header: "To Location", value: (r) => r.toLocation },
+      { header: "From Warehouse", value: (r) => r.fromWarehouse },
+      { header: "To Warehouse", value: (r) => r.toWarehouse },
       { header: "User", value: (r) => r.user },
       { header: "Reference", value: (r) => r.reference },
       { header: "Note", value: (r) => r.note },
@@ -73,14 +73,10 @@ export async function GET(request: Request) {
 
   const history = await db.serialHistory.findMany({
     where: { serialNumberId: serial.id },
-    select: {
-      action: true,
-      fromLocation: true,
-      toLocation: true,
-      performedAt: true,
+    include: {
+      fromWarehouse: { select: { name: true } },
+      toWarehouse: { select: { name: true } },
       performedBy: { select: { name: true } },
-      reference: true,
-      note: true,
     },
     orderBy: { performedAt: "asc" },
   });
@@ -93,8 +89,8 @@ export async function GET(request: Request) {
   const rows: ExportRow[] = history.map((h) => ({
     date: dateFmt.format(h.performedAt),
     action: h.action,
-    fromLocation: h.fromLocation ?? "",
-    toLocation: h.toLocation ?? "",
+    fromWarehouse: h.fromWarehouse?.name ?? "",
+    toWarehouse: h.toWarehouse?.name ?? "",
     user: h.performedBy?.name ?? "",
     reference: h.reference ?? "",
     note: h.note ?? "",
@@ -103,8 +99,8 @@ export async function GET(request: Request) {
   const columns: CsvColumn<ExportRow>[] = [
     { header: "Date", value: (r) => r.date },
     { header: "Action", value: (r) => r.action },
-    { header: "From Location", value: (r) => r.fromLocation },
-    { header: "To Location", value: (r) => r.toLocation },
+    { header: "From Warehouse", value: (r) => r.fromWarehouse },
+    { header: "To Warehouse", value: (r) => r.toWarehouse },
     { header: "User", value: (r) => r.user },
     { header: "Reference", value: (r) => r.reference },
     { header: "Note", value: (r) => r.note },

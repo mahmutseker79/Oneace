@@ -19,6 +19,7 @@ function verifyOAuthState(
   const parts = state.split("|");
   if (parts.length !== 3) return null; // expect orgId|userId|signature
   const [organizationId, userId, signature] = parts;
+  if (!organizationId || !userId || !signature) return null;
   const expected = createHmac("sha256", secret)
     .update(`${organizationId}|${userId}`)
     .digest("hex");

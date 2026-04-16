@@ -139,7 +139,7 @@ export default async function TransfersPage() {
                       },
                       {
                         label: "Date",
-                        value: fmtDate(transfer.createdAt, region),
+                        value: fmtDate(transfer.createdAt, region.numberLocale),
                       },
                       {
                         label: "Items",
@@ -182,8 +182,8 @@ export default async function TransfersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{transfer.lines.length}</TableCell>
-                    <TableCell>{fmtDate(transfer.shippedAt, region)}</TableCell>
-                    <TableCell>{fmtDate(transfer.receivedAt, region)}</TableCell>
+                    <TableCell>{fmtDate(transfer.shippedAt, region.numberLocale)}</TableCell>
+                    <TableCell>{fmtDate(transfer.receivedAt, region.numberLocale)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

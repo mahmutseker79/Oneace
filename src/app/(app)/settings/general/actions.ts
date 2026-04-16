@@ -20,7 +20,7 @@ import type { ActionResult } from "@/lib/validation/action-result";
  */
 export async function updateOrgSettingsAction(
   input: UpdateOrgSettingsInput,
-): Promise<ActionResult<unknown>> {
+): Promise<ActionResult<{ data: any }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -114,7 +114,7 @@ export async function updateOrgSettingsAction(
  * Used by the settings page to populate the form.
  * If OrgSettings doesn't exist yet, this returns the seeded defaults.
  */
-export async function getOrCreateOrgSettingsAction(): Promise<ActionResult<unknown>> {
+export async function getOrCreateOrgSettingsAction(): Promise<ActionResult<{ data: any }>> {
   const { membership } = await requireActiveMembership();
 
   try {

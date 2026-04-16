@@ -74,7 +74,6 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
         include: {
           item: { select: { id: true, sku: true, name: true } },
         },
-        orderBy: { createdAt: "asc" },
       },
     },
   });
@@ -132,19 +131,19 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground">Shipped Date</p>
-            <p className="text-sm font-semibold">{fmtDateOnly(transfer.shippedAt, region)}</p>
+            <p className="text-sm font-semibold">{fmtDateOnly(transfer.shippedAt, region.numberLocale)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground">Received Date</p>
-            <p className="text-sm font-semibold">{fmtDateOnly(transfer.receivedAt, region)}</p>
+            <p className="text-sm font-semibold">{fmtDateOnly(transfer.receivedAt, region.numberLocale)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground">Created</p>
-            <p className="text-sm font-semibold">{fmtDateOnly(transfer.createdAt, region)}</p>
+            <p className="text-sm font-semibold">{fmtDateOnly(transfer.createdAt, region.numberLocale)}</p>
           </CardContent>
         </Card>
       </div>

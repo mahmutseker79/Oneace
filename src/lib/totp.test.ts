@@ -86,9 +86,9 @@ describe("TOTP", () => {
   describe("generateBackupCodes", () => {
     it("should generate the requested number of backup codes", () => {
       const codes = generateBackupCodes(10);
-      expect(codes.length).toBe(10);
+      expect(codes.plain.length).toBe(10);
 
-      codes.forEach((code) => {
+      codes.plain.forEach((code) => {
         expect(code.length).toBe(8);
         expect(/^[A-Z0-9]+$/.test(code)).toBe(true);
       });
@@ -96,74 +96,68 @@ describe("TOTP", () => {
 
     it("should generate unique backup codes", () => {
       const codes = generateBackupCodes(20);
-      const uniqueCodes = new Set(codes);
+      const uniqueCodes = new Set(codes.plain);
 
       // All codes should be unique (extremely high probability)
-      expect(uniqueCodes.size).toBe(codes.length);
+      expect(uniqueCodes.size).toBe(codes.plain.length);
     });
 
     it("should use default count of 10 if not specified", () => {
       const codes = generateBackupCodes();
-      expect(codes.length).toBe(10);
+      expect(codes.plain.length).toBe(10);
     });
   });
 
   describe("verifyBackupCode", () => {
-    it("should verify a valid backup code and remove it from the list", () => {
+    it("should verify a valid backup code", () => {
       const codes = generateBackupCodes(3);
-      const codeToVerify = codes[1]!;
+      const codeToVerify = codes.plain[1]!;
 
-      const result = verifyBackupCode(codes, codeToVerify);
+      const result = verifyBackupCode(codeToVerify, codes.hashed);
 
       expect(result.valid).toBe(true);
-      expect(result.remaining).toBe(2);
-      expect(codes.includes(codeToVerify)).toBe(false);
+      expect(result.index).toBe(1);
     });
 
     it("should reject an invalid backup code", () => {
       const codes = generateBackupCodes(3);
-      const initialCount = codes.length;
 
-      const result = verifyBackupCode(codes, "INVALID00");
+      const result = verifyBackupCode("INVALID00", codes.hashed);
 
       expect(result.valid).toBe(false);
-      expect(result.remaining).toBe(initialCount);
-      expect(codes.length).toBe(initialCount);
+      expect(result.index).toBe(-1);
     });
 
     it("should handle case-insensitive comparison", () => {
       const codes = generateBackupCodes(3);
-      const originalCode = codes[0]!;
+      const originalCode = codes.plain[0]!;
       const lowerCode = originalCode.toLowerCase();
 
-      const result = verifyBackupCode(codes, lowerCode);
+      const result = verifyBackupCode(lowerCode, codes.hashed);
 
       expect(result.valid).toBe(true);
-      expect(result.remaining).toBe(2);
+      expect(result.index).toBe(0);
     });
 
     it("should handle codes with spaces", () => {
       const codes = generateBackupCodes(3);
-      const originalCode = codes[0]!;
+      const originalCode = codes.plain[0]!;
       const codeWithSpaces = originalCode.slice(0, 4) + " " + originalCode.slice(4);
 
-      const result = verifyBackupCode(codes, codeWithSpaces);
+      const result = verifyBackupCode(codeWithSpaces, codes.hashed);
 
       expect(result.valid).toBe(true);
-      expect(result.remaining).toBe(2);
+      expect(result.index).toBe(0);
     });
 
-    it("should prevent reuse of backup codes", () => {
-      const codes = generateBackupCodes(2);
-      const codeToUse = codes[0]!;
+    it("should return the correct index for matched codes", () => {
+      const codes = generateBackupCodes(5);
+      const codeToUse = codes.plain[2]!;
 
-      // First use should succeed
-      const result1 = verifyBackupCode(codes, codeToUse);
-      expect(result1.valid).toBe(true);
+      const result = verifyBackupCode(codeToUse, codes.hashed);
 
-      // Second use should fail
-      const result2 = verifyBackupCode(codes, codeToUse);
-      expect(result2.valid).toBe(false);
+      expect(result.valid).toBe(true);
+      expect(result.index).toBe(2);
     });
   });
 });

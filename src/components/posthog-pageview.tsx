@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+// @ts-expect-error — posthog-js has no bundled types
 import posthog from "posthog-js";
 
 /**

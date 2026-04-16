@@ -246,6 +246,9 @@ model User {
   printedLabels       ZoneLabel[]        @relation("PrintedBy")
   createdMigrations   MigrationJob[]     @relation("MigrationCreatedBy")
   assignedPickTasks   PickTask[]
+  transfersShipped    StockTransfer[]     @relation("TransferShippedBy")
+  transfersReceived   StockTransfer[]     @relation("TransferReceivedBy")
+  serialHistories     SerialHistory[]
 
   @@index([email])
 }
@@ -335,6 +338,10 @@ model Warehouse {
   locationLevels      LocationLevel[]
   countZones          CountZone[]
   pickTasks           PickTask[]
+  transfersFrom       StockTransfer[]      @relation("TransferFromWarehouse")
+  transfersTo         StockTransfer[]      @relation("TransferToWarehouse")
+  serialHistoryFrom   SerialHistory[]      @relation("HistoryFromWarehouse")
+  serialHistoryTo     SerialHistory[]      @relation("HistoryToWarehouse")
 
   @@unique([organizationId, code])
   @@index([organizationId])
@@ -448,6 +455,7 @@ model Item {
   attachments         ItemAttachment[]
   kits                Kit[]
   pickTasks           PickTask[]
+  transferLines       StockTransferLine[]  @relation("TransferLineItem")
 
   @@unique([organizationId, sku])
   @@index([organizationId])
@@ -1720,6 +1728,7 @@ model SerialNumber {
   // Back-references for V4 tracking
   stockMovements    StockMovement[]  @relation("MovementSerial")
   countEntries      CountEntry[]     @relation("EntrySerial")
+  transferLines     StockTransferLine[]
 
   @@unique([organizationId, serialNumber])
   @@index([organizationId, itemId])
@@ -1742,6 +1751,9 @@ model SerialHistory {
   performedAt       DateTime         @default(now())
 
   serialNumber      SerialNumber     @relation(fields: [serialNumberId], references: [id], onDelete: Cascade)
+  fromWarehouse     Warehouse?       @relation("HistoryFromWarehouse", fields: [fromWarehouseId], references: [id], onDelete: SetNull)
+  toWarehouse       Warehouse?       @relation("HistoryToWarehouse", fields: [toWarehouseId], references: [id], onDelete: SetNull)
+  performedBy       User?            @relation(fields: [performedByUserId], references: [id], onDelete: SetNull)
 
   @@index([serialNumberId, performedAt])
 }
@@ -1839,6 +1851,10 @@ model StockTransfer {
   updatedAt         DateTime         @updatedAt
 
   organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fromWarehouse     Warehouse        @relation("TransferFromWarehouse", fields: [fromWarehouseId], references: [id], onDelete: Restrict)
+  toWarehouse       Warehouse        @relation("TransferToWarehouse", fields: [toWarehouseId], references: [id], onDelete: Restrict)
+  shippedBy         User?            @relation("TransferShippedBy", fields: [shippedByUserId], references: [id], onDelete: SetNull)
+  receivedBy        User?            @relation("TransferReceivedBy", fields: [receivedByUserId], references: [id], onDelete: SetNull)
   lines             StockTransferLine[]
 
   @@unique([organizationId, transferNumber])
@@ -1861,6 +1877,10 @@ model StockTransferLine {
   note              String?
 
   transfer          StockTransfer    @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  item              Item             @relation("TransferLineItem", fields: [itemId], references: [id], onDelete: Restrict)
+  variant           ItemVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  batch             ItemBatch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  serialNumber      SerialNumber?    @relation(fields: [serialNumberId], references: [id], onDelete: SetNull)
 
   @@index([transferId])
 }
@@ -2066,6 +2086,7 @@ model ItemVariant {
   barcodes          ItemBarcode[]
   stockLevels       VariantStockLevel[]
   movements         VariantStockMovement[]
+  transferLines     StockTransferLine[]
 
   @@unique([organizationId, sku])
   @@index([organizationId, itemId])
@@ -2257,6 +2278,7 @@ model ItemBatch {
   // Back-references for V4 tracking
   stockMovements    StockMovement[]  @relation("MovementBatch")
   countEntries      CountEntry[]     @relation("EntryBatch")
+  transferLines     StockTransferLine[]
 
   @@unique([organizationId, itemId, batchNumber])
   @@index([organizationId, itemId])

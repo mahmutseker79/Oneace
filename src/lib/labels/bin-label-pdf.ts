@@ -17,6 +17,7 @@
  * in a monospace font as a text representation.
  */
 
+// @ts-expect-error — jspdf has no bundled types
 import { jsPDF } from "jspdf";
 
 export interface BinLabel {
