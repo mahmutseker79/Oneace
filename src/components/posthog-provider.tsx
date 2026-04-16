@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-// @ts-expect-error — posthog-js has no bundled types
 import posthog from "posthog-js";
-// @ts-expect-error — posthog-js has no bundled types
 import { PostHogProvider } from "posthog-js/react";
 import { env } from "@/lib/env";
 
