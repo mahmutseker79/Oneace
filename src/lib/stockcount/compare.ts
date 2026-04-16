@@ -26,7 +26,7 @@ export interface ComparisonRow {
 export async function compareStockCounts(
   countId1: string,
   countId2: string,
-  orgId: string,
+  _orgId: string,
 ): Promise<ComparisonRow[]> {
   // Fetch entries for both counts
   const [entries1, entries2] = await Promise.all([

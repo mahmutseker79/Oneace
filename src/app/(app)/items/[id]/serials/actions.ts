@@ -150,7 +150,7 @@ export async function bulkCreateSerialsAction(
     });
 
     // Create RECEIVED history for each serial
-    const historyEntries = serials.map((s) => ({
+    const _historyEntries = serials.map((s) => ({
       action: "RECEIVED" as const,
       performedByUserId: session.user.id,
       toWarehouseId: s.warehouseId,

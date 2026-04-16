@@ -141,8 +141,8 @@ export default async function MovementHistoryReportPage({
   const totalMovements = visibleMovements.length;
   const receipts = visibleMovements.filter((m) => m.type === "RECEIPT");
   const issues = visibleMovements.filter((m) => m.type === "ISSUE");
-  const transfers = visibleMovements.filter((m) => m.type === "TRANSFER");
-  const adjustments = visibleMovements.filter((m) => m.type === "ADJUSTMENT");
+  const _transfers = visibleMovements.filter((m) => m.type === "TRANSFER");
+  const _adjustments = visibleMovements.filter((m) => m.type === "ADJUSTMENT");
   const receiptQty = receipts.reduce((s, m) => s + m.quantity, 0);
   const issueQty = issues.reduce((s, m) => s + m.quantity, 0);
   const netUnits = receiptQty - issueQty;

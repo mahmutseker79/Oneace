@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StatusChangePage() {
-  const { session, membership } = await requireActiveMembership();
-  const _t = await getMessages();
+  const { membership } = await requireActiveMembership();
+  await getMessages();
 
   // Fetch data for dropdowns
   const [items, warehouses, reasonCodes] = await Promise.all([

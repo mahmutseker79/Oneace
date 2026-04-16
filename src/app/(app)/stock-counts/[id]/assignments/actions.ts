@@ -9,9 +9,6 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
-  type CreateAssignmentInput,
-  type RemoveAssignmentInput,
-  type UpdateAssignmentInput,
   createAssignmentSchema,
   removeAssignmentSchema,
   updateAssignmentSchema,

@@ -54,7 +54,7 @@ export async function createScheduledReport(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const t = await getMessages();
-    const { session, membership } = await requireActiveMembership();
+    const { session: _session, membership } = await requireActiveMembership();
 
     // Check permissions
     if (!hasCapability(membership.role, "reports.schedule")) {

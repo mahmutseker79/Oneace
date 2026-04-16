@@ -10,7 +10,6 @@ import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
-  type ChangeStockStatusInput,
   changeStockStatusSchema,
 } from "@/lib/validation/stock-status";
 

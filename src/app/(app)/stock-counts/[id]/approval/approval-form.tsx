@@ -18,7 +18,7 @@ interface ApprovalFormProps {
   approval: CountApproval;
 }
 
-export function ApprovalForm({ countId, approval }: ApprovalFormProps) {
+export function ApprovalForm({ countId, approval: _approval }: ApprovalFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState("");

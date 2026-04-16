@@ -503,7 +503,7 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
 
         if (delta > 0) {
           // Create ISSUE movement
-          const movement = await tx.stockMovement.create({
+          const _movement = await tx.stockMovement.create({
             data: {
               organizationId: orgId,
               itemId: line.itemId,

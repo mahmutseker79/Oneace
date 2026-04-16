@@ -202,8 +202,8 @@ export default async function MovementAnalyticsReportPage() {
 
   const receipts = typeTotals.find((t) => t.type === "RECEIPT");
   const issues = typeTotals.find((t) => t.type === "ISSUE");
-  const adjustments = typeTotals.find((t) => t.type === "ADJUSTMENT");
-  const transfers = typeTotals.find((t) => t.type === "TRANSFER");
+  const _adjustments = typeTotals.find((t) => t.type === "ADJUSTMENT");
+  const _transfers = typeTotals.find((t) => t.type === "TRANSFER");
 
   return (
     <div className="space-y-6">

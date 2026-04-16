@@ -397,36 +397,36 @@ export default async function DashboardPage() {
         {kpis.map((kpi, idx) => {
           // P9.3b — Determine trend for this KPI
           let trendValue = 0;
-          let trendLabel: string = t.dashboard.kpi.noChange;
+          let _trendLabel: string = t.dashboard.kpi.noChange;
           if (idx === 0) {
             // Total items
             trendValue = data.prevWeekItemCountChange;
             if (trendValue > 0) {
-              trendLabel = t.dashboard.kpi.up;
+              _trendLabel = t.dashboard.kpi.up;
             } else if (trendValue < 0) {
-              trendLabel = t.dashboard.kpi.down;
+              _trendLabel = t.dashboard.kpi.down;
             } else {
-              trendLabel = t.dashboard.kpi.noChange;
+              _trendLabel = t.dashboard.kpi.noChange;
             }
           } else if (idx === 1) {
             // Stock value
             trendValue = data.prevWeekStockValueChange;
             if (trendValue > 0) {
-              trendLabel = t.dashboard.kpi.up;
+              _trendLabel = t.dashboard.kpi.up;
             } else if (trendValue < 0) {
-              trendLabel = t.dashboard.kpi.down;
+              _trendLabel = t.dashboard.kpi.down;
             } else {
-              trendLabel = t.dashboard.kpi.noChange;
+              _trendLabel = t.dashboard.kpi.noChange;
             }
           } else if (idx === 2) {
             // Low stock
             trendValue = data.prevWeekLowStockChange;
             if (trendValue > 0) {
-              trendLabel = t.dashboard.kpi.down;
+              _trendLabel = t.dashboard.kpi.down;
             } else if (trendValue < 0) {
-              trendLabel = t.dashboard.kpi.up;
+              _trendLabel = t.dashboard.kpi.up;
             } else {
-              trendLabel = t.dashboard.kpi.noChange;
+              _trendLabel = t.dashboard.kpi.noChange;
             }
           }
 

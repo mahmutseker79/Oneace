@@ -20,7 +20,7 @@ const optionalId = z
   .optional()
   .transform((value) => (value === "" || value === undefined ? null : value));
 
-const trimmedString = (min: number, max: number, message: string) =>
+const _trimmedString = (min: number, max: number, message: string) =>
   z.string().trim().min(min, { message }).max(max, { message: "Too long" });
 
 const nonNegativeInt = z

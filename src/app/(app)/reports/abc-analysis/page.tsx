@@ -56,7 +56,7 @@ interface ABCData {
   cumulativePercentage: number;
 }
 
-interface ParetoPoint {
+interface _ParetoPoint {
   percentage: number;
   cumulativeValue: number;
 }
@@ -205,7 +205,7 @@ export default function ABCAnalysisPage() {
   const totalValue = data.reduce((sum, d) => sum + d.totalValue, 0);
 
   // Pareto chart data
-  const paretoData = data.map((item, idx) => ({
+  const paretoData = data.map((item, _idx) => ({
     name: item.sku,
     value: item.totalValue,
     cumulativePercent: item.cumulativePercentage,

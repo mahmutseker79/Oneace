@@ -7,7 +7,7 @@ interface RouteContext {
   searchParams?: Promise<{ warehouseId?: string }>;
 }
 
-export async function GET(request: Request, context?: RouteContext) {
+export async function GET(request: Request, _context?: RouteContext) {
   const { membership } = await requireActiveMembership();
 
   // Get warehouseId from query params

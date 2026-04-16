@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PrivacyPage() {
-  const { membership, session } = await requireActiveMembership();
+  const { membership: _membership, session } = await requireActiveMembership();
   const t = await getMessages();
 
   // Check if user is owner of any org to show warning

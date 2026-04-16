@@ -76,7 +76,7 @@ type Plan = {
   badge?: string;
 };
 
-const PLANS: Plan[] = [
+const _PLANS: Plan[] = [
   {
     id: "free",
     name: "Free",

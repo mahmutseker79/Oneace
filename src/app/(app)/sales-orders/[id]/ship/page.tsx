@@ -9,7 +9,7 @@ import { shipSalesOrderAction } from "../../actions";
 
 export default function ShipSalesOrderPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const [order, setOrder] = useState<any>(null);
+  const [order] = useState<any>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

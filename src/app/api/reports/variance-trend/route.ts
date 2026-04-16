@@ -16,9 +16,9 @@ const ExportSchema = z.object({
   data: z.array(z.any()),
 });
 
-async function handleGetTrend(req: Request) {
+async function handleGetTrend(_req: Request) {
   try {
-    const { membership } = await requireActiveMembership();
+    await requireActiveMembership();
 
     // Generate 30-day trend (synthetic for now, would come from historical snapshots)
     const trendData = [];

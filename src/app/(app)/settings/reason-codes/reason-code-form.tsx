@@ -33,7 +33,6 @@ import { useForm } from "react-hook-form";
 
 import type { ReasonCode } from "@/generated/prisma";
 import {
-  type CreateReasonCodeInput,
   createReasonCodeSchema,
   reasonCategoryEnum,
   updateReasonCodeSchema,

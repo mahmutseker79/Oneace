@@ -10,8 +10,6 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
-  type CreateReasonCodeInput,
-  type UpdateReasonCodeInput,
   createReasonCodeSchema,
   updateReasonCodeSchema,
 } from "@/lib/validation/reason-code";

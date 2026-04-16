@@ -12,7 +12,7 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params: _params }: PageProps): Promise<Metadata> {
   const t = await getMessages();
   return { title: t.transfers?.receive?.metaTitle || "Receive Transfer" };
 }

@@ -9,7 +9,7 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canRollback } from "@/lib/stockcount/machine";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
-import { type RollbackCountInput, rollbackCountSchema } from "@/lib/validation/count-approval";
+import { rollbackCountSchema } from "@/lib/validation/count-approval";
 
 /**
  * Rollback a completed count. Transitions COMPLETED → ROLLED_BACK.

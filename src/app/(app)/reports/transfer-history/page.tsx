@@ -46,7 +46,7 @@ type ChartData = {
 
 export default async function TransferHistoryReportPage() {
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
   const region = await getRegion();
 
   const transfers = await db.stockTransfer.findMany({

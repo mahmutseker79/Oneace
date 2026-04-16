@@ -176,7 +176,7 @@ export default async function SalesOrderDetailPage({
               </Button>
             </form>
             <form
-              action={async (formData: FormData) => {
+              action={async (_formData: FormData) => {
                 "use server";
                 const fd = new FormData();
                 fd.set("id", order.id);
@@ -191,7 +191,7 @@ export default async function SalesOrderDetailPage({
         )}
         {order.status === "CONFIRMED" && canEdit && (
           <form
-            action={async (formData: FormData) => {
+            action={async (_formData: FormData) => {
               "use server";
               const fd = new FormData();
               fd.set("id", order.id);

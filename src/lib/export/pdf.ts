@@ -55,7 +55,7 @@ export function createPdfDocument(options: PdfOptions): jsPDF {
 /**
  * Add a header to the current page with org name, report title, and date.
  */
-export function addPageHeader(doc: jsPDF, options: PdfOptions, pageHeight = 297): number {
+export function addPageHeader(doc: jsPDF, options: PdfOptions, _pageHeight = 297): number {
   const margin = 10;
   let y = margin;
 
@@ -114,7 +114,7 @@ export function addTable(
 ): number {
   const margin = 10;
   const pageHeight = doc.internal.pageSize.getHeight();
-  const contentHeight = pageHeight - margin - 15; // Leave room for footer
+  const _contentHeight = pageHeight - margin - 15; // Leave room for footer
 
   autoTable(doc, {
     columns: columns.map((col) => ({

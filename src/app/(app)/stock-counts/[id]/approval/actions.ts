@@ -10,9 +10,6 @@ import { requireActiveMembership } from "@/lib/session";
 import { canApprove, canReject, canSubmitForApproval } from "@/lib/stockcount/machine";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import {
-  type ApproveCountInput,
-  type RejectCountInput,
-  type SubmitForApprovalInput,
   approveCountSchema,
   rejectCountSchema,
   submitForApprovalSchema,

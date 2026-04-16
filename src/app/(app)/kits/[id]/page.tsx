@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
-export default function KitDetailPage({ params }: { params: { id: string } }) {
-  const [kit, setKit] = useState<any>(null);
+export default function KitDetailPage({ params: _params }: { params: { id: string } }) {
+  const [kit] = useState<any>(null);
   const [assembleQty, setAssembleQty] = useState(1);
   const [disassembleQty, setDisassembleQty] = useState(1);
   const [isLoading, setIsLoading] = useState(true);

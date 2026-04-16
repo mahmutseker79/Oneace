@@ -54,7 +54,7 @@ export default async function MovementDetailPage({ params }: PageProps) {
   const userLabel =
     movement.createdBy?.name ?? movement.createdBy?.email ?? t.movements.unknownUser;
 
-  function typeBadge(t: MovementType, label: string) {
+  function _typeBadge(t: MovementType, label: string) {
     if (t === "RECEIPT") return <Badge className="bg-emerald-600">{label}</Badge>;
     if (t === "ISSUE") return <Badge variant="destructive">{label}</Badge>;
     if (t === "ADJUSTMENT") return <Badge variant="secondary">{label}</Badge>;

@@ -373,7 +373,7 @@ function Step3({
 export function OnboardingForm(_props: { labels: unknown }) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [orgId, setOrgId] = useState("");
+  const [_orgId, setOrgId] = useState("");
   const [orgName, setOrgName] = useState("");
 
   function finish() {

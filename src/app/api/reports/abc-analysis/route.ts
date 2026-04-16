@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   const pathname = url.pathname;
 
   try {
-    const { session, membership } = await requireActiveMembership();
+    const { session: _session, membership } = await requireActiveMembership();
 
     // Check plan capability
     const plan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";

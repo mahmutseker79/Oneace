@@ -18,7 +18,7 @@ export async function generateMetadata({
 }: {
   params: { id: string };
 }): Promise<Metadata> {
-  const t = await getMessages();
+  await getMessages();
   return { title: "Approval — Stock Counts" };
 }
 

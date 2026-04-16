@@ -233,7 +233,7 @@ export class WebhookDispatcher {
    */
   private async retryWithBackoff(
     attempt: WebhookDeliveryAttempt,
-    lastResponseTime: number,
+    _lastResponseTime: number,
   ): Promise<WebhookDeliveryResult> {
     const multiplier = attempt.backoffMultiplier || 2;
     const backoffMs = Math.min(

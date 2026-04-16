@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import withBundleAnalyzer from "@next/bundle-analyzer";
 
 // Phase 6A / P3 — security headers expansion.
 //
@@ -127,4 +128,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withAnalyzer = withBundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
+
+export default withAnalyzer(nextConfig);

@@ -170,7 +170,7 @@ export default async function AdjustmentReportPage() {
   }
 
   const reasonCodeData = Array.from(reasonCodeMap.values());
-  const COLORS = [
+  const _COLORS = [
     "#3b82f6",
     "#ef4444",
     "#10b981",

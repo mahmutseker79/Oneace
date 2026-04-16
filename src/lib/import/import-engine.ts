@@ -207,7 +207,7 @@ export class ImportEngine {
     organizationId: string,
     entity: ImportEntity,
     rows: any[],
-    result: ImportResult,
+    _result: ImportResult,
   ): Promise<void> {
     try {
       if (entity === "ITEM") {

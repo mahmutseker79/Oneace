@@ -122,7 +122,7 @@ export async function startImportAction(
     return { ok: false, error: "Invalid input" };
   }
 
-  const { jobId, fieldMappings } = parsed.data;
+  const { jobId, fieldMappings: _fieldMappings } = parsed.data;
 
   try {
     // Verify job ownership

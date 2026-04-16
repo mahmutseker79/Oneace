@@ -76,7 +76,7 @@ export async function generateMetadata(): Promise<Metadata> {
 // somehow encounter an unknown value (new action added to recordAudit
 // without a matching catalog key — the type system should prevent this
 // but we keep the render robust).
-function actionLabel(action: string, catalog: Record<AuditAction, string>): string {
+function _actionLabel(action: string, catalog: Record<AuditAction, string>): string {
   return (catalog as Record<string, string | undefined>)[action] ?? action;
 }
 

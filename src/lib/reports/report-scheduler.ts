@@ -145,10 +145,10 @@ export async function processScheduledReports(): Promise<ScheduledReportExecutio
  * This is a placeholder; actual implementation would call specific report generators
  */
 async function generateReport(
-  orgId: string,
-  reportType: string,
-  filters: Record<string, any>,
-  format: string,
+  _orgId: string,
+  _reportType: string,
+  _filters: Record<string, any>,
+  _format: string,
 ): Promise<Buffer> {
   // Placeholder: in reality, this would:
   // 1. Fetch data based on report type and filters
@@ -167,8 +167,8 @@ async function sendReportEmail(
   recipientEmails: string[],
   reportName: string,
   orgName: string,
-  fileBuffer: Buffer,
-  format: string,
+  _fileBuffer: Buffer,
+  _format: string,
 ): Promise<void> {
   // Placeholder: in reality, this would send an email with the report attached
   console.log(`Would send ${reportName} to ${recipientEmails.join(", ")} (org: ${orgName})`);

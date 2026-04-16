@@ -46,7 +46,7 @@ interface TwoFactorCardProps {
 
 type ViewMode = "status" | "setup" | "disable";
 
-export function TwoFactorCard({ userId, labels }: TwoFactorCardProps) {
+export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("status");
   const [isEnabled, setIsEnabled] = useState(false);
   const [disableCode, setDisableCode] = useState("");

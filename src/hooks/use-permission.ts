@@ -21,9 +21,9 @@ import type { Capability } from "@/lib/permissions";
 // or similar), replace this stub with actual session reading.
 // For now, this returns false as a safe default.
 
-export function usePermission(capability: Capability): boolean {
+export function usePermission(_capability: Capability): boolean {
   // Placeholder: always returns false until session context is available.
   // When integrated with a client-side session provider, this will read
-  // the user's role from context and call hasCapability(role, capability).
+  // the user's role from context and call hasCapability(role, _capability).
   return false;
 }

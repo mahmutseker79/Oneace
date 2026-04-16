@@ -146,7 +146,7 @@ export function buildInvitationEmail(
   const safeOrg = escapeHtml(organizationName);
   const safeInviter = escapeHtml(inviterName);
   const safeRole = escapeHtml(roleLabel);
-  const safeExpires = escapeHtml(expiresStr);
+  const _safeExpires = escapeHtml(expiresStr);
   const safeUrl = escapeHtml(inviteUrl);
   const safeHeading = escapeHtml(applyPlaceholders(labels.heading, placeholderValues));
   const safeBody = escapeHtml(applyPlaceholders(labels.bodyIntro, placeholderValues));

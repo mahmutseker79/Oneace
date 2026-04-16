@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LabelsPage({ params }: PageProps) {
   await params; // Satisfy the unused param lint rule
   const { membership } = await requireActiveMembership();
-  const t = await getMessages();
+  const _t = await getMessages();
 
   // Phase C — labels require PRO+ plan
   const labelsPlan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
