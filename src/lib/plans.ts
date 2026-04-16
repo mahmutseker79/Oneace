@@ -257,3 +257,132 @@ export function requiredPlanFor(capability: PlanCapability): Exclude<Plan, "FREE
   if (capability === "auditLog" || capability === "scheduledReports") return "BUSINESS";
   return "PRO";
 }
+
+// ---------------------------------------------------------------------------
+// Phase B/C/D/E — Extended plan capabilities (arrays + new booleans).
+//
+// Backward-compatible addition: the existing boolean `CAPABILITIES` record
+// is preserved. This extended map lists methodology-level access so pages
+// can show "this methodology is Pro+" messaging without a second lookup.
+//
+// Call sites:
+//   - Count creation wizard (countMethodologies)
+//   - Count scope selector (countScope)
+//   - Import wizard (importSources)
+//   - Export dropdown (exportFormats)
+//   - Approval workflow toggle (approvalWorkflow)
+//   - Count comparison page (countComparison)
+//   - Outbound webhook UI (webhooks)
+//   - Department management page (departments)
+//   - Sync Center (integrations)
+//   - Template library (countTemplates)
+// ---------------------------------------------------------------------------
+
+export type CountMethodology = "BLIND" | "RECOUNT" | "DUAL_BLIND" | "CONTINUOUS";
+export type CountScope = "FULL" | "PARTIAL" | "DEPARTMENT";
+export type ImportSource =
+  | "CSV"
+  | "XLSX"
+  | "QBO"
+  | "QBD"
+  | "SHOPIFY"
+  | "WOOCOMMERCE"
+  | "XERO"
+  | "AMAZON";
+export type ExportFormat = "CSV" | "XLSX" | "PDF" | "JSON";
+
+export type ExtendedCapability =
+  | "approvalWorkflow"
+  | "countComparison"
+  | "webhooks"
+  | "departments"
+  | "integrations"
+  | "countTemplates";
+
+export interface PlanCapabilityExtended {
+  countMethodologies: readonly CountMethodology[];
+  countScope: readonly CountScope[];
+  importSources: readonly ImportSource[];
+  exportFormats: readonly ExportFormat[];
+  approvalWorkflow: boolean;
+  countComparison: boolean;
+  webhooks: boolean;
+  departments: boolean;
+  integrations: boolean;
+  countTemplates: boolean;
+}
+
+export const PLAN_CAPABILITIES_EXTENDED: Record<Plan, PlanCapabilityExtended> = {
+  FREE: {
+    countMethodologies: ["BLIND"],
+    countScope: ["FULL", "PARTIAL"],
+    importSources: ["CSV"],
+    exportFormats: ["CSV"],
+    approvalWorkflow: false,
+    countComparison: false,
+    webhooks: false,
+    departments: false,
+    integrations: false,
+    countTemplates: false,
+  },
+  PRO: {
+    countMethodologies: ["BLIND", "RECOUNT", "CONTINUOUS"],
+    countScope: ["FULL", "PARTIAL", "DEPARTMENT"],
+    importSources: ["CSV", "XLSX", "QBO", "SHOPIFY", "WOOCOMMERCE"],
+    exportFormats: ["CSV", "XLSX", "PDF"],
+    approvalWorkflow: true,
+    countComparison: true,
+    webhooks: false,
+    departments: true,
+    integrations: true,
+    countTemplates: true,
+  },
+  BUSINESS: {
+    countMethodologies: ["BLIND", "RECOUNT", "DUAL_BLIND", "CONTINUOUS"],
+    countScope: ["FULL", "PARTIAL", "DEPARTMENT"],
+    importSources: ["CSV", "XLSX", "QBO", "QBD", "SHOPIFY", "WOOCOMMERCE", "XERO", "AMAZON"],
+    exportFormats: ["CSV", "XLSX", "PDF", "JSON"],
+    approvalWorkflow: true,
+    countComparison: true,
+    webhooks: true,
+    departments: true,
+    integrations: true,
+    countTemplates: true,
+  },
+};
+
+/**
+ * Returns true if the plan supports a specific count methodology.
+ */
+export function supportsCountMethodology(plan: Plan, methodology: CountMethodology): boolean {
+  return PLAN_CAPABILITIES_EXTENDED[plan].countMethodologies.includes(methodology);
+}
+
+/**
+ * Returns true if the plan supports a specific count scope.
+ */
+export function supportsCountScope(plan: Plan, scope: CountScope): boolean {
+  return PLAN_CAPABILITIES_EXTENDED[plan].countScope.includes(scope);
+}
+
+/**
+ * Returns true if the plan supports a specific import source.
+ */
+export function supportsImportSource(plan: Plan, source: ImportSource): boolean {
+  return PLAN_CAPABILITIES_EXTENDED[plan].importSources.includes(source);
+}
+
+/**
+ * Returns true if the plan supports a specific export format.
+ */
+export function supportsExportFormat(plan: Plan, format: ExportFormat): boolean {
+  return PLAN_CAPABILITIES_EXTENDED[plan].exportFormats.includes(format);
+}
+
+/**
+ * Returns true when the plan has access to the extended capability.
+ * Mirrors `hasPlanCapability` but for the Phase B/C/D/E feature set.
+ */
+export function hasExtendedCapability(plan: Plan, capability: ExtendedCapability): boolean {
+  return PLAN_CAPABILITIES_EXTENDED[plan][capability];
+}
