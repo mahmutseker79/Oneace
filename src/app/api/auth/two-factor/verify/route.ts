@@ -46,6 +46,18 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Invalid userId format" }), { status: 400 });
     }
 
+    // Verify that the userId corresponds to a real user (prevent enumeration via arbitrary IDs)
+    const userExists = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!userExists) {
+      // Return same error as invalid code to prevent user enumeration
+      return new Response(JSON.stringify({ verified: false, error: "Invalid code" }), {
+        status: 400,
+      });
+    }
+
     // Get client IP for rate limiting
     const headersList = await headers();
     const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown";

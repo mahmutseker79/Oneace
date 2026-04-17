@@ -69,7 +69,7 @@ export const requireActiveMembership = cache(async () => {
   const session = await requireSession();
 
   const memberships = await db.membership.findMany({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, deactivatedAt: null },
     include: { organization: true },
     orderBy: { createdAt: "asc" },
   });

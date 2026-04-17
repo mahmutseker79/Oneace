@@ -150,11 +150,28 @@ export async function bulkCreateSerialsAction(
     });
 
     // Create RECEIVED history for each serial
-    const _historyEntries = serials.map((s) => ({
-      action: "RECEIVED" as const,
-      performedByUserId: session.user.id,
-      toWarehouseId: s.warehouseId,
-    }));
+    // Query the just-created serials to get their IDs for history insertion
+    const createdSerials = await db.serialNumber.findMany({
+      where: {
+        organizationId: membership.organizationId,
+        itemId: data.itemId,
+        serialNumber: {
+          in: serials.map((s) => s.serialNumber),
+        },
+      },
+      select: { id: true, warehouseId: true },
+    });
+
+    if (createdSerials.length > 0) {
+      await db.serialHistory.createMany({
+        data: createdSerials.map((s) => ({
+          serialNumberId: s.id,
+          action: "RECEIVED" as const,
+          performedByUserId: session.user.id,
+          toWarehouseId: s.warehouseId,
+        })),
+      });
+    }
 
     revalidatePath(`/items/${data.itemId}/serials`);
     await recordAudit({

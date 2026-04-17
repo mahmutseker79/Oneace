@@ -485,11 +485,13 @@ model StockLevel {
   // Phase V4: stock status and location level tracking
   stockStatus    StockStatus  @default(AVAILABLE)
   locationLevelId String?
+  createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   item           Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
   warehouse      Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   bin            Bin?         @relation(fields: [binId], references: [id], onDelete: SetNull)
+  locationLevel  LocationLevel? @relation(fields: [locationLevelId], references: [id], onDelete: SetNull)
 
   // Unique constraint updated: (item, warehouse, bin) — null bin = warehouse-level.
   // Existing rows have binId=null and remain valid.
@@ -497,6 +499,7 @@ model StockLevel {
   @@index([organizationId])
   @@index([warehouseId])
   @@index([binId])
+  @@index([locationLevelId])
 }
 
 // =========================
@@ -739,6 +742,7 @@ model CountEntry {
   zone            CountZone?    @relation(fields: [zoneId], references: [id], onDelete: SetNull)
   reasonCode      ReasonCode?   @relation("EntryReasonCode", fields: [reasonCodeId], references: [id], onDelete: SetNull)
   serialNumber    SerialNumber? @relation("EntrySerial", fields: [serialNumberId], references: [id], onDelete: SetNull)
+  variant         ItemVariant?  @relation("EntryVariant", fields: [variantId], references: [id], onDelete: SetNull)
   batch           ItemBatch?    @relation("EntryBatch", fields: [batchId], references: [id], onDelete: SetNull)
   // Phase 5A — composite FK to the owning CountSnapshot row. This is
   // a SECOND FK over the same three scalar fields (Postgres happily
@@ -1826,6 +1830,7 @@ model LocationLevel {
   warehouse         Warehouse        @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   parent            LocationLevel?   @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children          LocationLevel[]  @relation("LocationHierarchy")
+  stockLevels       StockLevel[]
 
   @@unique([warehouseId, code])
   @@index([organizationId, warehouseId])
@@ -2087,6 +2092,7 @@ model ItemVariant {
   stockLevels       VariantStockLevel[]
   movements         VariantStockMovement[]
   transferLines     StockTransferLine[]
+  countEntries      CountEntry[]     @relation("EntryVariant")
 
   @@unique([organizationId, sku])
   @@index([organizationId, itemId])

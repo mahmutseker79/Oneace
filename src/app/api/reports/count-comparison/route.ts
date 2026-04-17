@@ -185,6 +185,9 @@ async function handleCompare(req: Request) {
  */
 async function handleExport(req: Request) {
   try {
+    // Auth check — export requires active membership
+    await requireActiveMembership();
+
     const body = await req.json();
     const { format, comparison, count1Name, count2Name } = ExportSchema.parse(body);
 
