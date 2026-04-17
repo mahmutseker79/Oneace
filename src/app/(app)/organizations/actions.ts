@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { ACTIVE_ORG_COOKIE, requireSession } from "@/lib/session";
@@ -130,6 +131,15 @@ export async function createOrganizationAction(rawName: string): Promise<CreateO
   // Revalidate the whole layout so sidebar, header, and every server
   // page re-read the new active org on the next navigation.
   revalidatePath("/", "layout");
+
+  await recordAudit({
+    organizationId: created.id,
+    actorId: session.user.id,
+    action: "organization.updated",
+    entityType: "organization",
+    entityId: created.id,
+    metadata: { name },
+  });
 
   return { ok: true, organizationId: created.id };
 }

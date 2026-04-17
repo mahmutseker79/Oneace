@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -43,7 +44,7 @@ async function uniqueSlug(
 }
 
 export async function createCategoryAction(formData: FormData): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!hasCapability(membership.role, "categories.create")) {
@@ -77,6 +78,14 @@ export async function createCategoryAction(formData: FormData): Promise<ActionRe
 
     revalidatePath("/categories");
     revalidatePath("/items");
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "category.created",
+      entityType: "category",
+      entityId: category.id,
+      metadata: { name: input.name },
+    });
     return { ok: true, id: category.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -91,7 +100,7 @@ export async function createCategoryAction(formData: FormData): Promise<ActionRe
 }
 
 export async function updateCategoryAction(id: string, formData: FormData): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!hasCapability(membership.role, "categories.edit")) {
@@ -129,6 +138,14 @@ export async function updateCategoryAction(id: string, formData: FormData): Prom
 
     revalidatePath("/categories");
     revalidatePath("/items");
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "category.updated",
+      entityType: "category",
+      entityId: id,
+      metadata: { name: input.name },
+    });
     return { ok: true, id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -146,7 +163,7 @@ export async function updateCategoryAction(id: string, formData: FormData): Prom
 }
 
 export async function deleteCategoryAction(id: string): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!hasCapability(membership.role, "categories.delete")) {
@@ -159,6 +176,13 @@ export async function deleteCategoryAction(id: string): Promise<ActionResult> {
     });
     revalidatePath("/categories");
     revalidatePath("/items");
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "category.deleted",
+      entityType: "category",
+      entityId: id,
+    });
     return { ok: true, id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {

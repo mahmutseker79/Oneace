@@ -116,6 +116,14 @@ async function handleGetVariance(_req?: Request) {
 
 async function handleExport(req: Request) {
   try {
+    const { membership } = await requireActiveMembership();
+
+    // Rate limit report export per org
+    const rl = await rateLimit(`report:dept-variance-export:${membership.organizationId}`, RATE_LIMITS.report);
+    if (!rl.ok) {
+      return Response.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await req.json();
     const { format, data } = ExportSchema.parse(body);
 

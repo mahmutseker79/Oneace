@@ -77,6 +77,13 @@ async function handleGetCounts(_req?: Request) {
 async function handleCompare(req: Request) {
   try {
     const { membership } = await requireActiveMembership();
+
+    // Rate limit report comparison per org
+    const rl = await rateLimit(`report:count-comparison-compare:${membership.organizationId}`, RATE_LIMITS.report);
+    if (!rl.ok) {
+      return Response.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const body = await req.json();
     const { count1Id, count2Id } = CompareSchema.parse(body);
 

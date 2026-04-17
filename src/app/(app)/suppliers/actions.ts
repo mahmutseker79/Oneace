@@ -3,6 +3,7 @@
 import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -22,7 +23,7 @@ function formToInput(formData: FormData) {
 }
 
 export async function createSupplierAction(formData: FormData): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!hasCapability(membership.role, "suppliers.create")) {
@@ -63,6 +64,14 @@ export async function createSupplierAction(formData: FormData): Promise<ActionRe
     });
 
     revalidatePath("/suppliers");
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "supplier.created",
+      entityType: "supplier",
+      entityId: supplier.id,
+      metadata: { name: input.name, code: input.code },
+    });
     return { ok: true, id: supplier.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -77,7 +86,7 @@ export async function createSupplierAction(formData: FormData): Promise<ActionRe
 }
 
 export async function updateSupplierAction(id: string, formData: FormData): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!hasCapability(membership.role, "suppliers.edit")) {
@@ -119,6 +128,14 @@ export async function updateSupplierAction(id: string, formData: FormData): Prom
 
     revalidatePath("/suppliers");
     revalidatePath(`/suppliers/${id}/edit`);
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "supplier.updated",
+      entityType: "supplier",
+      entityId: updated.id,
+      metadata: { name: input.name, code: input.code },
+    });
     return { ok: true, id: updated.id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -138,7 +155,7 @@ export async function updateSupplierAction(id: string, formData: FormData): Prom
 }
 
 export async function deleteSupplierAction(id: string): Promise<ActionResult> {
-  const { membership } = await requireActiveMembership();
+  const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
   if (!hasCapability(membership.role, "suppliers.delete")) {
@@ -161,6 +178,13 @@ export async function deleteSupplierAction(id: string): Promise<ActionResult> {
     });
 
     revalidatePath("/suppliers");
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "supplier.deleted",
+      entityType: "supplier",
+      entityId: id,
+    });
     return { ok: true, id };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {

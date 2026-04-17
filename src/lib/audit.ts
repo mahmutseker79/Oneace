@@ -52,6 +52,14 @@ export type AuditAction =
   | "item.updated"
   | "item.deleted"
   | "item.imported"
+  // --- Category lifecycle ---------------------------------------------------
+  | "category.created"
+  | "category.updated"
+  | "category.deleted"
+  // --- Supplier lifecycle ---------------------------------------------------
+  | "supplier.created"
+  | "supplier.updated"
+  | "supplier.deleted"
   // --- Warehouse lifecycle (Phase 4A) ------------------------------------
   | "warehouse.created"
   | "warehouse.updated"
@@ -205,6 +213,8 @@ export type AuditEntityType =
   | "purchase_order"
   // Phase 4A extensions — one entity type per new action prefix.
   | "item"
+  | "category"
+  | "supplier"
   | "warehouse"
   | "stock_count"
   | "stock_movement"
