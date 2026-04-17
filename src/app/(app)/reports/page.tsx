@@ -2,13 +2,18 @@ import {
   AlertTriangle,
   ArrowLeftRight,
   Barcode,
+  Calendar,
+  Clock,
   DollarSign,
-
+  GitCompareArrows,
   Grid3X3,
+  Layers,
   MapPin,
   Package,
+  PieChart,
   ScanLine,
   Tag,
+  TrendingUp,
   Truck,
   Wrench,
 } from "lucide-react";
@@ -199,6 +204,63 @@ export default async function ReportsPage() {
       : []),
   ];
 
+  const analyticsReports = [
+    ...(hasStock
+      ? [
+          {
+            href: "/reports/abc-analysis",
+            icon: PieChart,
+            title: "ABC Analysis",
+            description: "Pareto classification of inventory by value",
+          },
+          {
+            href: "/reports/stock-aging",
+            icon: Clock,
+            title: "Stock Aging",
+            description: "Age analysis of inventory items",
+          },
+        ]
+      : []),
+    ...(hasMovements
+      ? [
+          {
+            href: "/reports/movement-analytics",
+            icon: TrendingUp,
+            title: "Movement Analytics",
+            description: "Trends and patterns in stock movements",
+          },
+        ]
+      : []),
+    ...(hasStockCounts
+      ? [
+          {
+            href: "/reports/count-comparison",
+            icon: GitCompareArrows,
+            title: "Count Comparison",
+            description: "Compare results across stock counts",
+          },
+          {
+            href: "/reports/variance-trend",
+            icon: TrendingUp,
+            title: "Variance Trend",
+            description: "Track count variance trends over time",
+          },
+          {
+            href: "/reports/department-variance",
+            icon: Layers,
+            title: "Department Variance",
+            description: "Variance analysis by department",
+          },
+        ]
+      : []),
+    {
+      href: "/reports/scheduled",
+      icon: Calendar,
+      title: "Scheduled Reports",
+      description: "Manage automated report delivery",
+    },
+  ];
+
 
   // Helper for premium report card rendering
   function renderReportCard(report: {
@@ -288,6 +350,21 @@ export default async function ReportsPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {advancedReports.map(renderReportCard)}
+          </div>
+        </section>
+      )}
+
+      {/* Analytics & Trends */}
+      {analyticsReports.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-foreground">Analytics &amp; Trends</h2>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full tabular-nums">
+              {analyticsReports.length}
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {analyticsReports.map(renderReportCard)}
           </div>
         </section>
       )}
