@@ -27,6 +27,7 @@ import {
   Truck,
   Users,
   Warehouse,
+  Boxes,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -68,6 +69,9 @@ export type SidebarLabels = {
     statusChange?: string;
     // God-Mode — dashboard nav item
     dashboard?: string;
+    // New nav items
+    vehicles?: string;
+    pallets?: string;
   };
   // P8.2 — optional badge counts passed from the layout
   badges?: {
@@ -131,6 +135,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
         { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
         { label: labels.nav.labels ?? "Labels", href: "/labels", icon: Tag },
         { label: labels.nav.statusChange ?? "Status Change", href: "/inventory/status-change", icon: ToggleRight },
+        { label: labels.nav.vehicles ?? "Vehicles", href: "/vehicles", icon: Truck },
       ],
     },
     {
@@ -142,6 +147,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
   const warehouseItems: NavItem[] = [
     { label: labels.nav.transfers ?? "Transfers", href: "/transfers", icon: ArrowLeftRight },
     { label: labels.nav.departments ?? "Departments", href: "/departments", icon: Warehouse },
+    { label: labels.nav.pallets ?? "Pallets", href: "/pallets", icon: Boxes },
   ];
 
   const commerceItems: NavItem[] = [
