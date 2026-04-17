@@ -4,49 +4,50 @@ import { describe, expect, it } from "vitest";
 
 import { formatRelative } from "./format-relative";
 
+// Use a fixed reference so the past-timestamp helpers don't drift
+// from `now` by the microseconds of clock advance between calls
+// (which would make floor(diff/day) round down on a fresh CI runner).
+const NOW = new Date("2026-01-15T12:00:00Z");
+const NOW_MS = NOW.getTime();
+
 function daysAgo(n: number): Date {
-  return new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+  return new Date(NOW_MS - n * 24 * 60 * 60 * 1000);
 }
 
 function hoursAgo(n: number): Date {
-  return new Date(Date.now() - n * 60 * 60 * 1000);
+  return new Date(NOW_MS - n * 60 * 60 * 1000);
 }
 
 function minutesAgo(n: number): Date {
-  return new Date(Date.now() - n * 60 * 1000);
+  return new Date(NOW_MS - n * 60 * 1000);
 }
 
 describe("formatRelative", () => {
   it("returns 'just now' for < 60 seconds", () => {
-    const now = new Date();
-    const thirtySecsAgo = new Date(now.getTime() - 30_000);
-    expect(formatRelative(thirtySecsAgo, now)).toBe("just now");
+    const thirtySecsAgo = new Date(NOW_MS - 30_000);
+    expect(formatRelative(thirtySecsAgo, NOW)).toBe("just now");
   });
 
   it("returns minutes for 1–59 minutes", () => {
-    const now = new Date();
-    expect(formatRelative(minutesAgo(1), now)).toBe("1m ago");
-    expect(formatRelative(minutesAgo(5), now)).toBe("5m ago");
-    expect(formatRelative(minutesAgo(59), now)).toBe("59m ago");
+    expect(formatRelative(minutesAgo(1), NOW)).toBe("1m ago");
+    expect(formatRelative(minutesAgo(5), NOW)).toBe("5m ago");
+    expect(formatRelative(minutesAgo(59), NOW)).toBe("59m ago");
   });
 
   it("returns hours for 1–23 hours", () => {
-    const now = new Date();
-    expect(formatRelative(hoursAgo(1), now)).toBe("1h ago");
-    expect(formatRelative(hoursAgo(6), now)).toBe("6h ago");
-    expect(formatRelative(hoursAgo(23), now)).toBe("23h ago");
+    expect(formatRelative(hoursAgo(1), NOW)).toBe("1h ago");
+    expect(formatRelative(hoursAgo(6), NOW)).toBe("6h ago");
+    expect(formatRelative(hoursAgo(23), NOW)).toBe("23h ago");
   });
 
   it("returns days for 1–29 days", () => {
-    const now = new Date();
-    expect(formatRelative(daysAgo(1), now)).toBe("1d ago");
-    expect(formatRelative(daysAgo(7), now)).toBe("7d ago");
-    expect(formatRelative(daysAgo(29), now)).toBe("29d ago");
+    expect(formatRelative(daysAgo(1), NOW)).toBe("1d ago");
+    expect(formatRelative(daysAgo(7), NOW)).toBe("7d ago");
+    expect(formatRelative(daysAgo(29), NOW)).toBe("29d ago");
   });
 
   it("returns a locale date string for ≥ 30 days", () => {
-    const now = new Date();
-    const result = formatRelative(daysAgo(31), now);
+    const result = formatRelative(daysAgo(31), NOW);
     // Should NOT contain "ago" — should be a formatted date
     expect(result).not.toMatch(/ago/);
     expect(result.length).toBeGreaterThan(3);
