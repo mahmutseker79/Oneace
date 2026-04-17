@@ -61,12 +61,13 @@ export default async function MigrationsPage() {
         <EmptyState
           icon={History}
           title="Hiç göç yapılmamış"
-          description="Sortly, inFlow, Fishbowl, Cin7 Core veya SOS Inventory'den içeri veri aktarabilirsiniz."
-          action={
-            <Link href="/migrations/new">
-              <Button>Yeni Göç Başlat</Button>
-            </Link>
-          }
+          description="Sortly, inFlow, Fishbowl, Cin7 Core, SOS Inventory, QuickBooks Online veya QuickBooks Desktop'tan veri aktarabilirsiniz."
+          actions={[
+            {
+              label: "Yeni Göç Başlat",
+              href: "/migrations/new",
+            },
+          ]}
         />
       </div>
     );
