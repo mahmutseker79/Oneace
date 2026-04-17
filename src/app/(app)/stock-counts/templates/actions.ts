@@ -8,6 +8,7 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
+import { logger } from "@/lib/logger";
 import {
   createTemplateSchema,
   deleteTemplateSchema,
@@ -111,7 +112,7 @@ export async function createTemplateAction(input: unknown): Promise<ActionResult
     revalidatePath("/stock-counts/templates");
     return { ok: true, id: template.id };
   } catch (err) {
-    console.error("createTemplateAction failed:", err);
+    logger.error("createTemplateAction failed:", { error: err });
     return { ok: false, error: "Failed to create template" };
   }
 }
@@ -225,7 +226,7 @@ export async function updateTemplateAction(input: unknown): Promise<ActionResult
     revalidatePath(`/stock-counts/templates/${updated.id}`);
     return { ok: true, id: updated.id };
   } catch (err) {
-    console.error("updateTemplateAction failed:", err);
+    logger.error("updateTemplateAction failed:", { error: err });
     return { ok: false, error: "Failed to update template" };
   }
 }
@@ -279,7 +280,7 @@ export async function deleteTemplateAction(input: unknown): Promise<ActionResult
     revalidatePath("/stock-counts/templates");
     return { ok: true, id };
   } catch (err) {
-    console.error("deleteTemplateAction failed:", err);
+    logger.error("deleteTemplateAction failed:", { error: err });
     return { ok: false, error: "Failed to delete template" };
   }
 }

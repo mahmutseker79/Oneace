@@ -16,6 +16,7 @@ import { db } from "@/lib/db";
 import { buildExcelWorkbook, excelResponse, todayIsoDate } from "@/lib/excel";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const ExportSchema = z.object({
   format: z.enum(["csv", "xlsx"]),
@@ -105,7 +106,7 @@ async function handleGetTrend(_req?: Request) {
     // If no data, return empty array (UI will show "no data" state)
     return Response.json(trendData);
   } catch (error) {
-    console.error("Get trend error:", error);
+    logger.error("Get trend error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -146,7 +147,7 @@ async function handleExport(req: Request) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.message }, { status: 400 });
     }
-    console.error("Export error:", error);
+    logger.error("Export error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

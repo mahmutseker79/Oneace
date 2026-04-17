@@ -13,6 +13,7 @@ import { enqueueImportJob } from "@/lib/jobs/queue";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -101,7 +102,7 @@ export async function createImportJobAction(
 
     return { ok: true, data: { jobId: importJob.id } };
   } catch (error) {
-    console.error("Failed to create import job", error);
+    logger.error("Failed to create import job", { error: error });
     return { ok: false, error: "Failed to create import job" };
   }
 }
@@ -163,7 +164,7 @@ export async function startImportAction(
 
     return { ok: true, data: { message: "Import started" } };
   } catch (error) {
-    console.error("Failed to start import", error);
+    logger.error("Failed to start import", { error: error });
     return { ok: false, error: "Failed to start import" };
   }
 }
@@ -227,7 +228,7 @@ export async function cancelImportAction(input: unknown): Promise<ActionResult> 
 
     return { ok: true, data: {} };
   } catch (error) {
-    console.error("Failed to cancel import", error);
+    logger.error("Failed to cancel import", { error: error });
     return { ok: false, error: "Failed to cancel import" };
   }
 }

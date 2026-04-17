@@ -2,6 +2,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 /**
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
-    console.error("Account deletion failed:", err);
+    logger.error("Account deletion failed:", { error: err });
     return NextResponse.json({ error: "Failed to delete account" }, { status: 500 });
   }
 }

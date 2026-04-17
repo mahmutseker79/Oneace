@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -7,6 +8,10 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
 import { TemplateForm } from "../template-form";
+
+export const metadata: Metadata = {
+  title: "Stock Count Template",
+};
 
 /**
  * Edit count template page.

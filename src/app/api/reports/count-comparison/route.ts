@@ -13,6 +13,7 @@ import { db } from "@/lib/db";
 import { buildExcelWorkbook, excelResponse, todayIsoDate } from "@/lib/excel";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const CompareSchema = z.object({
   count1Id: z.string().cuid(),
@@ -65,7 +66,7 @@ async function handleGetCounts(_req?: Request) {
       })),
     );
   } catch (error) {
-    console.error("Get counts error:", error);
+    logger.error("Get counts error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -188,7 +189,7 @@ async function handleCompare(req: Request) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.message }, { status: 400 });
     }
-    console.error("Compare error:", error);
+    logger.error("Compare error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -274,7 +275,7 @@ async function handleExport(req: Request) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.message }, { status: 400 });
     }
-    console.error("Export error:", error);
+    logger.error("Export error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

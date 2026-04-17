@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
@@ -5,6 +6,10 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Pending Approvals",
+};
 
 /**
  * Pending approvals page. Shows all counts awaiting approval across the org.

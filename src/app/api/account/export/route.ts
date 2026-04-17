@@ -2,6 +2,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 /**
@@ -167,7 +168,7 @@ export async function GET() {
       },
     });
   } catch (err) {
-    console.error("Data export failed:", err);
+    logger.error("Data export failed:", { error: err });
     return NextResponse.json({ error: "Failed to export data" }, { status: 500 });
   }
 }

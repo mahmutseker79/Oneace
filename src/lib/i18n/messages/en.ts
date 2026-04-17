@@ -105,22 +105,34 @@ export const en = {
     users: "Members",
     audit: "Audit log",
     settings: "Settings",
-    // Section headings used in sidebar + mobile nav
-    activity: "Activity",
+    // Section headings
+    inventory: "Inventory",
+    operations: "Operations",
+    fulfillment: "Fulfillment",
     analytics: "Analytics",
     admin: "Admin",
-    // Phase 2 UX — new section heading for operations group
-    operations: "Operations",
-    // V4 — Warehouse, Commerce, and Utilities groups
-    warehouse: "Warehouse",
+    dataTools: "Data Tools",
+    // Inventory group
+    labels: "Labels",
+    pallets: "Pallets",
+    // Operations group
     transfers: "Transfers",
     departments: "Departments",
-    commerce: "Commerce",
+    statusChange: "Status Change",
+    vehicles: "Vehicles",
+    // Fulfillment group
     salesOrders: "Sales Orders",
     kits: "Kits & Bundles",
     picks: "Pick Tasks",
+    // Data tools group
     import: "Import",
     export: "Export",
+    // Integrations (standalone top-level)
+    integrations: "Integrations",
+    // Legacy aliases
+    activity: "Activity",
+    warehouse: "Warehouse",
+    commerce: "Commerce",
   },
 
   /** Shown on pages that are accessible but not part of the primary simplified workflow. */

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { calculateLabelsPerPage, renderLabel } from "@/lib/labels/label-renderer";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/labels/custom/pdf
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Label PDF generation error:", error);
+    logger.error("Label PDF generation error:", { error: error });
     return NextResponse.json({ error: "Failed to generate label PDF" }, { status: 500 });
   }
 }

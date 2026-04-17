@@ -49,6 +49,7 @@
  *   render" contract.
  */
 
+import { logger } from "@/lib/logger";
 import { liveQuery } from "dexie";
 import { type DependencyList, useEffect, useState } from "react";
 
@@ -92,7 +93,7 @@ export function useLiveQuery<T>(
         setResult(value);
       },
       error: (err) => {
-        console.error("[useLiveQuery] subscription error:", err);
+        logger.error("[useLiveQuery] subscription error:", { error: err });
       },
     });
     return () => {

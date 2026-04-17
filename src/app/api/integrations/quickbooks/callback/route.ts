@@ -17,10 +17,20 @@ function verifyOAuthState(
   secret: string,
 ): { organizationId: string; userId: string } | null {
   const parts = state.split("|");
-  if (parts.length !== 3) return null; // expect orgId|userId|signature
-  const [organizationId, userId, signature] = parts;
-  if (!organizationId || !userId || !signature) return null;
-  const expected = createHmac("sha256", secret).update(`${organizationId}|${userId}`).digest("hex");
+  if (parts.length !== 4) return null; // expect orgId|userId|timestamp|signature
+  const [organizationId, userId, timestamp, signature] = parts;
+  if (!organizationId || !userId || !timestamp || !signature) return null;
+
+  // Validate timestamp is within 10 minutes
+  const stateTime = parseInt(timestamp, 10);
+  if (isNaN(stateTime)) return null;
+  const now = Date.now();
+  const maxAge = 10 * 60 * 1000; // 10 minutes in milliseconds
+  if (now - stateTime > maxAge) return null;
+
+  const expected = createHmac("sha256", secret)
+    .update(`${organizationId}|${userId}|${timestamp}`)
+    .digest("hex");
   if (signature !== expected) return null;
   return { organizationId, userId };
 }

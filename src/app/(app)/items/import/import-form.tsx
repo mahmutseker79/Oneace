@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { autoMapHeaders, parseCsv } from "@/lib/csv/parse";
+import { logger } from "@/lib/logger";
 import {
   IMPORT_FIELD_ALIASES,
   type ImportValidationIssue,
@@ -228,7 +229,7 @@ export function ImportItemsForm({ labels }: { labels: ImportItemsLabels }) {
       setStep("map");
       setImportDirty(true); // File loaded — warn if user navigates away
     } catch (caught) {
-      console.error("[ImportItemsForm] parse failed", caught);
+      logger.error("[ImportItemsForm] parse failed", { error: caught });
       setError(labels.upload.parseError);
     }
   }

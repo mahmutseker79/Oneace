@@ -11,6 +11,7 @@
  */
 
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export interface ScheduledReportExecution {
   reportId: string;
@@ -54,7 +55,7 @@ function shouldRunNow(cronExpression: string, now: Date): boolean {
 
     return matchMinute && matchHour && matchDay && matchMonth && matchDayOfWeek;
   } catch (error) {
-    console.error("Cron parse error:", error);
+    logger.error("Cron parse error:", { error: error });
     return false;
   }
 }
@@ -127,7 +128,7 @@ export async function processScheduledReports(): Promise<ScheduledReportExecutio
           success: true,
         });
       } catch (error) {
-        console.error(`Error executing report ${report.id}:`, error);
+        logger.error(`Error executing report ${report.id}`, { error });
         executions.push({
           reportId: report.id,
           reportName: report.name,
@@ -139,7 +140,7 @@ export async function processScheduledReports(): Promise<ScheduledReportExecutio
       }
     }
   } catch (error) {
-    console.error("Process scheduled reports error:", error);
+    logger.error("Process scheduled reports error:", { error: error });
   }
 
   return executions;

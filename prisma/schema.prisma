@@ -96,7 +96,10 @@ model Organization {
   savedViews         SavedView[]
   locationLevels     LocationLevel[]
   stockTransfers     StockTransfer[]
+  stockTransferLines StockTransferLine[]
   salesOrders        SalesOrder[]
+  salesOrderLines    SalesOrderLine[]
+  assetHistories     AssetHistory[]
   kits               Kit[]
   pickTasks          PickTask[]
   orgSettings        OrgSettings?
@@ -137,6 +140,7 @@ model Membership {
 
   @@unique([userId, organizationId])
   @@index([organizationId])
+  @@index([userId])
 }
 
 // =========================
@@ -183,6 +187,8 @@ model Invitation {
 
   @@index([organizationId])
   @@index([email])
+  @@index([invitedById])
+  @@index([acceptedById])
 }
 
 enum Plan {
@@ -463,6 +469,8 @@ model Item {
   @@index([organizationId, status])
   @@index([organizationId, preferredSupplierId])
   @@index([organizationId, status, reorderPoint])
+  @@index([categoryId])
+  @@index([departmentId])
 }
 
 enum ItemStatus {
@@ -500,6 +508,7 @@ model StockLevel {
   @@index([warehouseId])
   @@index([binId])
   @@index([locationLevelId])
+  @@index([itemId])
 }
 
 // =========================
@@ -596,6 +605,13 @@ model StockMovement {
   @@index([organizationId, purchaseOrderLineId])
   @@index([organizationId, stockCountId])
   @@index([organizationId, type, createdAt])
+  @@index([binId])
+  @@index([toWarehouseId])
+  @@index([toBinId])
+  @@index([createdByUserId])
+  @@index([reasonCodeId])
+  @@index([serialNumberId])
+  @@index([batchId])
 }
 
 enum StockMovementType {
@@ -671,6 +687,7 @@ model StockCount {
   @@index([warehouseId])
   @@index([departmentId])
   @@index([organizationId, state, createdAt])
+  @@index([createdByUserId])
 }
 
 // One row per (count, item, warehouse) frozen at create time. The
@@ -698,6 +715,8 @@ model CountSnapshot {
   @@unique([countId, itemId, warehouseId])
   @@index([countId])
   @@index([organizationId])
+  @@index([itemId])
+  @@index([warehouseId])
 }
 
 // Append-only log of physical count entries. Multiple entries per
@@ -757,6 +776,16 @@ model CountEntry {
   @@index([countId, countedAt])
   @@index([countId, itemId])
   @@index([organizationId])
+  @@index([binId])
+  @@index([warehouseId])
+  @@index([departmentId])
+  @@index([assignmentId])
+  @@index([reasonCodeId])
+  @@index([serialNumberId])
+  @@index([variantId])
+  @@index([batchId])
+  @@index([zoneId])
+  @@index([countedByUserId])
 }
 
 enum StockCountState {
@@ -865,6 +894,7 @@ model PurchaseOrder {
   @@index([organizationId, supplierId])
   @@index([organizationId, warehouseId])
   @@index([organizationId, orderedAt])
+  @@index([createdByUserId])
 }
 
 model PurchaseOrderLine {
@@ -963,6 +993,7 @@ model AuditEvent {
 
   @@index([organizationId, createdAt])
   @@index([entityType, entityId])
+  @@index([actorId])
 }
 
 // =========================
@@ -1033,6 +1064,7 @@ model Notification {
   @@index([userId, readAt])
   @@index([organizationId, userId])
   @@index([alertId])
+  @@index([organizationId])
 }
 
 // =========================
@@ -1414,6 +1446,8 @@ model Department {
 
   @@unique([organizationId, code])
   @@index([organizationId, isActive])
+  @@index([managerId])
+  @@index([warehouseId])
 }
 
 // =========================
@@ -1446,6 +1480,7 @@ model CountAssignment {
   @@unique([countId, userId])
   @@index([organizationId, countId])
   @@index([userId, status])
+  @@index([departmentId])
 }
 
 // =========================
@@ -1469,10 +1504,13 @@ model CountApproval {
 
   organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   count            StockCount   @relation(fields: [countId], references: [id], onDelete: Cascade)
-  requestedBy      User         @relation("ApprovalRequester", fields: [requestedById], references: [id])
-  reviewedBy       User?        @relation("ApprovalReviewer", fields: [reviewedById], references: [id])
+  requestedBy      User         @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy       User?        @relation("ApprovalReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([organizationId, status])
+  @@index([countId])
+  @@index([requestedById])
+  @@index([reviewedById])
 }
 
 // =========================
@@ -1507,6 +1545,8 @@ model CountTemplate {
 
   @@index([organizationId])
   @@index([isRecurring, nextScheduledAt])
+  @@index([warehouseId])
+  @@index([departmentId])
 }
 
 // =========================
@@ -1593,6 +1633,8 @@ model ImportJob {
 
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
+  @@index([templateId])
+  @@index([createdByUserId])
 }
 
 // =========================
@@ -1760,6 +1802,9 @@ model SerialHistory {
   performedBy       User?            @relation(fields: [performedByUserId], references: [id], onDelete: SetNull)
 
   @@index([serialNumberId, performedAt])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([performedByUserId])
 }
 
 // =========================
@@ -1782,6 +1827,7 @@ model ItemAttachment {
   uploadedBy        User?            @relation("UploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, itemId])
+  @@index([uploadedByUserId])
 }
 
 // =========================
@@ -1807,6 +1853,7 @@ model SavedView {
 
   @@index([organizationId, page])
   @@index([userId, page])
+  @@index([userId])
 }
 
 // =========================
@@ -1835,6 +1882,7 @@ model LocationLevel {
   @@unique([warehouseId, code])
   @@index([organizationId, warehouseId])
   @@index([parentId])
+  @@index([warehouseId])
 }
 
 // =========================
@@ -1864,6 +1912,10 @@ model StockTransfer {
 
   @@unique([organizationId, transferNumber])
   @@index([organizationId, status])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([shippedByUserId])
+  @@index([receivedByUserId])
 }
 
 // =========================
@@ -1871,6 +1923,7 @@ model StockTransfer {
 // =========================
 model StockTransferLine {
   id                String           @id @default(cuid())
+  organizationId    String
   transferId        String
   itemId            String
   variantId         String?
@@ -1881,13 +1934,19 @@ model StockTransferLine {
   discrepancy       Int              @default(0)
   note              String?
 
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   transfer          StockTransfer    @relation(fields: [transferId], references: [id], onDelete: Cascade)
   item              Item             @relation("TransferLineItem", fields: [itemId], references: [id], onDelete: Restrict)
   variant           ItemVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
   batch             ItemBatch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
   serialNumber      SerialNumber?    @relation(fields: [serialNumberId], references: [id], onDelete: SetNull)
 
+  @@index([organizationId])
   @@index([transferId])
+  @@index([itemId])
+  @@index([variantId])
+  @@index([batchId])
+  @@index([serialNumberId])
 }
 
 // =========================
@@ -1920,6 +1979,7 @@ model SalesOrder {
 // =========================
 model SalesOrderLine {
   id                String           @id @default(cuid())
+  organizationId    String
   salesOrderId      String
   itemId            String
   variantId         String?
@@ -1929,8 +1989,10 @@ model SalesOrderLine {
   shippedQty        Int              @default(0)
   note              String?
 
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   salesOrder        SalesOrder       @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId])
   @@index([salesOrderId])
 }
 
@@ -1954,6 +2016,7 @@ model Kit {
 
   @@unique([organizationId, parentItemId])
   @@index([organizationId])
+  @@index([parentItemId])
 }
 
 // =========================
@@ -2001,6 +2064,7 @@ model PickTask {
   @@index([assignedToUserId, status])
   @@index([itemId])
   @@index([warehouseId])
+  @@index([assignedToUserId])
 }
 
 // =========================
@@ -2048,6 +2112,7 @@ model ItemOptionGroup {
 
   @@unique([itemId, name])
   @@index([organizationId, itemId])
+  @@index([itemId])
 }
 
 // =========================
@@ -2097,6 +2162,7 @@ model ItemVariant {
   @@unique([organizationId, sku])
   @@index([organizationId, itemId])
   @@index([organizationId, status])
+  @@index([itemId])
 }
 
 // =========================
@@ -2112,6 +2178,7 @@ model ItemVariantOption {
 
   @@unique([variantId, optionValueId])
   @@index([variantId])
+  @@index([optionValueId])
 }
 
 // =========================
@@ -2138,6 +2205,8 @@ model ItemBarcode {
   @@index([organizationId, itemId])
   @@index([organizationId, variantId])
   @@index([value])
+  @@index([itemId])
+  @@index([variantId])
 }
 
 // =========================
@@ -2161,6 +2230,7 @@ model VariantStockLevel {
   @@index([organizationId])
   @@index([variantId])
   @@index([warehouseId])
+  @@index([binId])
 }
 
 // =========================
@@ -2192,6 +2262,13 @@ model VariantStockMovement {
   @@index([organizationId, variantId])
   @@index([organizationId, createdAt])
   @@index([organizationId, type])
+  @@index([variantId])
+  @@index([itemId])
+  @@index([warehouseId])
+  @@index([binId])
+  @@index([toWarehouseId])
+  @@index([toBinId])
+  @@index([createdByUserId])
 }
 
 // =========================
@@ -2233,6 +2310,8 @@ model FixedAsset {
   @@index([organizationId, category])
   @@index([organizationId, assignedToUserId])
   @@index([barcodeValue])
+  @@index([itemId])
+  @@index([warehouseId])
 }
 
 // =========================
@@ -2240,6 +2319,7 @@ model FixedAsset {
 // =========================
 model AssetHistory {
   id                String           @id @default(cuid())
+  organizationId    String
   assetId           String
   action            AssetAction
   fromUserId        String?
@@ -2250,8 +2330,10 @@ model AssetHistory {
   performedByUserId String?
   performedAt       DateTime         @default(now())
 
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   asset             FixedAsset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId])
   @@index([assetId, performedAt])
 }
 
@@ -2291,6 +2373,9 @@ model ItemBatch {
   @@index([organizationId, expiryDate])
   @@index([organizationId, status])
   @@index([warehouseId])
+  @@index([itemId])
+  @@index([variantId])
+  @@index([binId])
 }
 
 // =========================
@@ -2327,6 +2412,9 @@ model CountZone {
   @@unique([countId, code])
   @@index([organizationId, countId])
   @@index([countId, isArchived])
+  @@index([warehouseId])
+  @@index([parentZoneId])
+  @@index([createdByUserId])
 }
 
 // =========================
@@ -2346,6 +2434,8 @@ model ZoneLabel {
   printedBy         User?            @relation("PrintedBy", fields: [printedByUserId], references: [id], onDelete: SetNull)
 
   @@index([zoneId])
+  @@index([templateId])
+  @@index([printedByUserId])
 }
 
 // =========================
@@ -2372,4 +2462,5 @@ model MigrationJob {
 
   @@index([organizationId, status])
   @@index([organizationId, createdAt])
+  @@index([createdByUserId])
 }

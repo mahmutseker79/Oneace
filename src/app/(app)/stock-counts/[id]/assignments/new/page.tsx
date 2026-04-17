@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,6 +7,10 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
 import { AssignmentForm } from "../assignment-form";
+
+export const metadata: Metadata = {
+  title: "New Assignment",
+};
 
 /**
  * Create new assignment page.

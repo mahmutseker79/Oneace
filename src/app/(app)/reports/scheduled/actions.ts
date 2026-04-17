@@ -18,6 +18,7 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 export type ActionResult<T = void> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -103,7 +104,7 @@ export async function createScheduledReport(
     if (error instanceof z.ZodError) {
       return { ok: false, error: "Invalid input" };
     }
-    console.error("Create scheduled report error:", error);
+    logger.error("Create scheduled report error:", { error: error });
     return { ok: false, error: "Failed to create report" };
   }
 }
@@ -162,7 +163,7 @@ export async function updateScheduledReport(
     if (error instanceof z.ZodError) {
       return { ok: false, error: "Invalid input" };
     }
-    console.error("Update scheduled report error:", error);
+    logger.error("Update scheduled report error:", { error: error });
     return { ok: false, error: "Failed to update report" };
   }
 }
@@ -203,7 +204,7 @@ export async function deleteScheduledReport(reportId: string): Promise<ActionRes
 
     return { ok: true } as ActionResult<void>;
   } catch (error) {
-    console.error("Delete scheduled report error:", error);
+    logger.error("Delete scheduled report error:", { error: error });
     return { ok: false, error: "Failed to delete report" };
   }
 }
@@ -251,7 +252,7 @@ export async function listScheduledReports(): Promise<
       })),
     };
   } catch (error) {
-    console.error("List scheduled reports error:", error);
+    logger.error("List scheduled reports error:", { error: error });
     return { ok: false, error: "Failed to fetch reports" };
   }
 }

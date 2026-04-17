@@ -15,6 +15,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";import { revalidatePath } from "next/cache";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 export type ActionResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string };
@@ -104,10 +105,11 @@ export async function connectIntegrationAction(
     });
 
     revalidatePath("/settings/integrations");
+    revalidatePath("/integrations");
 
     return { ok: true, data: { integrationId: integration.id } };
   } catch (error) {
-    console.error("Failed to connect integration", error);
+    logger.error("Failed to connect integration", { error: error });
     return { ok: false, error: "Failed to connect integration" };
   }
 }
@@ -162,10 +164,11 @@ export async function disconnectIntegrationAction(input: unknown): Promise<Actio
     });
 
     revalidatePath("/settings/integrations");
+    revalidatePath("/integrations");
 
     return { ok: true, data: {} };
   } catch (error) {
-    console.error("Failed to disconnect integration", error);
+    logger.error("Failed to disconnect integration", { error: error });
     return { ok: false, error: "Failed to disconnect integration" };
   }
 }
@@ -231,10 +234,11 @@ export async function triggerSyncAction(
     // TODO: Queue async sync job (background job queue)
 
     revalidatePath("/settings/integrations");
+    revalidatePath("/integrations");
 
     return { ok: true, data: { syncJobId: syncLog.id } };
   } catch (error) {
-    console.error("Failed to trigger sync", error);
+    logger.error("Failed to trigger sync", { error: error });
     return { ok: false, error: "Failed to trigger sync" };
   }
 }

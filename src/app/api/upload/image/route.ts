@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 /**
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
     // Return public URL
     return NextResponse.json({ url: `/uploads/items/${filename}` }, { status: 200 });
   } catch (err) {
-    console.error("Image upload failed:", err);
+    logger.error("Image upload failed:", { error: err });
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
   }
 }

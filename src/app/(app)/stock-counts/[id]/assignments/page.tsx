@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Plus } from "lucide-react";import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -10,6 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { AssignmentDeleteButton } from "./assignment-delete-button";
+
+export const metadata: Metadata = {
+  title: "Assignments",
+};
 
 /**
  * Count assignments page. Shows all users assigned to this count with their roles.

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -7,6 +8,10 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
 import { DepartmentForm } from "../department-form";
+
+export const metadata: Metadata = {
+  title: "Department",
+};
 
 /**
  * Edit department page.

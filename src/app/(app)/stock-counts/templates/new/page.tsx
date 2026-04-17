@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
@@ -5,6 +6,10 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
 import { TemplateForm } from "../template-form";
+
+export const metadata: Metadata = {
+  title: "New Template",
+};
 
 /**
  * Create new count template page.

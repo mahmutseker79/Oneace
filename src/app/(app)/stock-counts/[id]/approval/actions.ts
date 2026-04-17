@@ -9,6 +9,7 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canApprove, canReject, canSubmitForApproval } from "@/lib/stockcount/machine";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
+import { logger } from "@/lib/logger";
 import {
   approveCountSchema,
   rejectCountSchema,
@@ -92,7 +93,7 @@ export async function submitForApprovalAction(
     revalidatePath("/stock-counts/pending-approvals");
     return { ok: true, id: countId };
   } catch (err) {
-    console.error("submitForApprovalAction failed:", err);
+    logger.error("submitForApprovalAction failed:", { error: err });
     return { ok: false, error: "Failed to submit for approval" };
   }
 }
@@ -166,7 +167,7 @@ export async function approveCountAction(input: unknown): Promise<ActionResult<{
     revalidatePath("/stock-counts/pending-approvals");
     return { ok: true, id: countId };
   } catch (err) {
-    console.error("approveCountAction failed:", err);
+    logger.error("approveCountAction failed:", { error: err });
     return { ok: false, error: "Failed to approve count" };
   }
 }
@@ -240,7 +241,7 @@ export async function rejectCountAction(input: unknown): Promise<ActionResult<{ 
     revalidatePath("/stock-counts/pending-approvals");
     return { ok: true, id: countId };
   } catch (err) {
-    console.error("rejectCountAction failed:", err);
+    logger.error("rejectCountAction failed:", { error: err });
     return { ok: false, error: "Failed to reject count" };
   }
 }

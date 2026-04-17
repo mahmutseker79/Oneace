@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { buildExcelWorkbook, excelResponse, todayIsoDate } from "@/lib/excel";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const ExportSchema = z.object({
   format: z.enum(["csv", "xlsx"]),
@@ -109,7 +110,7 @@ async function handleGetVariance(_req?: Request) {
 
     return Response.json(varianceData);
   } catch (error) {
-    console.error("Get variance error:", error);
+    logger.error("Get variance error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -183,7 +184,7 @@ async function handleExport(req: Request) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: error.message }, { status: 400 });
     }
-    console.error("Export error:", error);
+    logger.error("Export error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

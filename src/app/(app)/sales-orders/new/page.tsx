@@ -1,12 +1,17 @@
 // Create sales order page
 "use client";
 
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createSalesOrderAction } from "../actions";
+
+export const metadata: Metadata = {
+  title: "New Sales Order",
+};
 
 export default function NewSalesOrderPage() {
   const router = useRouter();

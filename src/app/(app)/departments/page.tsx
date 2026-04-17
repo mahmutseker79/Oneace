@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -9,6 +10,10 @@ import { requireActiveMembership } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+
+export const metadata: Metadata = {
+  title: "Departments",
+};
 
 /**
  * Department listing page. Shows all departments in the org with options

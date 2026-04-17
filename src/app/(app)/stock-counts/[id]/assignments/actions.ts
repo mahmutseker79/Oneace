@@ -8,6 +8,7 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
+import { logger } from "@/lib/logger";
 import {
   createAssignmentSchema,
   removeAssignmentSchema,
@@ -120,7 +121,7 @@ export async function createAssignmentAction(
     revalidatePath(`/stock-counts/${data.countId}/assignments`);
     return { ok: true, id: assignment.id };
   } catch (err) {
-    console.error("createAssignmentAction failed:", err);
+    logger.error("createAssignmentAction failed:", { error: err });
     return { ok: false, error: "Failed to create assignment" };
   }
 }
@@ -182,7 +183,7 @@ export async function updateAssignmentAction(
     revalidatePath(`/stock-counts/${existing.countId}/assignments`);
     return { ok: true, id: updated.id };
   } catch (err) {
-    console.error("updateAssignmentAction failed:", err);
+    logger.error("updateAssignmentAction failed:", { error: err });
     return { ok: false, error: "Failed to update assignment" };
   }
 }
@@ -238,7 +239,7 @@ export async function removeAssignmentAction(
     revalidatePath(`/stock-counts/${existing.countId}/assignments`);
     return { ok: true, id };
   } catch (err) {
-    console.error("removeAssignmentAction failed:", err);
+    logger.error("removeAssignmentAction failed:", { error: err });
     return { ok: false, error: "Failed to remove assignment" };
   }
 }

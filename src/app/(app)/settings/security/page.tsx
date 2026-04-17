@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { TwoFactorCard } from "./two-factor-card";
+
+export const metadata: Metadata = {
+  title: "Security Settings",
+};
 
 export default async function SecuritySettingsPage() {
   const { session } = await requireActiveMembership();

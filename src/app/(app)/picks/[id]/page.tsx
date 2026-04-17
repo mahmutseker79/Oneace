@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,6 +17,10 @@ import {
   startPickTaskAction,
   verifyPickTaskAction,
 } from "../actions";
+
+export const metadata: Metadata = {
+  title: "Pick",
+};
 
 function statusBadge(status: string) {
   if (status === "PENDING") return <Badge variant="secondary">{status}</Badge>;

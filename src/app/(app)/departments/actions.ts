@@ -8,6 +8,7 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
+import { logger } from "@/lib/logger";
 import {
   createDepartmentSchema,
   deleteDepartmentSchema,
@@ -112,7 +113,7 @@ export async function createDepartmentAction(
     revalidatePath("/departments");
     return { ok: true, id: department.id };
   } catch (err) {
-    console.error("createDepartmentAction failed:", err);
+    logger.error("createDepartmentAction failed:", { error: err });
     return { ok: false, error: "Failed to create department" };
   }
 }
@@ -231,7 +232,7 @@ export async function updateDepartmentAction(
     revalidatePath(`/departments/${updated.id}`);
     return { ok: true, id: updated.id };
   } catch (err) {
-    console.error("updateDepartmentAction failed:", err);
+    logger.error("updateDepartmentAction failed:", { error: err });
     return { ok: false, error: "Failed to update department" };
   }
 }
@@ -288,7 +289,7 @@ export async function deleteDepartmentAction(
     revalidatePath("/departments");
     return { ok: true, id };
   } catch (err) {
-    console.error("deleteDepartmentAction failed:", err);
+    logger.error("deleteDepartmentAction failed:", { error: err });
     return { ok: false, error: "Failed to delete department" };
   }
 }

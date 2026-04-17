@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 
 type DeleteAccountFormProps = {
@@ -55,7 +56,7 @@ export function DeleteAccountForm({ isDisabled = false, labels }: DeleteAccountF
       await authClient.signOut();
       router.push("/login");
     } catch (err) {
-      console.error("Delete account error:", err);
+      logger.error("Delete account error:", { error: err });
       toast.error("An error occurred while deleting your account");
       setIsLoading(false);
     }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ChevronLeft, Package, Truck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -22,6 +23,10 @@ import {
   cancelSalesOrderAction,
   confirmSalesOrderAction,
 } from "../actions";
+
+export const metadata: Metadata = {
+  title: "Sales Order",
+};
 
 function statusBadge(status: string) {
   if (status === "DRAFT") return <Badge variant="outline">{status}</Badge>;

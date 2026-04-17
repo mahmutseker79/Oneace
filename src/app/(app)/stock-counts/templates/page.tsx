@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -8,6 +9,10 @@ import { requireActiveMembership } from "@/lib/session";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Templates",
+};
 
 /**
  * Count templates listing page.

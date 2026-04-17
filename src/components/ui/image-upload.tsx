@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics/events";
+import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 
 type ImageUploadProps = {
@@ -57,7 +58,7 @@ export function ImageUpload({ value, onChange, disabled = false }: ImageUploadPr
         // Track image upload event
         trackEvent("item_image_uploaded");
       } catch (err) {
-        console.error("Upload error:", err);
+        logger.error("Upload error:", { error: err });
         toast.error("An error occurred during upload");
       } finally {
         setIsLoading(false);

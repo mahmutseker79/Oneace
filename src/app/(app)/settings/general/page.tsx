@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";import { PageHeader } from "@/components/ui/page-header";
 import { requireActiveMembership } from "@/lib/session";
 import { getOrCreateOrgSettingsAction } from "./actions";
 import { GeneralSettingsForm } from "./settings-form";
+
+export const metadata: Metadata = {
+  title: "General Settings",
+};
 
 /**
  * Phase L9 — Organization general settings page.

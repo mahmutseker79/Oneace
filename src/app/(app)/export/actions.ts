@@ -11,6 +11,7 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { recordAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 import ExcelJS from "exceljs";
 
@@ -168,7 +169,7 @@ export async function exportItemsAction(input: unknown): Promise<ActionResult<Ex
       return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
   } catch (error) {
-    console.error("Failed to export items", error);
+    logger.error("Failed to export items", { error: error });
     return { ok: false, error: "Failed to export items" };
   }
 }
@@ -237,7 +238,7 @@ export async function exportStockLevelsAction(input: unknown): Promise<ActionRes
       return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
   } catch (error) {
-    console.error("Failed to export stock levels", error);
+    logger.error("Failed to export stock levels", { error: error });
     return { ok: false, error: "Failed to export stock levels" };
   }
 }
@@ -310,7 +311,7 @@ export async function exportMovementsAction(input: unknown): Promise<ActionResul
       return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
   } catch (error) {
-    console.error("Failed to export movements", error);
+    logger.error("Failed to export movements", { error: error });
     return { ok: false, error: "Failed to export movements" };
   }
 }
@@ -391,7 +392,7 @@ export async function exportPurchaseOrdersAction(input: unknown): Promise<Action
       return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
   } catch (error) {
-    console.error("Failed to export purchase orders", error);
+    logger.error("Failed to export purchase orders", { error: error });
     return { ok: false, error: "Failed to export purchase orders" };
   }
 }

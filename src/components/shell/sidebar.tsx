@@ -1,9 +1,7 @@
 "use client";
 
-// Phase 2 UX — Sidebar now includes Operations group:
-//   Movements | Purchase Orders | Scan | Suppliers | Categories
-// God-Mode Design v1 — Premium sidebar with refined grouping,
-// better active states, visual hierarchy, and plan badge.
+// Sidebar — Professional navigation with 6 logical groups:
+//   Core → Inventory → Operations → Fulfillment → Analytics/Data → Admin
 
 import { useState } from "react";
 
@@ -11,6 +9,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeftRight,
   BarChart3,
+  Boxes,
   ChevronDown,
   ClipboardList,
   FileDown,
@@ -18,6 +17,7 @@ import {
   FolderOpen,
   History,
   LayoutDashboard,
+  Link2,
   Package,
   ScanLine,
   Settings,
@@ -27,7 +27,6 @@ import {
   Truck,
   Users,
   Warehouse,
-  Boxes,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,6 +36,7 @@ export type SidebarLabels = {
   versionLine: string;
   statusLine: string;
   nav: {
+    dashboard?: string;
     items: string;
     warehouses: string;
     counts: string;
@@ -46,40 +46,42 @@ export type SidebarLabels = {
     audit: string;
     settings: string;
     // Section headings
-    activity: string;
-    analytics: string;
+    inventory?: string;
+    operations?: string;
+    fulfillment?: string;
+    analytics?: string;
     admin: string;
-    // Phase 2 — new nav items
-    operations: string;
-    purchaseOrders: string;
-    suppliers: string;
+    dataTools?: string;
+    // Inventory
     categories: string;
+    suppliers: string;
     scan: string;
-    // Phase 2A — Warehouse and Commerce groups
-    warehouse?: string;
+    purchaseOrders: string;
+    labels?: string;
+    pallets?: string;
+    // Operations
     transfers?: string;
     departments?: string;
-    commerce?: string;
+    statusChange?: string;
+    vehicles?: string;
+    // Fulfillment
     salesOrders?: string;
     kits?: string;
     picks?: string;
+    // Data tools
     import?: string;
     export?: string;
-    labels?: string;
-    statusChange?: string;
-    // God-Mode — dashboard nav item
-    dashboard?: string;
-    // New nav items
-    vehicles?: string;
-    pallets?: string;
+    // Integrations
+    integrations?: string;
+    // Legacy aliases
+    activity?: string;
+    warehouse?: string;
+    commerce?: string;
   };
-  // P8.2 — optional badge counts passed from the layout
   badges?: {
     items?: string;
   };
-  // P10.1 — hide admin section for roles without admin capabilities
   showAdmin?: boolean;
-  // Plan badge for sidebar footer
   planLabel?: string;
 };
 
@@ -100,72 +102,82 @@ type NavGroup = {
 export function Sidebar({ labels }: { labels: SidebarLabels }) {
   const pathname = usePathname();
 
-  // Admin section starts expanded if the user is on an admin page.
-  const adminPaths = ["/users", "/audit", "/settings"];
-  const isOnAdminPage = adminPaths.some((p) => pathname.startsWith(p));
-  const [adminOpen, setAdminOpen] = useState(isOnAdminPage);
+  // ── Group expansion state ──────────────────────────────────────
+  const inventoryPaths = ["/categories", "/suppliers", "/purchase-orders", "/labels", "/pallets", "/scan"];
+  const operationsPaths = ["/movements", "/transfers", "/departments", "/inventory/status-change", "/vehicles"];
+  const fulfillmentPaths = ["/sales-orders", "/kits", "/picks"];
+  const adminPaths = ["/users", "/audit", "/settings", "/integrations"];
 
-  // Warehouse & Commerce collapsed by default unless user is on those pages
-  const warehousePaths = ["/transfers", "/departments"];
-  const commercePaths = ["/sales-orders", "/kits", "/picks"];
-  const isOnWarehousePage = warehousePaths.some((p) => pathname.startsWith(p));
-  const isOnCommercePage = commercePaths.some((p) => pathname.startsWith(p));
-  const [warehouseOpen, setWarehouseOpen] = useState(isOnWarehousePage);
-  const [commerceOpen, setCommerceOpen] = useState(isOnCommercePage);
+  const [inventoryOpen, setInventoryOpen] = useState(
+    inventoryPaths.some((p) => pathname.startsWith(p)),
+  );
+  const [operationsOpen, setOperationsOpen] = useState(
+    operationsPaths.some((p) => pathname.startsWith(p)),
+  );
+  const [fulfillmentOpen, setFulfillmentOpen] = useState(
+    fulfillmentPaths.some((p) => pathname.startsWith(p)),
+  );
+  const [adminOpen, setAdminOpen] = useState(
+    adminPaths.some((p) => pathname.startsWith(p)),
+  );
 
-  const groups: NavGroup[] = [
-    {
-      // Core — no heading, always visible. The primary first-run flow:
-      // Dashboard → Items → Locations → Stock Counts.
-      items: [
-        { label: labels.nav.dashboard ?? "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-        { label: labels.nav.items, href: "/items", icon: Package, badge: labels.badges?.items },
-        { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
-        { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
-      ],
-    },
-    {
-      // Operations — all transactional and procurement workflows.
-      heading: labels.nav.operations,
-      items: [
-        { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
-        { label: labels.nav.purchaseOrders, href: "/purchase-orders", icon: ShoppingCart },
-        { label: labels.nav.scan, href: "/scan", icon: ScanLine },
-        { label: labels.nav.suppliers, href: "/suppliers", icon: Truck },
-        { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
-        { label: labels.nav.labels ?? "Labels", href: "/labels", icon: Tag },
-        { label: labels.nav.statusChange ?? "Status Change", href: "/inventory/status-change", icon: ToggleRight },
-        { label: labels.nav.vehicles ?? "Vehicles", href: "/vehicles", icon: Truck },
-      ],
-    },
-    {
-      heading: labels.nav.analytics,
-      items: [{ label: labels.nav.reports, href: "/reports", icon: BarChart3 }],
-    },
+  // ── Core — always visible, no heading ──────────────────────────
+  const coreGroup: NavGroup = {
+    items: [
+      { label: labels.nav.dashboard ?? "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: labels.nav.items, href: "/items", icon: Package, badge: labels.badges?.items },
+      { label: labels.nav.warehouses, href: "/warehouses", icon: Warehouse },
+      { label: labels.nav.counts, href: "/stock-counts", icon: ClipboardList },
+    ],
+  };
+
+  // ── Inventory — procurement & catalog ──────────────────────────
+  const inventoryItems: NavItem[] = [
+    { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
+    { label: labels.nav.suppliers, href: "/suppliers", icon: Truck },
+    { label: labels.nav.purchaseOrders, href: "/purchase-orders", icon: ShoppingCart },
+    { label: labels.nav.labels ?? "Labels", href: "/labels", icon: Tag },
+    { label: labels.nav.pallets ?? "Pallets", href: "/pallets", icon: Boxes },
+    { label: labels.nav.scan, href: "/scan", icon: ScanLine },
   ];
 
-  const warehouseItems: NavItem[] = [
+  // ── Operations — warehouse moves & logistics ───────────────────
+  const operationsItems: NavItem[] = [
+    { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
     { label: labels.nav.transfers ?? "Transfers", href: "/transfers", icon: ArrowLeftRight },
     { label: labels.nav.departments ?? "Departments", href: "/departments", icon: Warehouse },
-    { label: labels.nav.pallets ?? "Pallets", href: "/pallets", icon: Boxes },
+    { label: labels.nav.statusChange ?? "Status Change", href: "/inventory/status-change", icon: ToggleRight },
+    { label: labels.nav.vehicles ?? "Vehicles", href: "/vehicles", icon: Truck },
   ];
 
-  const commerceItems: NavItem[] = [
+  // ── Fulfillment — commerce & shipping ──────────────────────────
+  const fulfillmentItems: NavItem[] = [
     { label: labels.nav.salesOrders ?? "Sales Orders", href: "/sales-orders", icon: ShoppingCart },
-    { label: labels.nav.kits ?? "Kits", href: "/kits", icon: Package },
-    { label: labels.nav.picks ?? "Picks", href: "/picks", icon: ClipboardList },
+    { label: labels.nav.kits ?? "Kits & Bundles", href: "/kits", icon: Package },
+    { label: labels.nav.picks ?? "Pick Tasks", href: "/picks", icon: ClipboardList },
   ];
 
-  const utilityItems: NavItem[] = [
+  // ── Analytics — reports & insights ─────────────────────────────
+  const analyticsGroup: NavGroup = {
+    heading: labels.nav.analytics ?? "Analytics",
+    items: [{ label: labels.nav.reports, href: "/reports", icon: BarChart3 }],
+  };
+
+  // ── Data Tools — import/export ─────────────────────────────────
+  const dataToolsItems: NavItem[] = [
     { label: labels.nav.import ?? "Import", href: "/import", icon: FileUp },
     { label: labels.nav.export ?? "Export", href: "/export", icon: FileDown },
   ];
 
+  // ── Admin — users, audit, integrations, settings ───────────────
   const adminItems: NavItem[] = [
     { label: labels.nav.users, href: "/users", icon: Users },
     { label: labels.nav.audit, href: "/audit", icon: History },
+    { label: labels.nav.integrations ?? "Integrations", href: "/integrations", icon: Link2 },
     { label: labels.nav.settings, href: "/settings", icon: Settings },
   ];
+
+  // ── Render helpers ─────────────────────────────────────────────
 
   function renderItem(item: NavItem) {
     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -199,7 +211,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     );
   }
 
-  function renderCollapsibleGroup(
+  function renderCollapsible(
     heading: string,
     items: NavItem[],
     open: boolean,
@@ -221,7 +233,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
         <div
           className={cn(
             "mt-1 space-y-0.5 overflow-hidden transition-all duration-200",
-            open ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
+            open ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0",
           )}
         >
           {items.map(renderItem)}
@@ -229,6 +241,8 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       </div>
     );
   }
+
+  // ── Layout ─────────────────────────────────────────────────────
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:z-[var(--z-sidebar)] border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[var(--shadow-card)]">
@@ -249,42 +263,52 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4">
-        {/* Main groups */}
-        {groups.map((group, gi) => (
-          <div key={gi} className={gi === 0 ? undefined : "mt-5"}>
-            {group.heading ? (
-              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {group.heading}
-              </p>
-            ) : null}
-            <div className="space-y-0.5">{group.items.map(renderItem)}</div>
-          </div>
-        ))}
+        {/* Core — always visible */}
+        <div className="space-y-0.5">{coreGroup.items.map(renderItem)}</div>
 
-        {/* Warehouse — collapsible */}
-        {renderCollapsibleGroup(
-          labels.nav.warehouse ?? "Warehouse",
-          warehouseItems,
-          warehouseOpen,
-          setWarehouseOpen,
+        {/* Inventory — procurement & catalog */}
+        {renderCollapsible(
+          labels.nav.inventory ?? "Inventory",
+          inventoryItems,
+          inventoryOpen,
+          setInventoryOpen,
         )}
 
-        {/* Commerce — collapsible */}
-        {renderCollapsibleGroup(
-          labels.nav.commerce ?? "Commerce",
-          commerceItems,
-          commerceOpen,
-          setCommerceOpen,
+        {/* Operations — warehouse moves & logistics */}
+        {renderCollapsible(
+          labels.nav.operations ?? "Operations",
+          operationsItems,
+          operationsOpen,
+          setOperationsOpen,
         )}
 
-        {/* Utilities — small, subtle */}
-        <div className="mt-4 pt-3 border-t border-sidebar-border/50">
-          <div className="space-y-0.5">{utilityItems.map(renderItem)}</div>
+        {/* Fulfillment — commerce & shipping */}
+        {renderCollapsible(
+          labels.nav.fulfillment ?? "Fulfillment",
+          fulfillmentItems,
+          fulfillmentOpen,
+          setFulfillmentOpen,
+        )}
+
+        {/* Analytics — always visible, single item */}
+        <div className="mt-5">
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {analyticsGroup.heading}
+          </p>
+          <div className="space-y-0.5">{analyticsGroup.items.map(renderItem)}</div>
         </div>
 
-        {/* Admin — collapsible group (P10.1: hidden for non-admin roles) */}
+        {/* Data Tools — import/export, subtle separator */}
+        <div className="mt-4 pt-3 border-t border-sidebar-border/50">
+          <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {labels.nav.dataTools ?? "Data Tools"}
+          </p>
+          <div className="space-y-0.5">{dataToolsItems.map(renderItem)}</div>
+        </div>
+
+        {/* Admin — collapsible, hidden for non-admin roles */}
         {labels.showAdmin !== false
-          ? renderCollapsibleGroup(labels.nav.admin, adminItems, adminOpen, setAdminOpen)
+          ? renderCollapsible(labels.nav.admin, adminItems, adminOpen, setAdminOpen)
           : null}
       </nav>
 

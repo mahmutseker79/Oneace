@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 import { compareStockCounts } from "@/lib/stockcount/compare";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export const metadata: Metadata = {
+  title: "Compare Stock Counts",
+};
 import {
   Select,
   SelectContent,

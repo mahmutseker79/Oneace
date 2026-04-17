@@ -16,6 +16,7 @@ import { hasPlanCapability } from "@/lib/plans";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { calculateABC } from "@/lib/reports/abc-calculator";
 import { requireActiveMembership } from "@/lib/session";
+import { logger } from "@/lib/logger";
 
 const GetABCSchema = z.object({
   orgId: z.string().cuid(),
@@ -224,7 +225,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("ABC analysis error:", error);
+    logger.error("ABC analysis error:", { error: error });
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }

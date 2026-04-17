@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState } from "react";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ export function ExportClient({ exportType, label, formats }: ExportClientProps) 
 
         toast.success(`${label} exported successfully`);
       } catch (error) {
-        console.error("Export failed:", error);
+        logger.error("Export failed:", { error: error });
         toast.error("Export failed");
       } finally {
         setIsLoading(false);
