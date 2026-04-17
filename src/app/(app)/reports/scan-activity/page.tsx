@@ -13,7 +13,6 @@
  */
 
 import { CheckCircle2, Download, ScanLine, XCircle } from "lucide-react";
-import type { Metadata } from "next";
 import React, { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -30,9 +29,6 @@ import {
 } from "@/components/ui/table";
 import { type ScanHistoryEntry, getScanHistory } from "@/lib/scanner/scan-history";
 
-export const metadata: Metadata = {
-  title: "Scan Activity Report",
-};
 export default function ScanActivityReportPage() {
   const [entries] = useState<ScanHistoryEntry[]>(() => getScanHistory());
   const [mounted, setMounted] = useState(false);
