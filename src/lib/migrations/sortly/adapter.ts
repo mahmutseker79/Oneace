@@ -71,6 +71,9 @@ export const SORTLY_ADAPTER: MigrationAdapter = {
       if (!item.sku || item.sku.trim() === "") {
         issues.push({
           severity: "ERROR",
+          entity: "ITEM",
+          externalId: item.externalId,
+          field: "sku",
           code: "ITEM_MISSING_SKU",
           message: `Item "${item.name || item.externalId}" is missing a SKU`,
         });
@@ -83,15 +86,36 @@ export const SORTLY_ADAPTER: MigrationAdapter = {
       if (cat.parentExternalId && !categoryIds.has(cat.parentExternalId)) {
         issues.push({
           severity: "WARNING",
+          entity: "CATEGORY",
+          externalId: cat.externalId,
+          field: "parentExternalId",
           code: "CATEGORY_PARENT_NOT_FOUND",
           message: `Category "${cat.name}" references unknown parent ${cat.parentExternalId}`,
         });
       }
     }
 
+    const countBySeverity = (entity: string) => {
+      const entityIssues = issues.filter((i: any) => i.entity === entity);
+      return {
+        errors: entityIssues.filter((i: any) => i.severity === "ERROR").length,
+        warnings: entityIssues.filter((i: any) => i.severity === "WARNING").length,
+      };
+    };
+
+    const totals: Record<string, { rows: number; errors: number; warnings: number }> = {
+      items: { rows: snapshot.items.length, ...countBySeverity("ITEM") },
+      categories: {
+        rows: snapshot.categories.length,
+        ...countBySeverity("CATEGORY"),
+      },
+      suppliers: { rows: snapshot.suppliers.length, ...countBySeverity("SUPPLIER") },
+      stockLevels: { rows: snapshot.stockLevels.length, errors: 0, warnings: 0 },
+    };
+
     return {
       generatedAt: new Date().toISOString(),
-      totals: {},
+      totals,
       issues,
     };
   },

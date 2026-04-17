@@ -91,62 +91,62 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const uploadedFiles = await loadStoredFiles({ db }, membership.organizationId, id);
     const scope = parseScopeOptions(job.scopeOptions ?? defaultScopeOptions());
 
-    // Fire background import (no await).
-    void (async () => {
-      try {
-        const adapter = await getAdapterFor(job.sourcePlatform);
-        // API adapters (Cin7 / SOS / QBO / inFlow-API) read their
-        // credentials out of fieldMappings.credentials. The QBO
-        // adapter's "reuse existing integration" path also looks for
-        // `organizationId` on that credentials blob; inject it here
-        // server-side so the client never needs to pass it in.
-        const fieldMappings = (job.fieldMappings ?? {}) as Record<string, unknown>;
-        if (fieldMappings.credentials && typeof fieldMappings.credentials === "object") {
-          (fieldMappings.credentials as Record<string, unknown>).organizationId =
-            membership.organizationId;
-        }
-        const snapshot = await adapter.parse(uploadedFiles, fieldMappings);
-
-        const result = await runMigrationImport({
-          db,
-          migrationJobId: id,
-          organizationId: membership.organizationId,
-          snapshot,
-          scopeOptions: scope,
-          auditUserId: session.user.id,
-        });
-
-        // runMigrationImport already writes status + importResults + audit
-        // events. This post-fire audit is deliberately a SECOND, distinct
-        // event tied to the HTTP request lifecycle so ops can distinguish
-        // "import finished" from "the user's /start request was accepted".
-        // Audit fix (Critical-2 signature): recordAudit expects flat fields
-        // (organizationId, actorId, action, entityType, entityId, metadata),
-        // not nested actor/entity objects.
-        await recordAudit({
-          organizationId: membership.organizationId,
-          actorId: session.user.id,
-          action: result.success ? "migration.completed" : "migration.failed",
-          entityType: "migration_job",
-          entityId: id,
-          metadata: {
-            source: job.sourcePlatform,
-            phaseCount: result.phases.length,
-            success: result.success,
-          },
-        });
-      } catch (err) {
-        console.error("Background migration import failed:", err);
-        // Mark as FAILED
-        await db.migrationJob.update({
-          where: { id },
-          data: {
-            status: "FAILED",
-            notes: `Import error: ${err instanceof Error ? err.message : "Unknown error"}`,
-          },
-        });
+    // Run import synchronously within the request lifetime. Vercel
+    // serverless functions terminate as soon as the handler returns, so
+    // fire-and-forget would silently drop imports. For small CSVs this
+    // finishes well within the function budget; large imports will need
+    // a proper job queue.
+    try {
+      const adapter = await getAdapterFor(job.sourcePlatform);
+      const fieldMappings = (job.fieldMappings ?? {}) as Record<string, unknown>;
+      if (fieldMappings.credentials && typeof fieldMappings.credentials === "object") {
+        (fieldMappings.credentials as Record<string, unknown>).organizationId =
+          membership.organizationId;
       }
-    })();
+      // biome-ignore lint/suspicious/noExplicitAny: adapter signatures vary per source
+      const adapterAny = adapter as any;
+      const snapshot = adapterAny.parseWithScope
+        ? await adapterAny.parseWithScope(uploadedFiles, fieldMappings, scope)
+        : await adapterAny.parse(uploadedFiles, fieldMappings);
+
+      const result = await runMigrationImport({
+        db,
+        migrationJobId: id,
+        organizationId: membership.organizationId,
+        snapshot,
+        scopeOptions: scope,
+        auditUserId: session.user.id,
+      });
+
+      await recordAudit({
+        organizationId: membership.organizationId,
+        actorId: session.user.id,
+        action: result.success ? "migration.completed" : "migration.failed",
+        entityType: "migration_job",
+        entityId: id,
+        metadata: {
+          source: job.sourcePlatform,
+          phaseCount: result.phases.length,
+          success: result.success,
+        },
+      });
+    } catch (err) {
+      console.error("Migration import failed:", err);
+      await db.migrationJob.update({
+        where: { id },
+        data: {
+          status: "FAILED",
+          notes: `Import error: ${err instanceof Error ? err.message : "Unknown error"}`,
+        },
+      });
+      return NextResponse.json(
+        {
+          error: "IMPORT_FAILED",
+          message: err instanceof Error ? err.message : "Unknown error",
+        },
+        { status: 500 },
+      );
+    }
 
     // Audit log — same signature fix as inside the background closure.
     await recordAudit({

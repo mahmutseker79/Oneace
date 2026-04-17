@@ -253,32 +253,36 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
       membership.organizationId;
   }
 
-  void (async () => {
-    try {
-      const adapter = await getAdapterFor(job.sourcePlatform);
-      // biome-ignore lint/suspicious/noExplicitAny: adapter.parse signature varies by source
-      const adapterAny = adapter as any;
-      const snapshot = adapterAny.parseWithScope
-        ? await adapterAny.parseWithScope(uploadedFiles, fieldMappings, scope)
-        : await adapterAny.parse(uploadedFiles, fieldMappings);
-      await runMigrationImport({
-        db,
-        migrationJobId: id,
-        organizationId: membership.organizationId,
-        snapshot,
-        scopeOptions: scope,
-        auditUserId: session.user.id,
-      });
-    } catch (err) {
-      await db.migrationJob.update({
-        where: { id },
-        data: {
-          status: "FAILED",
-          notes: `Import error: ${err instanceof Error ? err.message : String(err)}`,
-        },
-      });
-    }
-  })();
+  // IMPORTANT: Vercel serverless functions die as soon as the handler
+  // returns, so fire-and-forget (`void async IIFE`) silently drops the
+  // import. Await the full import so the client gets a real completion.
+  // For small files (< a few MB) this finishes within Vercel's 30s
+  // function budget. Larger imports will need a proper job queue.
+  try {
+    const adapter = await getAdapterFor(job.sourcePlatform);
+    // biome-ignore lint/suspicious/noExplicitAny: adapter.parse signature varies by source
+    const adapterAny = adapter as any;
+    const snapshot = adapterAny.parseWithScope
+      ? await adapterAny.parseWithScope(uploadedFiles, fieldMappings, scope)
+      : await adapterAny.parse(uploadedFiles, fieldMappings);
+    await runMigrationImport({
+      db,
+      migrationJobId: id,
+      organizationId: membership.organizationId,
+      snapshot,
+      scopeOptions: scope,
+      auditUserId: session.user.id,
+    });
+  } catch (err) {
+    await db.migrationJob.update({
+      where: { id },
+      data: {
+        status: "FAILED",
+        notes: `Import error: ${err instanceof Error ? err.message : String(err)}`,
+      },
+    });
+    throw err;
+  }
 
   await recordAudit({
     organizationId: membership.organizationId,
