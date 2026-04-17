@@ -11,13 +11,13 @@
  */
 
 import type { MigrationAdapter, UploadedFile } from "@/lib/migrations/core/adapter";
+import { parseCsv, sniffDelimiter } from "@/lib/migrations/core/csv-utils";
 import type {
-  FileDetectionResult,
   FieldMapping,
+  FileDetectionResult,
   ParsedSnapshot,
   ValidationReport,
 } from "@/lib/migrations/core/types";
-import { parseCsv, sniffDelimiter } from "@/lib/migrations/core/csv-utils";
 import { parseSortlyCSV } from "@/lib/migrations/sortly/csv-parser";
 import { getSortlyDefaultMappings } from "@/lib/migrations/sortly/default-mappings";
 
@@ -28,23 +28,21 @@ export const SORTLY_ADAPTER: MigrationAdapter = {
 
   async detectFiles(files: UploadedFile[]): Promise<FileDetectionResult[]> {
     return files.map((f) => ({
-      filename: f.filename,
-      detected: f.filename.toLowerCase().endsWith(".csv"),
+      fileRef: f.filename,
+      entity: f.filename.toLowerCase().endsWith(".csv") ? "ITEM" : "UNKNOWN",
       confidence:
         f.filename.toLowerCase() === "items.csv"
           ? 1.0
           : f.filename.toLowerCase().endsWith(".csv")
             ? 0.8
             : 0.0,
-      issues: [],
+      matchedHeaders: [],
     }));
   },
 
   async parse(files: UploadedFile[]): Promise<ParsedSnapshot> {
     // Find the CSV file.
-    const csvFile = files.find((f) =>
-      f.filename.toLowerCase().endsWith(".csv"),
-    );
+    const csvFile = files.find((f) => f.filename.toLowerCase().endsWith(".csv"));
     if (!csvFile) {
       throw new Error("No CSV file found in upload");
     }
@@ -65,11 +63,7 @@ export const SORTLY_ADAPTER: MigrationAdapter = {
     return getSortlyDefaultMappings(snapshot);
   },
 
-  validate(
-    snapshot: ParsedSnapshot,
-    mappings: FieldMapping[],
-    scope: any,
-  ): ValidationReport {
+  validate(snapshot: ParsedSnapshot, mappings: FieldMapping[], scope: any): ValidationReport {
     const issues: any[] = [];
 
     // Validate items have SKU.
@@ -96,7 +90,8 @@ export const SORTLY_ADAPTER: MigrationAdapter = {
     }
 
     return {
-      valid: issues.every((i) => i.severity !== "ERROR"),
+      generatedAt: new Date().toISOString(),
+      totals: {},
       issues,
     };
   },

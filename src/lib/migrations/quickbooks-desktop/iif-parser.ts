@@ -68,7 +68,7 @@ export function parseIifFile(buffer: Buffer | string): IifDocument {
       const trimmedHeader = line.substring(1); // Remove leading !
       const parts = parseTabLine(trimmedHeader);
 
-      if (parts.length > 0) {
+      if (parts.length > 0 && parts[0]) {
         currentType = parts[0];
         currentHeaders = parts.slice(1);
       }
@@ -76,9 +76,9 @@ export function parseIifFile(buffer: Buffer | string): IifDocument {
       // Parse data row: TYPE\tVAL1\tVAL2\t...
       const parts = parseTabLine(line);
 
-      if (parts.length === 0) continue;
+      if (parts.length === 0 || !parts[0]) continue;
 
-      const rowType = parts[0];
+      const rowType: string = parts[0];
 
       // If we have a matching header, use it. Otherwise, warn and skip.
       if (!currentType || rowType !== currentType) {
@@ -87,7 +87,7 @@ export function parseIifFile(buffer: Buffer | string): IifDocument {
         if (!recordsByType.has(rowType)) {
           // First time seeing this type without a header. Warn and use row values as-is.
           warnings.push(
-            `Line ${lineNumber}: Record type ${rowType} has no header; treating first row as values.`
+            `Line ${lineNumber}: Record type ${rowType} has no header; treating first row as values.`,
           );
           currentType = rowType;
           currentHeaders = [];
@@ -99,20 +99,25 @@ export function parseIifFile(buffer: Buffer | string): IifDocument {
       const fields: Record<string, string> = {};
 
       for (let i = 0; i < currentHeaders.length; i++) {
-        fields[currentHeaders[i]] = values[i] ?? "";
+        const key = currentHeaders[i];
+        if (!key) continue;
+        fields[key] = values[i] ?? "";
       }
 
       // Also store any extra values (in case row has more columns than header).
       for (let i = currentHeaders.length; i < values.length; i++) {
-        fields[`_extra_${i}`] = values[i];
+        fields[`_extra_${i}`] = values[i] ?? "";
       }
 
-      // Add record to the map.
-      if (!recordsByType.has(currentType)) {
-        recordsByType.set(currentType, []);
+      // Add record to the map. currentType could still be null if we
+      // never saw a header and the inference block above did not run;
+      // fall back to rowType in that case.
+      const typeKey: string = currentType ?? rowType;
+      if (!recordsByType.has(typeKey)) {
+        recordsByType.set(typeKey, []);
       }
-      recordsByType.get(currentType)!.push({
-        type: currentType,
+      recordsByType.get(typeKey)?.push({
+        type: typeKey,
         fields,
       });
     }
@@ -163,10 +168,7 @@ function parseTabLine(line: string): string[] {
 /**
  * Utility: extract a single field value from an IIF record, case-insensitive.
  */
-export function getIifField(
-  record: IifRecord,
-  fieldName: string
-): string | null {
+export function getIifField(record: IifRecord, fieldName: string): string | null {
   // Direct match first.
   if (record.fields[fieldName] !== undefined) {
     return record.fields[fieldName];
@@ -174,11 +176,9 @@ export function getIifField(
 
   // Case-insensitive match.
   const lower = fieldName.toLowerCase();
-  const matched = Object.keys(record.fields).find(
-    (k) => k.toLowerCase() === lower
-  );
+  const matched = Object.keys(record.fields).find((k) => k.toLowerCase() === lower);
 
-  return matched ? record.fields[matched] : null;
+  return matched ? (record.fields[matched] ?? null) : null;
 }
 
 /**
@@ -193,7 +193,7 @@ export function getIifField(
  * @returns Map of PO externalId → array of SPL record fields
  */
 export function stitchPoSplits(
-  recordsByType: Map<string, IifRecord[]>
+  recordsByType: Map<string, IifRecord[]>,
 ): Map<string, Record<string, string>[]> {
   const poSplitMap = new Map<string, Record<string, string>[]>();
   const purchOrders = recordsByType.get("PURCHORDR") || [];
@@ -207,14 +207,14 @@ export function stitchPoSplits(
 
   // Assign each SPL to its parent PO by matching TRNSID field.
   for (const split of splits) {
-    const trnsId = split.fields["TRNSID"] || "";
+    const trnsId = split.fields.TRNSID || "";
 
     // Find the PO with matching TRNSID.
     for (const po of purchOrders) {
       const poId = getIifField(po, "TRNSID") || getIifField(po, "NAME") || "";
 
       if (trnsId === poId) {
-        poSplitMap.get(poId)!.push(split.fields);
+        poSplitMap.get(poId)?.push(split.fields);
         break;
       }
     }

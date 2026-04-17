@@ -31,10 +31,7 @@ export const createPalletLabelSchema = z.object({
     .array(z.string().trim().min(1))
     .min(1, { message: "At least one item is required" })
     .max(1000, { message: "Too many items" }),
-  warehouseId: z
-    .string()
-    .trim()
-    .min(1, { message: "Warehouse is required" }),
+  warehouseId: z.string().trim().min(1, { message: "Warehouse is required" }),
   binId: z
     .string()
     .trim()

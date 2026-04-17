@@ -13,10 +13,10 @@
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { revalidatePath } from "next/cache";
-import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 export type ActionResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string };
@@ -336,7 +336,16 @@ export async function createFieldMappingAction(input: unknown): Promise<ActionRe
     return { ok: false, error: "Invalid input" };
   }
 
-  const { integrationId, entityType, localField, remoteField, direction, transformRule, defaultValue, isRequired } = parsed.data;
+  const {
+    integrationId,
+    entityType,
+    localField,
+    remoteField,
+    direction,
+    transformRule,
+    defaultValue,
+    isRequired,
+  } = parsed.data;
 
   try {
     const integration = await db.integration.findUnique({
@@ -387,7 +396,10 @@ export async function updateFieldMappingAction(
     return { ok: false, error: "Permission denied" };
   }
 
-  const parsed = updateFieldMappingSchema.safeParse({ mappingId, ...(input as Record<string, unknown>) });
+  const parsed = updateFieldMappingSchema.safeParse({
+    mappingId,
+    ...(input as Record<string, unknown>),
+  });
   if (!parsed.success) {
     return { ok: false, error: "Invalid input" };
   }
@@ -533,7 +545,9 @@ const syncRuleSchema = z.object({
     "CUSTOMER",
   ]),
   condition: z.record(z.unknown()),
-  action: z.enum(["SYNC", "SKIP", "TRANSFORM", "FLAG_REVIEW", "CREATE_ONLY", "UPDATE_ONLY"]).default("SYNC"),
+  action: z
+    .enum(["SYNC", "SKIP", "TRANSFORM", "FLAG_REVIEW", "CREATE_ONLY", "UPDATE_ONLY"])
+    .default("SYNC"),
   priority: z.number().int().default(0),
   isActive: z.boolean().default(true),
 });
@@ -542,9 +556,7 @@ const updateSyncRuleSchema = syncRuleSchema.partial().extend({
   ruleId: z.string().cuid(),
 });
 
-export async function listSyncRulesAction(
-  integrationId: string,
-): Promise<ActionResult<unknown[]>> {
+export async function listSyncRulesAction(integrationId: string): Promise<ActionResult<unknown[]>> {
   const { membership } = await requireActiveMembership();
 
   try {
@@ -658,7 +670,9 @@ export async function updateSyncRuleAction(
       where: { id: ruleId },
       data: {
         ...updateData,
-        ...(updateData.condition && { condition: JSON.parse(JSON.stringify(updateData.condition)) }),
+        ...(updateData.condition && {
+          condition: JSON.parse(JSON.stringify(updateData.condition)),
+        }),
       },
     });
 
@@ -949,9 +963,8 @@ export async function testWebhookAction(eventId: string): Promise<ActionResult> 
           data: { lastTriggeredAt: new Date(), failCount: 0 },
         });
         return { ok: true, data: {} };
-      } else {
-        throw new Error(`HTTP ${response.status}`);
       }
+      throw new Error(`HTTP ${response.status}`);
     } catch (testError) {
       const failCount = event.failCount + 1;
       await db.integrationWebhookEvent.update({
@@ -971,19 +984,23 @@ export async function testWebhookAction(eventId: string): Promise<ActionResult> 
 
 const integrationSettingsSchema = z.object({
   integrationId: z.string().cuid(),
-  syncFrequency: z.enum([
-    "MANUAL",
-    "REALTIME",
-    "EVERY_5_MIN",
-    "EVERY_15_MIN",
-    "EVERY_30_MIN",
-    "HOURLY",
-    "EVERY_6_HOURS",
-    "DAILY",
-    "WEEKLY",
-  ]).optional(),
+  syncFrequency: z
+    .enum([
+      "MANUAL",
+      "REALTIME",
+      "EVERY_5_MIN",
+      "EVERY_15_MIN",
+      "EVERY_30_MIN",
+      "HOURLY",
+      "EVERY_6_HOURS",
+      "DAILY",
+      "WEEKLY",
+    ])
+    .optional(),
   syncDirection: z.enum(["INBOUND", "OUTBOUND", "BIDIRECTIONAL"]).optional(),
-  conflictPolicy: z.enum(["REMOTE_WINS", "LOCAL_WINS", "NEWEST_WINS", "MANUAL_REVIEW", "SKIP"]).optional(),
+  conflictPolicy: z
+    .enum(["REMOTE_WINS", "LOCAL_WINS", "NEWEST_WINS", "MANUAL_REVIEW", "SKIP"])
+    .optional(),
   retryPolicy: z.enum(["NONE", "LINEAR", "EXPONENTIAL"]).optional(),
   maxRetries: z.number().int().min(0).max(10).optional(),
   rateLimitPerMin: z.number().int().min(1).optional(),
@@ -1008,7 +1025,10 @@ export async function updateIntegrationSettingsAction(
     return { ok: false, error: "Permission denied" };
   }
 
-  const parsed = integrationSettingsSchema.safeParse({ integrationId, ...(input as Record<string, unknown>) });
+  const parsed = integrationSettingsSchema.safeParse({
+    integrationId,
+    ...(input as Record<string, unknown>),
+  });
   if (!parsed.success) {
     return { ok: false, error: "Invalid input" };
   }
@@ -1028,7 +1048,9 @@ export async function updateIntegrationSettingsAction(
       where: { id: integrationId },
       data: {
         ...updateData,
-        ...(updateData.syncFilterJson && { syncFilterJson: JSON.parse(JSON.stringify(updateData.syncFilterJson)) }),
+        ...(updateData.syncFilterJson && {
+          syncFilterJson: JSON.parse(JSON.stringify(updateData.syncFilterJson)),
+        }),
       },
     });
 
@@ -1125,9 +1147,15 @@ export async function testConnectionAction(integrationId: string): Promise<Actio
   }
 }
 
-export async function getSyncStatsAction(
-  integrationId: string,
-): Promise<ActionResult<{ totalSyncs: number; successfulSyncs: number; failedSyncs: number; totalRecords: number; totalErrors: number }>> {
+export async function getSyncStatsAction(integrationId: string): Promise<
+  ActionResult<{
+    totalSyncs: number;
+    successfulSyncs: number;
+    failedSyncs: number;
+    totalRecords: number;
+    totalErrors: number;
+  }>
+> {
   const { membership } = await requireActiveMembership();
 
   try {

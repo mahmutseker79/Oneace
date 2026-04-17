@@ -5,29 +5,24 @@
  * Credentials are stored on MigrationJob.fieldMappings.credentials.
  */
 
-import type { MigrationAdapter } from "@/lib/migrations/core/adapter";
-import type {
-  FileDetectionResult,
-  FieldMapping,
-  ParsedSnapshot,
-  ValidationReport,
-} from "@/lib/migrations/core/types";
+import type { MigrationAdapter, UploadedFile } from "@/lib/migrations/core/adapter";
 import type { MigrationScopeOptions } from "@/lib/migrations/core/scope-options";
 import {
   resolvePoHistoryCutoff,
   shouldImportPurchaseOrders,
 } from "@/lib/migrations/core/scope-options";
-import {
-  SOSApiClient,
-  type SOSCredentials,
-} from "@/lib/migrations/sos-inventory/api-client";
+import type {
+  FieldMapping,
+  FileDetectionResult,
+  ParsedSnapshot,
+  ValidationReport,
+} from "@/lib/migrations/core/types";
+import { SOSApiClient, type SOSCredentials } from "@/lib/migrations/sos-inventory/api-client";
 import { getSOSDefaultMappings } from "@/lib/migrations/sos-inventory/default-mappings";
 import { parseSOSSnapshot } from "@/lib/migrations/sos-inventory/parser";
 import { readCredentials } from "@/lib/secure/credentials";
 
-function extractSOSCredentials(
-  fieldMappings: Record<string, unknown>,
-): SOSCredentials | null {
+function extractSOSCredentials(fieldMappings: Record<string, unknown>): SOSCredentials | null {
   const creds = fieldMappings.credentials;
   if (!creds || typeof creds !== "object") {
     return null;
@@ -60,7 +55,10 @@ function extractSOSCredentials(
   return null;
 }
 
-export const SOS_INVENTORY_ADAPTER: MigrationAdapter = {
+// `satisfies` (not `: MigrationAdapter =`) so the extra `parseWithScope`
+// method doesn't fail TS excess-property checking while the interface
+// contract is still enforced.
+export const SOS_INVENTORY_ADAPTER = {
   source: "SOS_INVENTORY",
   method: "API",
   supportedFiles: [], // API-only
@@ -70,33 +68,28 @@ export const SOS_INVENTORY_ADAPTER: MigrationAdapter = {
   },
 
   async parse(
-    _files,
+    _files: UploadedFile[],
     fieldMappings?: Record<string, unknown>,
   ): Promise<ParsedSnapshot> {
     if (!fieldMappings) {
-      throw new Error(
-        "SOS Inventory adapter requires credentials in fieldMappings",
-      );
+      throw new Error("SOS Inventory adapter requires credentials in fieldMappings");
     }
 
     const creds = extractSOSCredentials(fieldMappings);
     if (!creds) {
-      throw new Error(
-        "SOS Inventory credentials not found in fieldMappings.credentials",
-      );
+      throw new Error("SOS Inventory credentials not found in fieldMappings.credentials");
     }
 
     const client = new SOSApiClient(creds);
 
     // Fetch all entities in parallel
-    const [items, vendors, locations, inventoryLocations, purchaseOrders] =
-      await Promise.all([
-        client.getAllItems(),
-        client.getAllVendors(),
-        client.getAllLocations(),
-        client.getAllInventoryLocations(),
-        client.getAllPurchaseOrders(),
-      ]);
+    const [items, vendors, locations, inventoryLocations, purchaseOrders] = await Promise.all([
+      client.getAllItems(),
+      client.getAllVendors(),
+      client.getAllLocations(),
+      client.getAllInventoryLocations(),
+      client.getAllPurchaseOrders(),
+    ]);
 
     return parseSOSSnapshot({
       items,
@@ -111,21 +104,17 @@ export const SOS_INVENTORY_ADAPTER: MigrationAdapter = {
    * Parse with scope options (date filtering for POs).
    */
   async parseWithScope(
-    _files,
+    _files: UploadedFile[],
     fieldMappings: Record<string, unknown>,
     scope: MigrationScopeOptions,
   ): Promise<ParsedSnapshot> {
     if (!fieldMappings) {
-      throw new Error(
-        "SOS Inventory adapter requires credentials in fieldMappings",
-      );
+      throw new Error("SOS Inventory adapter requires credentials in fieldMappings");
     }
 
     const creds = extractSOSCredentials(fieldMappings);
     if (!creds) {
-      throw new Error(
-        "SOS Inventory credentials not found in fieldMappings.credentials",
-      );
+      throw new Error("SOS Inventory credentials not found in fieldMappings.credentials");
     }
 
     const client = new SOSApiClient(creds);
@@ -146,9 +135,7 @@ export const SOS_INVENTORY_ADAPTER: MigrationAdapter = {
       // Filter by status if OPEN_ONLY
       if (scope.poHistory === "OPEN_ONLY") {
         const closedStatuses = ["RECEIVED", "CLOSED", "CANCELLED"];
-        purchaseOrders = purchaseOrders.filter(
-          (po) => !closedStatuses.includes(String(po.status)),
-        );
+        purchaseOrders = purchaseOrders.filter((po) => !closedStatuses.includes(String(po.status)));
       }
     }
 
@@ -165,11 +152,7 @@ export const SOS_INVENTORY_ADAPTER: MigrationAdapter = {
     return getSOSDefaultMappings(snapshot);
   },
 
-  validate(
-    snapshot: ParsedSnapshot,
-    _mappings: FieldMapping[],
-    _scope: any,
-  ): ValidationReport {
+  validate(snapshot: ParsedSnapshot, _mappings: FieldMapping[], _scope: any): ValidationReport {
     const issues: any[] = [];
 
     // Validate all items have SKU
@@ -195,14 +178,13 @@ export const SOS_INVENTORY_ADAPTER: MigrationAdapter = {
         severity: "WARNING",
         entity: "ITEM",
         code: "POSSIBLE_QBO_DUP",
-        message: `SOS Inventory is QuickBooks-native. Check for SKU collisions with existing QBO Items in your account.`,
+        message:
+          "SOS Inventory is QuickBooks-native. Check for SKU collisions with existing QBO Items in your account.",
       });
     }
 
     // Validate warehouse references
-    const warehouseIds = new Set(
-      snapshot.warehouses.map((w) => w.externalId),
-    );
+    const warehouseIds = new Set(snapshot.warehouses.map((w) => w.externalId));
     for (const stock of snapshot.stockLevels) {
       if (!warehouseIds.has(stock.warehouseExternalId)) {
         issues.push({
@@ -228,4 +210,4 @@ export const SOS_INVENTORY_ADAPTER: MigrationAdapter = {
       issues,
     };
   },
-};
+} satisfies MigrationAdapter;

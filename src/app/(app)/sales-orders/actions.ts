@@ -513,7 +513,7 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
               quantity: delta,
               direction: -1,
               reference: `SO-${existing.orderNumber}`,
-              note: `Sales order shipment`,
+              note: "Sales order shipment",
               createdByUserId: session.user.id,
             },
           });

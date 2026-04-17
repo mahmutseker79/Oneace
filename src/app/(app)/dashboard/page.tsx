@@ -10,7 +10,6 @@ import {
   ScanLine,
   ShoppingCart,
   TrendingUp,
-
   Warehouse,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -350,7 +349,9 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl text-gradient-primary">{greeting}</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl text-gradient-primary">
+            {greeting}
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             <span className="text-foreground font-medium">{membership.organization.name}</span>
             {" · "}
@@ -523,18 +524,11 @@ export default async function DashboardPage() {
                         </span>
                       )}
                       <StepIcon className="h-4 w-4 text-muted-foreground" />
-                      <span
-                        className={cn(
-                          "text-sm",
-                          step.complete && "text-success",
-                        )}
-                      >
+                      <span className={cn("text-sm", step.complete && "text-success")}>
                         {step.label}
                       </span>
                       {step.complete && (
-                        <span className="ml-auto text-xs font-medium text-success">
-                          ✓ Done
-                        </span>
+                        <span className="ml-auto text-xs font-medium text-success">✓ Done</span>
                       )}
                     </Link>
                   );

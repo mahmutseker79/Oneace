@@ -98,9 +98,7 @@ export function AddComponentDialog({ kitId, items }: Props) {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

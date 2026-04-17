@@ -17,12 +17,18 @@
  */
 
 import { db } from "@/lib/db";
-import type { ShopifyClient, ShopifyProduct, ShopifyOrder, ShopifyCustomer, ShopifyInventoryLevel } from "@/lib/integrations/shopify/shopify-client";
+import type {
+  ShopifyClient,
+  ShopifyCustomer,
+  ShopifyInventoryLevel,
+  ShopifyOrder,
+  ShopifyProduct,
+} from "@/lib/integrations/shopify/shopify-client";
 import {
   type SyncContext,
+  SyncEngine,
   type SyncEntity,
   type SyncResult,
-  SyncEngine,
 } from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
 
@@ -129,13 +135,15 @@ export class ShopifySyncEngine extends SyncEngine {
     }
 
     const settings = integration.settings as Record<string, unknown>;
-    return (settings.idMapping as IdMapping) || {
-      items: {},
-      salesOrders: {},
-      customers: {},
-      inventoryLevels: {},
-      lastSyncTimestamps: {},
-    };
+    return (
+      (settings.idMapping as IdMapping) || {
+        items: {},
+        salesOrders: {},
+        customers: {},
+        inventoryLevels: {},
+        lastSyncTimestamps: {},
+      }
+    );
   }
 
   /**
@@ -219,7 +227,7 @@ export class ShopifySyncEngine extends SyncEngine {
           syncProducts,
           context,
           async (entity) => {
-            const product = (entity.data as unknown) as typeof products[0];
+            const product = entity.data as unknown as (typeof products)[0];
             // Identify corresponding local item via SKU matching
             const item = await db.item.findFirst({
               where: {
@@ -255,7 +263,11 @@ export class ShopifySyncEngine extends SyncEngine {
     await this.setIdMapping(context.integrationId, mapping);
   }
 
-  private async syncProductToLocal(context: SyncContext, entity: SyncEntity, mapping: IdMapping): Promise<void> {
+  private async syncProductToLocal(
+    context: SyncContext,
+    entity: SyncEntity,
+    mapping: IdMapping,
+  ): Promise<void> {
     const data = entity.data as {
       title: string;
       vendor?: string;
@@ -370,7 +382,11 @@ export class ShopifySyncEngine extends SyncEngine {
     await this.setIdMapping(context.integrationId, mapping);
   }
 
-  private async syncOrderToLocal(context: SyncContext, entity: SyncEntity, mapping: IdMapping): Promise<void> {
+  private async syncOrderToLocal(
+    context: SyncContext,
+    entity: SyncEntity,
+    mapping: IdMapping,
+  ): Promise<void> {
     const order = entity.data as unknown as ShopifyOrder;
 
     // Get default warehouse

@@ -299,7 +299,7 @@ export function BillingPage({
       ) : null}
 
       {/* Current plan + usage — Phase 6C: gradient border for active plans */}
-      <Card className={plan !== "FREE" ? "border-primary/30 shadow-lg shadow-primary/5" : ""} >
+      <Card className={plan !== "FREE" ? "border-primary/30 shadow-lg shadow-primary/5" : ""}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             Current plan
@@ -391,9 +391,7 @@ export function BillingPage({
                 </button>
                 <span className="flex items-center gap-1.5 font-medium">
                   Annual
-                  <Badge className="bg-success px-1.5 py-0 text-[10px] text-white">
-                    Save 20%
-                  </Badge>
+                  <Badge className="bg-success px-1.5 py-0 text-[10px] text-white">Save 20%</Badge>
                 </span>
               </div>
             ) : null}

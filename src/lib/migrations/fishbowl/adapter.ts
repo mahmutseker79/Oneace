@@ -21,16 +21,16 @@
  */
 
 import type { MigrationAdapter, UploadedFile } from "@/lib/migrations/core/adapter";
+import { parseCsv, sniffDelimiter } from "@/lib/migrations/core/csv-utils";
+import { sortCategoriesByParent } from "@/lib/migrations/core/topological-sort";
 import type {
-  FileDetectionResult,
   FieldMapping,
+  FileDetectionResult,
   ParsedSnapshot,
   ValidationReport,
 } from "@/lib/migrations/core/types";
-import { parseCsv, sniffDelimiter } from "@/lib/migrations/core/csv-utils";
 import { parseFishbowlCSVs } from "@/lib/migrations/fishbowl/csv-parser";
-import { resolveUom, buildUomConversionMap } from "@/lib/migrations/fishbowl/uom-conversion";
-import { sortCategoriesByParent } from "@/lib/migrations/core/topological-sort";
+import { buildUomConversionMap, resolveUom } from "@/lib/migrations/fishbowl/uom-conversion";
 
 export const FISHBOWL_ADAPTER: MigrationAdapter = {
   source: "FISHBOWL",
@@ -164,11 +164,7 @@ export const FISHBOWL_ADAPTER: MigrationAdapter = {
     return [];
   },
 
-  validate(
-    snapshot: ParsedSnapshot,
-    mappings: FieldMapping[],
-    scope: any,
-  ): ValidationReport {
+  validate(snapshot: ParsedSnapshot, mappings: FieldMapping[], scope: any): ValidationReport {
     const issues: any[] = [];
 
     // Validate items have SKU.
@@ -193,10 +189,7 @@ export const FISHBOWL_ADAPTER: MigrationAdapter = {
     // Validate supplier references.
     const supplierIds = new Set(snapshot.suppliers.map((s) => s.externalId));
     for (const item of snapshot.items) {
-      if (
-        item.preferredSupplierExternalId &&
-        !supplierIds.has(item.preferredSupplierExternalId)
-      ) {
+      if (item.preferredSupplierExternalId && !supplierIds.has(item.preferredSupplierExternalId)) {
         issues.push({
           severity: "WARNING",
           entity: "ITEM",

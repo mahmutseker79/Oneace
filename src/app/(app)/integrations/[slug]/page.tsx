@@ -15,21 +15,24 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
-import { ExternalLink, RefreshCw, BarChart3 } from "lucide-react";
+import { BarChart3, ExternalLink, RefreshCw } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { disconnectIntegrationAction, triggerSyncAction, getSyncStatsAction } from "../actions";
-import { SettingsPanel } from "./settings-panel";
+import { disconnectIntegrationAction, getSyncStatsAction, triggerSyncAction } from "../actions";
 import { FieldMappingTable } from "./field-mapping-table";
+import { SettingsPanel } from "./settings-panel";
 import { SyncRulesPanel } from "./sync-rules-panel";
-import { WebhookEventsPanel } from "./webhook-events-panel";
 import { SyncSchedulesPanel } from "./sync-schedules-panel";
+import { WebhookEventsPanel } from "./webhook-events-panel";
 
 // ── Slug → Provider mapping ─────────────────────────────────────
 
-const SLUG_MAP: Record<string, { provider: IntegrationProvider; name: string; docsUrl?: string; oauthPath?: string }> = {
+const SLUG_MAP: Record<
+  string,
+  { provider: IntegrationProvider; name: string; docsUrl?: string; oauthPath?: string }
+> = {
   quickbooks: {
     provider: "QUICKBOOKS_ONLINE",
     name: "QuickBooks Online",
@@ -182,7 +185,13 @@ export default async function IntegrationDetailPage({
     : [];
 
   // Get sync stats
-  let syncStats = { totalSyncs: 0, successfulSyncs: 0, failedSyncs: 0, totalRecords: 0, totalErrors: 0 };
+  let syncStats = {
+    totalSyncs: 0,
+    successfulSyncs: 0,
+    failedSyncs: 0,
+    totalRecords: 0,
+    totalErrors: 0,
+  };
   if (integration) {
     const statsResult = await getSyncStatsAction(integration.id);
     if (statsResult.ok) {
@@ -250,17 +259,16 @@ export default async function IntegrationDetailPage({
                 )}
               </>
             ) : (
-              canConnect && (
-                info.oauthPath ? (
-                  <Link href={info.oauthPath}>
-                    <Button size="sm">Connect {info.name}</Button>
-                  </Link>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    This integration is coming soon. Contact support for early access.
-                  </p>
-                )
-              )
+              canConnect &&
+              (info.oauthPath ? (
+                <Link href={info.oauthPath}>
+                  <Button size="sm">Connect {info.name}</Button>
+                </Link>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  This integration is coming soon. Contact support for early access.
+                </p>
+              ))
             )}
 
             {info.docsUrl && (

@@ -10,10 +10,10 @@ import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import {
-  createPalletLabelSchema,
-  updatePalletLabelSchema,
   type CreatePalletLabelInput,
   type UpdatePalletLabelInput,
+  createPalletLabelSchema,
+  updatePalletLabelSchema,
 } from "@/lib/validation/pallet-label";
 import { nanoid } from "nanoid";
 
@@ -238,9 +238,7 @@ export async function listPalletsAction(): Promise<
 /**
  * Get details for a specific pallet by ID.
  */
-export async function getPalletAction(
-  palletId: string,
-): Promise<
+export async function getPalletAction(palletId: string): Promise<
   ActionResult<{
     id: string;
     barcodeValue: string;
@@ -344,9 +342,7 @@ export async function deletePalletAction(palletId: string): Promise<ActionResult
 /**
  * Get label data for printing a pallet barcode.
  */
-export async function printPalletLabelAction(
-  palletId: string,
-): Promise<
+export async function printPalletLabelAction(palletId: string): Promise<
   ActionResult<{
     id: string;
     barcodeValue: string;

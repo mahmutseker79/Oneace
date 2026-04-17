@@ -1,4 +1,5 @@
-import { Wrench } from "lucide-react";import type { Metadata } from "next";
+import { Wrench } from "lucide-react";
+import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -13,7 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
-import { getMessages, getRegion } from "@/lib/i18n";import { requireActiveMembership } from "@/lib/session";
+import { getMessages, getRegion } from "@/lib/i18n";
+import { requireActiveMembership } from "@/lib/session";
 import { formatNumber } from "@/lib/utils";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();

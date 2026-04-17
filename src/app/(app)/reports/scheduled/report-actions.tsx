@@ -13,7 +13,6 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,9 +24,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
-import { deleteScheduledReport, updateScheduledReport } from "./actions";
 import type { Messages } from "@/lib/i18n";
+import { deleteScheduledReport, updateScheduledReport } from "./actions";
 
 interface Props {
   id: string;
@@ -74,11 +74,7 @@ export function ScheduledReportActions({ id, isActive, labels }: Props) {
         disabled={pending}
         title={isActive ? labels.pauseTitle : labels.resumeTitle}
       >
-        {isActive ? (
-          <PauseCircle className="h-4 w-4" />
-        ) : (
-          <PlayCircle className="h-4 w-4" />
-        )}
+        {isActive ? <PauseCircle className="h-4 w-4" /> : <PlayCircle className="h-4 w-4" />}
       </Button>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogTrigger asChild>

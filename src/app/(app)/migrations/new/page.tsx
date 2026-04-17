@@ -1,15 +1,27 @@
 "use client";
 
+import { createMigrationJobAction } from "@/app/(app)/migrations/actions";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { useState, useEffect } from "react";
-import { Boxes, Factory, Package, Receipt, Warehouse, FileSpreadsheet, HardDrive } from "lucide-react";
 import type { MigrationSource } from "@/generated/prisma";
-import { createMigrationJobAction } from "@/app/(app)/migrations/actions";
-import { parseScopeOptions, defaultScopeOptions, type MigrationScopeOptions } from "@/lib/migrations/core/scope-options";
+import {
+  type MigrationScopeOptions,
+  defaultScopeOptions,
+  parseScopeOptions,
+} from "@/lib/migrations/core/scope-options";
 import type { FieldMapping } from "@/lib/migrations/core/types";
-import { ScopeOptionsStep } from "./scope-options-step";
+import {
+  Boxes,
+  Factory,
+  FileSpreadsheet,
+  HardDrive,
+  Package,
+  Receipt,
+  Warehouse,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { ScopeOptionsStep } from "./scope-options-step";
 
 const MIGRATION_SOURCES = [
   {
@@ -85,6 +97,7 @@ export default function NewMigrationPage() {
   });
 
   // Create migration job when source is selected
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally fires only when source changes
   useEffect(() => {
     if (state.source && !state.migrationJobId && state.currentStep === 1) {
       createJob();
@@ -155,9 +168,7 @@ export default function NewMigrationPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-base">{src.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {src.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">{src.description}</p>
                     </div>
                   </div>
                 </div>
@@ -173,14 +184,9 @@ export default function NewMigrationPage() {
   if (state.currentStep === 2) {
     return (
       <div className="space-y-8">
-        <PageHeader
-          title="Yeni Göç Başlat"
-          description="Dosyalarınızı yükleyin"
-        />
+        <PageHeader title="Yeni Göç Başlat" description="Dosyalarınızı yükleyin" />
         <div className="rounded-lg border p-8 text-center">
-          <p className="text-muted-foreground">
-            Dosya yükleme adımı hazırlanıyor...
-          </p>
+          <p className="text-muted-foreground">Dosya yükleme adımı hazırlanıyor...</p>
         </div>
       </div>
     );
@@ -190,10 +196,7 @@ export default function NewMigrationPage() {
   if (state.currentStep === 3) {
     return (
       <div className="space-y-8">
-        <PageHeader
-          title="Yeni Göç Başlat"
-          description="Göç kapsamını belirleyin"
-        />
+        <PageHeader title="Yeni Göç Başlat" description="Göç kapsamını belirleyin" />
         <div className="max-w-2xl">
           <ScopeOptionsStep
             value={state.scopeOptions}
@@ -211,14 +214,9 @@ export default function NewMigrationPage() {
   if (state.currentStep === 4) {
     return (
       <div className="space-y-8">
-        <PageHeader
-          title="Yeni Göç Başlat"
-          description="Alan eşlemesi"
-        />
+        <PageHeader title="Yeni Göç Başlat" description="Alan eşlemesi" />
         <div className="rounded-lg border p-8 text-center">
-          <p className="text-muted-foreground">
-            Alan eşleme adımı hazırlanıyor...
-          </p>
+          <p className="text-muted-foreground">Alan eşleme adımı hazırlanıyor...</p>
         </div>
       </div>
     );
@@ -228,14 +226,9 @@ export default function NewMigrationPage() {
   if (state.currentStep === 5) {
     return (
       <div className="space-y-8">
-        <PageHeader
-          title="Yeni Göç Başlat"
-          description="Özeti gözden geçirin ve başlatın"
-        />
+        <PageHeader title="Yeni Göç Başlat" description="Özeti gözden geçirin ve başlatın" />
         <div className="rounded-lg border p-8 text-center">
-          <p className="text-muted-foreground">
-            Göç özeti hazırlanıyor...
-          </p>
+          <p className="text-muted-foreground">Göç özeti hazırlanıyor...</p>
         </div>
       </div>
     );

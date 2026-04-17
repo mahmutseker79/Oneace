@@ -11,14 +11,14 @@
  * Processes max 50 jobs per run (return remaining count for paging).
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { recordAudit } from "@/lib/audit";
 import {
   deleteMigrationBlobs,
   extractSourceFileBlobUrls,
 } from "@/lib/migrations/core/blob-cleanup";
+import { type NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60; // Vercel Hobby cron timeout
 
@@ -38,18 +38,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!expectedSecret) {
       logger.warn("CRON_SECRET not configured for cleanup");
-      return NextResponse.json(
-        { error: "Cron secret not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
     }
 
     if (!cronSecret || cronSecret !== expectedSecret) {
       logger.warn("Invalid cron secret for cleanup");
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check for dryRun query param
@@ -124,7 +118,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     for (const job of jobsToClean) {
       try {
-        const ageInDays = Math.floor((now.getTime() - job.completedAt!.getTime()) / (24 * 60 * 60 * 1000));
+        const ageInDays = Math.floor(
+          (now.getTime() - job.completedAt?.getTime()) / (24 * 60 * 60 * 1000),
+        );
 
         // Extract blob URLs from sourceFiles
         const blobUrls = extractSourceFileBlobUrls(job.sourceFiles);
@@ -193,7 +189,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           ...response,
           errors: errors.slice(0, 10), // Include first 10 errors for debugging
         },
-        { status: 207 } // 207 Multi-Status (partial success)
+        { status: 207 }, // 207 Multi-Status (partial success)
       );
     }
 
@@ -204,7 +200,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       {
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

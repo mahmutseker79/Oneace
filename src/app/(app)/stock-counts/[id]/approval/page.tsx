@@ -13,8 +13,7 @@ import { ApprovalForm } from "./approval-form";
 /**
  * Stock count approval page. Shows approval details and allows approve/reject.
  */
-export async function generateMetadata({
-}: {
+export async function generateMetadata(_props: {
   params: { id: string };
 }): Promise<Metadata> {
   await getMessages();

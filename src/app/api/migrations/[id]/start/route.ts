@@ -4,23 +4,20 @@
  * POST /api/migrations/[id]/start  — kick off runMigrationImport in background, respond immediately
  */
 
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
 import { recordAudit } from "@/lib/audit";
-import { rateLimit } from "@/lib/rate-limit";
-import { loadStoredFiles } from "@/lib/migrations/core/source-file-store";
-import { runMigrationImport } from "@/lib/migrations/core/importer";
+import { db } from "@/lib/db";
 import { getAdapterFor } from "@/lib/migrations/core/adapter";
-import { parseScopeOptions, defaultScopeOptions } from "@/lib/migrations/core/scope-options";
-import { NextRequest, NextResponse } from "next/server";
+import { runMigrationImport } from "@/lib/migrations/core/importer";
+import { defaultScopeOptions, parseScopeOptions } from "@/lib/migrations/core/scope-options";
+import { loadStoredFiles } from "@/lib/migrations/core/source-file-store";
+import { hasCapability } from "@/lib/permissions";
+import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveMembership } from "@/lib/session";
+import { type NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const { membership, user } = await requireActiveMembership();
@@ -29,7 +26,7 @@ export async function POST(
     if (!hasCapability(membership.role, "integrations.connect")) {
       return NextResponse.json(
         { error: "FORBIDDEN", message: "Insufficient permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -46,7 +43,7 @@ export async function POST(
           message: "Too many import attempts. Try again later.",
           retryAfter: rl.reset,
         },
-        { status: 429, headers: { "Retry-After": String(rl.reset) } }
+        { status: 429, headers: { "Retry-After": String(rl.reset) } },
       );
     }
 
@@ -58,16 +55,13 @@ export async function POST(
     if (!job) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Migration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Tenant check
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
     // State check: VALIDATED or FAILED (retry)
@@ -78,7 +72,7 @@ export async function POST(
           message: "Migration must be validated before starting",
           currentStatus: job.status,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -94,11 +88,7 @@ export async function POST(
     // goes through the adapter: load the files, then call adapter.parse.
     // scopeOptions comes off the job but MUST be re-validated through
     // `parseScopeOptions` before use (defence against bad/stale JSON).
-    const uploadedFiles = await loadStoredFiles(
-      { db },
-      membership.organizationId,
-      id,
-    );
+    const uploadedFiles = await loadStoredFiles({ db }, membership.organizationId, id);
     const scope = parseScopeOptions(job.scopeOptions ?? defaultScopeOptions());
 
     // Fire background import (no await).
@@ -111,10 +101,7 @@ export async function POST(
         // `organizationId` on that credentials blob; inject it here
         // server-side so the client never needs to pass it in.
         const fieldMappings = (job.fieldMappings ?? {}) as Record<string, unknown>;
-        if (
-          fieldMappings.credentials &&
-          typeof fieldMappings.credentials === "object"
-        ) {
+        if (fieldMappings.credentials && typeof fieldMappings.credentials === "object") {
           (fieldMappings.credentials as Record<string, unknown>).organizationId =
             membership.organizationId;
         }
@@ -171,15 +158,12 @@ export async function POST(
       metadata: { source: job.sourcePlatform, via: "http" },
     });
 
-    return NextResponse.json(
-      { migration: { id, status: "IMPORTING" } },
-      { status: 202 }
-    );
+    return NextResponse.json({ migration: { id, status: "IMPORTING" } }, { status: 202 });
   } catch (error) {
     console.error("POST /api/migrations/[id]/start error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to start migration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

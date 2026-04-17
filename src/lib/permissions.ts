@@ -109,6 +109,12 @@ export type Capability =
   // Phase E: Imports
   | "imports.create"
   | "imports.cancel"
+  // Migrations (competitor data migration)
+  | "migrations.create"
+  | "migrations.start"
+  | "migrations.cancel"
+  | "migrations.rollback"
+  | "migrations.delete"
   // Phase E: Webhooks
   | "webhooks.create"
   | "webhooks.edit"
@@ -275,6 +281,13 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   // --- Phase E: Imports ---
   "imports.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
   "imports.cancel": new Set<Role>(["OWNER", "ADMIN"]),
+
+  // --- Migrations (competitor data migration) ---
+  "migrations.create": new Set<Role>(["OWNER", "ADMIN"]),
+  "migrations.start": new Set<Role>(["OWNER", "ADMIN"]),
+  "migrations.cancel": new Set<Role>(["OWNER", "ADMIN"]),
+  "migrations.rollback": new Set<Role>(["OWNER", "ADMIN"]),
+  "migrations.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Phase E: Webhooks ---
   "webhooks.create": new Set<Role>(["OWNER", "ADMIN"]),

@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { calculateLabelsPerPage, renderLabel } from "@/lib/labels/label-renderer";
-import { requireActiveMembership } from "@/lib/session";
 import { logger } from "@/lib/logger";
+import { requireActiveMembership } from "@/lib/session";
 
 /**
  * POST /api/labels/custom/pdf

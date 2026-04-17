@@ -88,7 +88,7 @@ class InflowRateLimiter {
     this.requests = this.requests.filter((t) => now - t < this.windowMs);
 
     if (this.requests.length >= this.maxRequests) {
-      const oldestRequest = this.requests[0];
+      const oldestRequest = this.requests[0]!;
       const waitMs = this.windowMs - (now - oldestRequest) + 10;
       logger.debug("inFlow: rate limit reached, waiting", { waitMs });
       await new Promise((resolve) => setTimeout(resolve, Math.max(0, waitMs)));
@@ -113,10 +113,7 @@ export class InflowApiError extends Error {
 /**
  * Exponential backoff retry policy.
  */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 5,
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -127,15 +124,13 @@ async function withRetry<T>(
 
       const isRetryable =
         err instanceof InflowApiError &&
-        (err.statusCode === undefined ||
-          err.statusCode >= 500 ||
-          err.statusCode === 429);
+        (err.statusCode === undefined || err.statusCode >= 500 || err.statusCode === 429);
 
       if (!isRetryable) {
         throw err;
       }
 
-      const backoffMs = Math.min(Math.pow(2, attempt) * 250, 30000);
+      const backoffMs = Math.min(2 ** attempt * 250, 30000);
       logger.debug("inFlow: retrying after backoff", {
         attempt,
         backoffMs,
@@ -164,9 +159,7 @@ export class InflowApiClient {
   ): Promise<T> {
     await this.rateLimiter.acquire();
 
-    const url = new URL(
-      `${this.baseUrl}/${this.credentials.companyId}${endpoint}`,
-    );
+    const url = new URL(`${this.baseUrl}/${this.credentials.companyId}${endpoint}`);
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, String(value));
     }
@@ -189,10 +182,7 @@ export class InflowApiClient {
           status: response.status,
           error: text,
         });
-        throw new InflowApiError(
-          `inFlow API error: ${response.status}`,
-          response.status,
-        );
+        throw new InflowApiError(`inFlow API error: ${response.status}`, response.status);
       }
 
       return response.json() as Promise<T>;
@@ -247,10 +237,7 @@ export class InflowApiClient {
         params.cursor = cursor;
       }
 
-      const response = await this.request<InflowCursoredResponse<InflowVendor>>(
-        "/vendors",
-        params,
-      );
+      const response = await this.request<InflowCursoredResponse<InflowVendor>>("/vendors", params);
 
       results.push(...response.data);
 
@@ -313,9 +300,10 @@ export class InflowApiClient {
         params.cursor = cursor;
       }
 
-      const response = await this.request<
-        InflowCursoredResponse<InflowStockLevel>
-      >("/stockLevels", params);
+      const response = await this.request<InflowCursoredResponse<InflowStockLevel>>(
+        "/stockLevels",
+        params,
+      );
 
       results.push(...response.data);
 
@@ -333,9 +321,7 @@ export class InflowApiClient {
   /**
    * Fetch all purchase orders, optionally filtered by date.
    */
-  async getAllPurchaseOrders(
-    modifiedSince?: Date,
-  ): Promise<InflowPurchaseOrder[]> {
+  async getAllPurchaseOrders(modifiedSince?: Date): Promise<InflowPurchaseOrder[]> {
     const results: InflowPurchaseOrder[] = [];
     let cursor: string | undefined;
     const maxIterations = 1000;
@@ -350,9 +336,10 @@ export class InflowApiClient {
         params.modifiedSince = modifiedSince.toISOString();
       }
 
-      const response = await this.request<
-        InflowCursoredResponse<InflowPurchaseOrder>
-      >("/purchaseOrders", params);
+      const response = await this.request<InflowCursoredResponse<InflowPurchaseOrder>>(
+        "/purchaseOrders",
+        params,
+      );
 
       results.push(...response.data);
 

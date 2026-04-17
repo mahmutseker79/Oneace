@@ -14,11 +14,11 @@
  * - Preserves MigrationJob for audit trail
  */
 
-import type { ImportPhase, PhaseResult } from "@/lib/migrations/core/types";
 import type { PrismaClient } from "@/generated/prisma";
 import { recordAudit } from "@/lib/audit";
-import { deleteMigrationBlobs } from "@/lib/migrations/core/blob-cleanup";
 import { logger } from "@/lib/logger";
+import { deleteMigrationBlobs } from "@/lib/migrations/core/blob-cleanup";
+import type { ImportPhase, PhaseResult } from "@/lib/migrations/core/types";
 
 export interface RollbackResult {
   migrationJobId: string;
@@ -77,14 +77,9 @@ export async function rollbackMigration(opts: {
 
   // Check status: allow COMPLETED or FAILED only.
   // IMPORTING/VALIDATING need CANCEL, not rollback.
-  if (
-    job.status !== "COMPLETED" &&
-    job.status !== "FAILED" &&
-    job.status !== "CANCELLED"
-  ) {
+  if (job.status !== "COMPLETED" && job.status !== "FAILED" && job.status !== "CANCELLED") {
     throw new Error(
-      `Cannot rollback job with status=${job.status}. ` +
-        "Only COMPLETED, FAILED, or CANCELLED jobs can be rolled back.",
+      `Cannot rollback job with status=${job.status}. Only COMPLETED, FAILED, or CANCELLED jobs can be rolled back.`,
     );
   }
 
@@ -111,9 +106,7 @@ export async function rollbackMigration(opts: {
   }
 
   if (phases.length === 0) {
-    throw new Error(
-      `Cannot parse importResults: expected { version: 1, phases: PhaseResult[] }`,
-    );
+    throw new Error("Cannot parse importResults: expected { version: 1, phases: PhaseResult[] }");
   }
 
   // Reverse phase order: delete in the opposite order they were created.
@@ -344,166 +337,188 @@ interface RollbackPhaseContext {
 
 async function rollbackPhase(ctx: RollbackPhaseContext): Promise<number> {
   // Each phase runs in its own transaction (5-minute timeout).
-  return await ctx.db.$transaction(
-    async (trx) => {
-      let deleted = 0;
+  return await ctx.db
+    .$transaction(
+      async (trx) => {
+        let deleted = 0;
 
-      switch (ctx.phase) {
-        case "PURCHASE_ORDERS":
-          deleted = await trx.purchaseOrder.deleteMany({
-            where: {
-              organizationId: ctx.organizationId,
-              id: { in: ctx.createdIds },
-            },
-          }).then((r) => r.count);
-          break;
+        switch (ctx.phase) {
+          case "PURCHASE_ORDERS":
+            deleted = await trx.purchaseOrder
+              .deleteMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+              })
+              .then((r) => r.count);
+            break;
 
-        case "ATTACHMENTS":
-          deleted = await trx.itemAttachment.deleteMany({
-            where: {
-              organizationId: ctx.organizationId,
-              id: { in: ctx.createdIds },
-            },
-          }).then((r) => r.count);
-          // TODO: delete blobs from Vercel Blob Storage.
-          // Blob cleanup is a separate concern. For now we leave the files in Vercel
-          // and only delete the database rows. A future job can sweep unreferenced blobs.
-          break;
+          case "ATTACHMENTS":
+            deleted = await trx.itemAttachment
+              .deleteMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+              })
+              .then((r) => r.count);
+            // TODO: delete blobs from Vercel Blob Storage.
+            // Blob cleanup is a separate concern. For now we leave the files in Vercel
+            // and only delete the database rows. A future job can sweep unreferenced blobs.
+            break;
 
-        case "STOCK_LEVELS":
-          deleted = await trx.stockLevel.deleteMany({
-            where: {
-              organizationId: ctx.organizationId,
-              id: { in: ctx.createdIds },
-            },
-          }).then((r) => r.count);
-          break;
+          case "STOCK_LEVELS":
+            deleted = await trx.stockLevel
+              .deleteMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+              })
+              .then((r) => r.count);
+            break;
 
-        case "CUSTOM_FIELD_VALUES":
-          deleted = await trx.itemCustomFieldValue.deleteMany({
-            where: {
-              organizationId: ctx.organizationId,
-              id: { in: ctx.createdIds },
-            },
-          }).then((r) => r.count);
-          break;
+          case "CUSTOM_FIELD_VALUES":
+            deleted = await trx.itemCustomFieldValue
+              .deleteMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+              })
+              .then((r) => r.count);
+            break;
 
-        case "ITEMS":
-          deleted = await trx.item.deleteMany({
-            where: {
-              organizationId: ctx.organizationId,
-              id: { in: ctx.createdIds },
-            },
-          }).then((r) => r.count);
-          break;
+          case "ITEMS":
+            deleted = await trx.item
+              .deleteMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+              })
+              .then((r) => r.count);
+            break;
 
-        case "CUSTOM_FIELD_DEFS":
-          // Filter by externalSource to avoid deleting user-created definitions.
-          if (ctx.createdIds.length > 0) {
-            const defs = await trx.customFieldDefinition.findMany({
-              where: {
-                organizationId: ctx.organizationId,
-                id: { in: ctx.createdIds },
-              },
-              select: { id: true, externalSource: true },
-            });
-            const idsToDelete = defs
-              .filter((d) => d.externalSource === ctx.sourcePlatform)
-              .map((d) => d.id);
-            deleted = await trx.customFieldDefinition.deleteMany({
-              where: { id: { in: idsToDelete } },
-            }).then((r) => r.count);
-          }
-          break;
+          case "CUSTOM_FIELD_DEFS":
+            // Filter by externalSource to avoid deleting user-created definitions.
+            if (ctx.createdIds.length > 0) {
+              const defs = await trx.customFieldDefinition.findMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+                select: { id: true, externalSource: true },
+              });
+              const idsToDelete = defs
+                .filter((d) => d.externalSource === ctx.sourcePlatform)
+                .map((d) => d.id);
+              deleted = await trx.customFieldDefinition
+                .deleteMany({
+                  where: { id: { in: idsToDelete } },
+                })
+                .then((r) => r.count);
+            }
+            break;
 
-        case "LOCATIONS":
-          // Filter by externalSource.
-          if (ctx.createdIds.length > 0) {
-            const locs = await trx.location.findMany({
-              where: {
-                organizationId: ctx.organizationId,
-                id: { in: ctx.createdIds },
-              },
-              select: { id: true, externalSource: true },
-            });
-            const idsToDelete = locs
-              .filter((l) => l.externalSource === ctx.sourcePlatform)
-              .map((l) => l.id);
-            deleted = await trx.location.deleteMany({
-              where: { id: { in: idsToDelete } },
-            }).then((r) => r.count);
-          }
-          break;
+          case "LOCATIONS":
+            // Filter by externalSource.
+            if (ctx.createdIds.length > 0) {
+              const locs = await trx.location.findMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+                select: { id: true, externalSource: true },
+              });
+              const idsToDelete = locs
+                .filter((l) => l.externalSource === ctx.sourcePlatform)
+                .map((l) => l.id);
+              deleted = await trx.location
+                .deleteMany({
+                  where: { id: { in: idsToDelete } },
+                })
+                .then((r) => r.count);
+            }
+            break;
 
-        case "WAREHOUSES":
-          // Filter by externalSource.
-          if (ctx.createdIds.length > 0) {
-            const whse = await trx.warehouse.findMany({
-              where: {
-                organizationId: ctx.organizationId,
-                id: { in: ctx.createdIds },
-              },
-              select: { id: true, externalSource: true },
-            });
-            const idsToDelete = whse
-              .filter((w) => w.externalSource === ctx.sourcePlatform)
-              .map((w) => w.id);
-            deleted = await trx.warehouse.deleteMany({
-              where: { id: { in: idsToDelete } },
-            }).then((r) => r.count);
-          }
-          break;
+          case "WAREHOUSES":
+            // Filter by externalSource.
+            if (ctx.createdIds.length > 0) {
+              const whse = await trx.warehouse.findMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+                select: { id: true, externalSource: true },
+              });
+              const idsToDelete = whse
+                .filter((w) => w.externalSource === ctx.sourcePlatform)
+                .map((w) => w.id);
+              deleted = await trx.warehouse
+                .deleteMany({
+                  where: { id: { in: idsToDelete } },
+                })
+                .then((r) => r.count);
+            }
+            break;
 
-        case "SUPPLIERS":
-          // Filter by externalSource.
-          if (ctx.createdIds.length > 0) {
-            const supp = await trx.supplier.findMany({
-              where: {
-                organizationId: ctx.organizationId,
-                id: { in: ctx.createdIds },
-              },
-              select: { id: true, externalSource: true },
-            });
-            const idsToDelete = supp
-              .filter((s) => s.externalSource === ctx.sourcePlatform)
-              .map((s) => s.id);
-            deleted = await trx.supplier.deleteMany({
-              where: { id: { in: idsToDelete } },
-            }).then((r) => r.count);
-          }
-          break;
+          case "SUPPLIERS":
+            // Filter by externalSource.
+            if (ctx.createdIds.length > 0) {
+              const supp = await trx.supplier.findMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+                select: { id: true, externalSource: true },
+              });
+              const idsToDelete = supp
+                .filter((s) => s.externalSource === ctx.sourcePlatform)
+                .map((s) => s.id);
+              deleted = await trx.supplier
+                .deleteMany({
+                  where: { id: { in: idsToDelete } },
+                })
+                .then((r) => r.count);
+            }
+            break;
 
-        case "CATEGORIES":
-          // Filter by externalSource.
-          if (ctx.createdIds.length > 0) {
-            const cats = await trx.category.findMany({
-              where: {
-                organizationId: ctx.organizationId,
-                id: { in: ctx.createdIds },
-              },
-              select: { id: true, externalSource: true },
-            });
-            const idsToDelete = cats
-              .filter((c) => c.externalSource === ctx.sourcePlatform)
-              .map((c) => c.id);
-            deleted = await trx.category.deleteMany({
-              where: { id: { in: idsToDelete } },
-            }).then((r) => r.count);
-          }
-          break;
-      }
+          case "CATEGORIES":
+            // Filter by externalSource.
+            if (ctx.createdIds.length > 0) {
+              const cats = await trx.category.findMany({
+                where: {
+                  organizationId: ctx.organizationId,
+                  id: { in: ctx.createdIds },
+                },
+                select: { id: true, externalSource: true },
+              });
+              const idsToDelete = cats
+                .filter((c) => c.externalSource === ctx.sourcePlatform)
+                .map((c) => c.id);
+              deleted = await trx.category
+                .deleteMany({
+                  where: { id: { in: idsToDelete } },
+                })
+                .then((r) => r.count);
+            }
+            break;
+        }
 
-      return deleted;
-    },
-    { timeout: 5 * 60 * 1000 },
-  ).catch((err) => {
-    // Transaction error — record and continue.
-    const message = err instanceof Error ? err.message : String(err);
-    ctx.errors.push({
-      phase: ctx.phase,
-      entityId: "transaction-error",
-      message,
+        return deleted;
+      },
+      { timeout: 5 * 60 * 1000 },
+    )
+    .catch((err) => {
+      // Transaction error — record and continue.
+      const message = err instanceof Error ? err.message : String(err);
+      ctx.errors.push({
+        phase: ctx.phase,
+        entityId: "transaction-error",
+        message,
+      });
+      return 0;
     });
-    return 0;
-  });
 }

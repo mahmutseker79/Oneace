@@ -10,10 +10,7 @@ export default function MigrationDetailLoading() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="border rounded-lg p-4 space-y-2"
-          >
+          <div key={i} className="border rounded-lg p-4 space-y-2">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-6 w-32" />
           </div>

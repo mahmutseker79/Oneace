@@ -69,9 +69,7 @@ export function MigrationProgress({
                   <span className="text-xs text-muted-foreground">
                     {result.created + result.updated} created/updated,{" "}
                     {result.failed > 0 && (
-                      <span className="text-destructive">
-                        {result.failed} failed
-                      </span>
+                      <span className="text-destructive">{result.failed} failed</span>
                     )}
                   </span>
                 )}

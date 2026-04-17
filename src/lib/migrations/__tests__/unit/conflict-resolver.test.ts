@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
 import { getSourceAbbreviation, resolveSku } from "@/lib/migrations/core/conflict-resolver";
 import type { ConflictCheckContext } from "@/lib/migrations/core/conflict-resolver";
+import { describe, expect, it } from "vitest";
 
 describe("conflict-resolver", () => {
   describe("getSourceAbbreviation", () => {
@@ -54,15 +54,10 @@ describe("conflict-resolver", () => {
 
     it("returns original SKU when updating same item (same source + externalId)", () => {
       const ctx = createContext();
-      const result = resolveSku(
-        ctx,
-        "WIDGET",
-        "ext-widget-1",
-        {
-          externalId: "ext-widget-1",
-          externalSource: "SORTLY",
-        },
-      );
+      const result = resolveSku(ctx, "WIDGET", "ext-widget-1", {
+        externalId: "ext-widget-1",
+        externalSource: "SORTLY",
+      });
 
       expect(result.finalSku).toBe("WIDGET");
       expect(result.wasModified).toBe(false);
@@ -70,15 +65,10 @@ describe("conflict-resolver", () => {
 
     it("appends -SRT suffix under APPEND_SOURCE_SUFFIX policy", () => {
       const ctx = createContext("APPEND_SOURCE_SUFFIX");
-      const result = resolveSku(
-        ctx,
-        "WIDGET",
-        "ext-widget-new",
-        {
-          externalId: "ext-widget-old",
-          externalSource: "INFLOW",
-        },
-      );
+      const result = resolveSku(ctx, "WIDGET", "ext-widget-new", {
+        externalId: "ext-widget-old",
+        externalSource: "INFLOW",
+      });
 
       expect(result.finalSku).toBe("WIDGET-SRT");
       expect(result.wasModified).toBe(true);
@@ -86,15 +76,10 @@ describe("conflict-resolver", () => {
 
     it("marks shouldSkip=true under SKIP policy", () => {
       const ctx = createContext("SKIP");
-      const result = resolveSku(
-        ctx,
-        "WIDGET",
-        "ext-widget-new",
-        {
-          externalId: "ext-widget-old",
-          externalSource: "INFLOW",
-        },
-      );
+      const result = resolveSku(ctx, "WIDGET", "ext-widget-new", {
+        externalId: "ext-widget-old",
+        externalSource: "INFLOW",
+      });
 
       expect(result.shouldSkip).toBe(true);
       expect(result.issue?.code).toBe("SKU_COLLISION_SKIPPED");
@@ -103,29 +88,19 @@ describe("conflict-resolver", () => {
     it("throws error under MERGE_BY_EXTERNAL_ID policy on collision", () => {
       const ctx = createContext("MERGE_BY_EXTERNAL_ID");
       expect(() =>
-        resolveSku(
-          ctx,
-          "WIDGET",
-          "ext-widget-new",
-          {
-            externalId: "ext-widget-old",
-            externalSource: "INFLOW",
-          },
-        ),
+        resolveSku(ctx, "WIDGET", "ext-widget-new", {
+          externalId: "ext-widget-old",
+          externalSource: "INFLOW",
+        }),
       ).toThrow(/SKU collision/);
     });
 
     it("returns issue with code SKU_COLLISION_RESOLVED for APPEND_SOURCE_SUFFIX", () => {
       const ctx = createContext("APPEND_SOURCE_SUFFIX");
-      const result = resolveSku(
-        ctx,
-        "WIDGET",
-        "ext-widget-new",
-        {
-          externalId: "ext-widget-old",
-          externalSource: "INFLOW",
-        },
-      );
+      const result = resolveSku(ctx, "WIDGET", "ext-widget-new", {
+        externalId: "ext-widget-old",
+        externalSource: "INFLOW",
+      });
 
       expect(result.issue?.code).toBe("SKU_COLLISION_RESOLVED");
       expect(result.issue?.message).toContain("WIDGET-SRT");

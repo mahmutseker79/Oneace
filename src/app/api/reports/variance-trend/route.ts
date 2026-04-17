@@ -14,9 +14,9 @@ import { z } from "zod";
 import { csvResponse, serializeCsv } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { buildExcelWorkbook, excelResponse, todayIsoDate } from "@/lib/excel";
+import { logger } from "@/lib/logger";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
-import { logger } from "@/lib/logger";
 
 const ExportSchema = z.object({
   format: z.enum(["csv", "xlsx"]),
@@ -28,7 +28,10 @@ async function handleGetTrend(_req?: Request) {
     const { membership } = await requireActiveMembership();
 
     // Rate limit report access per org
-    const rl = await rateLimit(`report:variance-trend:${membership.organizationId}`, RATE_LIMITS.report);
+    const rl = await rateLimit(
+      `report:variance-trend:${membership.organizationId}`,
+      RATE_LIMITS.report,
+    );
     if (!rl.ok) {
       return Response.json({ error: "Too many requests" }, { status: 429 });
     }
@@ -96,9 +99,7 @@ async function handleGetTrend(_req?: Request) {
     const trendData = Array.from(varianceByDate.entries())
       .map(([date, { totalVariance, totalItems }]) => ({
         date,
-        variance: totalItems > 0
-          ? Number.parseFloat((totalVariance / totalItems).toFixed(2))
-          : 0,
+        variance: totalItems > 0 ? Number.parseFloat((totalVariance / totalItems).toFixed(2)) : 0,
         countItems: totalItems,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -116,7 +117,10 @@ async function handleExport(req: Request) {
     const { membership } = await requireActiveMembership();
 
     // Rate limit report export per org
-    const rl = await rateLimit(`report:variance-trend-export:${membership.organizationId}`, RATE_LIMITS.report);
+    const rl = await rateLimit(
+      `report:variance-trend-export:${membership.organizationId}`,
+      RATE_LIMITS.report,
+    );
     if (!rl.ok) {
       return Response.json({ error: "Too many requests" }, { status: 429 });
     }

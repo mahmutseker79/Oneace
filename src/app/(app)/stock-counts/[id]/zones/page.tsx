@@ -4,12 +4,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { MobileCard, ResponsiveTable } from "@/components/ui/responsive-table";
@@ -53,10 +48,7 @@ export default async function CountZonesPage({ params }: PageProps) {
     return (
       <div className="space-y-6">
         <PageHeader title={t.countZones.heading} />
-        <EmptyState
-          icon={undefined as any}
-          title={t.common.notFound}
-        />
+        <EmptyState icon={undefined as any} title={t.common.notFound} />
       </div>
     );
   }
@@ -234,9 +226,7 @@ export default async function CountZonesPage({ params }: PageProps) {
               {canManage && (
                 <div className="flex justify-center pt-4">
                   <Button asChild>
-                    <Link href={`/stock-counts/${countId}/zones/new`}>
-                      {t.countZones.emptyCta}
-                    </Link>
+                    <Link href={`/stock-counts/${countId}/zones/new`}>{t.countZones.emptyCta}</Link>
                   </Button>
                 </div>
               )}

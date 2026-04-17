@@ -1,11 +1,4 @@
-import {
-  ArrowLeftRight,
-  ArrowUpDown,
-
-  ExternalLink,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowLeftRight, ArrowUpDown, ExternalLink, TrendingDown, TrendingUp } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 

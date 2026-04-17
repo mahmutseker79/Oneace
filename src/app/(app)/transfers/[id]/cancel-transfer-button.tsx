@@ -37,7 +37,11 @@ export function CancelTransferButton({ transferId }: CancelTransferButtonProps) 
 
   return (
     <>
-      {error && <div className="w-full rounded-md bg-destructive-light p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="w-full rounded-md bg-destructive-light p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="destructive" disabled={isPending}>
@@ -53,7 +57,11 @@ export function CancelTransferButton({ transferId }: CancelTransferButtonProps) 
           </AlertDialogDescription>
           <div className="flex gap-3">
             <AlertDialogCancel>Keep Transfer</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={isPending} className="bg-destructive">
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={isPending}
+              className="bg-destructive"
+            >
               {isPending ? "Cancelling..." : "Cancel Transfer"}
             </AlertDialogAction>
           </div>

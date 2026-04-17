@@ -15,17 +15,22 @@
  * Batch processing with error isolation.
  */
 
-import SyncEngine, { type SyncContext, type SyncEntity, type SyncResult } from "@/lib/integrations/sync-engine";
-import ZohoClient, {
-  type ZohoItem,
-  type ZohoSalesOrder,
-  type ZohoPurchaseOrder,
-  type ZohoContact,
-  type ZohoInvoice,
-  type ZohoBill,
-  type ZohoInventoryAdjustment,
-} from "./zoho-client";
+import SyncEngine, {
+  type SyncContext,
+  type SyncEntity,
+  type SyncResult,
+} from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
+import type ZohoClient from "./zoho-client";
+import type {
+  ZohoBill,
+  ZohoContact,
+  ZohoInventoryAdjustment,
+  ZohoInvoice,
+  ZohoItem,
+  ZohoPurchaseOrder,
+  ZohoSalesOrder,
+} from "./zoho-client";
 
 interface ZohoSyncContext extends SyncContext {
   zohoClient: ZohoClient;

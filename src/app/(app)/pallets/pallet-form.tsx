@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,7 @@ export function PalletLabelForm({ initialData }: PalletFormProps) {
           const warehouseId = (formData.get("warehouseId") as string) || "";
           const binId = formData.get("binId") as string;
           const notes = formData.get("notes") as string;
-          const quantity = parseInt(formData.get("quantity") as string) || 1;
+          const quantity = Number.parseInt(formData.get("quantity") as string) || 1;
           const barcodeValue = formData.get("barcodeValue") as string;
 
           const result = await createPalletAction({
@@ -133,9 +133,7 @@ export function PalletLabelForm({ initialData }: PalletFormProps) {
               required
               disabled={isPending}
             />
-            <p className="text-xs text-muted-foreground">
-              Total number of items on this pallet
-            </p>
+            <p className="text-xs text-muted-foreground">Total number of items on this pallet</p>
           </div>
 
           {/* Barcode value */}

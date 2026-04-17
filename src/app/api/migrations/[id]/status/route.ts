@@ -6,14 +6,11 @@
 
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const { membership } = await requireActiveMembership();
@@ -26,16 +23,13 @@ export async function GET(
     if (!job) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Migration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Tenant check
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
     // Extract phases from importResults if available
@@ -50,13 +44,13 @@ export async function GET(
         completedAt: job.completedAt,
         cancelledAt: job.cancelledAt,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("GET /api/migrations/[id]/status error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to fetch status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

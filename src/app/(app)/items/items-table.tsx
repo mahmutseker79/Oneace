@@ -16,7 +16,8 @@
 //   - Select-all is scoped to the current page (not all items).
 //   - Actions are optimistic: row de-selects immediately, error shown if API fails.
 
-import { Archive, Download, X } from "lucide-react";import Link from "next/link";
+import { Archive, Download, X } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";

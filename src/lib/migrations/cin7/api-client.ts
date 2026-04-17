@@ -123,10 +123,7 @@ class Cin7RateLimiter {
  * Exponential backoff retry policy for transient errors.
  * 5xx and 429 → retry; 4xx (except 429) → fail fast.
  */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 5,
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -138,16 +135,14 @@ async function withRetry<T>(
       // Check if retryable
       const isRetryable =
         err instanceof Cin7ApiError &&
-        (err.statusCode === undefined ||
-          err.statusCode >= 500 ||
-          err.statusCode === 429);
+        (err.statusCode === undefined || err.statusCode >= 500 || err.statusCode === 429);
 
       if (!isRetryable) {
         throw err;
       }
 
       // Exponential backoff: 250ms * 2^n, capped at 30s
-      const backoffMs = Math.min(Math.pow(2, attempt) * 250, 30000);
+      const backoffMs = Math.min(2 ** attempt * 250, 30000);
       logger.debug("Cin7: retrying after backoff", {
         attempt,
         backoffMs,
@@ -232,13 +227,10 @@ export class Cin7ApiClient {
     const maxPages = 1000;
 
     while (page <= maxPages) {
-      const response = await this.request<Cin7PagedResponse<Cin7Product>>(
-        "/product",
-        {
-          Limit: 1000,
-          Page: page,
-        },
-      );
+      const response = await this.request<Cin7PagedResponse<Cin7Product>>("/product", {
+        Limit: 1000,
+        Page: page,
+      });
 
       results.push(...response.Records);
 
@@ -261,13 +253,10 @@ export class Cin7ApiClient {
     const maxPages = 1000;
 
     while (page <= maxPages) {
-      const response = await this.request<Cin7PagedResponse<Cin7Supplier>>(
-        "/supplier",
-        {
-          Limit: 1000,
-          Page: page,
-        },
-      );
+      const response = await this.request<Cin7PagedResponse<Cin7Supplier>>("/supplier", {
+        Limit: 1000,
+        Page: page,
+      });
 
       results.push(...response.Records);
 
@@ -290,13 +279,10 @@ export class Cin7ApiClient {
     const maxPages = 1000;
 
     while (page <= maxPages) {
-      const response = await this.request<Cin7PagedResponse<Cin7Location>>(
-        "/location",
-        {
-          Limit: 1000,
-          Page: page,
-        },
-      );
+      const response = await this.request<Cin7PagedResponse<Cin7Location>>("/location", {
+        Limit: 1000,
+        Page: page,
+      });
 
       results.push(...response.Records);
 
@@ -319,13 +305,10 @@ export class Cin7ApiClient {
     const maxPages = 1000;
 
     while (page <= maxPages) {
-      const response = await this.request<Cin7PagedResponse<Cin7StockItem>>(
-        "/stockItem",
-        {
-          Limit: 1000,
-          Page: page,
-        },
-      );
+      const response = await this.request<Cin7PagedResponse<Cin7StockItem>>("/stockItem", {
+        Limit: 1000,
+        Page: page,
+      });
 
       results.push(...response.Records);
 
@@ -343,9 +326,7 @@ export class Cin7ApiClient {
    * Fetch purchase orders, optionally filtered by date.
    * If modifiedSince is provided, only POs modified after this date are returned.
    */
-  async getAllPurchases(
-    modifiedSince?: Date,
-  ): Promise<Cin7Purchase[]> {
+  async getAllPurchases(modifiedSince?: Date): Promise<Cin7Purchase[]> {
     const results: Cin7Purchase[] = [];
     let page = 1;
     const maxPages = 1000;
@@ -360,10 +341,7 @@ export class Cin7ApiClient {
 
     while (page <= maxPages) {
       params.Page = page;
-      const response = await this.request<Cin7PagedResponse<Cin7Purchase>>(
-        "/purchase",
-        params,
-      );
+      const response = await this.request<Cin7PagedResponse<Cin7Purchase>>("/purchase", params);
 
       results.push(...response.Records);
 

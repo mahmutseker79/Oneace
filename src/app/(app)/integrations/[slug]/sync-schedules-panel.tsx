@@ -1,15 +1,17 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { IntegrationSyncSchedule } from "@/generated/prisma";
-import { useState } from "react";
-import { toast } from "sonner";
-import { deleteSyncScheduleAction, upsertSyncScheduleAction } from "../actions";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,7 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus } from "lucide-react";
+import type { IntegrationSyncSchedule } from "@/generated/prisma";
+import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { deleteSyncScheduleAction, upsertSyncScheduleAction } from "../actions";
 
 interface SyncSchedulesPanelProps {
   integrationId: string;
@@ -178,9 +184,7 @@ export function SyncSchedulesPanel({ integrationId, schedules }: SyncSchedulesPa
                 <Label htmlFor="entity">Entity Type</Label>
                 <Select
                   value={formData.entityType}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, entityType: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, entityType: value })}
                 >
                   <SelectTrigger id="entity">
                     <SelectValue />
@@ -201,9 +205,7 @@ export function SyncSchedulesPanel({ integrationId, schedules }: SyncSchedulesPa
                 <Label htmlFor="direction">Direction</Label>
                 <Select
                   value={formData.direction}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, direction: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, direction: value })}
                 >
                   <SelectTrigger id="direction">
                     <SelectValue />
@@ -224,9 +226,7 @@ export function SyncSchedulesPanel({ integrationId, schedules }: SyncSchedulesPa
                   <button
                     key={cron}
                     type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, cronExpression: cron })
-                    }
+                    onClick={() => setFormData({ ...formData, cronExpression: cron })}
                     className={`p-2 text-xs text-left border rounded hover:bg-muted transition ${
                       formData.cronExpression === cron
                         ? "bg-primary text-primary-foreground border-primary"
@@ -234,9 +234,7 @@ export function SyncSchedulesPanel({ integrationId, schedules }: SyncSchedulesPa
                     }`}
                   >
                     <div className="font-medium">{label}</div>
-                    <div className="text-muted-foreground font-mono text-xs mt-1">
-                      {cron}
-                    </div>
+                    <div className="text-muted-foreground font-mono text-xs mt-1">{cron}</div>
                   </button>
                 ))}
               </div>
@@ -248,22 +246,17 @@ export function SyncSchedulesPanel({ integrationId, schedules }: SyncSchedulesPa
                 id="cron"
                 placeholder="0 0 * * * (Daily at midnight UTC)"
                 value={formData.cronExpression}
-                onChange={(e) =>
-                  setFormData({ ...formData, cronExpression: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, cronExpression: e.target.value })}
                 className="font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                Enter a cron expression (minute hour day month weekday). Example: 0 9 * * * (9:00 AM daily)
+                Enter a cron expression (minute hour day month weekday). Example: 0 9 * * * (9:00 AM
+                daily)
               </p>
             </div>
 
             <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDialog(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>

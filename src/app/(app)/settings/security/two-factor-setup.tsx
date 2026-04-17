@@ -5,11 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { useState, useTransition } from "react";
-import {
-  enableTwoFactorAction,
-
-  verifyAndActivateTwoFactorAction,
-} from "./actions";
+import { enableTwoFactorAction, verifyAndActivateTwoFactorAction } from "./actions";
 
 interface TwoFactorSetupProps {
   labels: {

@@ -1,9 +1,9 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { getMessages } from "@/lib/i18n";
-import { requireActiveMembership } from "@/lib/session";
 import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
 
 import { listVehiclesAction } from "./actions";
 
@@ -64,7 +64,10 @@ export default async function VehiclesPage() {
               {vehicles.map((v) => (
                 <tr key={v.id} className="hover:bg-muted/50">
                   <td className="px-4 py-3">
-                    <Link href={`/vehicles/${v.id}`} className="text-primary hover:underline font-medium">
+                    <Link
+                      href={`/vehicles/${v.id}`}
+                      className="text-primary hover:underline font-medium"
+                    >
                       {v.name}
                     </Link>
                   </td>

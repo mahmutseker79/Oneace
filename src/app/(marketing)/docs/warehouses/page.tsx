@@ -32,7 +32,8 @@ export default function WarehousesPage() {
           Open a warehouse and click <strong>Bins</strong>
         </li>
         <li>
-          Click <strong>New bin</strong> and enter a code (e.g. &quot;A-01-03&quot;) and optional label
+          Click <strong>New bin</strong> and enter a code (e.g. &quot;A-01-03&quot;) and optional
+          label
         </li>
         <li>
           Print barcode labels for your bins via the <strong>Print labels</strong> button

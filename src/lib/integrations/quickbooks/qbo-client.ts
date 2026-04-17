@@ -505,7 +505,7 @@ export class QBOClient extends IntegrationClient {
 
   constructor(credentials: OAuthToken, realmId: string) {
     super(QBO_OAUTH_CONFIG, credentials, {
-      maxRequests: 500,          // QBO allows 500 req/min
+      maxRequests: 500, // QBO allows 500 req/min
       windowMs: 60_000,
       backoffMultiplier: 2,
       maxBackoffMs: 60_000,
@@ -613,9 +613,7 @@ export class QBOClient extends IntegrationClient {
    * Read a single entity by ID.
    */
   async read<T = QBORawEntity>(entityName: string, id: string): Promise<T> {
-    const response = await this.apiCall<Record<string, T>>(
-      `/${entityName.toLowerCase()}/${id}`,
-    );
+    const response = await this.apiCall<Record<string, T>>(`/${entityName.toLowerCase()}/${id}`);
     return response.data[entityName] as T;
   }
 
@@ -623,24 +621,21 @@ export class QBOClient extends IntegrationClient {
    * Create an entity.
    */
   async create<T = QBORawEntity>(entityName: string, data: Record<string, unknown>): Promise<T> {
-    const response = await this.apiCall<Record<string, T>>(
-      `/${entityName.toLowerCase()}`,
-      { method: "POST", body: data },
-    );
+    const response = await this.apiCall<Record<string, T>>(`/${entityName.toLowerCase()}`, {
+      method: "POST",
+      body: data,
+    });
     return response.data[entityName] as T;
   }
 
   /**
    * Update an entity (requires Id + SyncToken).
    */
-  async update<T = QBORawEntity>(
-    entityName: string,
-    data: Record<string, unknown>,
-  ): Promise<T> {
-    const response = await this.apiCall<Record<string, T>>(
-      `/${entityName.toLowerCase()}`,
-      { method: "POST", body: { ...data, sparse: true } },
-    );
+  async update<T = QBORawEntity>(entityName: string, data: Record<string, unknown>): Promise<T> {
+    const response = await this.apiCall<Record<string, T>>(`/${entityName.toLowerCase()}`, {
+      method: "POST",
+      body: { ...data, sparse: true },
+    });
     return response.data[entityName] as T;
   }
 
@@ -701,10 +696,7 @@ export class QBOClient extends IntegrationClient {
    * Fetch all changes since a given timestamp (ISO 8601).
    * Supports up to ~15 entity types per call.
    */
-  async cdc(
-    entities: QBOEntityName[],
-    changedSince: string,
-  ): Promise<QBOCDCResult> {
+  async cdc(entities: QBOEntityName[], changedSince: string): Promise<QBOCDCResult> {
     const response = await this.apiCall<QBOCDCResponse>("/cdc", {
       params: {
         entities: entities.join(","),
@@ -735,9 +727,7 @@ export class QBOClient extends IntegrationClient {
    * Batch read: fetch multiple entities in a single API call.
    * QBO supports up to 30 items per batch.
    */
-  async batchRead(
-    requests: Array<{ entity: string; id: string }>,
-  ): Promise<QBOBatchResponse> {
+  async batchRead(requests: Array<{ entity: string; id: string }>): Promise<QBOBatchResponse> {
     const batchItems = requests.map((r, idx) => ({
       bId: String(idx),
       Query: `SELECT * FROM ${r.entity} WHERE Id = '${r.id}'`,
@@ -779,13 +769,22 @@ export class QBOClient extends IntegrationClient {
   // ITEMS
   // ═══════════════════════════════════════════════════════════════
 
-  async getItems(options: { limit?: number; offset?: number; active?: boolean; updatedAfter?: Date } = {}): Promise<QBOPagedResult<QBOItem>> {
+  async getItems(
+    options: { limit?: number; offset?: number; active?: boolean; updatedAfter?: Date } = {},
+  ): Promise<QBOPagedResult<QBOItem>> {
     const conditions: string[] = [];
     if (options.active !== undefined) conditions.push(`Active = ${options.active}`);
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Item", where, "MetaData.LastUpdatedTime DESC", options.offset ?? 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Item",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      options.offset ?? 1,
+      options.limit ?? 1000,
+    );
 
     return {
       ...result,
@@ -794,7 +793,9 @@ export class QBOClient extends IntegrationClient {
   }
 
   async getAllItems(updatedAfter?: Date): Promise<QBOItem[]> {
-    const where = updatedAfter ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'` : undefined;
+    const where = updatedAfter
+      ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'`
+      : undefined;
     const raw = await this.queryAll("Item", where, "MetaData.LastUpdatedTime DESC");
     return raw.map(this.mapItem);
   }
@@ -861,7 +862,9 @@ export class QBOClient extends IntegrationClient {
     taxable: raw.Taxable !== false,
     qtyOnHand: raw.QtyOnHand != null ? Number(raw.QtyOnHand) : undefined,
     incomeAccountId: (raw.IncomeAccountRef as Record<string, unknown>)?.value as string | undefined,
-    expenseAccountId: (raw.ExpenseAccountRef as Record<string, unknown>)?.value as string | undefined,
+    expenseAccountId: (raw.ExpenseAccountRef as Record<string, unknown>)?.value as
+      | string
+      | undefined,
     assetAccountId: (raw.AssetAccountRef as Record<string, unknown>)?.value as string | undefined,
     lastUpdated: (raw.MetaData as Record<string, string>)?.LastUpdatedTime,
   });
@@ -870,19 +873,30 @@ export class QBOClient extends IntegrationClient {
   // CUSTOMERS
   // ═══════════════════════════════════════════════════════════════
 
-  async getCustomers(options: { limit?: number; offset?: number; active?: boolean; updatedAfter?: Date } = {}): Promise<QBOPagedResult<QBOCustomer>> {
+  async getCustomers(
+    options: { limit?: number; offset?: number; active?: boolean; updatedAfter?: Date } = {},
+  ): Promise<QBOPagedResult<QBOCustomer>> {
     const conditions: string[] = [];
     if (options.active !== undefined) conditions.push(`Active = ${options.active}`);
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Customer", where, "MetaData.LastUpdatedTime DESC", options.offset ?? 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Customer",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      options.offset ?? 1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapCustomer) };
   }
 
   async getAllCustomers(updatedAfter?: Date): Promise<QBOCustomer[]> {
-    const where = updatedAfter ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'` : undefined;
+    const where = updatedAfter
+      ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'`
+      : undefined;
     const raw = await this.queryAll("Customer", where);
     return raw.map(this.mapCustomer);
   }
@@ -915,7 +929,11 @@ export class QBOClient extends IntegrationClient {
     return this.mapCustomer(raw as QBORawEntity);
   }
 
-  async updateCustomer(id: string, syncToken: string, updates: Partial<QBOCustomer>): Promise<QBOCustomer> {
+  async updateCustomer(
+    id: string,
+    syncToken: string,
+    updates: Partial<QBOCustomer>,
+  ): Promise<QBOCustomer> {
     const payload: Record<string, unknown> = { Id: id, SyncToken: syncToken };
 
     if (updates.displayName !== undefined) payload.DisplayName = updates.displayName;
@@ -959,19 +977,30 @@ export class QBOClient extends IntegrationClient {
   // VENDORS (SUPPLIERS)
   // ═══════════════════════════════════════════════════════════════
 
-  async getVendors(options: { limit?: number; offset?: number; active?: boolean; updatedAfter?: Date } = {}): Promise<QBOPagedResult<QBOVendor>> {
+  async getVendors(
+    options: { limit?: number; offset?: number; active?: boolean; updatedAfter?: Date } = {},
+  ): Promise<QBOPagedResult<QBOVendor>> {
     const conditions: string[] = [];
     if (options.active !== undefined) conditions.push(`Active = ${options.active}`);
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Vendor", where, "MetaData.LastUpdatedTime DESC", options.offset ?? 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Vendor",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      options.offset ?? 1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapVendor) };
   }
 
   async getAllVendors(updatedAfter?: Date): Promise<QBOVendor[]> {
-    const where = updatedAfter ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'` : undefined;
+    const where = updatedAfter
+      ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'`
+      : undefined;
     const raw = await this.queryAll("Vendor", where);
     return raw.map(this.mapVendor);
   }
@@ -1002,7 +1031,11 @@ export class QBOClient extends IntegrationClient {
     return this.mapVendor(raw as QBORawEntity);
   }
 
-  async updateVendor(id: string, syncToken: string, updates: Partial<QBOVendor>): Promise<QBOVendor> {
+  async updateVendor(
+    id: string,
+    syncToken: string,
+    updates: Partial<QBOVendor>,
+  ): Promise<QBOVendor> {
     const payload: Record<string, unknown> = { Id: id, SyncToken: syncToken };
 
     if (updates.displayName !== undefined) payload.DisplayName = updates.displayName;
@@ -1041,19 +1074,30 @@ export class QBOClient extends IntegrationClient {
   // INVOICES
   // ═══════════════════════════════════════════════════════════════
 
-  async getInvoices(options: { limit?: number; offset?: number; updatedAfter?: Date; customerId?: string } = {}): Promise<QBOPagedResult<QBOInvoice>> {
+  async getInvoices(
+    options: { limit?: number; offset?: number; updatedAfter?: Date; customerId?: string } = {},
+  ): Promise<QBOPagedResult<QBOInvoice>> {
     const conditions: string[] = [];
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
     if (options.customerId) conditions.push(`CustomerRef = '${options.customerId}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Invoice", where, "MetaData.LastUpdatedTime DESC", options.offset ?? 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Invoice",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      options.offset ?? 1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapInvoice) };
   }
 
   async getAllInvoices(updatedAfter?: Date): Promise<QBOInvoice[]> {
-    const where = updatedAfter ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'` : undefined;
+    const where = updatedAfter
+      ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'`
+      : undefined;
     const raw = await this.queryAll("Invoice", where);
     return raw.map(this.mapInvoice);
   }
@@ -1092,7 +1136,11 @@ export class QBOClient extends IntegrationClient {
     return this.mapInvoice(raw as QBORawEntity);
   }
 
-  async updateInvoice(id: string, syncToken: string, updates: Partial<QBOInvoice>): Promise<QBOInvoice> {
+  async updateInvoice(
+    id: string,
+    syncToken: string,
+    updates: Partial<QBOInvoice>,
+  ): Promise<QBOInvoice> {
     const payload: Record<string, unknown> = { Id: id, SyncToken: syncToken };
 
     if (updates.dueDate !== undefined) payload.DueDate = updates.dueDate;
@@ -1151,7 +1199,9 @@ export class QBOClient extends IntegrationClient {
       lineItems: lines
         .filter((l) => l.DetailType === "SalesItemLineDetail")
         .map((l) => this.mapInvoiceLine(l)),
-      taxAmount: raw.TxnTaxDetail ? Number((raw.TxnTaxDetail as Record<string, unknown>).TotalTax ?? 0) : undefined,
+      taxAmount: raw.TxnTaxDetail
+        ? Number((raw.TxnTaxDetail as Record<string, unknown>).TotalTax ?? 0)
+        : undefined,
       depositAmount: raw.Deposit != null ? Number(raw.Deposit) : undefined,
       memo: (raw.CustomerMemo as Record<string, unknown>)?.value as string | undefined,
       lastUpdated: (raw.MetaData as Record<string, string>)?.LastUpdatedTime,
@@ -1188,19 +1238,30 @@ export class QBOClient extends IntegrationClient {
   // BILLS
   // ═══════════════════════════════════════════════════════════════
 
-  async getBills(options: { limit?: number; offset?: number; updatedAfter?: Date; vendorId?: string } = {}): Promise<QBOPagedResult<QBOBill>> {
+  async getBills(
+    options: { limit?: number; offset?: number; updatedAfter?: Date; vendorId?: string } = {},
+  ): Promise<QBOPagedResult<QBOBill>> {
     const conditions: string[] = [];
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
     if (options.vendorId) conditions.push(`VendorRef = '${options.vendorId}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Bill", where, "MetaData.LastUpdatedTime DESC", options.offset ?? 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Bill",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      options.offset ?? 1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapBill) };
   }
 
   async getAllBills(updatedAfter?: Date): Promise<QBOBill[]> {
-    const where = updatedAfter ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'` : undefined;
+    const where = updatedAfter
+      ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'`
+      : undefined;
     const raw = await this.queryAll("Bill", where);
     return raw.map(this.mapBill);
   }
@@ -1288,12 +1349,21 @@ export class QBOClient extends IntegrationClient {
       quantity: itemDetail?.Qty != null ? Number(itemDetail.Qty) : undefined,
       unitPrice: itemDetail?.UnitPrice != null ? Number(itemDetail.UnitPrice) : undefined,
       itemId: (itemDetail?.ItemRef as Record<string, unknown>)?.value as string | undefined,
-      accountId: (accountDetail?.AccountRef as Record<string, unknown>)?.value as string | undefined,
-      customerId: ((itemDetail ?? accountDetail) as Record<string, unknown> | undefined)?.CustomerRef
-        ? String(((itemDetail ?? accountDetail) as Record<string, Record<string, unknown>>).CustomerRef?.value ?? "")
+      accountId: (accountDetail?.AccountRef as Record<string, unknown>)?.value as
+        | string
+        | undefined,
+      customerId: ((itemDetail ?? accountDetail) as Record<string, unknown> | undefined)
+        ?.CustomerRef
+        ? String(
+            ((itemDetail ?? accountDetail) as Record<string, Record<string, unknown>>).CustomerRef
+              ?.value ?? "",
+          )
         : undefined,
       taxCodeId: ((itemDetail ?? accountDetail) as Record<string, unknown> | undefined)?.TaxCodeRef
-        ? String(((itemDetail ?? accountDetail) as Record<string, Record<string, unknown>>).TaxCodeRef?.value ?? "")
+        ? String(
+            ((itemDetail ?? accountDetail) as Record<string, Record<string, unknown>>).TaxCodeRef
+              ?.value ?? "",
+          )
         : undefined,
     };
   };
@@ -1302,19 +1372,30 @@ export class QBOClient extends IntegrationClient {
   // PAYMENTS
   // ═══════════════════════════════════════════════════════════════
 
-  async getPayments(options: { limit?: number; offset?: number; updatedAfter?: Date; customerId?: string } = {}): Promise<QBOPagedResult<QBOPayment>> {
+  async getPayments(
+    options: { limit?: number; offset?: number; updatedAfter?: Date; customerId?: string } = {},
+  ): Promise<QBOPagedResult<QBOPayment>> {
     const conditions: string[] = [];
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
     if (options.customerId) conditions.push(`CustomerRef = '${options.customerId}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Payment", where, "MetaData.LastUpdatedTime DESC", options.offset ?? 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Payment",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      options.offset ?? 1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapPayment) };
   }
 
   async getAllPayments(updatedAfter?: Date): Promise<QBOPayment[]> {
-    const where = updatedAfter ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'` : undefined;
+    const where = updatedAfter
+      ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'`
+      : undefined;
     const raw = await this.queryAll("Payment", where);
     return raw.map(this.mapPayment);
   }
@@ -1326,7 +1407,9 @@ export class QBOClient extends IntegrationClient {
       TxnDate: payment.txnDate,
       PrivateNote: payment.memo,
       PaymentMethodRef: payment.paymentMethodId ? { value: payment.paymentMethodId } : undefined,
-      DepositToAccountRef: payment.depositToAccountId ? { value: payment.depositToAccountId } : undefined,
+      DepositToAccountRef: payment.depositToAccountId
+        ? { value: payment.depositToAccountId }
+        : undefined,
       Line: payment.invoiceRefs?.map((ref) => ({
         Amount: ref.amount,
         LinkedTxn: [{ TxnId: ref.invoiceId, TxnType: "Invoice" }],
@@ -1353,14 +1436,20 @@ export class QBOClient extends IntegrationClient {
       totalAmount: Number(raw.TotalAmt ?? 0),
       customerId: String((raw.CustomerRef as Record<string, unknown>)?.value ?? ""),
       customerName: (raw.CustomerRef as Record<string, unknown>)?.name as string | undefined,
-      paymentMethodId: (raw.PaymentMethodRef as Record<string, unknown>)?.value as string | undefined,
-      depositToAccountId: (raw.DepositToAccountRef as Record<string, unknown>)?.value as string | undefined,
+      paymentMethodId: (raw.PaymentMethodRef as Record<string, unknown>)?.value as
+        | string
+        | undefined,
+      depositToAccountId: (raw.DepositToAccountRef as Record<string, unknown>)?.value as
+        | string
+        | undefined,
       currencyCode: (raw.CurrencyRef as Record<string, unknown>)?.value as string | undefined,
       memo: raw.PrivateNote ? String(raw.PrivateNote) : undefined,
       invoiceRefs: lines
         .filter((l) => Array.isArray(l.LinkedTxn))
         .map((l) => ({
-          invoiceId: String(((l.LinkedTxn as QBORawEntity[])?.[0] as Record<string, unknown>)?.TxnId ?? ""),
+          invoiceId: String(
+            ((l.LinkedTxn as QBORawEntity[])?.[0] as Record<string, unknown>)?.TxnId ?? "",
+          ),
           amount: Number(l.Amount ?? 0),
         })),
       lastUpdated: (raw.MetaData as Record<string, string>)?.LastUpdatedTime,
@@ -1371,13 +1460,21 @@ export class QBOClient extends IntegrationClient {
   // ACCOUNTS (Chart of Accounts)
   // ═══════════════════════════════════════════════════════════════
 
-  async getAccounts(options: { limit?: number; active?: boolean; accountType?: string } = {}): Promise<QBOPagedResult<QBOAccount>> {
+  async getAccounts(
+    options: { limit?: number; active?: boolean; accountType?: string } = {},
+  ): Promise<QBOPagedResult<QBOAccount>> {
     const conditions: string[] = [];
     if (options.active !== undefined) conditions.push(`Active = ${options.active}`);
     if (options.accountType) conditions.push(`AccountType = '${options.accountType}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Account", where, "Name ASC", 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Account",
+      where,
+      "Name ASC",
+      1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapAccount) };
   }
@@ -1439,10 +1536,22 @@ export class QBOClient extends IntegrationClient {
     taxable: raw.Taxable !== false,
     taxGroup: raw.TaxGroup === true,
     purchaseTaxRateId: (raw.PurchaseTaxRateList as Record<string, unknown>)?.TaxRateDetail
-      ? String((((raw.PurchaseTaxRateList as Record<string, unknown>).TaxRateDetail as Array<Record<string, Record<string, unknown>>>)?.[0]?.TaxRateRef?.value ?? ""))
+      ? String(
+          (
+            (raw.PurchaseTaxRateList as Record<string, unknown>).TaxRateDetail as Array<
+              Record<string, Record<string, unknown>>
+            >
+          )?.[0]?.TaxRateRef?.value ?? "",
+        )
       : undefined,
     salesTaxRateId: (raw.SalesTaxRateList as Record<string, unknown>)?.TaxRateDetail
-      ? String((((raw.SalesTaxRateList as Record<string, unknown>).TaxRateDetail as Array<Record<string, Record<string, unknown>>>)?.[0]?.TaxRateRef?.value ?? ""))
+      ? String(
+          (
+            (raw.SalesTaxRateList as Record<string, unknown>).TaxRateDetail as Array<
+              Record<string, Record<string, unknown>>
+            >
+          )?.[0]?.TaxRateRef?.value ?? "",
+        )
       : undefined,
   });
 
@@ -1460,13 +1569,22 @@ export class QBOClient extends IntegrationClient {
   // ESTIMATES
   // ═══════════════════════════════════════════════════════════════
 
-  async getEstimates(options: { limit?: number; updatedAfter?: Date; customerId?: string } = {}): Promise<QBOPagedResult<QBOEstimate>> {
+  async getEstimates(
+    options: { limit?: number; updatedAfter?: Date; customerId?: string } = {},
+  ): Promise<QBOPagedResult<QBOEstimate>> {
     const conditions: string[] = [];
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
     if (options.customerId) conditions.push(`CustomerRef = '${options.customerId}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("Estimate", where, "MetaData.LastUpdatedTime DESC", 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Estimate",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapEstimate) };
   }
@@ -1530,12 +1648,20 @@ export class QBOClient extends IntegrationClient {
   // SALES RECEIPTS
   // ═══════════════════════════════════════════════════════════════
 
-  async getSalesReceipts(options: { limit?: number; updatedAfter?: Date } = {}): Promise<QBOPagedResult<QBOSalesReceipt>> {
+  async getSalesReceipts(
+    options: { limit?: number; updatedAfter?: Date } = {},
+  ): Promise<QBOPagedResult<QBOSalesReceipt>> {
     const where = options.updatedAfter
       ? `MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`
       : undefined;
 
-    const result = await this.query<QBORawEntity>("SalesReceipt", where, "MetaData.LastUpdatedTime DESC", 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "SalesReceipt",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapSalesReceipt) };
   }
@@ -1547,7 +1673,9 @@ export class QBOClient extends IntegrationClient {
       DocNumber: receipt.docNumber,
       PrivateNote: receipt.memo,
       PaymentMethodRef: receipt.paymentMethodId ? { value: receipt.paymentMethodId } : undefined,
-      DepositToAccountRef: receipt.depositToAccountId ? { value: receipt.depositToAccountId } : undefined,
+      DepositToAccountRef: receipt.depositToAccountId
+        ? { value: receipt.depositToAccountId }
+        : undefined,
       Line: receipt.lineItems?.map((line) => ({
         Amount: line.amount,
         Description: line.description,
@@ -1575,8 +1703,12 @@ export class QBOClient extends IntegrationClient {
       txnDate: String(raw.TxnDate ?? ""),
       totalAmount: Number(raw.TotalAmt ?? 0),
       currencyCode: (raw.CurrencyRef as Record<string, unknown>)?.value as string | undefined,
-      paymentMethodId: (raw.PaymentMethodRef as Record<string, unknown>)?.value as string | undefined,
-      depositToAccountId: (raw.DepositToAccountRef as Record<string, unknown>)?.value as string | undefined,
+      paymentMethodId: (raw.PaymentMethodRef as Record<string, unknown>)?.value as
+        | string
+        | undefined,
+      depositToAccountId: (raw.DepositToAccountRef as Record<string, unknown>)?.value as
+        | string
+        | undefined,
       lineItems: lines
         .filter((l) => l.DetailType === "SalesItemLineDetail")
         .map(this.mapInvoiceLine),
@@ -1589,12 +1721,20 @@ export class QBOClient extends IntegrationClient {
   // CREDIT MEMOS
   // ═══════════════════════════════════════════════════════════════
 
-  async getCreditMemos(options: { limit?: number; updatedAfter?: Date } = {}): Promise<QBOPagedResult<QBOCreditMemo>> {
+  async getCreditMemos(
+    options: { limit?: number; updatedAfter?: Date } = {},
+  ): Promise<QBOPagedResult<QBOCreditMemo>> {
     const where = options.updatedAfter
       ? `MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`
       : undefined;
 
-    const result = await this.query<QBORawEntity>("CreditMemo", where, "MetaData.LastUpdatedTime DESC", 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "CreditMemo",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapCreditMemo) };
   }
@@ -1645,12 +1785,20 @@ export class QBOClient extends IntegrationClient {
   // JOURNAL ENTRIES
   // ═══════════════════════════════════════════════════════════════
 
-  async getJournalEntries(options: { limit?: number; updatedAfter?: Date } = {}): Promise<QBOPagedResult<QBOJournalEntry>> {
+  async getJournalEntries(
+    options: { limit?: number; updatedAfter?: Date } = {},
+  ): Promise<QBOPagedResult<QBOJournalEntry>> {
     const where = options.updatedAfter
       ? `MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`
       : undefined;
 
-    const result = await this.query<QBORawEntity>("JournalEntry", where, "MetaData.LastUpdatedTime DESC", 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "JournalEntry",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapJournalEntry) };
   }
@@ -1702,7 +1850,9 @@ export class QBOClient extends IntegrationClient {
           accountId: String((detail?.AccountRef as Record<string, unknown>)?.value ?? ""),
           accountName: (detail?.AccountRef as Record<string, unknown>)?.name as string | undefined,
           classId: (detail?.ClassRef as Record<string, unknown>)?.value as string | undefined,
-          departmentId: (detail?.DepartmentRef as Record<string, unknown>)?.value as string | undefined,
+          departmentId: (detail?.DepartmentRef as Record<string, unknown>)?.value as
+            | string
+            | undefined,
         };
       }),
       memo: raw.PrivateNote ? String(raw.PrivateNote) : undefined,
@@ -1714,12 +1864,20 @@ export class QBOClient extends IntegrationClient {
   // DEPOSITS
   // ═══════════════════════════════════════════════════════════════
 
-  async getDeposits(options: { limit?: number; updatedAfter?: Date } = {}): Promise<QBOPagedResult<QBODeposit>> {
+  async getDeposits(
+    options: { limit?: number; updatedAfter?: Date } = {},
+  ): Promise<QBOPagedResult<QBODeposit>> {
     const where = options.updatedAfter
       ? `MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`
       : undefined;
 
-    const result = await this.query<QBORawEntity>("Deposit", where, "MetaData.LastUpdatedTime DESC", 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "Deposit",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapDeposit) };
   }
@@ -1761,7 +1919,9 @@ export class QBOClient extends IntegrationClient {
         return {
           amount: Number(l.Amount ?? 0),
           accountId: (detail?.AccountRef as Record<string, unknown>)?.value as string | undefined,
-          paymentMethodId: (detail?.PaymentMethodRef as Record<string, unknown>)?.value as string | undefined,
+          paymentMethodId: (detail?.PaymentMethodRef as Record<string, unknown>)?.value as
+            | string
+            | undefined,
           description: l.Description ? String(l.Description) : undefined,
           entityId: (detail?.Entity as Record<string, unknown>)?.value as string | undefined,
           entityType: (detail?.Entity as Record<string, unknown>)?.type as string | undefined,
@@ -1776,19 +1936,30 @@ export class QBOClient extends IntegrationClient {
   // PURCHASE ORDERS
   // ═══════════════════════════════════════════════════════════════
 
-  async getPurchaseOrders(options: { limit?: number; updatedAfter?: Date; vendorId?: string } = {}): Promise<QBOPagedResult<QBOPurchaseOrder>> {
+  async getPurchaseOrders(
+    options: { limit?: number; updatedAfter?: Date; vendorId?: string } = {},
+  ): Promise<QBOPagedResult<QBOPurchaseOrder>> {
     const conditions: string[] = [];
-    if (options.updatedAfter) conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`MetaData.LastUpdatedTime >= '${options.updatedAfter.toISOString()}'`);
     if (options.vendorId) conditions.push(`VendorRef = '${options.vendorId}'`);
 
     const where = conditions.length > 0 ? conditions.join(" AND ") : undefined;
-    const result = await this.query<QBORawEntity>("PurchaseOrder", where, "MetaData.LastUpdatedTime DESC", 1, options.limit ?? 1000);
+    const result = await this.query<QBORawEntity>(
+      "PurchaseOrder",
+      where,
+      "MetaData.LastUpdatedTime DESC",
+      1,
+      options.limit ?? 1000,
+    );
 
     return { ...result, items: result.items.map(this.mapPurchaseOrder) };
   }
 
   async getAllPurchaseOrders(updatedAfter?: Date): Promise<QBOPurchaseOrder[]> {
-    const where = updatedAfter ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'` : undefined;
+    const where = updatedAfter
+      ? `MetaData.LastUpdatedTime >= '${updatedAfter.toISOString()}'`
+      : undefined;
     const raw = await this.queryAll("PurchaseOrder", where);
     return raw.map(this.mapPurchaseOrder);
   }
@@ -1924,10 +2095,7 @@ export class QBOClient extends IntegrationClient {
   /**
    * Fetch a QBO report (ProfitAndLoss, BalanceSheet, GeneralLedger, etc.).
    */
-  async getReport(
-    reportName: string,
-    params: Record<string, string> = {},
-  ): Promise<QBOReport> {
+  async getReport(reportName: string, params: Record<string, string> = {}): Promise<QBOReport> {
     const response = await this.apiCall<Record<string, unknown>>(`/reports/${reportName}`, {
       params,
     });
@@ -1944,10 +2112,12 @@ export class QBOClient extends IntegrationClient {
         currency: header?.Currency as string | undefined,
       },
       columns: Array.isArray((columns as Record<string, unknown>)?.Column)
-        ? ((columns as Record<string, unknown>).Column as Array<Record<string, unknown>>).map((c) => ({
-            colTitle: String(c.ColTitle ?? ""),
-            colType: String(c.ColType ?? ""),
-          }))
+        ? ((columns as Record<string, unknown>).Column as Array<Record<string, unknown>>).map(
+            (c) => ({
+              colTitle: String(c.ColTitle ?? ""),
+              colType: String(c.ColType ?? ""),
+            }),
+          )
         : [],
       rows: this.parseReportRows(rows),
     };
@@ -2044,7 +2214,9 @@ export class QBOClient extends IntegrationClient {
       country: String(raw?.Country ?? ""),
       email: (raw?.Email as Record<string, unknown>)?.Address as string | undefined,
       phone: (raw?.PrimaryPhone as Record<string, unknown>)?.FreeFormNumber as string | undefined,
-      fiscalYearStartMonth: raw?.FiscalYearStartMonth ? Number(raw.FiscalYearStartMonth) : undefined,
+      fiscalYearStartMonth: raw?.FiscalYearStartMonth
+        ? Number(raw.FiscalYearStartMonth)
+        : undefined,
       currencyCode: raw?.HomeCurrency ? String(raw.HomeCurrency) : undefined,
       multiCurrencyEnabled: raw?.MultiCurrencyEnabled === true,
       taxForm: raw?.TaxForm ? String(raw.TaxForm) : undefined,

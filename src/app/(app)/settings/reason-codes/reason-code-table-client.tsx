@@ -25,11 +25,7 @@ type ReasonCodeTableClientProps = {
   categoryColors: Record<ReasonCategory, string>;
 };
 
-export function ReasonCodeTableClient({
-  reasonCodes,
-  categoryLabels,
-
-}: ReasonCodeTableClientProps) {
+export function ReasonCodeTableClient({ reasonCodes, categoryLabels }: ReasonCodeTableClientProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState<ReasonCode | null>(null);
   const [isTogglingActive, setIsTogglingActive] = useState<Record<string, boolean>>({});

@@ -1,4 +1,5 @@
-import { Grid3X3, Printer } from "lucide-react";import type { Metadata } from "next";
+import { Grid3X3, Printer } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

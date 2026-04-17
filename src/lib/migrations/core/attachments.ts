@@ -23,11 +23,7 @@ const FETCH_TIMEOUT_MS = 15_000; // 15 seconds
 export class AttachmentUploadError extends Error {
   constructor(
     message: string,
-    public code:
-      | "FETCH_FAILED"
-      | "TOO_LARGE"
-      | "BLOB_UPLOAD_FAILED"
-      | "UNSUPPORTED_PATH",
+    public code: "FETCH_FAILED" | "TOO_LARGE" | "BLOB_UPLOAD_FAILED" | "UNSUPPORTED_PATH",
     public cause?: unknown,
   ) {
     super(message);
@@ -58,9 +54,7 @@ function detectMimeType(filename: string): string {
 // Fetch with timeout and size guards
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function fetchAttachmentBuffer(
-  url: string,
-): Promise<{ buffer: Buffer; size: number }> {
+async function fetchAttachmentBuffer(url: string): Promise<{ buffer: Buffer; size: number }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -81,7 +75,7 @@ async function fetchAttachmentBuffer(
     // Check Content-Length header before reading body
     const contentLength = response.headers.get("content-length");
     if (contentLength) {
-      const size = parseInt(contentLength, 10);
+      const size = Number.parseInt(contentLength, 10);
       if (size > MAX_ATTACHMENT_BYTES) {
         throw new AttachmentUploadError(
           `Content-Length ${size} exceeds max ${MAX_ATTACHMENT_BYTES}`,
@@ -127,11 +121,7 @@ async function fetchAttachmentBuffer(
 // Blob upload
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function uploadToBlob(
-  buffer: Buffer,
-  path: string,
-  contentType: string,
-): Promise<string> {
+async function uploadToBlob(buffer: Buffer, path: string, contentType: string): Promise<string> {
   // Dynamically import @vercel/blob to allow graceful degradation if missing
   let put: typeof import("@vercel/blob").put;
   try {

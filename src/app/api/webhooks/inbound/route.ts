@@ -125,7 +125,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Route event to the appropriate handler.
-    const eventResult = await processWebhookEvent(payload.event, payload.organizationId, payload.data);
+    const eventResult = await processWebhookEvent(
+      payload.event,
+      payload.organizationId,
+      payload.data,
+    );
 
     return NextResponse.json(
       { ok: true, deliveryId, processed: eventResult.processed, action: eventResult.action },

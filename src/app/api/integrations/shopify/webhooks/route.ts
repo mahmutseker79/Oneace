@@ -23,10 +23,7 @@ export async function POST(request: NextRequest) {
     const apiSecret = process.env.SHOPIFY_API_SECRET;
     if (!apiSecret) {
       logger.error("SHOPIFY_API_SECRET not configured");
-      return NextResponse.json(
-        { error: "Webhook endpoint not configured" },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: "Webhook endpoint not configured" }, { status: 503 });
     }
 
     const hmacHeader = request.headers.get("x-shopify-hmac-sha256");
@@ -34,26 +31,18 @@ export async function POST(request: NextRequest) {
     const shopDomain = request.headers.get("x-shopify-shop-domain");
 
     if (!hmacHeader || !topic || !shopDomain) {
-      return NextResponse.json(
-        { error: "Missing required Shopify headers" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing required Shopify headers" }, { status: 400 });
     }
 
     const body = await request.text();
 
     // Verify HMAC-SHA256 signature (constant-time comparison)
-    const computedHmac = createHmac("sha256", apiSecret)
-      .update(body, "utf8")
-      .digest("base64");
+    const computedHmac = createHmac("sha256", apiSecret).update(body, "utf8").digest("base64");
 
     const sigBuffer = Buffer.from(hmacHeader, "base64");
     const computedBuffer = Buffer.from(computedHmac, "base64");
 
-    if (
-      sigBuffer.length !== computedBuffer.length ||
-      !timingSafeEqual(sigBuffer, computedBuffer)
-    ) {
+    if (sigBuffer.length !== computedBuffer.length || !timingSafeEqual(sigBuffer, computedBuffer)) {
       logger.warn("Invalid Shopify webhook signature", { shopDomain, topic });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
@@ -91,10 +80,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, action });
   } catch (error) {
     logger.error("Shopify webhook processing error", { error });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -111,19 +97,19 @@ function routeShopifyTopic(
     case "products/update":
     case "products/delete":
       logger.info("Shopify product change", { organizationId, topic });
-      return `sync_queued:products`;
+      return "sync_queued:products";
 
     case "inventory_levels/update":
     case "inventory_levels/connect":
     case "inventory_levels/disconnect":
       logger.info("Shopify inventory change", { organizationId, topic });
-      return `sync_queued:inventory`;
+      return "sync_queued:inventory";
 
     case "orders/create":
     case "orders/updated":
     case "orders/cancelled":
       logger.info("Shopify order event", { organizationId, topic });
-      return `sync_queued:orders`;
+      return "sync_queued:orders";
 
     case "app/uninstalled":
       logger.info("Shopify app uninstalled", { organizationId });

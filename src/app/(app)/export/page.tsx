@@ -4,11 +4,11 @@
  * Allows users to export inventory data in various formats.
  */
 
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader } from "@/components/ui/page-header";
 import { ExportClient } from "./export-client";
 
 export const metadata: Metadata = {
@@ -62,11 +62,7 @@ export default async function ExportPage() {
             </div>
 
             <div className="space-y-2">
-              <ExportClient
-                exportType={option.id}
-                label={option.label}
-                formats={option.formats}
-              />
+              <ExportClient exportType={option.id} label={option.label} formats={option.formats} />
             </div>
           </div>
         ))}

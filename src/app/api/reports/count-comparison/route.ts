@@ -11,9 +11,9 @@ import { z } from "zod";
 import { csvResponse, serializeCsv } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { buildExcelWorkbook, excelResponse, todayIsoDate } from "@/lib/excel";
+import { logger } from "@/lib/logger";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
-import { logger } from "@/lib/logger";
 
 const CompareSchema = z.object({
   count1Id: z.string().cuid(),
@@ -36,7 +36,10 @@ async function handleGetCounts(_req?: Request) {
     const { membership } = await requireActiveMembership();
 
     // Rate limit report access per org
-    const rl = await rateLimit(`report:count-comparison:${membership.organizationId}`, RATE_LIMITS.report);
+    const rl = await rateLimit(
+      `report:count-comparison:${membership.organizationId}`,
+      RATE_LIMITS.report,
+    );
     if (!rl.ok) {
       return Response.json({ error: "Too many requests" }, { status: 429 });
     }
@@ -80,7 +83,10 @@ async function handleCompare(req: Request) {
     const { membership } = await requireActiveMembership();
 
     // Rate limit report comparison per org
-    const rl = await rateLimit(`report:count-comparison-compare:${membership.organizationId}`, RATE_LIMITS.report);
+    const rl = await rateLimit(
+      `report:count-comparison-compare:${membership.organizationId}`,
+      RATE_LIMITS.report,
+    );
     if (!rl.ok) {
       return Response.json({ error: "Too many requests" }, { status: 429 });
     }

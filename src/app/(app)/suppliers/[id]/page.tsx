@@ -1,4 +1,5 @@
-import { CalendarClock, ChevronRight, ExternalLink, Pencil, Plus } from "lucide-react";import type { Metadata } from "next";
+import { CalendarClock, ChevronRight, ExternalLink, Pencil, Plus } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

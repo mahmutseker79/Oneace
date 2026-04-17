@@ -3,14 +3,14 @@
  * field-mappings payloads conform to the API contract.
  */
 
-import { describe, it, expect } from "vitest";
 import {
+  type MigrationScopeOptions,
   MigrationScopeOptionsSchema,
   defaultScopeOptions,
   parseScopeOptions,
-  type MigrationScopeOptions,
 } from "@/lib/migrations/core/scope-options";
 import type { FieldMapping } from "@/lib/migrations/core/types";
+import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 describe("Wizard Payloads", () => {
@@ -110,7 +110,7 @@ describe("Wizard Payloads", () => {
             ])
             .optional(),
           note: z.string().nullable().optional(),
-        })
+        }),
       ),
       scopeOptions: MigrationScopeOptionsSchema.optional(),
     });
@@ -247,9 +247,7 @@ describe("Wizard Payloads", () => {
       };
 
       // Validate scope options
-      expect(() =>
-        parseScopeOptions(state.scopeOptions)
-      ).not.toThrow();
+      expect(() => parseScopeOptions(state.scopeOptions)).not.toThrow();
 
       // Validate field mappings schema
       const mappingsSchema = z.array(
@@ -258,7 +256,7 @@ describe("Wizard Payloads", () => {
           targetField: z.string(),
           transformKey: z.string().optional(),
           note: z.string().nullable().optional(),
-        })
+        }),
       );
 
       const result = mappingsSchema.safeParse(state.fieldMappings);

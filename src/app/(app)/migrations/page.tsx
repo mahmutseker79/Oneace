@@ -6,25 +6,24 @@ import type { MigrationStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 import { History } from "lucide-react";
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Migrations",
 };
 
-const STATUS_BADGES: Record<MigrationStatus, { variant: any; label: string }> =
-  {
-    PENDING: { variant: "secondary", label: "Beklemede" },
-    FILES_UPLOADED: { variant: "info", label: "Dosyalar Yüklendi" },
-    MAPPING_REVIEW: { variant: "info", label: "Eşleme İncelemesi" },
-    VALIDATING: { variant: "info", label: "Doğrulanıyor" },
-    VALIDATED: { variant: "info", label: "Doğrulandı" },
-    IMPORTING: { variant: "processing", label: "İçe Aktarılıyor" },
-    COMPLETED: { variant: "success", label: "Tamamlandı" },
-    FAILED: { variant: "destructive", label: "Başarısız" },
-    CANCELLED: { variant: "outline", label: "İptal Edildi" },
-  };
+const STATUS_BADGES: Record<MigrationStatus, { variant: any; label: string }> = {
+  PENDING: { variant: "secondary", label: "Beklemede" },
+  FILES_UPLOADED: { variant: "info", label: "Dosyalar Yüklendi" },
+  MAPPING_REVIEW: { variant: "info", label: "Eşleme İncelemesi" },
+  VALIDATING: { variant: "info", label: "Doğrulanıyor" },
+  VALIDATED: { variant: "info", label: "Doğrulandı" },
+  IMPORTING: { variant: "processing", label: "İçe Aktarılıyor" },
+  COMPLETED: { variant: "success", label: "Tamamlandı" },
+  FAILED: { variant: "destructive", label: "Başarısız" },
+  CANCELLED: { variant: "outline", label: "İptal Edildi" },
+};
 
 const SOURCE_LABELS: Record<string, string> = {
   SORTLY: "Sortly",
@@ -58,10 +57,7 @@ export default async function MigrationsPage() {
   if (jobs.length === 0) {
     return (
       <div className="space-y-8">
-        <PageHeader
-          title="Göç / Migrations"
-          description="Rakipten veri taşıyın ve yönetin"
-        />
+        <PageHeader title="Göç / Migrations" description="Rakipten veri taşıyın ve yönetin" />
         <EmptyState
           icon={History}
           title="Hiç göç yapılmamış"
@@ -79,10 +75,7 @@ export default async function MigrationsPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <PageHeader
-          title="Göç / Migrations"
-          description="Rakipten veri taşıyın ve yönetin"
-        />
+        <PageHeader title="Göç / Migrations" description="Rakipten veri taşıyın ve yönetin" />
         <Link href="/migrations/new">
           <Button>Yeni Göç Başlat</Button>
         </Link>
@@ -93,8 +86,7 @@ export default async function MigrationsPage() {
         <div className="space-y-3">
           {jobs.map((job) => {
             const statusBadge = STATUS_BADGES[job.status];
-            const sourceLabel =
-              SOURCE_LABELS[job.sourcePlatform] || job.sourcePlatform;
+            const sourceLabel = SOURCE_LABELS[job.sourcePlatform] || job.sourcePlatform;
 
             const importResults = job.importResults as {
               totals?: Record<string, number>;
@@ -109,13 +101,11 @@ export default async function MigrationsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <Badge variant="outline">{sourceLabel}</Badge>
-                    <Badge variant={statusBadge.variant}>
-                      {statusBadge.label}
-                    </Badge>
+                    <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    {job.createdBy?.name || "Bilinmiyen kullanıcı"} ·{" "}
-                    {formatTimeAgo(job.createdAt)} · {itemsImported} ürün
+                    {job.createdBy?.name || "Bilinmiyen kullanıcı"} · {formatTimeAgo(job.createdAt)}{" "}
+                    · {itemsImported} ürün
                   </p>
                 </div>
 

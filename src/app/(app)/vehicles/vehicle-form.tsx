@@ -63,7 +63,10 @@ export default function VehicleForm({ vehicleId, initialData, labels }: Props) {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="border-border bg-card space-y-4 rounded-lg border p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="border-border bg-card space-y-4 rounded-lg border p-6"
+      >
         {error && (
           <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">{error}</div>
         )}

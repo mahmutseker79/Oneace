@@ -65,18 +65,18 @@ describe("calculateNextRun", () => {
     const from = local(2026, 4, 16, 2, 0); // 02:00
     const next = calculateNextRun("30 3 * * *", from);
     expect(next).not.toBeNull();
-    expect(next!.getHours()).toBe(3);
-    expect(next!.getMinutes()).toBe(30);
-    expect(next!.getDate()).toBe(16);
+    expect(next?.getHours()).toBe(3);
+    expect(next?.getMinutes()).toBe(30);
+    expect(next?.getDate()).toBe(16);
   });
 
   it("daily at 03:30 — next day if from is after 03:30", () => {
     const from = local(2026, 4, 16, 5, 0); // 05:00
     const next = calculateNextRun("30 3 * * *", from);
     expect(next).not.toBeNull();
-    expect(next!.getDate()).toBe(17);
-    expect(next!.getHours()).toBe(3);
-    expect(next!.getMinutes()).toBe(30);
+    expect(next?.getDate()).toBe(17);
+    expect(next?.getHours()).toBe(3);
+    expect(next?.getMinutes()).toBe(30);
   });
 
   it("weekly Monday 09:00 — skips to next Monday", () => {
@@ -85,25 +85,25 @@ describe("calculateNextRun", () => {
     expect(from.getDay()).toBe(1); // sanity: it's Monday
     const next = calculateNextRun("0 9 * * 1", from);
     expect(next).not.toBeNull();
-    expect(next!.getDay()).toBe(1); // Monday
-    expect(next!.getDate()).toBe(20);
-    expect(next!.getHours()).toBe(9);
+    expect(next?.getDay()).toBe(1); // Monday
+    expect(next?.getDate()).toBe(20);
+    expect(next?.getHours()).toBe(9);
   });
 
   it("monthly 1st at midnight — wraps to next month", () => {
     const from = local(2026, 4, 2, 0, 0); // April 2
     const next = calculateNextRun("0 0 1 * *", from);
     expect(next).not.toBeNull();
-    expect(next!.getMonth()).toBe(4); // 0-indexed → May
-    expect(next!.getDate()).toBe(1);
+    expect(next?.getMonth()).toBe(4); // 0-indexed → May
+    expect(next?.getDate()).toBe(1);
   });
 
   it("monthly 1st at midnight — same month if from is before", () => {
     const from = local(2026, 3, 31, 23, 0); // March 31 23:00
     const next = calculateNextRun("0 0 1 * *", from);
     expect(next).not.toBeNull();
-    expect(next!.getMonth()).toBe(3); // 0-indexed → April
-    expect(next!.getDate()).toBe(1);
+    expect(next?.getMonth()).toBe(3); // 0-indexed → April
+    expect(next?.getDate()).toBe(1);
   });
 
   it("invalid cron → null", () => {
@@ -114,7 +114,7 @@ describe("calculateNextRun", () => {
     const from = local(2026, 4, 16, 3, 30); // exactly on a match
     const next = calculateNextRun("30 3 * * *", from);
     expect(next).not.toBeNull();
-    expect(next!.getTime()).toBeGreaterThan(from.getTime());
+    expect(next?.getTime()).toBeGreaterThan(from.getTime());
   });
 });
 
@@ -192,8 +192,8 @@ describe("evaluateTrigger", () => {
     const result = evaluateTrigger(template, now);
     expect(result.shouldTrigger).toBe(true);
     // Next occurrence should be April 17 at 09:00
-    expect(result.nextRunAt!.getDate()).toBe(17);
-    expect(result.nextRunAt!.getHours()).toBe(9);
+    expect(result.nextRunAt?.getDate()).toBe(17);
+    expect(result.nextRunAt?.getHours()).toBe(9);
   });
 
   it("lag guard: does not re-fire if lastUsedAt matches scheduled window", () => {

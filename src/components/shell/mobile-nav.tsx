@@ -66,7 +66,11 @@ export function MobileNav({
     { label: labels.nav.suppliers, href: "/suppliers", icon: Truck },
     { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
     { label: labels.nav.labels ?? "Labels", href: "/labels", icon: Tag },
-    { label: labels.nav.statusChange ?? "Status Change", href: "/inventory/status-change", icon: ToggleRight },
+    {
+      label: labels.nav.statusChange ?? "Status Change",
+      href: "/inventory/status-change",
+      icon: ToggleRight,
+    },
   ];
 
   const warehouseItems: NavItem[] = [

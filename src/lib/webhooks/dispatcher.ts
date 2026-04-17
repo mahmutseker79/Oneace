@@ -239,9 +239,7 @@ export class WebhookDispatcher {
   /**
    * Retry with exponential backoff.
    */
-  private async retryWithBackoff(
-    attempt: WebhookDeliveryAttempt,
-  ): Promise<WebhookDeliveryResult> {
+  private async retryWithBackoff(attempt: WebhookDeliveryAttempt): Promise<WebhookDeliveryResult> {
     const multiplier = attempt.backoffMultiplier || 2;
     const backoffMs = Math.min(
       this.baseBackoff * multiplier ** (attempt.attempt - 1),

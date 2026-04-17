@@ -81,14 +81,10 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
 
   try {
     // Node.js 19+ has built-in DOM APIs; for older versions, this will fail gracefully.
+    // Built-in browser DOMParser takes no constructor arguments; options-bag
+    // style is xmldom-specific. We fall back to regex if parsing fails.
     if (typeof DOMParser !== "undefined") {
-      const parser = new DOMParser({
-        errorHandler: {
-          warning: (msg: string) => warnings.push(`XML Warning: ${msg}`),
-          error: (msg: string) => warnings.push(`XML Error: ${msg}`),
-          fatalError: (msg: string) => warnings.push(`XML Fatal Error: ${msg}`),
-        },
-      });
+      const parser = new DOMParser();
       doc = parser.parseFromString(text, "application/xml");
     } else {
       // Fallback: basic string parsing if DOMParser unavailable.
@@ -110,8 +106,8 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
     const itemElems = doc.getElementsByTagName("ItemInventoryRet");
     for (let i = 0; i < itemElems.length; i++) {
       const elem = itemElems[i];
-      const listId =
-        elem.getElementsByTagName("ListID")[0]?.textContent || `item_${i}`;
+      if (!elem) continue;
+      const listId = elem.getElementsByTagName("ListID")[0]?.textContent || `item_${i}`;
       const name = elem.getElementsByTagName("Name")[0]?.textContent || "";
 
       if (!name) continue; // Skip items without a name.
@@ -120,18 +116,15 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
         ListID: listId,
         Name: name,
         SKU: elem.getElementsByTagName("SKU")[0]?.textContent || undefined,
-        Description:
-          elem.getElementsByTagName("Desc")[0]?.textContent || undefined,
-        UnitPrice: parseFloat(
-          elem.getElementsByTagName("UnitPrice")[0]?.textContent || "0"
-        ) || undefined,
-        Cost: parseFloat(
-          elem.getElementsByTagName("PurchaseCost")[0]?.textContent || "0"
-        ) || undefined,
-        InvAccount:
-          elem.getElementsByTagName("InvAccount")[0]?.textContent || undefined,
-        IsActive:
-          elem.getElementsByTagName("Active")[0]?.textContent !== "0",
+        Description: elem.getElementsByTagName("Desc")[0]?.textContent || undefined,
+        UnitPrice:
+          Number.parseFloat(elem.getElementsByTagName("UnitPrice")[0]?.textContent || "0") ||
+          undefined,
+        Cost:
+          Number.parseFloat(elem.getElementsByTagName("PurchaseCost")[0]?.textContent || "0") ||
+          undefined,
+        InvAccount: elem.getElementsByTagName("InvAccount")[0]?.textContent || undefined,
+        IsActive: elem.getElementsByTagName("Active")[0]?.textContent !== "0",
       });
     }
   } catch (e) {
@@ -143,8 +136,8 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
     const vendorElems = doc.getElementsByTagName("VendorRet");
     for (let i = 0; i < vendorElems.length; i++) {
       const elem = vendorElems[i];
-      const listId =
-        elem.getElementsByTagName("ListID")[0]?.textContent || `vendor_${i}`;
+      if (!elem) continue;
+      const listId = elem.getElementsByTagName("ListID")[0]?.textContent || `vendor_${i}`;
       const name = elem.getElementsByTagName("Name")[0]?.textContent || "";
 
       if (!name) continue;
@@ -152,14 +145,11 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
       result.vendors.push({
         ListID: listId,
         Name: name,
-        Contact:
-          elem.getElementsByTagName("Contact")[0]?.textContent || undefined,
+        Contact: elem.getElementsByTagName("Contact")[0]?.textContent || undefined,
         Email: elem.getElementsByTagName("Email")[0]?.textContent || undefined,
         Phone: elem.getElementsByTagName("Phone")[0]?.textContent || undefined,
-        Address:
-          elem.getElementsByTagName("Addr1")[0]?.textContent || undefined,
-        IsActive:
-          elem.getElementsByTagName("Active")[0]?.textContent !== "0",
+        Address: elem.getElementsByTagName("Addr1")[0]?.textContent || undefined,
+        IsActive: elem.getElementsByTagName("Active")[0]?.textContent !== "0",
       });
     }
   } catch (e) {
@@ -171,14 +161,12 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
     const poElems = doc.getElementsByTagName("PurchaseOrderRet");
     for (let i = 0; i < poElems.length; i++) {
       const elem = poElems[i];
-      const txnId =
-        elem.getElementsByTagName("TxnID")[0]?.textContent || `po_${i}`;
-      const refNum =
-        elem.getElementsByTagName("RefNumber")[0]?.textContent || "";
+      if (!elem) continue;
+      const txnId = elem.getElementsByTagName("TxnID")[0]?.textContent || `po_${i}`;
+      const refNum = elem.getElementsByTagName("RefNumber")[0]?.textContent || "";
       const vendorId =
-        elem.getElementsByTagName("VendorRef")[0]?.getElementsByTagName(
-          "ListID"
-        )[0]?.textContent || "";
+        elem.getElementsByTagName("VendorRef")[0]?.getElementsByTagName("ListID")[0]?.textContent ||
+        "";
 
       const lineItems: QbxmlPurchaseOrder["LineItems"] = [];
 
@@ -186,15 +174,15 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
       const lineElems = elem.getElementsByTagName("PurchaseOrderLineRet");
       for (let j = 0; j < lineElems.length; j++) {
         const line = lineElems[j];
+        if (!line) continue;
         const itemId =
-          line.getElementsByTagName("ItemRef")[0]?.getElementsByTagName(
-            "ListID"
-          )[0]?.textContent || "";
+          line.getElementsByTagName("ItemRef")[0]?.getElementsByTagName("ListID")[0]?.textContent ||
+          "";
         const qty =
-          parseFloat(line.getElementsByTagName("Quantity")[0]?.textContent || "0") || 0;
-        const cost = parseFloat(
-          line.getElementsByTagName("UnitPrice")[0]?.textContent || "0"
-        ) || undefined;
+          Number.parseFloat(line.getElementsByTagName("Quantity")[0]?.textContent || "0") || 0;
+        const cost =
+          Number.parseFloat(line.getElementsByTagName("UnitPrice")[0]?.textContent || "0") ||
+          undefined;
 
         if (itemId && qty > 0) {
           lineItems.push({
@@ -210,10 +198,8 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
           TxnID: txnId,
           RefNumber: refNum,
           VendorID: vendorId,
-          TxnDate:
-            elem.getElementsByTagName("TxnDate")[0]?.textContent || undefined,
-          DueDate:
-            elem.getElementsByTagName("DueDate")[0]?.textContent || undefined,
+          TxnDate: elem.getElementsByTagName("TxnDate")[0]?.textContent || undefined,
+          DueDate: elem.getElementsByTagName("DueDate")[0]?.textContent || undefined,
           Memo: elem.getElementsByTagName("Memo")[0]?.textContent || undefined,
           LineItems: lineItems,
         });
@@ -230,10 +216,7 @@ export function parseQbxmlFile(buffer: Buffer | string): QbxmlDocument {
  * Fallback QBXML parser using basic regex (for environments without DOMParser).
  * Very basic; extracts top-level elements only.
  */
-function fallbackQbxmlParse(
-  xml: string,
-  warnings: string[]
-): QbxmlDocument {
+function fallbackQbxmlParse(xml: string, warnings: string[]): QbxmlDocument {
   const result: QbxmlDocument = {
     items: [],
     vendors: [],
@@ -280,5 +263,5 @@ function fallbackQbxmlParse(
 function extractXmlValue(xml: string, tagName: string): string | null {
   const regex = new RegExp(`<${tagName}>([\\s\\S]*?)</${tagName}>`);
   const match = xml.match(regex);
-  return match ? match[1].trim() : null;
+  return match?.[1] ? match[1].trim() : null;
 }

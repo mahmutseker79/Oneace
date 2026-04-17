@@ -4,7 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { MigrationSource } from "@/generated/prisma";
-import { Boxes, Factory, Package, Receipt, Warehouse, FileSpreadsheet, HardDrive } from "lucide-react";
+import {
+  Boxes,
+  Factory,
+  FileSpreadsheet,
+  HardDrive,
+  Package,
+  Receipt,
+  Warehouse,
+} from "lucide-react";
 import Link from "next/link";
 
 interface MigrationCardProps {
@@ -16,9 +24,8 @@ interface MigrationCardProps {
   canStart: boolean;
 }
 
-const MIGRATION_SOURCES: Record<
-  MigrationSource,
-  { name: string; icon: React.ComponentType<{ className?: string }> }
+const MIGRATION_SOURCES: Partial<
+  Record<MigrationSource, { name: string; icon: React.ComponentType<{ className?: string }> }>
 > = {
   SORTLY: { name: "Sortly", icon: Package },
   INFLOW: { name: "inFlow", icon: Boxes },
@@ -30,17 +37,12 @@ const MIGRATION_SOURCES: Record<
 };
 
 function daysAgo(date: Date): number {
-  return Math.floor(
-    (new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  return Math.floor((new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function MigrationCard({
-  source,
-  lastJob,
-  canStart,
-}: MigrationCardProps) {
+export function MigrationCard({ source, lastJob, canStart }: MigrationCardProps) {
   const sourceInfo = MIGRATION_SOURCES[source];
+  if (!sourceInfo) return null;
   const Icon = sourceInfo.icon;
 
   return (
@@ -59,17 +61,13 @@ export function MigrationCard({
         {lastJob ? (
           <div className="rounded-lg bg-success/5 p-3 text-sm">
             <p className="text-muted-foreground">
-              Son göç:{" "}
-              <span className="font-medium">
-                {daysAgo(lastJob.completedAt)}
-              </span>{" "}
-              gün önce · {lastJob.itemsImported} ürün taşındı
+              Son göç: <span className="font-medium">{daysAgo(lastJob.completedAt)}</span> gün önce
+              · {lastJob.itemsImported} ürün taşındı
             </p>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Rakipten veri taşıyın — ürünleri, kütüphaneleri ve stok seviyelerini
-            getirin.
+            Rakipten veri taşıyın — ürünleri, kütüphaneleri ve stok seviyelerini getirin.
           </p>
         )}
 
@@ -82,7 +80,7 @@ export function MigrationCard({
             </Link>
           )}
           {lastJob && (
-            <Link href={`/migrations`} className="flex-1">
+            <Link href={"/migrations"} className="flex-1">
               <Button variant="outline" size="sm" className="w-full">
                 Geçmiş
               </Button>

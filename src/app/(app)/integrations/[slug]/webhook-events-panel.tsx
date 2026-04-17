@@ -1,16 +1,27 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { IntegrationWebhookEvent } from "@/generated/prisma";
+import { Play, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteWebhookEventAction, toggleWebhookEventAction, testWebhookAction, createWebhookEventAction } from "../actions";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Trash2, Plus, Play } from "lucide-react";
+import {
+  createWebhookEventAction,
+  deleteWebhookEventAction,
+  testWebhookAction,
+  toggleWebhookEventAction,
+} from "../actions";
 
 interface WebhookEventsPanelProps {
   integrationId: string;
@@ -130,9 +141,7 @@ export function WebhookEventsPanel({ integrationId, events }: WebhookEventsPanel
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground break-all">
-                      {event.endpointUrl}
-                    </p>
+                    <p className="text-xs text-muted-foreground break-all">{event.endpointUrl}</p>
                     {event.lastTriggeredAt && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Last triggered: {new Date(event.lastTriggeredAt).toLocaleString()}
@@ -191,9 +200,7 @@ export function WebhookEventsPanel({ integrationId, events }: WebhookEventsPanel
                 id="eventType"
                 placeholder="e.g., item.synced, order.created"
                 value={formData.eventType}
-                onChange={(e) =>
-                  setFormData({ ...formData, eventType: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
               />
             </div>
 
@@ -204,9 +211,7 @@ export function WebhookEventsPanel({ integrationId, events }: WebhookEventsPanel
                 type="url"
                 placeholder="https://example.com/webhooks/sync"
                 value={formData.endpointUrl}
-                onChange={(e) =>
-                  setFormData({ ...formData, endpointUrl: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, endpointUrl: e.target.value })}
               />
             </div>
 
@@ -217,9 +222,7 @@ export function WebhookEventsPanel({ integrationId, events }: WebhookEventsPanel
                 type="password"
                 placeholder="Shared secret for HMAC validation"
                 value={formData.secret}
-                onChange={(e) =>
-                  setFormData({ ...formData, secret: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, secret: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
                 Optional secret sent as X-Webhook-Secret header for authentication.
@@ -227,11 +230,7 @@ export function WebhookEventsPanel({ integrationId, events }: WebhookEventsPanel
             </div>
 
             <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDialog(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>

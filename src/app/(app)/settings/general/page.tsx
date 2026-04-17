@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { requireActiveMembership } from "@/lib/session";
+import type { Metadata } from "next";
 import { getOrCreateOrgSettingsAction } from "./actions";
 import { GeneralSettingsForm } from "./settings-form";
 
@@ -33,7 +34,9 @@ export default async function GeneralSettingsPage() {
             <CardTitle>Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-destructive">Failed to load settings: {settingsResult.error}</p>
+            <p className="text-sm text-destructive">
+              Failed to load settings: {settingsResult.error}
+            </p>
           </CardContent>
         </Card>
       </div>

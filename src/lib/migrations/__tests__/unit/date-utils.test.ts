@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { parseDateFlexible, analyzeColumnDateFormats } from "@/lib/migrations/core/date-utils";
+import { analyzeColumnDateFormats, parseDateFlexible } from "@/lib/migrations/core/date-utils";
+import { describe, expect, it } from "vitest";
 
 describe("date-utils", () => {
   describe("parseDateFlexible", () => {
@@ -58,12 +58,7 @@ describe("date-utils", () => {
 
   describe("analyzeColumnDateFormats", () => {
     it("detects ISO8601 format dominance", () => {
-      const values = [
-        "2024-01-01",
-        "2024-02-15",
-        "2024-03-20",
-        "garbage",
-      ];
+      const values = ["2024-01-01", "2024-02-15", "2024-03-20", "garbage"];
       const analysis = analyzeColumnDateFormats(values);
 
       expect(analysis.dominantFormat).toBe("ISO8601");
@@ -72,11 +67,7 @@ describe("date-utils", () => {
     });
 
     it("detects SLASH format dominance", () => {
-      const values = [
-        "01/15/2024",
-        "02/20/2024",
-        "03/10/2024",
-      ];
+      const values = ["01/15/2024", "02/20/2024", "03/10/2024"];
       const analysis = analyzeColumnDateFormats(values);
 
       expect(analysis.dominantFormat).toBe("SLASH");
@@ -84,11 +75,7 @@ describe("date-utils", () => {
     });
 
     it("detects PERIOD format dominance", () => {
-      const values = [
-        "15.01.2024",
-        "20.02.2024",
-        "10.03.2024",
-      ];
+      const values = ["15.01.2024", "20.02.2024", "10.03.2024"];
       const analysis = analyzeColumnDateFormats(values);
 
       expect(analysis.dominantFormat).toBe("PERIOD");
@@ -97,10 +84,10 @@ describe("date-utils", () => {
 
     it("marks as inconsistent if dominant format < 80% of values", () => {
       const values = [
-        "2024-01-01",  // ISO8601: 1
-        "01/15/2024",  // SLASH: 2
-        "15.01.2024",  // PERIOD: 3
-        "garbage",     // Unparseable: 4
+        "2024-01-01", // ISO8601: 1
+        "01/15/2024", // SLASH: 2
+        "15.01.2024", // PERIOD: 3
+        "garbage", // Unparseable: 4
       ];
       const analysis = analyzeColumnDateFormats(values);
 
@@ -114,7 +101,7 @@ describe("date-utils", () => {
         "2024-03-20",
         "2024-04-10",
         "2024-05-05",
-        "garbage",     // 1/6 unparseable, 5 ISO8601 = 83%
+        "garbage", // 1/6 unparseable, 5 ISO8601 = 83%
       ];
       const analysis = analyzeColumnDateFormats(values);
 
@@ -130,12 +117,7 @@ describe("date-utils", () => {
     });
 
     it("ignores null and undefined values", () => {
-      const values = [
-        null,
-        undefined,
-        "2024-01-01",
-        "2024-02-15",
-      ];
+      const values = [null, undefined, "2024-01-01", "2024-02-15"];
       const analysis = analyzeColumnDateFormats(values);
 
       expect(analysis.count.iso8601).toBe(2);

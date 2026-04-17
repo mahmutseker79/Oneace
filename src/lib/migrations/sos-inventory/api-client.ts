@@ -95,7 +95,10 @@ class SOSRateLimiter {
     this.requests = this.requests.filter((t) => now - t < this.windowMs);
 
     if (this.requests.length >= this.maxRequests) {
-      const oldestRequest = this.requests[0];
+      // Length check above guarantees requests[0] exists; the `!` is
+      // necessary because `noUncheckedIndexedAccess` doesn't narrow off a
+      // preceding length comparison.
+      const oldestRequest = this.requests[0]!;
       const waitMs = this.windowMs - (now - oldestRequest) + 10;
       logger.debug("SOS: rate limit reached, waiting", { waitMs });
       await new Promise((resolve) => setTimeout(resolve, Math.max(0, waitMs)));
@@ -120,10 +123,7 @@ export class SOSApiError extends Error {
 /**
  * Exponential backoff retry policy.
  */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 5,
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5): Promise<T> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -143,7 +143,7 @@ async function withRetry<T>(
         throw err;
       }
 
-      const backoffMs = Math.min(Math.pow(2, attempt) * 250, 30000);
+      const backoffMs = Math.min(2 ** attempt * 250, 30000);
       logger.debug("SOS: retrying after backoff", {
         attempt,
         backoffMs,
@@ -185,10 +185,7 @@ export class SOSApiClient {
       });
 
       if (!response.ok) {
-        throw new SOSApiError(
-          `Token refresh failed: ${response.status}`,
-          response.status,
-        );
+        throw new SOSApiError(`Token refresh failed: ${response.status}`, response.status);
       }
 
       const data = (await response.json()) as any;
@@ -213,9 +210,7 @@ export class SOSApiClient {
   ): Promise<T> {
     await this.rateLimiter.acquire();
 
-    const url = new URL(
-      `${this.baseUrl}/${this.credentials.realmId}${endpoint}`,
-    );
+    const url = new URL(`${this.baseUrl}/${this.credentials.realmId}${endpoint}`);
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, String(value));
     }
@@ -246,10 +241,7 @@ export class SOSApiClient {
         });
 
         if (!retryResponse.ok) {
-          throw new SOSApiError(
-            `SOS API error: ${retryResponse.status}`,
-            retryResponse.status,
-          );
+          throw new SOSApiError(`SOS API error: ${retryResponse.status}`, retryResponse.status);
         }
 
         return retryResponse.json() as Promise<T>;
@@ -262,10 +254,7 @@ export class SOSApiClient {
           status: response.status,
           error: text,
         });
-        throw new SOSApiError(
-          `SOS API error: ${response.status}`,
-          response.status,
-        );
+        throw new SOSApiError(`SOS API error: ${response.status}`, response.status);
       }
 
       return response.json() as Promise<T>;
@@ -283,10 +272,7 @@ export class SOSApiClient {
     let page = 0;
 
     while (page < maxPages) {
-      const response = await this.request<SOSPagedResponse<SOSItem>>(
-        "/item",
-        { limit, offset },
-      );
+      const response = await this.request<SOSPagedResponse<SOSItem>>("/item", { limit, offset });
 
       results.push(...response.data);
 
@@ -312,10 +298,10 @@ export class SOSApiClient {
     let page = 0;
 
     while (page < maxPages) {
-      const response = await this.request<SOSPagedResponse<SOSVendor>>(
-        "/vendor",
-        { limit, offset },
-      );
+      const response = await this.request<SOSPagedResponse<SOSVendor>>("/vendor", {
+        limit,
+        offset,
+      });
 
       results.push(...response.data);
 
@@ -341,10 +327,10 @@ export class SOSApiClient {
     let page = 0;
 
     while (page < maxPages) {
-      const response = await this.request<SOSPagedResponse<SOSLocation>>(
-        "/location",
-        { limit, offset },
-      );
+      const response = await this.request<SOSPagedResponse<SOSLocation>>("/location", {
+        limit,
+        offset,
+      });
 
       results.push(...response.data);
 
@@ -370,9 +356,10 @@ export class SOSApiClient {
     let page = 0;
 
     while (page < maxPages) {
-      const response = await this.request<
-        SOSPagedResponse<SOSInventoryLocation>
-      >("/inventorylocation", { limit, offset });
+      const response = await this.request<SOSPagedResponse<SOSInventoryLocation>>(
+        "/inventorylocation",
+        { limit, offset },
+      );
 
       results.push(...response.data);
 

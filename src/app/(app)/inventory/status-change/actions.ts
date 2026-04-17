@@ -9,9 +9,7 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
-import {
-  changeStockStatusSchema,
-} from "@/lib/validation/stock-status";
+import { changeStockStatusSchema } from "@/lib/validation/stock-status";
 
 export type { ActionResult };
 

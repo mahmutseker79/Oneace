@@ -103,8 +103,21 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
   const pathname = usePathname();
 
   // ── Group expansion state ──────────────────────────────────────
-  const inventoryPaths = ["/categories", "/suppliers", "/purchase-orders", "/labels", "/pallets", "/scan"];
-  const operationsPaths = ["/movements", "/transfers", "/departments", "/inventory/status-change", "/vehicles"];
+  const inventoryPaths = [
+    "/categories",
+    "/suppliers",
+    "/purchase-orders",
+    "/labels",
+    "/pallets",
+    "/scan",
+  ];
+  const operationsPaths = [
+    "/movements",
+    "/transfers",
+    "/departments",
+    "/inventory/status-change",
+    "/vehicles",
+  ];
   const fulfillmentPaths = ["/sales-orders", "/kits", "/picks"];
   const adminPaths = ["/users", "/audit", "/settings", "/integrations"];
 
@@ -117,9 +130,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
   const [fulfillmentOpen, setFulfillmentOpen] = useState(
     fulfillmentPaths.some((p) => pathname.startsWith(p)),
   );
-  const [adminOpen, setAdminOpen] = useState(
-    adminPaths.some((p) => pathname.startsWith(p)),
-  );
+  const [adminOpen, setAdminOpen] = useState(adminPaths.some((p) => pathname.startsWith(p)));
 
   // ── Core — always visible, no heading ──────────────────────────
   const coreGroup: NavGroup = {
@@ -146,7 +157,11 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     { label: labels.nav.movements, href: "/movements", icon: ArrowLeftRight },
     { label: labels.nav.transfers ?? "Transfers", href: "/transfers", icon: ArrowLeftRight },
     { label: labels.nav.departments ?? "Departments", href: "/departments", icon: Warehouse },
-    { label: labels.nav.statusChange ?? "Status Change", href: "/inventory/status-change", icon: ToggleRight },
+    {
+      label: labels.nav.statusChange ?? "Status Change",
+      href: "/inventory/status-change",
+      icon: ToggleRight,
+    },
     { label: labels.nav.vehicles ?? "Vehicles", href: "/vehicles", icon: Truck },
   ];
 

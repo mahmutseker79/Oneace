@@ -190,4 +190,3 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ organization: updated }, { status: 200 });
 }
-

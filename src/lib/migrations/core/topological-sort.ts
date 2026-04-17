@@ -40,13 +40,7 @@ export function sortCategoriesByParent(categories: RawCategory[]): SortResult {
 
   for (const cat of categories) {
     if (!visited.has(cat.externalId)) {
-      const cycle = detectCycleDfsS6(
-        cat.externalId,
-        byId,
-        visited,
-        recursionStack,
-        cycleDetected,
-      );
+      const cycle = detectCycleDfsS6(cat.externalId, byId, visited, recursionStack, cycleDetected);
       if (cycle && cycle.length > 0) {
         issues.push({
           severity: "ERROR",
@@ -64,9 +58,7 @@ export function sortCategoriesByParent(categories: RawCategory[]): SortResult {
   cycleNodeIds.push(...cycleDetected);
 
   // Filter out cyclic categories for best-effort sort.
-  const acyclicCategories = categories.filter(
-    (c) => !cycleDetected.has(c.externalId),
-  );
+  const acyclicCategories = categories.filter((c) => !cycleDetected.has(c.externalId));
 
   // Perform topological sort using Kahn's algorithm on acyclic subset.
   const inDegree = new Map<string, number>();
@@ -81,10 +73,7 @@ export function sortCategoriesByParent(categories: RawCategory[]): SortResult {
     if (cat.parentExternalId && byId.has(cat.parentExternalId)) {
       // Only add dependency if parent is also acyclic.
       if (!cycleDetected.has(cat.parentExternalId)) {
-        inDegree.set(
-          cat.externalId,
-          (inDegree.get(cat.externalId) ?? 0) + 1,
-        );
+        inDegree.set(cat.externalId, (inDegree.get(cat.externalId) ?? 0) + 1);
         const parents = dependsOn.get(cat.parentExternalId) ?? [];
         parents.push(cat.externalId);
         dependsOn.set(cat.parentExternalId, parents);
@@ -144,13 +133,7 @@ function detectCycleDfsS6(
   }
 
   if (!visited.has(parentId)) {
-    const cycle = detectCycleDfsS6(
-      parentId,
-      byId,
-      visited,
-      recursionStack,
-      cycleDetected,
-    );
+    const cycle = detectCycleDfsS6(parentId, byId, visited, recursionStack, cycleDetected);
     if (cycle.length > 0) {
       return cycle;
     }

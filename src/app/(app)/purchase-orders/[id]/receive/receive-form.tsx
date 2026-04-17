@@ -277,16 +277,12 @@ export function ReceiveForm({
         <div className="flex items-start gap-3">
           <CheckCircle2 className="h-5 w-5 text-success" />
           <div className="flex-1 space-y-2">
-            <h2 className="text-base font-semibold text-success">
-              {labels.successTitle}
-            </h2>
+            <h2 className="text-base font-semibold text-success">{labels.successTitle}</h2>
             <p className="text-sm text-success/80">
               {labels.successBody(success.receivedLineCount)}
             </p>
             {success.fullyReceived ? (
-              <p className="text-sm text-success/80">
-                {labels.successFullyReceived}
-              </p>
+              <p className="text-sm text-success/80">{labels.successFullyReceived}</p>
             ) : null}
             <div className="flex flex-wrap gap-2 pt-2">
               <Button variant="outline" asChild>
@@ -415,11 +411,7 @@ export function ReceiveForm({
                 return (
                   <TableRow
                     key={line.id}
-                    className={
-                      isHighlighted
-                        ? "bg-success-light transition-colors"
-                        : undefined
-                    }
+                    className={isHighlighted ? "bg-success-light transition-colors" : undefined}
                   >
                     <TableCell className="font-medium">{line.itemName}</TableCell>
                     <TableCell className="font-mono text-xs">{line.itemSku}</TableCell>

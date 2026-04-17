@@ -12,9 +12,14 @@
  */
 
 import { db } from "@/lib/db";
+import SyncEngine, {
+  type SyncContext,
+  type SyncResult,
+  type SyncEntity,
+} from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
-import SyncEngine, { type SyncContext, type SyncResult, type SyncEntity } from "@/lib/integrations/sync-engine";
-import BigCommerceClient, { type BigCommerceProduct, type BigCommerceOrder } from "./bigcommerce-client";
+import type BigCommerceClient from "./bigcommerce-client";
+import type { BigCommerceOrder, BigCommerceProduct } from "./bigcommerce-client";
 
 interface BigCommerceSyncSettings {
   itemIdMap?: Record<string, string>;
@@ -136,7 +141,10 @@ export class BigCommerceSyncEngine extends SyncEngine {
               });
 
               if (item) {
-                const totalStock = item.stockLevels.reduce((sum: number, sl: any) => sum + sl.quantity, 0);
+                const totalStock = item.stockLevels.reduce(
+                  (sum: number, sl: any) => sum + sl.quantity,
+                  0,
+                );
                 await this.client.updateInventory(product.id, totalStock);
                 result.itemsSynced++;
               }

@@ -1,10 +1,12 @@
 "use client";
 
-import { CheckCircle2, Loader2, PackageOpen, TriangleAlert } from "lucide-react";import { useRouter } from "next/navigation";
+import { CheckCircle2, Loader2, PackageOpen, TriangleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -192,12 +194,8 @@ export function PutawayForm({
         <div className="flex items-start gap-3">
           <CheckCircle2 className="h-5 w-5 text-success" />
           <div className="flex-1 space-y-2">
-            <h2 className="text-base font-semibold text-success">
-              {labels.successTitle}
-            </h2>
-            <p className="text-sm text-success/80">
-              {labels.successBody(success.count)}
-            </p>
+            <h2 className="text-base font-semibold text-success">{labels.successTitle}</h2>
+            <p className="text-sm text-success/80">{labels.successBody(success.count)}</p>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" asChild>
                 <a href={backHref}>{labels.viewPo}</a>

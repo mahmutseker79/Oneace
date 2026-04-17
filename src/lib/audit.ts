@@ -147,6 +147,8 @@ export type AuditAction =
   | "migration.rollback"
   | "migration.sourceFiles.cleanup"
   | "migration.blob.cleanup"
+  | "migration.credentials.decrypted"
+  | "migration.credentials.reused"
   // --- Phase V4: Reason Codes -----------------------------------------------
   | "reason_code.created"
   | "reason_code.updated"

@@ -12,9 +12,14 @@
  * Batch processing with error isolation.
  */
 
-import SyncEngine, { type SyncContext, type SyncEntity, type SyncResult } from "@/lib/integrations/sync-engine";
-import WixClient, { type WixProduct, type WixOrder, type WixInventory } from "./wix-client";
+import SyncEngine, {
+  type SyncContext,
+  type SyncEntity,
+  type SyncResult,
+} from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
+import type WixClient from "./wix-client";
+import type { WixInventory, WixOrder, WixProduct } from "./wix-client";
 
 interface WixSyncContext extends SyncContext {
   wixClient: WixClient;

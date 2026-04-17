@@ -37,10 +37,7 @@ function revalidateZones(countId: string) {
 /**
  * Create a new count zone
  */
-export async function createZoneAction(
-  countId: string,
-  input: unknown,
-): Promise<ActionResult> {
+export async function createZoneAction(countId: string, input: unknown): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -124,10 +121,7 @@ export async function createZoneAction(
 /**
  * Update a count zone
  */
-export async function updateZoneAction(
-  zoneId: string,
-  input: unknown,
-): Promise<ActionResult> {
+export async function updateZoneAction(zoneId: string, input: unknown): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -212,7 +206,9 @@ export async function updateZoneAction(
 /**
  * Delete a count zone
  */
-export async function deleteZoneAction(zoneId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function deleteZoneAction(
+  zoneId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -270,9 +266,7 @@ export type CountZoneData = {
   _count: { entries: number };
 };
 
-export type ListZonesResult =
-  | { ok: true; zones: CountZoneData[] }
-  | { ok: false; error: string };
+export type ListZonesResult = { ok: true; zones: CountZoneData[] } | { ok: false; error: string };
 
 /**
  * List all zones for a stock count
@@ -317,7 +311,9 @@ export async function listZonesAction(countId: string): Promise<ListZonesResult>
 /**
  * Generate barcodes for all zones in a stock count that don't have one
  */
-export async function generateZoneBarcodesAction(countId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function generateZoneBarcodesAction(
+  countId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 

@@ -12,9 +12,14 @@
  */
 
 import { db } from "@/lib/db";
+import SyncEngine, {
+  type SyncContext,
+  type SyncResult,
+  type SyncEntity,
+} from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
-import SyncEngine, { type SyncContext, type SyncResult, type SyncEntity } from "@/lib/integrations/sync-engine";
-import MagentoClient, { type MagentoProduct, type MagentoOrder } from "./magento-client";
+import type MagentoClient from "./magento-client";
+import type { MagentoOrder, MagentoProduct } from "./magento-client";
 
 interface MagentoSyncSettings {
   skuMap?: Record<string, string>; // itemId -> sku
@@ -104,7 +109,7 @@ export class MagentoSyncEngine extends SyncEngine {
       const skuMap = settings.skuMap || {};
 
       // Fetch all products from Magento with pagination
-      let pageSize = 100;
+      const pageSize = 100;
       let currentPage = 1;
       let totalProducts = 0;
 
@@ -289,7 +294,7 @@ export class MagentoSyncEngine extends SyncEngine {
       const skuMap = settings.skuMap || {};
 
       // Fetch all orders from Magento with pagination
-      let pageSize = 100;
+      const pageSize = 100;
       let currentPage = 1;
       let totalOrders = 0;
 
@@ -483,7 +488,7 @@ export class MagentoSyncEngine extends SyncEngine {
       }
 
       // Fetch all products and their inventory
-      let pageSize = 100;
+      const pageSize = 100;
       let currentPage = 1;
       let totalProducts = 0;
 
@@ -493,9 +498,7 @@ export class MagentoSyncEngine extends SyncEngine {
 
         for (const product of response.items) {
           try {
-            const itemId = Object.entries(skuMap).find(
-              ([_, sku]) => sku === product.sku,
-            )?.[0];
+            const itemId = Object.entries(skuMap).find(([_, sku]) => sku === product.sku)?.[0];
 
             if (!itemId) {
               result.itemsSkipped++;
@@ -581,7 +584,9 @@ export class MagentoSyncEngine extends SyncEngine {
   /**
    * Map Magento order status to OneAce SalesOrderStatus.
    */
-  private mapOrderStatus(magentoStatus: string): "DRAFT" | "CONFIRMED" | "ALLOCATED" | "PARTIALLY_SHIPPED" | "SHIPPED" | "CANCELLED" {
+  private mapOrderStatus(
+    magentoStatus: string,
+  ): "DRAFT" | "CONFIRMED" | "ALLOCATED" | "PARTIALLY_SHIPPED" | "SHIPPED" | "CANCELLED" {
     const statusMap: Record<string, "DRAFT" | "CONFIRMED" | "SHIPPED" | "CANCELLED"> = {
       pending: "DRAFT",
       processing: "CONFIRMED",

@@ -6,7 +6,7 @@
  * Supports Catalog Items, Orders, Inventory, Pricing, Reports, Feeds, Returns, Finances, and more.
  */
 
-import { createHash, createHmac } from "crypto";
+import { createHash, createHmac } from "node:crypto";
 import {
   IntegrationClient,
   type OAuthConfig,
@@ -23,7 +23,14 @@ const AMAZON_OAUTH_CONFIG: OAuthConfig = {
   revokeUrl: "https://api.amazon.com/auth/o2/revoke",
 };
 
-export type AmazonMarketplaceId = "ATVPDKIKX0DER" | "A2EUQ1WTGCTBG2" | "A1AM78C64UB0OA" | "A1RKKPMR34TE24" | "A2Q3Y263D00KWC" | "A1PA6795UKMFR9" | "A1UNQM078FC6HJ";
+export type AmazonMarketplaceId =
+  | "ATVPDKIKX0DER"
+  | "A2EUQ1WTGCTBG2"
+  | "A1AM78C64UB0OA"
+  | "A1RKKPMR34TE24"
+  | "A2Q3Y263D00KWC"
+  | "A1PA6795UKMFR9"
+  | "A1UNQM078FC6HJ";
 
 export interface AmazonRateLimitConfig {
   /**
@@ -125,27 +132,27 @@ export class AmazonClient extends IntegrationClient {
   private spApiRegionUrl = "https://sellingpartnerapi-na.amazon.com";
   private spApiAuthUrl = "https://api.amazon.com/auth/o2/token";
   private restrictedDataToken: string | null = null;
-  private rdtExpiry: number = 0;
+  private rdtExpiry = 0;
   private rateLimitBuckets: Map<string, { tokens: number; lastRefill: number }> = new Map();
   private rateLimits: AmazonRateLimitConfig = {
-    "Catalog": 5,
-    "Orders": 10,
-    "Inventory": 10,
-    "Pricing": 5,
-    "Reports": 10,
-    "Feeds": 15,
-    "FulfillmentInbound": 2,
-    "FulfillmentOutbound": 10,
-    "Returns": 10,
-    "Finances": 3,
-    "ProductFees": 10,
-    "Notifications": 10,
+    Catalog: 5,
+    Orders: 10,
+    Inventory: 10,
+    Pricing: 5,
+    Reports: 10,
+    Feeds: 15,
+    FulfillmentInbound: 2,
+    FulfillmentOutbound: 10,
+    Returns: 10,
+    Finances: 3,
+    ProductFees: 10,
+    Notifications: 10,
   };
 
   constructor(
     credentials: OAuthToken,
     marketplaceId: AmazonMarketplaceId = "ATVPDKIKX0DER",
-    sellerRegistration: string = "",
+    sellerRegistration = "",
     spApiRegion: "na" | "eu" | "fe" = "na",
   ) {
     super(AMAZON_OAUTH_CONFIG, credentials, {
@@ -236,9 +243,12 @@ export class AmazonClient extends IntegrationClient {
     // Build string to sign
     const algorithm = "AWS4-HMAC-SHA256";
     const credentialScope = `${datestamp}/us-east-1/execute-api/aws4_request`;
-    const stringToSign = [algorithm, timestamp, credentialScope, this.hashPayload(canonicalRequest)].join(
-      "\n",
-    );
+    const stringToSign = [
+      algorithm,
+      timestamp,
+      credentialScope,
+      this.hashPayload(canonicalRequest),
+    ].join("\n");
 
     // Sign the request
     const signature = this.calculateSignature(
@@ -285,7 +295,10 @@ export class AmazonClient extends IntegrationClient {
    */
   private async applyRateLimit(apiSection: string): Promise<void> {
     const limit = this.rateLimits[apiSection] || 5;
-    const bucket = this.rateLimitBuckets.get(apiSection) || { tokens: limit, lastRefill: Date.now() };
+    const bucket = this.rateLimitBuckets.get(apiSection) || {
+      tokens: limit,
+      lastRefill: Date.now(),
+    };
 
     const now = Date.now();
     const timeSinceLastRefill = (now - bucket.lastRefill) / 1000;
@@ -649,9 +662,7 @@ export class AmazonClient extends IntegrationClient {
   /**
    * Get FBM (Fulfillment by Merchant) inventory.
    */
-  async getFBMInventory(
-    skus: string[],
-  ): Promise<{
+  async getFBMInventory(skus: string[]): Promise<{
     inventories: AmazonInventory[];
   }> {
     const response = await this.spApiCall<{
@@ -929,15 +940,16 @@ export class AmazonClient extends IntegrationClient {
     });
 
     return {
-      events: response.FinancialEvents.OrderFulfillmentEvents?.map((evt) => ({
-        orderId: evt.AmazonOrderId,
-        eventId: evt.EventId,
-        eventType: "OrderFulfillment",
-        postDate: evt.PostedDate,
-        amount: evt.FulfillmentChannelFeeAdjustmentEvents?.[0]?.Amount?.Value
-          ? Number(evt.FulfillmentChannelFeeAdjustmentEvents[0].Amount.Value)
-          : undefined,
-      })) || [],
+      events:
+        response.FinancialEvents.OrderFulfillmentEvents?.map((evt) => ({
+          orderId: evt.AmazonOrderId,
+          eventId: evt.EventId,
+          eventType: "OrderFulfillment",
+          postDate: evt.PostedDate,
+          amount: evt.FulfillmentChannelFeeAdjustmentEvents?.[0]?.Amount?.Value
+            ? Number(evt.FulfillmentChannelFeeAdjustmentEvents[0].Amount.Value)
+            : undefined,
+        })) || [],
       nextToken: response.NextToken,
     };
   }

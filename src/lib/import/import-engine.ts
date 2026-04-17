@@ -62,11 +62,7 @@ export class ImportEngine {
   private rowProcessor: RowProcessor;
   private options: ImportOptions;
 
-  constructor(
-    entity: ImportEntity,
-    fieldMappings: FieldMapping[],
-    options: ImportOptions = {},
-  ) {
+  constructor(entity: ImportEntity, fieldMappings: FieldMapping[], options: ImportOptions = {}) {
     this.fieldMapper = new FieldMapper(entity);
     this.rowProcessor = new RowProcessor(entity, fieldMappings, {
       skipEmptyRows: true,
@@ -381,8 +377,7 @@ export class ImportEngine {
       const poNumber = typeof data.poNumber === "string" ? data.poNumber : "";
       const notes = typeof data.notes === "string" ? data.notes : null;
       const orderDate = typeof data.orderDate === "string" ? new Date(data.orderDate) : new Date();
-      const dueDate =
-        typeof data.dueDate === "string" ? new Date(data.dueDate) : undefined;
+      const dueDate = typeof data.dueDate === "string" ? new Date(data.dueDate) : undefined;
 
       await db.purchaseOrder.upsert({
         where: {
@@ -515,7 +510,8 @@ export class ImportEngine {
       const data = row.data as Record<string, unknown>;
 
       const warehouseName = typeof data.name === "string" ? data.name : "Unnamed";
-      const code = typeof data.code === "string" ? data.code : warehouseName.substring(0, 4).toUpperCase();
+      const code =
+        typeof data.code === "string" ? data.code : warehouseName.substring(0, 4).toUpperCase();
 
       await db.warehouse
         .create({

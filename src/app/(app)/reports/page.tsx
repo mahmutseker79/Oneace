@@ -261,7 +261,6 @@ export default async function ReportsPage() {
     },
   ];
 
-
   // Helper for premium report card rendering
   function renderReportCard(report: {
     href: string;
@@ -296,10 +295,7 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <PageHeader
-        title={t.reports.heading}
-        description={t.reports.subtitle}
-      />
+      <PageHeader title={t.reports.heading} description={t.reports.subtitle} />
 
       {/* Phase 15.2 — exports upgrade prompt for FREE users */}
       {!canExportByPlan ? (

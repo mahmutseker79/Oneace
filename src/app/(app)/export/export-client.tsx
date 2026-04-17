@@ -6,9 +6,9 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import {
   exportItemsAction,
-  exportStockLevelsAction,
   exportMovementsAction,
   exportPurchaseOrdersAction,
+  exportStockLevelsAction,
 } from "./actions";
 
 interface ExportClientProps {
@@ -26,7 +26,7 @@ export function ExportClient({ exportType, label, formats }: ExportClientProps) 
 
     startTransition(async () => {
       try {
-        let result;
+        let result: Awaited<ReturnType<typeof exportItemsAction>>;
 
         switch (exportType) {
           case "ITEM":

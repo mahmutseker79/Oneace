@@ -31,21 +31,9 @@ const PX_PER_MM = 3;
 
 export type LabelType = "BIN" | "ITEM" | "WAREHOUSE" | "CUSTOM";
 
-export type BarcodeFormat =
-  | "CODE128"
-  | "CODE39"
-  | "EAN13"
-  | "UPC_A"
-  | "ITF14"
-  | "QR";
+export type BarcodeFormat = "CODE128" | "CODE39" | "EAN13" | "UPC_A" | "ITF14" | "QR";
 
-export type LabelFieldKind =
-  | "barcode"
-  | "sku"
-  | "name"
-  | "binCode"
-  | "warehouseCode"
-  | "custom";
+export type LabelFieldKind = "barcode" | "sku" | "name" | "binCode" | "warehouseCode" | "custom";
 
 export interface LabelField {
   id: string;
@@ -272,18 +260,13 @@ export function LabelCanvas({ initial, onChange, sample }: LabelCanvasProps) {
           </div>
           <ul className="space-y-2">
             {fields.map((field, index) => (
-              <li
-                key={field.id}
-                className="space-y-2 rounded-md border bg-muted/30 p-3 text-xs"
-              >
+              <li key={field.id} className="space-y-2 rounded-md border bg-muted/30 p-3 text-xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <GripVertical className="h-3 w-3 text-muted-foreground" />
                     <Select
                       value={field.kind}
-                      onValueChange={(v) =>
-                        updateField(field.id, { kind: v as LabelFieldKind })
-                      }
+                      onValueChange={(v) => updateField(field.id, { kind: v as LabelFieldKind })}
                     >
                       <SelectTrigger className="h-7 w-[140px]">
                         <SelectValue />

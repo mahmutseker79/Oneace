@@ -34,10 +34,9 @@ export async function storeUploadedFiles(
   ctx: Context,
   organizationId: string,
   migrationJobId: string,
-  files: UploadedFile[]
+  files: UploadedFile[],
 ): Promise<StoredFile[]> {
-  const hasBlob =
-    env.BLOB_READ_WRITE_TOKEN && env.BLOB_READ_WRITE_TOKEN.length > 0;
+  const hasBlob = env.BLOB_READ_WRITE_TOKEN && env.BLOB_READ_WRITE_TOKEN.length > 0;
 
   const result: StoredFile[] = [];
 
@@ -103,7 +102,7 @@ export async function storeUploadedFiles(
 export async function loadStoredFiles(
   ctx: Context,
   organizationId: string,
-  migrationJobId: string
+  migrationJobId: string,
 ): Promise<UploadedFile[]> {
   // Fetch the job to get sourceFiles
   const job = await ctx.db.migrationJob.findUnique({
@@ -115,7 +114,7 @@ export async function loadStoredFiles(
     return [];
   }
 
-  const storedFiles = job.sourceFiles as StoredFile[];
+  const storedFiles = job.sourceFiles as unknown as StoredFile[];
   const result: UploadedFile[] = [];
 
   for (const stored of storedFiles) {

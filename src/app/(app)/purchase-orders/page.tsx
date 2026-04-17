@@ -264,150 +264,154 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
             ) : null}
           </div>
           <Card>
-          <CardContent className="p-0">
-          <ResponsiveTable
-            cardView={orders.map((po) => {
-              let total = 0;
-              for (const line of po.lines) total += line.orderedQty * Number(line.unitCost);
-              const isOverdue =
-                po.expectedAt &&
-                new Date(po.expectedAt) < new Date() &&
-                po.status !== "RECEIVED" &&
-                po.status !== "CANCELLED";
-
-              const statusBadge =
-                po.status === "RECEIVED" ? (
-                  <Badge className="bg-success text-[10px] text-white">
-                    {t.purchaseOrders.statusBadge[po.status]}
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant={po.status === "CANCELLED" ? "secondary" : "outline"}
-                    className="text-[10px]"
-                  >
-                    {t.purchaseOrders.statusBadge[po.status]}
-                  </Badge>
-                );
-
-              return (
-                <MobileCard
-                  key={po.id}
-                  href={`/purchase-orders/${po.id}`}
-                  title={po.poNumber}
-                  badge={statusBadge}
-                  fields={[
-                    {
-                      label: t.purchaseOrders.columnSupplier,
-                      value: po.supplier.name,
-                    },
-                    {
-                      label: t.purchaseOrders.columnTotal,
-                      value: formatCurrency(total, {
-                        locale: region.numberLocale,
-                        currency: po.currency,
-                      }),
-                    },
-                    {
-                      label: t.purchaseOrders.columnOrderDate,
-                      value: formatDateOrDash(po.orderedAt, region.numberLocale),
-                    },
-                    ...(po.expectedAt
-                      ? [
-                          {
-                            label: t.purchaseOrders.columnExpected,
-                            value: (
-                              <span className={isOverdue ? "text-destructive" : ""}>
-                                {isOverdue ? (
-                                  <AlertTriangle className="h-3 w-3 inline mr-1" />
-                                ) : null}
-                                {formatDateOrDash(po.expectedAt, region.numberLocale)}
-                              </span>
-                            ),
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-              );
-            })}
-          >
-            <Table className="min-w-[700px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t.purchaseOrders.columnPoNumber}</TableHead>
-                  <TableHead>{t.purchaseOrders.columnSupplier}</TableHead>
-                  <TableHead>{t.purchaseOrders.columnWarehouse}</TableHead>
-                  <TableHead>{t.purchaseOrders.columnStatus}</TableHead>
-                  <TableHead className="text-right">{t.purchaseOrders.columnTotal}</TableHead>
-                  <TableHead>{t.purchaseOrders.columnOrderDate}</TableHead>
-                  <TableHead>{t.purchaseOrders.columnExpected}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((po) => {
+            <CardContent className="p-0">
+              <ResponsiveTable
+                cardView={orders.map((po) => {
                   let total = 0;
-                  for (const line of po.lines) {
-                    total += line.orderedQty * Number(line.unitCost);
-                  }
+                  for (const line of po.lines) total += line.orderedQty * Number(line.unitCost);
+                  const isOverdue =
+                    po.expectedAt &&
+                    new Date(po.expectedAt) < new Date() &&
+                    po.status !== "RECEIVED" &&
+                    po.status !== "CANCELLED";
+
+                  const statusBadge =
+                    po.status === "RECEIVED" ? (
+                      <Badge className="bg-success text-[10px] text-white">
+                        {t.purchaseOrders.statusBadge[po.status]}
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant={po.status === "CANCELLED" ? "secondary" : "outline"}
+                        className="text-[10px]"
+                      >
+                        {t.purchaseOrders.statusBadge[po.status]}
+                      </Badge>
+                    );
+
                   return (
-                    <TableRow key={po.id}>
-                      <TableCell className="font-mono text-xs">
-                        <Link href={`/purchase-orders/${po.id}`} className="hover:underline">
-                          {po.poNumber}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{po.supplier.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{po.warehouse.name}</TableCell>
-                      {/* Phase 3.7 — RECEIVED = emerald (semantically "done"),
-                              not primary/indigo which reads as "active/in-progress". */}
-                      <TableCell>
-                        {po.status === "RECEIVED" ? (
-                          <Badge className="bg-success text-white hover:bg-success/90">
-                            {t.purchaseOrders.statusBadge[po.status]}
-                          </Badge>
-                        ) : (
-                          <Badge variant={po.status === "CANCELLED" ? "secondary" : "outline"}>
-                            {t.purchaseOrders.statusBadge[po.status]}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(total, {
-                          locale: region.numberLocale,
-                          currency: po.currency,
-                        })}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDateOrDash(po.orderedAt, region.numberLocale)}
-                      </TableCell>
-                      {/* Phase 3.6 — overdue expected date shown in red. */}
-                      <TableCell>
-                        {po.expectedAt ? (
-                          (() => {
-                            const isOverdue =
-                              new Date(po.expectedAt) < new Date() &&
-                              po.status !== "RECEIVED" &&
-                              po.status !== "CANCELLED";
-                            return (
-                              <span
-                                className={`flex items-center gap-1 ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}
-                              >
-                                {isOverdue ? <AlertTriangle className="h-3 w-3 shrink-0" /> : null}
-                                {formatDateOrDash(po.expectedAt, region.numberLocale)}
-                              </span>
-                            );
-                          })()
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                    <MobileCard
+                      key={po.id}
+                      href={`/purchase-orders/${po.id}`}
+                      title={po.poNumber}
+                      badge={statusBadge}
+                      fields={[
+                        {
+                          label: t.purchaseOrders.columnSupplier,
+                          value: po.supplier.name,
+                        },
+                        {
+                          label: t.purchaseOrders.columnTotal,
+                          value: formatCurrency(total, {
+                            locale: region.numberLocale,
+                            currency: po.currency,
+                          }),
+                        },
+                        {
+                          label: t.purchaseOrders.columnOrderDate,
+                          value: formatDateOrDash(po.orderedAt, region.numberLocale),
+                        },
+                        ...(po.expectedAt
+                          ? [
+                              {
+                                label: t.purchaseOrders.columnExpected,
+                                value: (
+                                  <span className={isOverdue ? "text-destructive" : ""}>
+                                    {isOverdue ? (
+                                      <AlertTriangle className="h-3 w-3 inline mr-1" />
+                                    ) : null}
+                                    {formatDateOrDash(po.expectedAt, region.numberLocale)}
+                                  </span>
+                                ),
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
                   );
                 })}
-              </TableBody>
-            </Table>
-          </ResponsiveTable>
-          </CardContent>
+              >
+                <Table className="min-w-[700px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t.purchaseOrders.columnPoNumber}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnSupplier}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnWarehouse}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnStatus}</TableHead>
+                      <TableHead className="text-right">{t.purchaseOrders.columnTotal}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnOrderDate}</TableHead>
+                      <TableHead>{t.purchaseOrders.columnExpected}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((po) => {
+                      let total = 0;
+                      for (const line of po.lines) {
+                        total += line.orderedQty * Number(line.unitCost);
+                      }
+                      return (
+                        <TableRow key={po.id}>
+                          <TableCell className="font-mono text-xs">
+                            <Link href={`/purchase-orders/${po.id}`} className="hover:underline">
+                              {po.poNumber}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{po.supplier.name}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {po.warehouse.name}
+                          </TableCell>
+                          {/* Phase 3.7 — RECEIVED = emerald (semantically "done"),
+                              not primary/indigo which reads as "active/in-progress". */}
+                          <TableCell>
+                            {po.status === "RECEIVED" ? (
+                              <Badge className="bg-success text-white hover:bg-success/90">
+                                {t.purchaseOrders.statusBadge[po.status]}
+                              </Badge>
+                            ) : (
+                              <Badge variant={po.status === "CANCELLED" ? "secondary" : "outline"}>
+                                {t.purchaseOrders.statusBadge[po.status]}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(total, {
+                              locale: region.numberLocale,
+                              currency: po.currency,
+                            })}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDateOrDash(po.orderedAt, region.numberLocale)}
+                          </TableCell>
+                          {/* Phase 3.6 — overdue expected date shown in red. */}
+                          <TableCell>
+                            {po.expectedAt ? (
+                              (() => {
+                                const isOverdue =
+                                  new Date(po.expectedAt) < new Date() &&
+                                  po.status !== "RECEIVED" &&
+                                  po.status !== "CANCELLED";
+                                return (
+                                  <span
+                                    className={`flex items-center gap-1 ${isOverdue ? "text-destructive" : "text-muted-foreground"}`}
+                                  >
+                                    {isOverdue ? (
+                                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                                    ) : null}
+                                    {formatDateOrDash(po.expectedAt, region.numberLocale)}
+                                  </span>
+                                );
+                              })()
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </ResponsiveTable>
+            </CardContent>
           </Card>
         </>
       )}

@@ -76,9 +76,22 @@ export interface MigrationAdapter {
    * importer). API adapters (Cin7, SOS, QBO, inFlow-API) read their
    * `credentials` sub-object from it — they have no files to parse.
    */
-  parse(
+  parse(files: UploadedFile[], fieldMappings?: Record<string, unknown>): Promise<ParsedSnapshot>;
+
+  /**
+   * Optional scope-aware parse. API adapters (Cin7 / SOS / inFlow-API /
+   * QBO) implement this to apply `scope.poHistory` filters at fetch
+   * time (e.g. querying the vendor for "updatedAfter" so we don't pull
+   * a decade of POs only to discard them). CSV adapters don't need it —
+   * file contents are fixed at upload.
+   *
+   * The orchestrator prefers `parseWithScope` when present; otherwise it
+   * falls back to plain `parse` and the importer filters client-side.
+   */
+  parseWithScope?(
     files: UploadedFile[],
-    fieldMappings?: Record<string, unknown>,
+    fieldMappings: Record<string, unknown>,
+    scope: unknown,
   ): Promise<ParsedSnapshot>;
 
   /**
@@ -119,40 +132,24 @@ export interface MigrationAdapter {
  * For INFLOW, this returns the CSV adapter. To use API mode, the caller
  * must explicitly request INFLOW_API mode or check fieldMappings.credentials.
  */
-export async function getAdapterFor(
-  source: MigrationSource,
-): Promise<MigrationAdapter> {
+export async function getAdapterFor(source: MigrationSource): Promise<MigrationAdapter> {
   switch (source) {
     case "SORTLY":
-      return (
-        await import("@/lib/migrations/sortly/adapter")
-      ).SORTLY_ADAPTER;
+      return (await import("@/lib/migrations/sortly/adapter")).SORTLY_ADAPTER;
     case "INFLOW":
       // Dispatcher: check if fieldMappings has credentials to decide CSV vs API
       // For now, return CSV adapter. Orchestrator will switch to API if needed.
-      return (
-        await import("@/lib/migrations/inflow/adapter")
-      ).INFLOW_ADAPTER;
+      return (await import("@/lib/migrations/inflow/adapter")).INFLOW_ADAPTER;
     case "CIN7":
-      return (
-        await import("@/lib/migrations/cin7/adapter")
-      ).CIN7_ADAPTER;
+      return (await import("@/lib/migrations/cin7/adapter")).CIN7_ADAPTER;
     case "SOS_INVENTORY":
-      return (
-        await import("@/lib/migrations/sos-inventory/adapter")
-      ).SOS_INVENTORY_ADAPTER;
+      return (await import("@/lib/migrations/sos-inventory/adapter")).SOS_INVENTORY_ADAPTER;
     case "FISHBOWL":
-      return (
-        await import("@/lib/migrations/fishbowl/adapter")
-      ).FISHBOWL_ADAPTER;
+      return (await import("@/lib/migrations/fishbowl/adapter")).FISHBOWL_ADAPTER;
     case "QUICKBOOKS_ONLINE":
-      return (
-        await import("@/lib/migrations/quickbooks-online/adapter")
-      ).QBO_MIGRATION_ADAPTER;
+      return (await import("@/lib/migrations/quickbooks-online/adapter")).QBO_MIGRATION_ADAPTER;
     case "QUICKBOOKS_DESKTOP":
-      return (
-        await import("@/lib/migrations/quickbooks-desktop/adapter")
-      ).QBD_ADAPTER;
+      return (await import("@/lib/migrations/quickbooks-desktop/adapter")).QBD_ADAPTER;
     default:
       throw new Error(`No adapter for migration source: ${source}`);
   }
@@ -163,7 +160,5 @@ export async function getAdapterFor(
  * Called when the user chooses "Enter API credentials" instead of uploading files.
  */
 export async function getInflowApiAdapter(): Promise<MigrationAdapter> {
-  return (
-    await import("@/lib/migrations/inflow-api/adapter")
-  ).INFLOW_API_ADAPTER;
+  return (await import("@/lib/migrations/inflow-api/adapter")).INFLOW_API_ADAPTER;
 }

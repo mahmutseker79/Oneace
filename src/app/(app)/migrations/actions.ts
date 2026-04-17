@@ -7,33 +7,28 @@
 
 "use server";
 
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
+import type { MigrationSource, MigrationStatus } from "@/generated/prisma";
 import { recordAudit } from "@/lib/audit";
-import { revalidatePath } from "next/cache";
-import type {
-  MigrationSource,
-  MigrationStatus,
-} from "@/generated/prisma";
-import type { FieldMapping } from "@/lib/migrations/core/types";
+import { db } from "@/lib/db";
+import { getAdapterFor } from "@/lib/migrations/core/adapter";
+import { runMigrationImport } from "@/lib/migrations/core/importer";
+import { rollbackMigration } from "@/lib/migrations/core/rollback";
 import {
+  type MigrationScopeOptions,
   defaultScopeOptions,
   parseScopeOptions,
-  type MigrationScopeOptions,
 } from "@/lib/migrations/core/scope-options";
-import { rollbackMigration } from "@/lib/migrations/core/rollback";
-import { getAdapterFor } from "@/lib/migrations/core/adapter";
 import { loadStoredFiles } from "@/lib/migrations/core/source-file-store";
-import { runMigrationImport } from "@/lib/migrations/core/importer";
+import type { FieldMapping } from "@/lib/migrations/core/types";
+import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
+import { revalidatePath } from "next/cache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // createMigrationJobAction
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function createMigrationJobAction(
-  source: MigrationSource
-): Promise<{ id: string }> {
+export async function createMigrationJobAction(source: MigrationSource): Promise<{ id: string }> {
   const { membership, user } = await requireActiveMembership();
 
   if (!hasCapability(membership.role, "integrations.connect")) {
@@ -67,9 +62,7 @@ export async function createMigrationJobAction(
 // deleteMigrationJobAction
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function deleteMigrationJobAction(
-  id: string
-): Promise<{ success: boolean }> {
+export async function deleteMigrationJobAction(id: string): Promise<{ success: boolean }> {
   const { membership, user } = await requireActiveMembership();
 
   if (!hasCapability(membership.role, "integrations.connect")) {
@@ -129,9 +122,7 @@ export async function deleteMigrationJobAction(
 // cancelMigrationJobAction
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function cancelMigrationJobAction(
-  id: string
-): Promise<{ success: boolean }> {
+export async function cancelMigrationJobAction(id: string): Promise<{ success: boolean }> {
   const { membership, user } = await requireActiveMembership();
 
   if (!hasCapability(membership.role, "integrations.connect")) {
@@ -151,9 +142,7 @@ export async function cancelMigrationJobAction(
   }
 
   if (job.status === "IMPORTING") {
-    throw new Error(
-      "Cannot cancel during import. Use rollback after completion."
-    );
+    throw new Error("Cannot cancel during import. Use rollback after completion.");
   }
 
   if (["COMPLETED", "CANCELLED"].includes(job.status)) {
@@ -192,7 +181,7 @@ export async function saveMappingAction(
   payload: {
     fieldMappings: FieldMapping[];
     scopeOptions?: MigrationScopeOptions;
-  }
+  },
 ): Promise<{ success: boolean }> {
   const { membership, user } = await requireActiveMembership();
 
@@ -213,9 +202,7 @@ export async function saveMappingAction(
   }
 
   if (!["MAPPING_REVIEW", "VALIDATED"].includes(job.status)) {
-    throw new Error(
-      `Cannot edit mapping in ${job.status} state`
-    );
+    throw new Error(`Cannot edit mapping in ${job.status} state`);
   }
 
   const updateData: any = {
@@ -249,9 +236,7 @@ export async function saveMappingAction(
 // startMigrationAction
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function startMigrationAction(
-  id: string
-): Promise<{ success: boolean }> {
+export async function startMigrationAction(id: string): Promise<{ success: boolean }> {
   const { membership, user } = await requireActiveMembership();
 
   if (!hasCapability(membership.role, "integrations.connect")) {
@@ -271,9 +256,7 @@ export async function startMigrationAction(
   }
 
   if (!["VALIDATED", "FAILED"].includes(job.status)) {
-    throw new Error(
-      "Migration must be validated before starting"
-    );
+    throw new Error("Migration must be validated before starting");
   }
 
   // Audit fix (High-4): previously this server action called fetch() to
@@ -287,17 +270,10 @@ export async function startMigrationAction(
     data: { status: "IMPORTING", startedAt: new Date() },
   });
 
-  const uploadedFiles = await loadStoredFiles(
-    { db },
-    membership.organizationId,
-    id,
-  );
+  const uploadedFiles = await loadStoredFiles({ db }, membership.organizationId, id);
   const scope = parseScopeOptions(job.scopeOptions ?? defaultScopeOptions());
   const fieldMappings = (job.fieldMappings ?? {}) as Record<string, unknown>;
-  if (
-    fieldMappings.credentials &&
-    typeof fieldMappings.credentials === "object"
-  ) {
+  if (fieldMappings.credentials && typeof fieldMappings.credentials === "object") {
     (fieldMappings.credentials as Record<string, unknown>).organizationId =
       membership.organizationId;
   }
@@ -344,9 +320,7 @@ export async function startMigrationAction(
 // rollbackMigrationAction
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function rollbackMigrationAction(
-  id: string
-): Promise<{ success: boolean }> {
+export async function rollbackMigrationAction(id: string): Promise<{ success: boolean }> {
   const { membership, user } = await requireActiveMembership();
 
   if (!hasCapability(membership.role, "integrations.connect")) {

@@ -5,24 +5,24 @@
  */
 
 import type {
+  Cin7Attachment,
+  Cin7Location,
+  Cin7Product,
+  Cin7Purchase,
+  Cin7StockItem,
+  Cin7Supplier,
+} from "@/lib/migrations/cin7/api-client";
+import type {
   ParsedSnapshot,
   RawAttachment,
   RawItem,
   RawLocation,
+  RawPurchaseOrder,
+  RawPurchaseOrderLine,
   RawStockLevel,
   RawSupplier,
   RawWarehouse,
-  RawPurchaseOrder,
-  RawPurchaseOrderLine,
 } from "@/lib/migrations/core/types";
-import type {
-  Cin7Product,
-  Cin7Supplier,
-  Cin7Location,
-  Cin7StockItem,
-  Cin7Purchase,
-  Cin7Attachment,
-} from "@/lib/migrations/cin7/api-client";
 
 interface Cin7SnapshotInput {
   products: Cin7Product[];
@@ -63,9 +63,7 @@ export function parseCin7Snapshot(input: Cin7SnapshotInput): ParsedSnapshot {
   for (const product of input.products) {
     // Skip products without SKU
     if (!product.SKU || product.SKU.trim() === "") {
-      adapterWarnings.push(
-        `Product "${product.Name}" (ID: ${product.ID}) skipped: missing SKU`,
-      );
+      adapterWarnings.push(`Product "${product.Name}" (ID: ${product.ID}) skipped: missing SKU`);
       continue;
     }
 
@@ -114,9 +112,7 @@ export function parseCin7Snapshot(input: Cin7SnapshotInput): ParsedSnapshot {
 
   // Parse attachments
   const attachments: RawAttachment[] = [];
-  for (const [productId, atts] of Object.entries(
-    input.attachmentsByProduct,
-  )) {
+  for (const [productId, atts] of Object.entries(input.attachmentsByProduct)) {
     for (const att of atts) {
       attachments.push({
         itemExternalId: productId,

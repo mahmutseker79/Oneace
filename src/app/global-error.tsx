@@ -31,7 +31,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
   useEffect(() => {
     // Send to Sentry — no-op when DSN is unset.
     captureException(error);
-     
+
     console.error("[global-error] unhandled render error", {
       digest: error.digest,
       message: error.message,

@@ -4,20 +4,17 @@
  * POST /api/migrations/[id]/upload  — accept multipart file upload, store in sourceFiles
  */
 
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
 import { recordAudit } from "@/lib/audit";
-import { rateLimit } from "@/lib/rate-limit";
+import { db } from "@/lib/db";
 import { storeUploadedFiles } from "@/lib/migrations/core/source-file-store";
-import { NextRequest, NextResponse } from "next/server";
+import { hasCapability } from "@/lib/permissions";
+import { rateLimit } from "@/lib/rate-limit";
+import { requireActiveMembership } from "@/lib/session";
+import { type NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const { membership, user } = await requireActiveMembership();
@@ -26,7 +23,7 @@ export async function POST(
     if (!hasCapability(membership.role, "integrations.connect")) {
       return NextResponse.json(
         { error: "FORBIDDEN", message: "Insufficient permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -43,7 +40,7 @@ export async function POST(
           message: "Too many uploads. Try again later.",
           retryAfter: rl.reset,
         },
-        { status: 429, headers: { "Retry-After": String(rl.reset) } }
+        { status: 429, headers: { "Retry-After": String(rl.reset) } },
       );
     }
 
@@ -55,16 +52,13 @@ export async function POST(
     if (!job) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Migration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Tenant check
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
     // State check: PENDING or FILES_UPLOADED
@@ -75,7 +69,7 @@ export async function POST(
           message: "Cannot upload files in current state",
           currentStatus: job.status,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -86,7 +80,7 @@ export async function POST(
     if (!files || files.length === 0) {
       return NextResponse.json(
         { error: "BAD_REQUEST", message: "No files provided" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -101,16 +95,11 @@ export async function POST(
           mimeType: file.type || undefined,
           buffer: Buffer.from(await file.arrayBuffer()),
         };
-      })
+      }),
     );
 
     // Store files (handles blob upload or inline base64)
-    const storedFiles = await storeUploadedFiles(
-      { db },
-      job.organizationId,
-      id,
-      uploadedFiles
-    );
+    const storedFiles = await storeUploadedFiles({ db }, job.organizationId, id, uploadedFiles);
 
     // Update job status and sourceFiles
     const updated = await db.migrationJob.update({
@@ -136,7 +125,7 @@ export async function POST(
     console.error("POST /api/migrations/[id]/upload error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to upload files" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

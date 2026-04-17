@@ -78,8 +78,8 @@ export default async function ScheduledReportsPage() {
               <div>
                 <p className="font-medium">Scheduled reports are a Business feature</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Upgrade to Business to email reports on a recurring schedule — weekly
-                  inventory summaries, monthly variance digests, and more.
+                  Upgrade to Business to email reports on a recurring schedule — weekly inventory
+                  summaries, monthly variance digests, and more.
                 </p>
                 <Link href="/billing" className="mt-3 inline-block">
                   <Button size="sm">Upgrade plan</Button>
@@ -99,8 +99,8 @@ export default async function ScheduledReportsPage() {
         <CardContent>
           {reports.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              When you create a scheduled report it will show up here. Each run emails the
-              rendered report to the recipient list.
+              When you create a scheduled report it will show up here. Each run emails the rendered
+              report to the recipient list.
             </p>
           ) : (
             <Table>
@@ -136,9 +136,7 @@ export default async function ScheduledReportsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-xs">
-                      {r.nextSendAt
-                        ? new Date(r.nextSendAt).toLocaleString()
-                        : "—"}
+                      {r.nextSendAt ? new Date(r.nextSendAt).toLocaleString() : "—"}
                     </TableCell>
                     <TableCell>
                       {r.isActive ? (
@@ -198,8 +196,7 @@ function humanizeCron(expr: string): string {
   const [m, h, dom, , dow] = parts;
   if (dom === "*" && dow === "*") return `Daily at ${pad(h)}:${pad(m)}`;
   if (dom === "*" && dow !== "*") return `Weekly (${dayName(Number(dow))}) at ${pad(h)}:${pad(m)}`;
-  if (dom !== "*" && dow === "*")
-    return `Monthly on day ${dom} at ${pad(h)}:${pad(m)}`;
+  if (dom !== "*" && dow === "*") return `Monthly on day ${dom} at ${pad(h)}:${pad(m)}`;
   return expr;
 }
 

@@ -245,13 +245,10 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async createProduct(product: Partial<BigCommerceProduct>): Promise<BigCommerceProduct> {
     try {
-      const response = await this.apiCall<{ data: BigCommerceProduct }>(
-        "/catalog/products",
-        {
-          method: "POST",
-          body: product,
-        },
-      );
+      const response = await this.apiCall<{ data: BigCommerceProduct }>("/catalog/products", {
+        method: "POST",
+        body: product,
+      });
 
       return response.data.data;
     } catch (error) {
@@ -263,7 +260,10 @@ export class BigCommerceClient extends IntegrationClient {
   /**
    * Update a product.
    */
-  async updateProduct(productId: number, product: Partial<BigCommerceProduct>): Promise<BigCommerceProduct> {
+  async updateProduct(
+    productId: number,
+    product: Partial<BigCommerceProduct>,
+  ): Promise<BigCommerceProduct> {
     try {
       const response = await this.apiCall<{ data: BigCommerceProduct }>(
         `/catalog/products/${productId}`,
@@ -299,7 +299,10 @@ export class BigCommerceClient extends IntegrationClient {
   /**
    * List product variants.
    */
-  async listVariants(productId: number, limit = 50): Promise<BigCommerceListResponse<BigCommerceVariant>> {
+  async listVariants(
+    productId: number,
+    limit = 50,
+  ): Promise<BigCommerceListResponse<BigCommerceVariant>> {
     try {
       const response = await this.apiCall<BigCommerceListResponse<BigCommerceVariant>>(
         `/catalog/products/${productId}/variants`,
@@ -342,10 +345,9 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async listCategories(limit = 50): Promise<BigCommerceListResponse<any>> {
     try {
-      const response = await this.apiCall<BigCommerceListResponse<any>>(
-        "/catalog/categories",
-        { params: { limit } },
-      );
+      const response = await this.apiCall<BigCommerceListResponse<any>>("/catalog/categories", {
+        params: { limit },
+      });
 
       return response.data;
     } catch (error) {
@@ -359,10 +361,9 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async listBrands(limit = 50): Promise<BigCommerceListResponse<any>> {
     try {
-      const response = await this.apiCall<BigCommerceListResponse<any>>(
-        "/catalog/brands",
-        { params: { limit } },
-      );
+      const response = await this.apiCall<BigCommerceListResponse<any>>("/catalog/brands", {
+        params: { limit },
+      });
 
       return response.data;
     } catch (error) {
@@ -378,10 +379,9 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async listOrders(limit = 50, offset = 0): Promise<BigCommerceListResponse<BigCommerceOrder>> {
     try {
-      const response = await this.apiCall<BigCommerceListResponse<BigCommerceOrder>>(
-        "/orders",
-        { params: { limit, offset, include: "products,shipments" } },
-      );
+      const response = await this.apiCall<BigCommerceListResponse<BigCommerceOrder>>("/orders", {
+        params: { limit, offset, include: "products,shipments" },
+      });
 
       return response.data;
     } catch (error) {
@@ -395,10 +395,9 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async getOrder(orderId: number): Promise<BigCommerceOrder> {
     try {
-      const response = await this.apiCall<{ data: BigCommerceOrder }>(
-        `/orders/${orderId}`,
-        { params: { include: "products,shipments" } },
-      );
+      const response = await this.apiCall<{ data: BigCommerceOrder }>(`/orders/${orderId}`, {
+        params: { include: "products,shipments" },
+      });
 
       return response.data.data;
     } catch (error) {
@@ -412,13 +411,10 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async updateOrderStatus(orderId: number, status: string): Promise<BigCommerceOrder> {
     try {
-      const response = await this.apiCall<{ data: BigCommerceOrder }>(
-        `/orders/${orderId}`,
-        {
-          method: "PUT",
-          body: { status },
-        },
-      );
+      const response = await this.apiCall<{ data: BigCommerceOrder }>(`/orders/${orderId}`, {
+        method: "PUT",
+        body: { status },
+      });
 
       return response.data.data;
     } catch (error) {
@@ -432,16 +428,16 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async createShipment(
     orderId: number,
-    shipment: { tracking_number?: string; items: Array<{ order_product_id: number; quantity: number }> },
+    shipment: {
+      tracking_number?: string;
+      items: Array<{ order_product_id: number; quantity: number }>;
+    },
   ): Promise<any> {
     try {
-      const response = await this.apiCall<{ data: any }>(
-        `/orders/${orderId}/shipments`,
-        {
-          method: "POST",
-          body: shipment,
-        },
-      );
+      const response = await this.apiCall<{ data: any }>(`/orders/${orderId}/shipments`, {
+        method: "POST",
+        body: shipment,
+      });
 
       return response.data.data;
     } catch (error) {
@@ -458,13 +454,10 @@ export class BigCommerceClient extends IntegrationClient {
     refund: { items: Array<{ order_product_id: number; quantity: number }>; reason?: string },
   ): Promise<any> {
     try {
-      const response = await this.apiCall<{ data: any }>(
-        `/orders/${orderId}/refunds`,
-        {
-          method: "POST",
-          body: refund,
-        },
-      );
+      const response = await this.apiCall<{ data: any }>(`/orders/${orderId}/refunds`, {
+        method: "POST",
+        body: refund,
+      });
 
       return response.data.data;
     } catch (error) {
@@ -478,13 +471,10 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async applyCoupon(orderId: number, couponCode: string): Promise<any> {
     try {
-      const response = await this.apiCall<{ data: any }>(
-        `/orders/${orderId}/coupons`,
-        {
-          method: "POST",
-          body: { code: couponCode },
-        },
-      );
+      const response = await this.apiCall<{ data: any }>(`/orders/${orderId}/coupons`, {
+        method: "POST",
+        body: { code: couponCode },
+      });
 
       return response.data.data;
     } catch (error) {
@@ -498,7 +488,10 @@ export class BigCommerceClient extends IntegrationClient {
   /**
    * List customers with pagination.
    */
-  async listCustomers(limit = 50, offset = 0): Promise<BigCommerceListResponse<BigCommerceCustomer>> {
+  async listCustomers(
+    limit = 50,
+    offset = 0,
+  ): Promise<BigCommerceListResponse<BigCommerceCustomer>> {
     try {
       const response = await this.apiCall<BigCommerceListResponse<BigCommerceCustomer>>(
         "/customers",
@@ -534,13 +527,10 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async createCustomer(customer: Partial<BigCommerceCustomer>): Promise<BigCommerceCustomer> {
     try {
-      const response = await this.apiCall<{ data: BigCommerceCustomer }>(
-        "/customers",
-        {
-          method: "POST",
-          body: customer,
-        },
-      );
+      const response = await this.apiCall<{ data: BigCommerceCustomer }>("/customers", {
+        method: "POST",
+        body: customer,
+      });
 
       return response.data.data;
     } catch (error) {
@@ -552,7 +542,10 @@ export class BigCommerceClient extends IntegrationClient {
   /**
    * Update a customer.
    */
-  async updateCustomer(customerId: number, customer: Partial<BigCommerceCustomer>): Promise<BigCommerceCustomer> {
+  async updateCustomer(
+    customerId: number,
+    customer: Partial<BigCommerceCustomer>,
+  ): Promise<BigCommerceCustomer> {
     try {
       const response = await this.apiCall<{ data: BigCommerceCustomer }>(
         `/customers/${customerId}`,
@@ -622,13 +615,10 @@ export class BigCommerceClient extends IntegrationClient {
         ? `/catalog/products/${productId}/variants/${variantId}`
         : `/catalog/products/${productId}`;
 
-      const response = await this.apiCall<{ data: any }>(
-        endpoint,
-        {
-          method: "PUT",
-          body: { inventory_level: quantity },
-        },
-      );
+      const response = await this.apiCall<{ data: any }>(endpoint, {
+        method: "PUT",
+        body: { inventory_level: quantity },
+      });
 
       return {
         product_id: productId,
@@ -648,9 +638,7 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async listChannels(): Promise<BigCommerceListResponse<any>> {
     try {
-      const response = await this.apiCall<BigCommerceListResponse<any>>(
-        "/channels",
-      );
+      const response = await this.apiCall<BigCommerceListResponse<any>>("/channels");
 
       return response.data;
     } catch (error) {
@@ -664,24 +652,17 @@ export class BigCommerceClient extends IntegrationClient {
   /**
    * Register a webhook.
    */
-  async registerWebhook(
-    scope: string,
-    destination: string,
-    events?: string[],
-  ): Promise<any> {
+  async registerWebhook(scope: string, destination: string, events?: string[]): Promise<any> {
     try {
-      const response = await this.apiCall<{ data: any }>(
-        "/hooks",
-        {
-          method: "POST",
-          body: {
-            scope,
-            destination,
-            is_active: true,
-            events: events || [scope],
-          },
+      const response = await this.apiCall<{ data: any }>("/hooks", {
+        method: "POST",
+        body: {
+          scope,
+          destination,
+          is_active: true,
+          events: events || [scope],
         },
-      );
+      });
 
       return response.data.data;
     } catch (error) {
@@ -695,9 +676,7 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async listWebhooks(): Promise<BigCommerceListResponse<any>> {
     try {
-      const response = await this.apiCall<BigCommerceListResponse<any>>(
-        "/hooks",
-      );
+      const response = await this.apiCall<BigCommerceListResponse<any>>("/hooks");
 
       return response.data;
     } catch (error) {
@@ -729,9 +708,7 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async getStoreInfo(): Promise<any> {
     try {
-      const response = await this.apiCall<{ data: any }>(
-        "/store",
-      );
+      const response = await this.apiCall<{ data: any }>("/store");
 
       return response.data.data;
     } catch (error) {
@@ -747,9 +724,7 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async listShippingZones(): Promise<BigCommerceListResponse<any>> {
     try {
-      const response = await this.apiCall<BigCommerceListResponse<any>>(
-        "/shipping/zones",
-      );
+      const response = await this.apiCall<BigCommerceListResponse<any>>("/shipping/zones");
 
       return response.data;
     } catch (error) {
@@ -781,9 +756,7 @@ export class BigCommerceClient extends IntegrationClient {
    */
   async listTaxClasses(): Promise<BigCommerceListResponse<any>> {
     try {
-      const response = await this.apiCall<BigCommerceListResponse<any>>(
-        "/tax/classes",
-      );
+      const response = await this.apiCall<BigCommerceListResponse<any>>("/tax/classes");
 
       return response.data;
     } catch (error) {

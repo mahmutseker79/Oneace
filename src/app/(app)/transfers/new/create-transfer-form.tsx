@@ -68,7 +68,9 @@ export function CreateTransferForm({ warehouses }: CreateTransferFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {error && <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">{error}</div>
+      )}
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Source Warehouse</label>

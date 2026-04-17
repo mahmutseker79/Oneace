@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
 import {
-  parseCsv,
-  sniffDelimiter,
-  parseDecimalLocaleAware,
   normalizeCsvBuffer,
+  parseCsv,
+  parseDecimalLocaleAware,
+  sniffDelimiter,
 } from "@/lib/migrations/core/csv-utils";
+import { describe, expect, it } from "vitest";
 
 describe("csv-utils", () => {
   describe("sniffDelimiter", () => {

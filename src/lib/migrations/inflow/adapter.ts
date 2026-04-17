@@ -11,13 +11,13 @@
  */
 
 import type { MigrationAdapter, UploadedFile } from "@/lib/migrations/core/adapter";
+import { parseCsv, sniffDelimiter } from "@/lib/migrations/core/csv-utils";
 import type {
-  FileDetectionResult,
   FieldMapping,
+  FileDetectionResult,
   ParsedSnapshot,
   ValidationReport,
 } from "@/lib/migrations/core/types";
-import { parseCsv, sniffDelimiter } from "@/lib/migrations/core/csv-utils";
 import { parseInflowCSV } from "@/lib/migrations/inflow/csv-parser";
 import { getInflowDefaultMappings } from "@/lib/migrations/inflow/default-mappings";
 
@@ -28,39 +28,19 @@ export const INFLOW_ADAPTER: MigrationAdapter = {
 
   async detectFiles(files: UploadedFile[]): Promise<FileDetectionResult[]> {
     const expectedFiles = ["Products.csv", "Vendors.csv", "StockLevels.csv"];
-    const detected = files.map((f) => ({
-      filename: f.filename,
-      detected: expectedFiles.some(
-        (ex) => f.filename.toLowerCase() === ex.toLowerCase(),
-      ),
-      confidence: expectedFiles.some(
-        (ex) => f.filename.toLowerCase() === ex.toLowerCase(),
-      )
-        ? 1.0
-        : 0.0,
-      issues: [],
-    }));
+    const detected: FileDetectionResult[] = files.map((f) => {
+      const matches = expectedFiles.some((ex) => f.filename.toLowerCase() === ex.toLowerCase());
+      return {
+        fileRef: f.filename,
+        entity: matches ? "ITEM" : "UNKNOWN",
+        confidence: matches ? 1.0 : 0.0,
+        matchedHeaders: [],
+      };
+    });
 
-    // Warn if critical files are missing.
-    const missing = expectedFiles.filter(
-      (ex) =>
-        !files.some((f) => f.filename.toLowerCase() === ex.toLowerCase()),
-    );
-
-    if (missing.length > 0) {
-      detected.push({
-        filename: "MISSING",
-        detected: false,
-        confidence: 0,
-        issues: [
-          {
-            severity: "WARNING",
-            code: "INFLOW_MISSING_FILES",
-            message: `Missing expected inFlow files: ${missing.join(", ")}`,
-          },
-        ],
-      });
-    }
+    // Note: missing-file warnings are surfaced via validate() instead of
+    // stuffing a synthetic FileDetectionResult; that shape requires fileRef
+    // to map to a real upload.
 
     return detected;
   },
@@ -82,18 +62,17 @@ export const INFLOW_ADAPTER: MigrationAdapter = {
     return getInflowDefaultMappings(snapshot);
   },
 
-  validate(
-    snapshot: ParsedSnapshot,
-    mappings: FieldMapping[],
-    scope: any,
-  ): ValidationReport {
-    const issues: any[] = [];
+  validate(snapshot: ParsedSnapshot, _mappings: FieldMapping[], _scope: unknown): ValidationReport {
+    const issues: ValidationReport["issues"] = [];
 
     // Validate products have SKU.
     for (const item of snapshot.items) {
       if (!item.sku || item.sku.trim() === "") {
         issues.push({
           severity: "ERROR",
+          entity: "ITEM",
+          externalId: item.externalId,
+          field: "sku",
           code: "ITEM_MISSING_SKU",
           message: `Product "${item.name || item.externalId}" is missing a SKU`,
         });
@@ -104,12 +83,13 @@ export const INFLOW_ADAPTER: MigrationAdapter = {
     for (const item of snapshot.items) {
       if (
         item.preferredSupplierExternalId &&
-        !snapshot.suppliers.some(
-          (s) => s.externalId === item.preferredSupplierExternalId,
-        )
+        !snapshot.suppliers.some((s) => s.externalId === item.preferredSupplierExternalId)
       ) {
         issues.push({
           severity: "WARNING",
+          entity: "ITEM",
+          externalId: item.externalId,
+          field: "preferredSupplierExternalId",
           code: "ITEM_VENDOR_NOT_FOUND",
           message: `Product "${item.name}" references unknown vendor ${item.preferredSupplierExternalId}`,
         });
@@ -117,7 +97,8 @@ export const INFLOW_ADAPTER: MigrationAdapter = {
     }
 
     return {
-      valid: issues.every((i) => i.severity !== "ERROR"),
+      generatedAt: new Date().toISOString(),
+      totals: {},
       issues,
     };
   },

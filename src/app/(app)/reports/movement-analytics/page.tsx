@@ -38,13 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: `Movement Analytics — ${t.reports.metaTitle}` };
 }
 
-type MovementType =
-  | "RECEIPT"
-  | "ISSUE"
-  | "ADJUSTMENT"
-  | "TRANSFER"
-  | "BIN_TRANSFER"
-  | "COUNT";
+type MovementType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "BIN_TRANSFER" | "COUNT";
 
 const MOVEMENT_TYPES: MovementType[] = [
   "RECEIPT",
@@ -134,10 +128,7 @@ export default async function MovementAnalyticsReportPage() {
     take: 5000,
   });
 
-  const dailyMap = new Map<
-    string,
-    { date: string; count: number; qty: number }
-  >();
+  const dailyMap = new Map<string, { date: string; count: number; qty: number }>();
   for (const m of recent) {
     const k = dayKey(m.createdAt);
     const cur = dailyMap.get(k) ?? { date: k, count: 0, qty: 0 };
@@ -145,9 +136,7 @@ export default async function MovementAnalyticsReportPage() {
     cur.qty += m.quantity;
     dailyMap.set(k, cur);
   }
-  const dailyRows = Array.from(dailyMap.values()).sort((a, b) =>
-    a.date < b.date ? 1 : -1,
-  );
+  const dailyRows = Array.from(dailyMap.values()).sort((a, b) => (a.date < b.date ? 1 : -1));
 
   // ----- Query 3: top 25 most-active items over the 90-day window -----
   const topItemsAgg = await db.stockMovement.groupBy({
@@ -309,8 +298,8 @@ export default async function MovementAnalyticsReportPage() {
         <CardHeader>
           <CardTitle className="text-lg">Top 25 most-active items (last 90 days)</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Items with the highest number of movement entries — good candidates for fast-
-            moving SKU tracking.
+            Items with the highest number of movement entries — good candidates for fast- moving SKU
+            tracking.
           </p>
         </CardHeader>
         <CardContent className="overflow-x-auto">

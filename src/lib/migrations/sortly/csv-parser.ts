@@ -4,19 +4,16 @@
  * Parses Sortly's single-file CSV export into ParsedSnapshot.
  */
 
+import { inferType } from "@/lib/migrations/core/csv-utils";
 import type {
   ParsedSnapshot,
   RawCategory,
+  RawCustomFieldDef,
   RawItem,
   RawStockLevel,
-  RawCustomFieldDef,
 } from "@/lib/migrations/core/types";
-import { inferType } from "@/lib/migrations/core/csv-utils";
 
-export function parseSortlyCSV(
-  headers: string[],
-  rows: Record<string, string>[],
-): ParsedSnapshot {
+export function parseSortlyCSV(headers: string[], rows: Record<string, string>[]): ParsedSnapshot {
   const categories = new Map<string, RawCategory>();
   const items: RawItem[] = [];
   const stockLevels: RawStockLevel[] = [];
@@ -26,9 +23,7 @@ export function parseSortlyCSV(
   const colName = headers.findIndex((h) => h.toLowerCase() === "name");
   const colSku = headers.findIndex((h) => h.toLowerCase() === "sku");
   const colQuantity = headers.findIndex((h) => h.toLowerCase() === "quantity");
-  const colFolderPath = headers.findIndex(
-    (h) => h.toLowerCase() === "folder path",
-  );
+  const colFolderPath = headers.findIndex((h) => h.toLowerCase() === "folder path");
   const colPrice = headers.findIndex((h) => h.toLowerCase() === "price");
   const colMinLevel = headers.findIndex((h) => h.toLowerCase() === "min level");
   const colTags = headers.findIndex((h) => h.toLowerCase() === "tags");
@@ -39,20 +34,30 @@ export function parseSortlyCSV(
     .map((h, i) => ({ name: h, index: i }))
     .filter((c) => c.name.startsWith("Field:"));
 
+  // Helper: safely read a column value from a row. Returns "" when any
+  // link in the chain (row, header entry, value) is missing.
+  const get = (row: Record<string, string>, colIndex: number): string => {
+    if (colIndex < 0) return "";
+    const headerName = headers[colIndex];
+    if (!headerName) return "";
+    return row[headerName] ?? "";
+  };
+
   for (let idx = 0; idx < rows.length; idx++) {
     const row = rows[idx];
+    if (!row) continue;
 
-    const name = colName >= 0 ? row[headers[colName]] : "";
-    const sku = colSku >= 0 ? row[headers[colSku]] : "";
+    const name = get(row, colName);
+    const sku = get(row, colSku);
 
     if (!name || !sku) continue; // Skip incomplete rows.
 
     const externalId = `sortly-item-${idx}`;
 
     // Parse folder path into category hierarchy.
-    if (colFolderPath >= 0 && row[headers[colFolderPath]]) {
-      const folderPath = row[headers[colFolderPath]];
-      const parts = folderPath.split("/").filter((p) => p.trim());
+    const folderPath = get(row, colFolderPath);
+    if (folderPath) {
+      const parts = folderPath.split("/").filter((p: string) => p.trim());
 
       let parentId: string | null = null;
       for (const part of parts) {
@@ -69,9 +74,10 @@ export function parseSortlyCSV(
     }
 
     // Parse quantity into stock level.
-    if (colQuantity >= 0 && row[headers[colQuantity]]) {
-      const qty = parseFloat(row[headers[colQuantity]]);
-      if (!isNaN(qty)) {
+    const qtyStr = get(row, colQuantity);
+    if (qtyStr) {
+      const qty = Number.parseFloat(qtyStr);
+      if (!Number.isNaN(qty)) {
         stockLevels.push({
           itemExternalId: externalId,
           warehouseExternalId: "sortly-default-warehouse",
@@ -86,7 +92,7 @@ export function parseSortlyCSV(
       const fieldName = col.name.replace("Field: ", "");
       const value = row[col.name];
 
-      if (value && value.trim()) {
+      if (value?.trim()) {
         const fieldKey = `sortly_${fieldName.toLowerCase().replace(/\s+/g, "_")}`;
         const fieldId = `sortly-field-${fieldKey}`;
 
@@ -107,19 +113,16 @@ export function parseSortlyCSV(
     }
 
     // Build item.
+    const notes = get(row, colNotes);
+    const priceStr = get(row, colPrice);
+    const minLevelStr = get(row, colMinLevel);
     items.push({
       externalId,
       sku,
       name,
-      description: colNotes >= 0 ? row[headers[colNotes]] : undefined,
-      salePrice:
-        colPrice >= 0
-          ? parseFloat(row[headers[colPrice]]) || undefined
-          : undefined,
-      reorderPoint:
-        colMinLevel >= 0
-          ? parseFloat(row[headers[colMinLevel]]) || undefined
-          : undefined,
+      description: notes || undefined,
+      salePrice: priceStr ? Number.parseFloat(priceStr) || undefined : undefined,
+      reorderPoint: minLevelStr ? Number.parseFloat(minLevelStr) || undefined : undefined,
       customFieldValues: Object.keys(customFieldValues).length > 0 ? customFieldValues : undefined,
     });
   }
@@ -145,5 +148,6 @@ export function parseSortlyCSV(
     stockLevels,
     purchaseOrders: [],
     attachments: [],
+    adapterWarnings: [],
   };
 }

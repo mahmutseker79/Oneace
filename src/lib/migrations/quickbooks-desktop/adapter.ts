@@ -14,31 +14,31 @@
  */
 
 import type { MigrationAdapter, UploadedFile } from "@/lib/migrations/core/adapter";
+import { parseDecimalLocaleAware } from "@/lib/migrations/core/csv-utils";
+import { parseDateFlexible } from "@/lib/migrations/core/date-utils";
+import { sortCategoriesByParent } from "@/lib/migrations/core/topological-sort";
 import type {
-  FileDetectionResult,
   FieldMapping,
+  FileDetectionResult,
   ParsedSnapshot,
+  RawCategory,
+  RawItem,
+  RawPurchaseOrder,
+  RawSupplier,
   ValidationIssue,
   ValidationReport,
-  RawItem,
-  RawSupplier,
-  RawCategory,
-  RawPurchaseOrder,
 } from "@/lib/migrations/core/types";
+import { getQbdDefaultMappings } from "@/lib/migrations/quickbooks-desktop/default-mappings";
 import {
-  parseIifFile,
-  getIifField,
-  stitchPoSplits,
   type IifDocument,
+  getIifField,
+  parseIifFile,
+  stitchPoSplits,
 } from "@/lib/migrations/quickbooks-desktop/iif-parser";
 import {
-  parseQbxmlFile,
   type QbxmlDocument,
+  parseQbxmlFile,
 } from "@/lib/migrations/quickbooks-desktop/qbxml-parser";
-import { parseDateFlexible } from "@/lib/migrations/core/date-utils";
-import { parseDecimalLocaleAware } from "@/lib/migrations/core/csv-utils";
-import { getQbdDefaultMappings } from "@/lib/migrations/quickbooks-desktop/default-mappings";
-import { sortCategoriesByParent } from "@/lib/migrations/core/topological-sort";
 
 export const QBD_ADAPTER: MigrationAdapter = {
   source: "QUICKBOOKS_DESKTOP",
@@ -59,10 +59,7 @@ export const QBD_ADAPTER: MigrationAdapter = {
         confidence = 0.99;
       }
       // QBXML files are XML exports.
-      else if (
-        filename.endsWith(".xml") ||
-        filename.endsWith(".qbxml")
-      ) {
+      else if (filename.endsWith(".xml") || filename.endsWith(".qbxml")) {
         // Try to detect if it's QBXML by checking for markers.
         const preview = file.buffer.toString("utf-8", 0, Math.min(1000, file.buffer.length));
         if (preview.includes("<QBXML>") || preview.includes("ItemInventoryRet")) {
@@ -102,9 +99,7 @@ export const QBD_ADAPTER: MigrationAdapter = {
     };
 
     // Separate IIF and QBXML files.
-    const iifFiles = files.filter((f) =>
-      f.filename.toLowerCase().endsWith(".iif")
-    );
+    const iifFiles = files.filter((f) => f.filename.toLowerCase().endsWith(".iif"));
     const qbxmlFiles = files.filter((f) => {
       const lower = f.filename.toLowerCase();
       return (
@@ -131,9 +126,7 @@ export const QBD_ADAPTER: MigrationAdapter = {
       snapshot.suppliers.length === 0 &&
       snapshot.purchaseOrders.length === 0
     ) {
-      throw new Error(
-        "No valid QB Desktop export files found. Expected .iif or .qbxml files."
-      );
+      throw new Error("No valid QB Desktop export files found. Expected .iif or .qbxml files.");
     }
 
     return snapshot;
@@ -143,18 +136,12 @@ export const QBD_ADAPTER: MigrationAdapter = {
     return getQbdDefaultMappings(snapshot);
   },
 
-  validate(
-    snapshot: ParsedSnapshot,
-    mappings: FieldMapping[],
-    scope: any
-  ): ValidationReport {
+  validate(snapshot: ParsedSnapshot, mappings: FieldMapping[], scope: any): ValidationReport {
     const issues: ValidationIssue[] = [];
-    const totals: Record<string, { rows: number; errors: number; warnings: number }> = {
-      items: { rows: snapshot.items.length, errors: 0, warnings: 0 },
-      suppliers: { rows: snapshot.suppliers.length, errors: 0, warnings: 0 },
-      categories: { rows: snapshot.categories.length, errors: 0, warnings: 0 },
-      purchaseOrders: { rows: snapshot.purchaseOrders.length, errors: 0, warnings: 0 },
-    };
+    const items = { rows: snapshot.items.length, errors: 0, warnings: 0 };
+    const suppliers = { rows: snapshot.suppliers.length, errors: 0, warnings: 0 };
+    const categories = { rows: snapshot.categories.length, errors: 0, warnings: 0 };
+    const purchaseOrders = { rows: snapshot.purchaseOrders.length, errors: 0, warnings: 0 };
 
     // Validate items.
     const skus = new Set<string>();
@@ -168,7 +155,7 @@ export const QBD_ADAPTER: MigrationAdapter = {
           code: "ITEM_MISSING_SKU",
           message: `Item "${item.name || item.externalId}" is missing a SKU`,
         });
-        totals.items.errors++;
+        items.errors++;
       } else if (skus.has(item.sku)) {
         issues.push({
           severity: "WARNING",
@@ -178,7 +165,7 @@ export const QBD_ADAPTER: MigrationAdapter = {
           code: "DUPLICATE_SKU",
           message: `Item "${item.name}" has duplicate SKU "${item.sku}"`,
         });
-        totals.items.warnings++;
+        items.warnings++;
       } else {
         skus.add(item.sku);
       }
@@ -194,9 +181,9 @@ export const QBD_ADAPTER: MigrationAdapter = {
           externalId: supplier.externalId,
           field: "name",
           code: "SUPPLIER_MISSING_NAME",
-          message: `Supplier is missing a name`,
+          message: "Supplier is missing a name",
         });
-        totals.suppliers.errors++;
+        suppliers.errors++;
       }
     }
 
@@ -212,7 +199,7 @@ export const QBD_ADAPTER: MigrationAdapter = {
           code: "CATEGORY_PARENT_NOT_FOUND",
           message: `Category "${cat.name}" references unknown parent ${cat.parentExternalId}`,
         });
-        totals.categories.warnings++;
+        categories.warnings++;
       }
     }
 
@@ -220,12 +207,8 @@ export const QBD_ADAPTER: MigrationAdapter = {
     if (snapshot.categories.length > 0) {
       const sortResult = sortCategoriesByParent(snapshot.categories);
       issues.push(...sortResult.issues);
-      totals.categories.errors += sortResult.issues.filter(
-        (i) => i.severity === "ERROR"
-      ).length;
-      totals.categories.warnings += sortResult.issues.filter(
-        (i) => i.severity === "WARNING"
-      ).length;
+      categories.errors += sortResult.issues.filter((i) => i.severity === "ERROR").length;
+      categories.warnings += sortResult.issues.filter((i) => i.severity === "WARNING").length;
     }
 
     // Validate purchase orders.
@@ -239,7 +222,7 @@ export const QBD_ADAPTER: MigrationAdapter = {
           code: "PO_SUPPLIER_NOT_FOUND",
           message: `PO ${po.poNumber} references unknown supplier ${po.supplierExternalId}`,
         });
-        totals.purchaseOrders.warnings++;
+        purchaseOrders.warnings++;
       }
 
       // Validate PO lines reference existing items.
@@ -254,10 +237,17 @@ export const QBD_ADAPTER: MigrationAdapter = {
             code: "PO_ITEM_NOT_FOUND",
             message: `PO ${po.poNumber} line references unknown item ${line.itemExternalId}`,
           });
-          totals.purchaseOrders.warnings++;
+          purchaseOrders.warnings++;
         }
       }
     }
+
+    const totals: Record<string, { rows: number; errors: number; warnings: number }> = {
+      items,
+      suppliers,
+      categories,
+      purchaseOrders,
+    };
 
     // Respect scope: filter archived items if scope says to exclude them.
     if (scope?.includeArchivedItems === false) {
@@ -306,7 +296,7 @@ function parseIifExports(files: UploadedFile[]): ParsedSnapshot {
   };
 
   // Parse all IIF files and merge.
-  let mergedByType = new Map<string, any[]>();
+  const mergedByType = new Map<string, any[]>();
 
   for (const file of files) {
     const iif = parseIifFile(file.buffer);
@@ -317,7 +307,7 @@ function parseIifExports(files: UploadedFile[]): ParsedSnapshot {
       if (!mergedByType.has(type)) {
         mergedByType.set(type, []);
       }
-      mergedByType.get(type)!.push(...records);
+      mergedByType.get(type)?.push(...records);
     }
   }
 
@@ -360,7 +350,7 @@ function parseIifExports(files: UploadedFile[]): ParsedSnapshot {
     // Warn if SKU was generated.
     if (!getIifField(record, "SKU")) {
       snapshot.adapterWarnings.push(
-        `Generated SKU "${sku}" for item "${name}" (no SKU field in IIF)`
+        `Generated SKU "${sku}" for item "${name}" (no SKU field in IIF)`,
       );
     }
 
@@ -391,10 +381,7 @@ function parseIifExports(files: UploadedFile[]): ParsedSnapshot {
     const city = getIifField(record, "BADDR3") || "";
     const state = getIifField(record, "BADDR4") || "";
     const zip = getIifField(record, "BADDR5") || "";
-    const address = [addr1, addr2, city, state, zip]
-      .filter(Boolean)
-      .join(", ")
-      .trim() || null;
+    const address = [addr1, addr2, city, state, zip].filter(Boolean).join(", ").trim() || null;
 
     const supplier = {
       externalId: name,
@@ -429,12 +416,12 @@ function parseIifExports(files: UploadedFile[]): ParsedSnapshot {
       .map((split) => {
         // SPL rows have ITEM or ACCNT references. OneAce only cares about ITEM splits.
         // split is already a Record<string, string> of field values.
-        const itemName = split["NAME"] || split["ITEM"];
-        const qty = parseDecimalLocaleAware(split["QNTY"]) ?? 0;
-        const amount = parseDecimalLocaleAware(split["AMOUNT"]) ?? 0;
+        const itemName = split.NAME || split.ITEM;
+        const qty = parseDecimalLocaleAware(split.QNTY) ?? 0;
+        const amount = parseDecimalLocaleAware(split.AMOUNT) ?? 0;
 
         // Derive unit cost: amount / qty or explicit UNITCOST field.
-        let unitCost = parseDecimalLocaleAware(split["UNITCOST"]);
+        let unitCost = parseDecimalLocaleAware(split.UNITCOST);
         if (!unitCost && qty > 0 && amount) {
           unitCost = amount / qty;
         }

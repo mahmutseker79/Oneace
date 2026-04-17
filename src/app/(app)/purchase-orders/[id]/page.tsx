@@ -41,7 +41,8 @@
 // All four queries are parallelised via `Promise.all` so the
 // added sections don't add serial latency to the render.
 
-import { Package } from "lucide-react";import type { Metadata } from "next";
+import { Package } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

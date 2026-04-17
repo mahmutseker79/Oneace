@@ -183,8 +183,7 @@ export function evaluateTrigger(
     // Lag guard: if lastUsedAt is within 1 minute of the scheduled window
     // we've already fired this window; wait for the next one.
     if (template.lastUsedAt && scheduledAt) {
-      const sameWindow =
-        Math.abs(template.lastUsedAt.getTime() - scheduledAt.getTime()) < 60_000;
+      const sameWindow = Math.abs(template.lastUsedAt.getTime() - scheduledAt.getTime()) < 60_000;
       if (sameWindow) {
         const nextRunAt = calculateNextRun(template.cronExpression, now);
         return {

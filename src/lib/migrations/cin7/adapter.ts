@@ -6,24 +6,21 @@
  * MigrationJob.fieldMappings.credentials and passed here.
  */
 
+import { Cin7ApiClient, type Cin7Credentials } from "@/lib/migrations/cin7/api-client";
+import { getCin7DefaultMappings } from "@/lib/migrations/cin7/default-mappings";
+import { parseCin7Snapshot } from "@/lib/migrations/cin7/parser";
 import type { MigrationAdapter } from "@/lib/migrations/core/adapter";
-import type {
-  FileDetectionResult,
-  FieldMapping,
-  ParsedSnapshot,
-  ValidationReport,
-} from "@/lib/migrations/core/types";
 import type { MigrationScopeOptions } from "@/lib/migrations/core/scope-options";
 import {
   resolvePoHistoryCutoff,
   shouldImportPurchaseOrders,
 } from "@/lib/migrations/core/scope-options";
-import {
-  Cin7ApiClient,
-  type Cin7Credentials,
-} from "@/lib/migrations/cin7/api-client";
-import { getCin7DefaultMappings } from "@/lib/migrations/cin7/default-mappings";
-import { parseCin7Snapshot } from "@/lib/migrations/cin7/parser";
+import type {
+  FieldMapping,
+  FileDetectionResult,
+  ParsedSnapshot,
+  ValidationReport,
+} from "@/lib/migrations/core/types";
 import { readCredentials } from "@/lib/secure/credentials";
 
 /**
@@ -31,9 +28,7 @@ import { readCredentials } from "@/lib/secure/credentials";
  * Auto-detects encrypted (EncryptedCredentials) vs plaintext.
  * Returns null if credentials are missing or malformed.
  */
-function extractCin7Credentials(
-  fieldMappings: Record<string, unknown>,
-): Cin7Credentials | null {
+function extractCin7Credentials(fieldMappings: Record<string, unknown>): Cin7Credentials | null {
   const creds = fieldMappings.credentials;
   if (!creds || typeof creds !== "object") {
     return null;
@@ -67,10 +62,7 @@ export const CIN7_ADAPTER: MigrationAdapter = {
     return [];
   },
 
-  async parse(
-    _files,
-    fieldMappings?: Record<string, unknown>,
-  ): Promise<ParsedSnapshot> {
+  async parse(_files, fieldMappings?: Record<string, unknown>): Promise<ParsedSnapshot> {
     if (!fieldMappings) {
       throw new Error("Cin7 adapter requires credentials in fieldMappings");
     }
@@ -85,18 +77,17 @@ export const CIN7_ADAPTER: MigrationAdapter = {
     const client = new Cin7ApiClient(creds);
 
     // Fetch all entities in parallel where possible
-    const [products, suppliers, locations, stockItems, purchases, attachments] =
-      await Promise.all([
-        client.getAllProducts(),
-        client.getAllSuppliers(),
-        client.getAllLocations(),
-        client.getAllStockItems(),
-        client.getAllPurchases(),
-        Promise.all([]).then(() => ({})), // Placeholder for attachment collection
-      ]);
+    const [products, suppliers, locations, stockItems, purchases, attachments] = await Promise.all([
+      client.getAllProducts(),
+      client.getAllSuppliers(),
+      client.getAllLocations(),
+      client.getAllStockItems(),
+      client.getAllPurchases(),
+      Promise.all([]).then(() => ({})), // Placeholder for attachment collection
+    ]);
 
     // Fetch attachments per product (no dedicated batch endpoint)
-    const attachmentsByProduct: Record<string, typeof attachments[]> = {};
+    const attachmentsByProduct: Record<string, (typeof attachments)[]> = {};
     for (const product of products) {
       const atts = await client.getProductAttachments(product.ID);
       if (atts.length > 0) {
@@ -155,9 +146,7 @@ export const CIN7_ADAPTER: MigrationAdapter = {
       // Filter by status if scope.poHistory === "OPEN_ONLY"
       if (scope.poHistory === "OPEN_ONLY") {
         const closedStatuses = ["RECEIVED", "CLOSED", "CANCELLED"];
-        purchases = purchases.filter(
-          (po) => !closedStatuses.includes(String(po.Status)),
-        );
+        purchases = purchases.filter((po) => !closedStatuses.includes(String(po.Status)));
       }
     }
 
@@ -186,11 +175,7 @@ export const CIN7_ADAPTER: MigrationAdapter = {
     return getCin7DefaultMappings(snapshot);
   },
 
-  validate(
-    snapshot: ParsedSnapshot,
-    _mappings: FieldMapping[],
-    _scope: any,
-  ): ValidationReport {
+  validate(snapshot: ParsedSnapshot, _mappings: FieldMapping[], _scope: any): ValidationReport {
     const issues: any[] = [];
 
     // Validate all items have SKU
@@ -223,9 +208,7 @@ export const CIN7_ADAPTER: MigrationAdapter = {
     }
 
     // Validate warehouse references
-    const warehouseIds = new Set(
-      snapshot.warehouses.map((w) => w.externalId),
-    );
+    const warehouseIds = new Set(snapshot.warehouses.map((w) => w.externalId));
     for (const loc of snapshot.locations) {
       if (!warehouseIds.has(loc.warehouseExternalId)) {
         issues.push({

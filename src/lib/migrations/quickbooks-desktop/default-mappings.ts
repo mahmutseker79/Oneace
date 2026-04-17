@@ -11,9 +11,7 @@ import type { FieldMapping, ParsedSnapshot } from "@/lib/migrations/core/types";
  * Currently, QBD mappings are straightforward and don't require custom logic,
  * so this returns an empty array (adapters parse directly into canonical form).
  */
-export function getQbdDefaultMappings(
-  snapshot: ParsedSnapshot
-): FieldMapping[] {
+export function getQbdDefaultMappings(snapshot: ParsedSnapshot): FieldMapping[] {
   // QBD adapter handles all parsing directly into Raw* types,
   // so no post-parse field mappings are needed.
   // Return empty array unless there are custom fields to map.

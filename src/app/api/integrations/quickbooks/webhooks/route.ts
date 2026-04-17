@@ -180,23 +180,40 @@ export async function POST(request: NextRequest) {
           });
 
           // Create a sync log entry if entity type is in ImportEntity enum
-          const SYNC_LOG_ENTITIES = ["ITEM", "STOCK_LEVEL", "SUPPLIER", "PURCHASE_ORDER", "CATEGORY", "WAREHOUSE", "CUSTOMER"];
+          const SYNC_LOG_ENTITIES = [
+            "ITEM",
+            "STOCK_LEVEL",
+            "SUPPLIER",
+            "PURCHASE_ORDER",
+            "CATEGORY",
+            "WAREHOUSE",
+            "CUSTOMER",
+          ];
           if (SYNC_LOG_ENTITIES.includes(oneAceEntityType)) {
             try {
               await db.syncLog.create({
                 data: {
                   integrationId: integration.id,
                   direction: "INBOUND",
-                  entityType: oneAceEntityType as "ITEM" | "STOCK_LEVEL" | "SUPPLIER" | "PURCHASE_ORDER" | "CATEGORY" | "WAREHOUSE" | "CUSTOMER",
+                  entityType: oneAceEntityType as
+                    | "ITEM"
+                    | "STOCK_LEVEL"
+                    | "SUPPLIER"
+                    | "PURCHASE_ORDER"
+                    | "CATEGORY"
+                    | "WAREHOUSE"
+                    | "CUSTOMER",
                   status: "PENDING",
                   startedAt: new Date(),
                   recordsProcessed: 0,
                   recordsFailed: 0,
-                  errors: JSON.parse(JSON.stringify({
-                    source: "webhook",
-                    qboEntityId: entity.id,
-                    operation: entity.operation,
-                  })),
+                  errors: JSON.parse(
+                    JSON.stringify({
+                      source: "webhook",
+                      qboEntityId: entity.id,
+                      operation: entity.operation,
+                    }),
+                  ),
                 },
               });
             } catch (syncLogError) {

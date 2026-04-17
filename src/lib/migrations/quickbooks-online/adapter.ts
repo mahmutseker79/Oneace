@@ -13,19 +13,25 @@
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import type { MigrationAdapter, UploadedFile } from "@/lib/migrations/core/adapter";
-import type {
-  FileDetectionResult,
-  FieldMapping,
-  ParsedSnapshot,
-  ValidationReport,
-  ValidationIssue,
-} from "@/lib/migrations/core/types";
 import type { MigrationScopeOptions } from "@/lib/migrations/core/scope-options";
-import { resolvePoHistoryCutoff, shouldImportPurchaseOrders } from "@/lib/migrations/core/scope-options";
-import { QboMigrationClient, type QboMigrationCredentials } from "@/lib/migrations/quickbooks-online/api-client";
-import { parseQboSnapshot } from "@/lib/migrations/quickbooks-online/parser";
+import {
+  resolvePoHistoryCutoff,
+  shouldImportPurchaseOrders,
+} from "@/lib/migrations/core/scope-options";
+import type {
+  FieldMapping,
+  FileDetectionResult,
+  ParsedSnapshot,
+  ValidationIssue,
+  ValidationReport,
+} from "@/lib/migrations/core/types";
+import {
+  QboMigrationClient,
+  type QboMigrationCredentials,
+} from "@/lib/migrations/quickbooks-online/api-client";
 import { getQboDefaultMappings } from "@/lib/migrations/quickbooks-online/default-mappings";
-import { readCredentials, auditCredentialsDecrypted } from "@/lib/secure/credentials";
+import { parseQboSnapshot } from "@/lib/migrations/quickbooks-online/parser";
+import { auditCredentialsDecrypted, readCredentials } from "@/lib/secure/credentials";
 
 /**
  * Extract QBO credentials from fieldMappings.
@@ -35,7 +41,9 @@ import { readCredentials, auditCredentialsDecrypted } from "@/lib/secure/credent
  *
  * Auto-detects encrypted (EncryptedCredentials) vs plaintext via readCredentials.
  */
-function extractQboCredentials(fieldMappings: Record<string, unknown>): QboMigrationCredentials | null {
+function extractQboCredentials(
+  fieldMappings: Record<string, unknown>,
+): QboMigrationCredentials | null {
   const creds = fieldMappings.credentials;
 
   if (!creds || typeof creds !== "object") {
@@ -48,13 +56,17 @@ function extractQboCredentials(fieldMappings: Record<string, unknown>): QboMigra
   if (c.useExistingIntegration === true) {
     return {
       accessToken: "", // Placeholder; will be fetched from Integration row
-      realmId: c.realmId as string || "",
+      realmId: (c.realmId as string) || "",
     } as QboMigrationCredentials;
   }
 
   // Auto-detect encrypted or plaintext credentials
   const decrypted = readCredentials(creds);
-  if (decrypted && typeof decrypted.accessToken === "string" && typeof decrypted.realmId === "string") {
+  if (
+    decrypted &&
+    typeof decrypted.accessToken === "string" &&
+    typeof decrypted.realmId === "string"
+  ) {
     return {
       accessToken: decrypted.accessToken,
       refreshToken: decrypted.refreshToken ? String(decrypted.refreshToken) : undefined,
@@ -76,7 +88,10 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
     return [];
   },
 
-  async parse(_files: UploadedFile[], fieldMappings?: Record<string, unknown>): Promise<ParsedSnapshot> {
+  async parse(
+    _files: UploadedFile[],
+    fieldMappings?: Record<string, unknown>,
+  ): Promise<ParsedSnapshot> {
     if (!fieldMappings) {
       throw new Error("QBO adapter requires credentials in fieldMappings");
     }
@@ -84,7 +99,7 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
     const creds = extractQboCredentials(fieldMappings);
     if (!creds) {
       throw new Error(
-        "QBO credentials (accessToken, realmId) not found in fieldMappings.credentials"
+        "QBO credentials (accessToken, realmId) not found in fieldMappings.credentials",
       );
     }
 
@@ -95,7 +110,8 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
     // If useExistingIntegration was set, fetch the Integration row
     let finalCreds = creds;
     if ((fieldMappings.credentials as Record<string, unknown>)?.useExistingIntegration === true) {
-      const orgId = (fieldMappings.credentials as Record<string, unknown>)?.organizationId as string;
+      const orgId = (fieldMappings.credentials as Record<string, unknown>)
+        ?.organizationId as string;
       const integration = await db.integration.findFirst({
         where: {
           organizationId: orgId,
@@ -169,7 +185,7 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
     const creds = extractQboCredentials(fieldMappings);
     if (!creds) {
       throw new Error(
-        "QBO credentials (accessToken, realmId) not found in fieldMappings.credentials"
+        "QBO credentials (accessToken, realmId) not found in fieldMappings.credentials",
       );
     }
 
@@ -180,7 +196,8 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
     // Fetch existing integration if useExistingIntegration flag is set
     let finalCreds = creds;
     if ((fieldMappings.credentials as Record<string, unknown>)?.useExistingIntegration === true) {
-      const orgId = (fieldMappings.credentials as Record<string, unknown>)?.organizationId as string;
+      const orgId = (fieldMappings.credentials as Record<string, unknown>)
+        ?.organizationId as string;
       const integration = await db.integration.findFirst({
         where: {
           organizationId: orgId,
@@ -229,9 +246,7 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
       // Filter by status if scope.poHistory === "OPEN_ONLY"
       if (scope.poHistory === "OPEN_ONLY") {
         const closedStatuses = ["RECEIVED", "CLOSED", "CANCELLED"];
-        purchaseOrders = purchaseOrders.filter(
-          (po) => !closedStatuses.includes(String(po.status))
-        );
+        purchaseOrders = purchaseOrders.filter((po) => !closedStatuses.includes(String(po.status)));
       }
     }
 
@@ -334,7 +349,11 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
     return {
       generatedAt: new Date().toISOString(),
       totals: {
-        items: { rows: snapshot.items.length, errors: issues.filter((i) => i.entity === "ITEM" && i.severity === "ERROR").length, warnings: 0 },
+        items: {
+          rows: snapshot.items.length,
+          errors: issues.filter((i) => i.entity === "ITEM" && i.severity === "ERROR").length,
+          warnings: 0,
+        },
         suppliers: {
           rows: snapshot.suppliers.length,
           errors: 0,

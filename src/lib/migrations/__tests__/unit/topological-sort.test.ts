@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
 import { sortCategoriesByParent } from "@/lib/migrations/core/topological-sort";
 import type { RawCategory } from "@/lib/migrations/core/types";
+import { describe, expect, it } from "vitest";
 
 describe("topological-sort", () => {
   describe("sortCategoriesByParent", () => {

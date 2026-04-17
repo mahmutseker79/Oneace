@@ -9,8 +9,8 @@ import {
   UNLIMITED,
   checkPlanLimit,
   getPlanLimit,
-  hasPlanCapability,
   hasExtendedCapability,
+  hasPlanCapability,
   planCapabilityError,
   planLimitError,
   requiredPlanFor,
@@ -249,10 +249,8 @@ describe("supportsCountMethodology", () => {
 
   // PRO gets cycle + directed + partial
   it("PRO: CYCLE allowed", () => expect(supportsCountMethodology("PRO", "CYCLE")).toBe(true));
-  it("PRO: DIRECTED allowed", () =>
-    expect(supportsCountMethodology("PRO", "DIRECTED")).toBe(true));
-  it("PRO: PARTIAL allowed", () =>
-    expect(supportsCountMethodology("PRO", "PARTIAL")).toBe(true));
+  it("PRO: DIRECTED allowed", () => expect(supportsCountMethodology("PRO", "DIRECTED")).toBe(true));
+  it("PRO: PARTIAL allowed", () => expect(supportsCountMethodology("PRO", "PARTIAL")).toBe(true));
   it("PRO: DOUBLE_BLIND blocked", () =>
     expect(supportsCountMethodology("PRO", "DOUBLE_BLIND")).toBe(false));
 

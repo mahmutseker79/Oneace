@@ -1,8 +1,9 @@
-import { Plus } from "lucide-react";import type { Metadata } from "next";
+import type { Prisma } from "@/generated/prisma";
+import type { $Enums } from "@/generated/prisma";
+import { Plus } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Prisma } from "@/generated/prisma";
-import { $Enums } from "@/generated/prisma";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

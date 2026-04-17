@@ -13,9 +13,14 @@
  * It's an event propagation system that sends notifications on changes.
  */
 
-import SyncEngine, { type SyncContext, type SyncEntity, type SyncResult } from "@/lib/integrations/sync-engine";
-import WebhookClient, { type WebhookEvent } from "./webhook-client";
+import SyncEngine, {
+  type SyncContext,
+  type SyncEntity,
+  type SyncResult,
+} from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
+import type WebhookClient from "./webhook-client";
+import type { WebhookEvent } from "./webhook-client";
 
 interface WebhookSyncContext extends SyncContext {
   webhookClient: WebhookClient;
@@ -122,10 +127,7 @@ class WebhookSyncEngine extends SyncEngine {
   /**
    * Send webhook event for item deletion.
    */
-  async sendItemDeletedEvent(
-    webhookContext: WebhookSyncContext,
-    itemId: string,
-  ): Promise<boolean> {
+  async sendItemDeletedEvent(webhookContext: WebhookSyncContext, itemId: string): Promise<boolean> {
     const webhookClient = webhookContext.webhookClient;
 
     const event: WebhookEvent = {

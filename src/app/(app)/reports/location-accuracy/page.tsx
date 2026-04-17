@@ -15,7 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
-import { getMessages, getRegion } from "@/lib/i18n";import { requireActiveMembership } from "@/lib/session";
+import { getMessages, getRegion } from "@/lib/i18n";
+import { requireActiveMembership } from "@/lib/session";
 import { formatNumber } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {

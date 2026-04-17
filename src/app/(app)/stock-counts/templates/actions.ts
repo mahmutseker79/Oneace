@@ -5,10 +5,10 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
-import { logger } from "@/lib/logger";
 import {
   createTemplateSchema,
   deleteTemplateSchema,

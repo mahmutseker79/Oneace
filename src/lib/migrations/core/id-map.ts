@@ -65,9 +65,7 @@ export class IdMap {
     const id = this.get(kind, externalId);
     if (!id) {
       throw new Error(
-        `IdMap miss: no internal id for ${kind} externalId=${externalId}. ` +
-          `This is a snapshot integrity error — every referenced entity must ` +
-          `be imported before its dependents.`,
+        `IdMap miss: no internal id for ${kind} externalId=${externalId}. This is a snapshot integrity error — every referenced entity must be imported before its dependents.`,
       );
     }
     return id;
@@ -203,14 +201,7 @@ export async function upsertCustomFieldDefinitionByExternal(
     entityType: "ITEM" | "SUPPLIER" | "WAREHOUSE" | "PURCHASE_ORDER";
     name: string;
     fieldKey: string;
-    fieldType:
-      | "TEXT"
-      | "NUMBER"
-      | "DATE"
-      | "BOOLEAN"
-      | "SELECT"
-      | "MULTI_SELECT"
-      | "URL";
+    fieldType: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "SELECT" | "MULTI_SELECT" | "URL";
     options?: string[] | null;
     isRequired?: boolean;
     defaultValue?: string | null;

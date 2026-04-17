@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
 import { IdMap } from "@/lib/migrations/core/id-map";
+import { describe, expect, it } from "vitest";
 
 describe("IdMap", () => {
   describe("set and get", () => {
@@ -58,9 +58,7 @@ describe("IdMap", () => {
 
     it("error message mentions snapshot integrity", () => {
       const map = new IdMap();
-      expect(() => map.require("ITEM", "ext-item-missing")).toThrow(
-        /snapshot integrity error/,
-      );
+      expect(() => map.require("ITEM", "ext-item-missing")).toThrow(/snapshot integrity error/);
     });
   });
 

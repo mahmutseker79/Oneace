@@ -52,9 +52,7 @@ export function AcceptInviteButton({ token, labels }: AcceptInviteButtonProps) {
         <div className="flex items-start gap-2">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" />
           <div className="space-y-1">
-            <p className="font-medium text-success">
-              {labels.successTitle}
-            </p>
+            <p className="font-medium text-success">{labels.successTitle}</p>
             <p className="text-success">{labels.successBody}</p>
           </div>
         </div>

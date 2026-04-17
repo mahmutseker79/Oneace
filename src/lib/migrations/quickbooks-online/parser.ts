@@ -9,16 +9,20 @@
  *   - Stock levels (inferred from QtyOnHand)
  */
 
-import type { QBOItem, QBOVendor, QBOPurchaseOrder } from "@/lib/integrations/quickbooks/qbo-client";
+import type { MigrationSource } from "@/generated/prisma";
 import type {
-  RawItem,
-  RawSupplier,
+  QBOItem,
+  QBOPurchaseOrder,
+  QBOVendor,
+} from "@/lib/integrations/quickbooks/qbo-client";
+import type {
+  ParsedSnapshot,
   RawCategory,
+  RawItem,
   RawPurchaseOrder,
   RawStockLevel,
-  ParsedSnapshot,
+  RawSupplier,
 } from "@/lib/migrations/core/types";
-import type { MigrationSource } from "@/generated/prisma";
 
 /**
  * Build a category hierarchy from QBO's SubItem structure.
@@ -94,7 +98,12 @@ export function parseQboItem(item: QBOItem): RawItem | null {
 export function parseQboVendor(vendor: QBOVendor): RawSupplier {
   // Concatenate address parts
   const address = vendor.billingAddress
-    ? [vendor.billingAddress.line1, vendor.billingAddress.line2, vendor.billingAddress.city, vendor.billingAddress.postalCode]
+    ? [
+        vendor.billingAddress.line1,
+        vendor.billingAddress.line2,
+        vendor.billingAddress.city,
+        vendor.billingAddress.postalCode,
+      ]
         .filter(Boolean)
         .join(", ")
     : null;
@@ -102,7 +111,8 @@ export function parseQboVendor(vendor: QBOVendor): RawSupplier {
   return {
     externalId: vendor.id,
     name: vendor.displayName,
-    contactName: vendor.givenName && vendor.familyName ? `${vendor.givenName} ${vendor.familyName}` : null,
+    contactName:
+      vendor.givenName && vendor.familyName ? `${vendor.givenName} ${vendor.familyName}` : null,
     email: vendor.email || null,
     phone: vendor.phone || null,
     website: vendor.website || null,
@@ -176,11 +186,15 @@ export function parseQboSnapshot(qboData: {
   }
 
   if (skippedServices > 0) {
-    warnings.push(`Skipped ${skippedServices} Service items (OneAce uses Items for inventory only)`);
+    warnings.push(
+      `Skipped ${skippedServices} Service items (OneAce uses Items for inventory only)`,
+    );
   }
 
   if (generatedSkus > 0) {
-    warnings.push(`Generated SKUs for ${generatedSkus} items that had no SKU; check validity after import`);
+    warnings.push(
+      `Generated SKUs for ${generatedSkus} items that had no SKU; check validity after import`,
+    );
   }
 
   // Parse vendors/suppliers

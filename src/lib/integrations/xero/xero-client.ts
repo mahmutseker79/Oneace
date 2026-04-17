@@ -17,11 +17,11 @@
  */
 
 import {
+  type ApiCallOptions,
+  type ApiResponse,
   IntegrationClient,
   type OAuthConfig,
   type OAuthToken,
-  type ApiCallOptions,
-  type ApiResponse,
 } from "@/lib/integrations/base-client";
 import { logger } from "@/lib/logger";
 
@@ -378,7 +378,7 @@ export interface XeroApiListResponse<T> {
 // ── Xero Client ─────────────────────────────────────────────────
 
 export class XeroClient extends IntegrationClient {
-  private tenantId: string = "";
+  private tenantId = "";
   private baseApiUrl = "https://api.xero.com/api.xro/2.0";
 
   constructor(oauthConfig: OAuthConfig, credentials: OAuthToken, tenantId: string) {
@@ -422,14 +422,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all contacts with optional pagination and filtering.
    */
-  async getContacts(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroContact>>> {
+  async getContacts(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroContact>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -455,7 +453,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Create a new contact.
    */
-  async createContact(contact: Partial<XeroContact>): Promise<ApiResponse<XeroApiListResponse<XeroContact>>> {
+  async createContact(
+    contact: Partial<XeroContact>,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroContact>>> {
     return this.apiCall<XeroApiListResponse<XeroContact>>("/Contacts", {
       method: "POST",
       body: { Contacts: [contact] },
@@ -480,14 +480,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all invoices (bills and sales invoices).
    */
-  async getInvoices(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroInvoice>>> {
+  async getInvoices(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroInvoice>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -513,7 +511,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Create a new invoice.
    */
-  async createInvoice(invoice: Partial<XeroInvoice>): Promise<ApiResponse<XeroApiListResponse<XeroInvoice>>> {
+  async createInvoice(
+    invoice: Partial<XeroInvoice>,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroInvoice>>> {
     return this.apiCall<XeroApiListResponse<XeroInvoice>>("/Invoices", {
       method: "POST",
       body: { Invoices: [invoice] },
@@ -536,7 +536,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Mark invoice as sent.
    */
-  async markInvoiceAsSent(invoiceId: string): Promise<ApiResponse<XeroApiListResponse<XeroInvoice>>> {
+  async markInvoiceAsSent(
+    invoiceId: string,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroInvoice>>> {
     return this.apiCall<XeroApiListResponse<XeroInvoice>>(`/Invoices/${invoiceId}`, {
       method: "POST",
       body: {
@@ -554,14 +556,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all credit notes.
    */
-  async getCreditNotes(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroCreditNote>>> {
+  async getCreditNotes(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroCreditNote>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -580,14 +580,18 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get a specific credit note by ID.
    */
-  async getCreditNote(creditNoteId: string): Promise<ApiResponse<XeroApiListResponse<XeroCreditNote>>> {
+  async getCreditNote(
+    creditNoteId: string,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroCreditNote>>> {
     return this.apiCall<XeroApiListResponse<XeroCreditNote>>(`/CreditNotes/${creditNoteId}`);
   }
 
   /**
    * Create a new credit note.
    */
-  async createCreditNote(creditNote: Partial<XeroCreditNote>): Promise<ApiResponse<XeroApiListResponse<XeroCreditNote>>> {
+  async createCreditNote(
+    creditNote: Partial<XeroCreditNote>,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroCreditNote>>> {
     return this.apiCall<XeroApiListResponse<XeroCreditNote>>("/CreditNotes", {
       method: "POST",
       body: { CreditNotes: [creditNote] },
@@ -599,14 +603,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all payments.
    */
-  async getPayments(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroPayment>>> {
+  async getPayments(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroPayment>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -632,7 +634,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Create a new payment.
    */
-  async createPayment(payment: Partial<XeroPayment>): Promise<ApiResponse<XeroApiListResponse<XeroPayment>>> {
+  async createPayment(
+    payment: Partial<XeroPayment>,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroPayment>>> {
     return this.apiCall<XeroApiListResponse<XeroPayment>>("/Payments", {
       method: "POST",
       body: { Payments: [payment] },
@@ -644,14 +648,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all overpayments.
    */
-  async getOverpayments(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroOverpayment>>> {
+  async getOverpayments(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroOverpayment>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -670,7 +672,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get a specific overpayment by ID.
    */
-  async getOverpayment(overpaymentId: string): Promise<ApiResponse<XeroApiListResponse<XeroOverpayment>>> {
+  async getOverpayment(
+    overpaymentId: string,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroOverpayment>>> {
     return this.apiCall<XeroApiListResponse<XeroOverpayment>>(`/Overpayments/${overpaymentId}`);
   }
 
@@ -679,14 +683,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all prepayments.
    */
-  async getPrepayments(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroPrepayment>>> {
+  async getPrepayments(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroPrepayment>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -705,7 +707,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get a specific prepayment by ID.
    */
-  async getPrepayment(prepaymentId: string): Promise<ApiResponse<XeroApiListResponse<XeroPrepayment>>> {
+  async getPrepayment(
+    prepaymentId: string,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroPrepayment>>> {
     return this.apiCall<XeroApiListResponse<XeroPrepayment>>(`/Prepayments/${prepaymentId}`);
   }
 
@@ -714,13 +718,11 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all accounts.
    */
-  async getAccounts(
-    options?: {
-      where?: string;
-      order?: string;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroAccount>>> {
+  async getAccounts(options?: {
+    where?: string;
+    order?: string;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroAccount>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -745,7 +747,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Create a new account.
    */
-  async createAccount(account: Partial<XeroAccount>): Promise<ApiResponse<XeroApiListResponse<XeroAccount>>> {
+  async createAccount(
+    account: Partial<XeroAccount>,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroAccount>>> {
     return this.apiCall<XeroApiListResponse<XeroAccount>>("/Accounts", {
       method: "POST",
       body: { Accounts: [account] },
@@ -770,14 +774,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all items.
    */
-  async getItems(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroItem>>> {
+  async getItems(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroItem>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -813,7 +815,10 @@ export class XeroClient extends IntegrationClient {
   /**
    * Update an existing item.
    */
-  async updateItem(itemId: string, item: Partial<XeroItem>): Promise<ApiResponse<XeroApiListResponse<XeroItem>>> {
+  async updateItem(
+    itemId: string,
+    item: Partial<XeroItem>,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroItem>>> {
     return this.apiCall<XeroApiListResponse<XeroItem>>(`/Items/${itemId}`, {
       method: "POST",
       body: { Items: [item] },
@@ -825,14 +830,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all purchase orders.
    */
-  async getPurchaseOrders(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroPurchaseOrder>>> {
+  async getPurchaseOrders(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroPurchaseOrder>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -851,14 +854,18 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get a specific purchase order by ID.
    */
-  async getPurchaseOrder(poId: string): Promise<ApiResponse<XeroApiListResponse<XeroPurchaseOrder>>> {
+  async getPurchaseOrder(
+    poId: string,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroPurchaseOrder>>> {
     return this.apiCall<XeroApiListResponse<XeroPurchaseOrder>>(`/PurchaseOrders/${poId}`);
   }
 
   /**
    * Create a new purchase order.
    */
-  async createPurchaseOrder(po: Partial<XeroPurchaseOrder>): Promise<ApiResponse<XeroApiListResponse<XeroPurchaseOrder>>> {
+  async createPurchaseOrder(
+    po: Partial<XeroPurchaseOrder>,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroPurchaseOrder>>> {
     return this.apiCall<XeroApiListResponse<XeroPurchaseOrder>>("/PurchaseOrders", {
       method: "POST",
       body: { PurchaseOrders: [po] },
@@ -883,14 +890,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all bank transactions.
    */
-  async getBankTransactions(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroBankTransaction>>> {
+  async getBankTransactions(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroBankTransaction>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -909,7 +914,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get a specific bank transaction by ID.
    */
-  async getBankTransaction(txnId: string): Promise<ApiResponse<XeroApiListResponse<XeroBankTransaction>>> {
+  async getBankTransaction(
+    txnId: string,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroBankTransaction>>> {
     return this.apiCall<XeroApiListResponse<XeroBankTransaction>>(`/BankTransactions/${txnId}`);
   }
 
@@ -943,14 +950,12 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get all manual journals.
    */
-  async getManualJournals(
-    options?: {
-      where?: string;
-      order?: string;
-      page?: number;
-      modifiedAfter?: Date;
-    },
-  ): Promise<ApiResponse<XeroApiListResponse<XeroManualJournal>>> {
+  async getManualJournals(options?: {
+    where?: string;
+    order?: string;
+    page?: number;
+    modifiedAfter?: Date;
+  }): Promise<ApiResponse<XeroApiListResponse<XeroManualJournal>>> {
     const customHeaders: Record<string, string> = {};
     if (options?.modifiedAfter) {
       customHeaders["If-Modified-Since"] = options.modifiedAfter.toISOString();
@@ -969,7 +974,9 @@ export class XeroClient extends IntegrationClient {
   /**
    * Get a specific manual journal by ID.
    */
-  async getManualJournal(journalId: string): Promise<ApiResponse<XeroApiListResponse<XeroManualJournal>>> {
+  async getManualJournal(
+    journalId: string,
+  ): Promise<ApiResponse<XeroApiListResponse<XeroManualJournal>>> {
     return this.apiCall<XeroApiListResponse<XeroManualJournal>>(`/ManualJournals/${journalId}`);
   }
 
@@ -1102,9 +1109,7 @@ export class XeroClient extends IntegrationClient {
     entityId: string,
     attachmentId: string,
   ): Promise<ApiResponse<XeroAttachment>> {
-    return this.apiCall<XeroAttachment>(
-      `/${entityType}s/${entityId}/Attachments/${attachmentId}`,
-    );
+    return this.apiCall<XeroAttachment>(`/${entityType}s/${entityId}/Attachments/${attachmentId}`);
   }
 
   /**

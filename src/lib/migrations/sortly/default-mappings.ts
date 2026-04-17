@@ -6,9 +6,7 @@
 
 import type { FieldMapping, ParsedSnapshot } from "@/lib/migrations/core/types";
 
-export function getSortlyDefaultMappings(
-  snapshot: ParsedSnapshot,
-): FieldMapping[] {
+export function getSortlyDefaultMappings(snapshot: ParsedSnapshot): FieldMapping[] {
   const mappings: FieldMapping[] = [];
 
   // Suggest mappings based on field key patterns.
@@ -34,9 +32,11 @@ export function getSortlyDefaultMappings(
     }
 
     mappings.push({
-      externalFieldKey: def.fieldKey,
-      suggestedOneAceField: suggestion || def.fieldKey,
-      confidence: suggestion ? 0.8 : 0.3,
+      sourceField: def.fieldKey,
+      targetField: suggestion || `customField.${def.fieldKey}`,
+      note: suggestion
+        ? "auto-matched by keyword (confidence: high)"
+        : "no keyword match; defaulting to custom field (confidence: low)",
     });
   }
 

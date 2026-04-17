@@ -277,8 +277,8 @@ export default async function StockAgingReportPage() {
         <CardHeader>
           <CardTitle className="text-lg">Oldest on-hand items</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Top 100 items by days since last activity. Items that never moved fall back to
-            their creation date.
+            Top 100 items by days since last activity. Items that never moved fall back to their
+            creation date.
           </p>
         </CardHeader>
         <CardContent className="overflow-x-auto">

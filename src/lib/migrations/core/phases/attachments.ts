@@ -98,9 +98,7 @@ class WorkerPool<T> {
 // Phase implementation
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function importAttachmentsPhase(
-  ctx: AttachmentPhaseContext,
-): Promise<PhaseResult> {
+export async function importAttachmentsPhase(ctx: AttachmentPhaseContext): Promise<PhaseResult> {
   const startedAt = new Date();
 
   // Early return if attachments are excluded from scope
@@ -174,15 +172,9 @@ export async function importAttachmentsPhase(
           attachmentType = "IMAGE";
         } else if (filename.endsWith(".pdf")) {
           attachmentType = "DOCUMENT";
-        } else if (
-          filename.includes("datasheet") ||
-          filename.includes("spec")
-        ) {
+        } else if (filename.includes("datasheet") || filename.includes("spec")) {
           attachmentType = "DATASHEET";
-        } else if (
-          filename.includes("cert") ||
-          filename.includes("compliance")
-        ) {
+        } else if (filename.includes("cert") || filename.includes("compliance")) {
           attachmentType = "CERTIFICATE";
         }
 

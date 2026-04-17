@@ -8,17 +8,15 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import {
-  createVehicleSchema,
-  loadShipmentSchema,
-  updateVehicleSchema,
   type CreateVehicleInput,
   type LoadShipmentInput,
   type UpdateVehicleInput,
+  createVehicleSchema,
+  loadShipmentSchema,
+  updateVehicleSchema,
 } from "@/lib/validation/vehicle";
 
-export type ActionResult<T = unknown> =
-  | { ok: true; data?: T }
-  | { ok: false; error: string };
+export type ActionResult<T = unknown> = { ok: true; data?: T } | { ok: false; error: string };
 
 /**
  * Create a new vehicle (FixedAsset with category VEHICLE).
@@ -303,7 +301,9 @@ export async function loadShipmentAction(input: LoadShipmentInput): Promise<Acti
         organizationId: membership.organizationId,
         assetId: parsed.data.vehicleId,
         action: "ASSIGNED",
-        note: parsed.data.notes || `Shipment loaded${parsed.data.salesOrderId ? ` (SO: ${parsed.data.salesOrderId})` : ""}`,
+        note:
+          parsed.data.notes ||
+          `Shipment loaded${parsed.data.salesOrderId ? ` (SO: ${parsed.data.salesOrderId})` : ""}`,
         performedByUserId: session.user.id,
       },
     });

@@ -6,25 +6,24 @@ import { PageHeader } from "@/components/ui/page-header";
 import type { MigrationStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Migration Details",
 };
 
-const STATUS_BADGES: Record<MigrationStatus, { variant: any; label: string }> =
-  {
-    PENDING: { variant: "secondary", label: "Beklemede" },
-    FILES_UPLOADED: { variant: "info", label: "Dosyalar Yüklendi" },
-    MAPPING_REVIEW: { variant: "info", label: "Eşleme İncelemesi" },
-    VALIDATING: { variant: "info", label: "Doğrulanıyor" },
-    VALIDATED: { variant: "info", label: "Doğrulandı" },
-    IMPORTING: { variant: "processing", label: "İçe Aktarılıyor" },
-    COMPLETED: { variant: "success", label: "Tamamlandı" },
-    FAILED: { variant: "destructive", label: "Başarısız" },
-    CANCELLED: { variant: "outline", label: "İptal Edildi" },
-  };
+const STATUS_BADGES: Record<MigrationStatus, { variant: any; label: string }> = {
+  PENDING: { variant: "secondary", label: "Beklemede" },
+  FILES_UPLOADED: { variant: "info", label: "Dosyalar Yüklendi" },
+  MAPPING_REVIEW: { variant: "info", label: "Eşleme İncelemesi" },
+  VALIDATING: { variant: "info", label: "Doğrulanıyor" },
+  VALIDATED: { variant: "info", label: "Doğrulandı" },
+  IMPORTING: { variant: "processing", label: "İçe Aktarılıyor" },
+  COMPLETED: { variant: "success", label: "Tamamlandı" },
+  FAILED: { variant: "destructive", label: "Başarısız" },
+  CANCELLED: { variant: "outline", label: "İptal Edildi" },
+};
 
 const SOURCE_LABELS: Record<string, string> = {
   SORTLY: "Sortly",
@@ -94,9 +93,7 @@ export default async function MigrationDetailPage(props: PageProps) {
           <CardContent className="pt-6 space-y-2">
             <p className="text-xs text-muted-foreground">Başlatıldı</p>
             <p className="text-sm font-medium">
-              {job.startedAt
-                ? job.startedAt.toLocaleString("tr-TR")
-                : "Henüz başlanmadı"}
+              {job.startedAt ? job.startedAt.toLocaleString("tr-TR") : "Henüz başlanmadı"}
             </p>
           </CardContent>
         </Card>
@@ -104,9 +101,7 @@ export default async function MigrationDetailPage(props: PageProps) {
           <CardContent className="pt-6 space-y-2">
             <p className="text-xs text-muted-foreground">Tamamlandı</p>
             <p className="text-sm font-medium">
-              {job.completedAt
-                ? job.completedAt.toLocaleString("tr-TR")
-                : "Henüz tamamlanmadı"}
+              {job.completedAt ? job.completedAt.toLocaleString("tr-TR") : "Henüz tamamlanmadı"}
             </p>
           </CardContent>
         </Card>
@@ -116,11 +111,7 @@ export default async function MigrationDetailPage(props: PageProps) {
         <Card>
           <CardContent className="pt-6 space-y-6">
             <h3 className="font-semibold">İçe Aktarma İlerlemesi</h3>
-            <MigrationProgress
-              phases={phases}
-              currentPhase={null}
-              isImporting={true}
-            />
+            <MigrationProgress phases={phases} currentPhase={null} isImporting={true} />
           </CardContent>
         </Card>
       )}
@@ -129,11 +120,7 @@ export default async function MigrationDetailPage(props: PageProps) {
         <Card>
           <CardContent className="pt-6 space-y-6">
             <h3 className="font-semibold">Aşama Özeti</h3>
-            <MigrationProgress
-              phases={phases}
-              currentPhase={null}
-              isImporting={false}
-            />
+            <MigrationProgress phases={phases} currentPhase={null} isImporting={false} />
           </CardContent>
         </Card>
       )}
@@ -151,25 +138,16 @@ export default async function MigrationDetailPage(props: PageProps) {
               ))}
             </div>
             {issues.length > 10 && (
-              <p className="text-xs text-muted-foreground">
-                +{issues.length - 10} daha...
-              </p>
+              <p className="text-xs text-muted-foreground">+{issues.length - 10} daha...</p>
             )}
           </CardContent>
         </Card>
       )}
 
       <div className="flex gap-2">
-        {job.status === "IMPORTING" && (
-          <Button variant="destructive">Durdur</Button>
-        )}
-        {job.status === "COMPLETED" && (
-          <Button variant="outline">Geri Al</Button>
-        )}
-        {(job.status === "FAILED" ||
-          job.status === "CANCELLED") && (
-          <Button>Yeniden Dene</Button>
-        )}
+        {job.status === "IMPORTING" && <Button variant="destructive">Durdur</Button>}
+        {job.status === "COMPLETED" && <Button variant="outline">Geri Al</Button>}
+        {(job.status === "FAILED" || job.status === "CANCELLED") && <Button>Yeniden Dene</Button>}
       </div>
     </div>
   );

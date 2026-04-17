@@ -14,16 +14,21 @@
  * Batch processing with error isolation.
  */
 
-import SyncEngine, { type SyncContext, type SyncEntity, type SyncResult } from "@/lib/integrations/sync-engine";
-import OdooClient, {
-  type OdooProduct,
-  type OdooSaleOrder,
-  type OdooPurchaseOrder,
-  type OdooPartner,
-  type OdooInvoice,
-  type OdooStockQuant,
-} from "./odoo-client";
+import SyncEngine, {
+  type SyncContext,
+  type SyncEntity,
+  type SyncResult,
+} from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
+import type OdooClient from "./odoo-client";
+import type {
+  OdooInvoice,
+  OdooPartner,
+  OdooProduct,
+  OdooPurchaseOrder,
+  OdooSaleOrder,
+  OdooStockQuant,
+} from "./odoo-client";
 
 interface OdooSyncContext extends SyncContext {
   odooClient: OdooClient;

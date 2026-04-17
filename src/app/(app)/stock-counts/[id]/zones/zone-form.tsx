@@ -50,12 +50,7 @@ interface ZoneFormProps {
   };
 }
 
-export function ZoneForm({
-  countId,
-  zoneId,
-  initialData,
-  labels,
-}: ZoneFormProps) {
+export function ZoneForm({ countId, zoneId, initialData, labels }: ZoneFormProps) {
   const router = useRouter();
   const [name, setName] = useState(initialData?.name ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
@@ -66,9 +61,7 @@ export function ZoneForm({
   const [promoteToBin, setPromoteToBin] = useState(initialData?.promoteToBin ?? false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [parentZones, setParentZones] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
+  const [parentZones, setParentZones] = useState<Array<{ id: string; name: string }>>([]);
 
   // Load available parent zones when component mounts
   useEffect(() => {
@@ -280,8 +273,12 @@ export function ZoneForm({
               <Button type="submit" disabled={isPending || name.trim().length < 1}>
                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {isPending
-                  ? (zoneId ? labels.updateButton : labels.createButton)
-                  : (zoneId ? labels.updateButton : labels.createButton)}
+                  ? zoneId
+                    ? labels.updateButton
+                    : labels.createButton
+                  : zoneId
+                    ? labels.updateButton
+                    : labels.createButton}
               </Button>
               <Link href={`/stock-counts/${countId}/zones`}>
                 <Button type="button" variant="outline">

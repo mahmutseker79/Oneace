@@ -27,13 +27,23 @@
  */
 import type { MigrationStatus, PrismaClient } from "@/generated/prisma";
 
-import { IdMap } from "@/lib/migrations/core/id-map";
 import { recordAudit } from "@/lib/audit";
+import { IdMap } from "@/lib/migrations/core/id-map";
+import { importAttachmentsPhase } from "@/lib/migrations/core/phases/attachments";
+import { importCategories } from "@/lib/migrations/core/phases/categories";
+import { importCustomFieldDefs } from "@/lib/migrations/core/phases/custom-field-defs";
+import { importCustomFieldValues } from "@/lib/migrations/core/phases/custom-field-values";
+import { importItems } from "@/lib/migrations/core/phases/items";
+import { importLocations } from "@/lib/migrations/core/phases/locations";
+import { importPurchaseOrders } from "@/lib/migrations/core/phases/purchase-orders";
+import { importStockLevels } from "@/lib/migrations/core/phases/stock-levels";
+import { importSuppliers } from "@/lib/migrations/core/phases/suppliers";
+import { importWarehouses } from "@/lib/migrations/core/phases/warehouses";
 import {
+  type MigrationScopeOptions,
   parseScopeOptions,
   resolvePoHistoryCutoff,
   shouldImportPurchaseOrders,
-  type MigrationScopeOptions,
 } from "@/lib/migrations/core/scope-options";
 import type {
   ImportPhase,
@@ -41,16 +51,6 @@ import type {
   ParsedSnapshot,
   PhaseResult,
 } from "@/lib/migrations/core/types";
-import { importCategories } from "@/lib/migrations/core/phases/categories";
-import { importSuppliers } from "@/lib/migrations/core/phases/suppliers";
-import { importWarehouses } from "@/lib/migrations/core/phases/warehouses";
-import { importLocations } from "@/lib/migrations/core/phases/locations";
-import { importCustomFieldDefs } from "@/lib/migrations/core/phases/custom-field-defs";
-import { importItems } from "@/lib/migrations/core/phases/items";
-import { importCustomFieldValues } from "@/lib/migrations/core/phases/custom-field-values";
-import { importStockLevels } from "@/lib/migrations/core/phases/stock-levels";
-import { importAttachmentsPhase } from "@/lib/migrations/core/phases/attachments";
-import { importPurchaseOrders } from "@/lib/migrations/core/phases/purchase-orders";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public API
@@ -85,9 +85,7 @@ export interface RunImportOptions {
  * partial failures are reflected in `success=false` and per-phase
  * reports, not thrown.
  */
-export async function runMigrationImport(
-  opts: RunImportOptions,
-): Promise<MigrationImportResult> {
+export async function runMigrationImport(opts: RunImportOptions): Promise<MigrationImportResult> {
   const startedAt = new Date();
 
   // Resolve scope options: prefer explicit override, else load from DB,
@@ -128,12 +126,7 @@ export async function runMigrationImport(
   let success = true;
 
   // Phase list — some phases are conditionally skipped based on scope.
-  const plan: ImportPhase[] = [
-    "CATEGORIES",
-    "SUPPLIERS",
-    "WAREHOUSES",
-    "LOCATIONS",
-  ];
+  const plan: ImportPhase[] = ["CATEGORIES", "SUPPLIERS", "WAREHOUSES", "LOCATIONS"];
   if (scope.includeCustomFields) plan.push("CUSTOM_FIELD_DEFS");
   plan.push("ITEMS");
   if (scope.includeCustomFields) plan.push("CUSTOM_FIELD_VALUES");
@@ -263,9 +256,10 @@ async function runPhase(ctx: PhaseContext): Promise<PhaseResult> {
       case "ATTACHMENTS":
         ({ created, updated, failed, createdIds, errors } = await importAttachmentsPhase(ctx));
         break;
-      default:
+      default: {
         const _exhaustive: never = ctx.phase;
         return _exhaustive;
+      }
     }
   } catch (e) {
     failed++;
@@ -310,10 +304,7 @@ function countSnapshotRows(phase: ImportPhase, snap: ParsedSnapshot): number {
     case "ITEMS":
       return snap.items.length;
     case "CUSTOM_FIELD_VALUES":
-      return snap.items.reduce(
-        (acc, i) => acc + Object.keys(i.customFieldValues ?? {}).length,
-        0,
-      );
+      return snap.items.reduce((acc, i) => acc + Object.keys(i.customFieldValues ?? {}).length, 0);
     case "STOCK_LEVELS":
       return snap.stockLevels.length;
     case "ATTACHMENTS":
@@ -323,9 +314,7 @@ function countSnapshotRows(phase: ImportPhase, snap: ParsedSnapshot): number {
   }
 }
 
-async function resolveScope(
-  opts: RunImportOptions,
-): Promise<MigrationScopeOptions> {
+async function resolveScope(opts: RunImportOptions): Promise<MigrationScopeOptions> {
   if (opts.scopeOptions) return opts.scopeOptions;
   const job = await opts.db.migrationJob.findUniqueOrThrow({
     where: { id: opts.migrationJobId },

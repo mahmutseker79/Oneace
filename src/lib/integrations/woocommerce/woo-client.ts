@@ -15,7 +15,7 @@
  * - Settings, System Status
  */
 
-import * as crypto from "crypto";
+import * as crypto from "node:crypto";
 import { logger } from "@/lib/logger";
 
 // ── WooCommerce API Credentials ─────────────────────────────────
@@ -136,7 +136,13 @@ export interface WooOrder {
     taxes?: Array<{ id: number; total: string }>;
   }>;
   fee_lines?: Array<{ id: number; name: string; total: string; total_tax: string }>;
-  tax_lines?: Array<{ id: number; rate_code: string; rate_id: number; label: string; total: string }>;
+  tax_lines?: Array<{
+    id: number;
+    rate_code: string;
+    rate_id: number;
+    label: string;
+    total: string;
+  }>;
   refunds?: WooRefund[];
 }
 
@@ -355,17 +361,16 @@ export class WooClient {
           consumer_secret: this.credentials.consumerSecret,
         },
       };
-    } else {
-      // HTTP: use HMAC signature in header
-      const signature = this.generateSignature(method, path);
-      return {
-        header: {
-          Authorization: `Basic ${Buffer.from(
-            `${this.credentials.consumerKey}:${signature}`,
-          ).toString("base64")}`,
-        },
-      };
     }
+    // HTTP: use HMAC signature in header
+    const signature = this.generateSignature(method, path);
+    return {
+      header: {
+        Authorization: `Basic ${Buffer.from(
+          `${this.credentials.consumerKey}:${signature}`,
+        ).toString("base64")}`,
+      },
+    };
   }
 
   /**
@@ -447,9 +452,9 @@ export class WooClient {
         const data = (await response.json()) as T;
 
         const pagination: PaginationHeaders = {
-          total: parseInt(response.headers.get("X-WP-Total") || "0", 10),
-          totalPages: parseInt(response.headers.get("X-WP-TotalPages") || "0", 10),
-          currentPage: parseInt(response.headers.get("X-WP-CurrentPage") || "1", 10),
+          total: Number.parseInt(response.headers.get("X-WP-Total") || "0", 10),
+          totalPages: Number.parseInt(response.headers.get("X-WP-TotalPages") || "0", 10),
+          currentPage: Number.parseInt(response.headers.get("X-WP-CurrentPage") || "1", 10),
         };
 
         return { data, pagination };
@@ -539,10 +544,7 @@ export class WooClient {
    * Get a single product.
    */
   async getProduct(productId: number): Promise<WooProduct> {
-    const { data } = await this.apiCall<WooProduct>(
-      "GET",
-      `/wp-json/wc/v3/products/${productId}`,
-    );
+    const { data } = await this.apiCall<WooProduct>("GET", `/wp-json/wc/v3/products/${productId}`);
     return data;
   }
 
@@ -550,11 +552,7 @@ export class WooClient {
    * Create a product.
    */
   async createProduct(product: Partial<WooProduct>): Promise<WooProduct> {
-    const { data } = await this.apiCall<WooProduct>(
-      "POST",
-      "/wp-json/wc/v3/products",
-      product,
-    );
+    const { data } = await this.apiCall<WooProduct>("POST", "/wp-json/wc/v3/products", product);
     return data;
   }
 
@@ -744,7 +742,10 @@ export class WooClient {
         rating: number;
         date_created: string;
       }>
-    >("GET", `/wp-json/wc/v3/products/${productId}/reviews`, undefined, { page, per_page: perPage });
+    >("GET", `/wp-json/wc/v3/products/${productId}/reviews`, undefined, {
+      page,
+      per_page: perPage,
+    });
     return { reviews: data, pagination };
   }
 
@@ -890,11 +891,7 @@ export class WooClient {
    * Create a customer.
    */
   async createCustomer(customer: Partial<WooCustomer>): Promise<WooCustomer> {
-    const { data } = await this.apiCall<WooCustomer>(
-      "POST",
-      "/wp-json/wc/v3/customers",
-      customer,
-    );
+    const { data } = await this.apiCall<WooCustomer>("POST", "/wp-json/wc/v3/customers", customer);
     return data;
   }
 
@@ -1032,10 +1029,7 @@ export class WooClient {
    * List shipping zones.
    */
   async listShippingZones(): Promise<WooShippingZone[]> {
-    const { data } = await this.apiCall<WooShippingZone[]>(
-      "GET",
-      "/wp-json/wc/v3/shipping/zones",
-    );
+    const { data } = await this.apiCall<WooShippingZone[]>("GET", "/wp-json/wc/v3/shipping/zones");
     return data;
   }
 
@@ -1093,9 +1087,7 @@ export class WooClient {
   /**
    * List shipping methods for a zone.
    */
-  async listShippingMethods(
-    zoneId: number,
-  ): Promise<WooShippingMethod[]> {
+  async listShippingMethods(zoneId: number): Promise<WooShippingMethod[]> {
     const { data } = await this.apiCall<WooShippingMethod[]>(
       "GET",
       `/wp-json/wc/v3/shipping/zones/${zoneId}/methods`,
@@ -1329,10 +1321,7 @@ export class WooClient {
    * Get a webhook.
    */
   async getWebhook(webhookId: number): Promise<WooWebhook> {
-    const { data } = await this.apiCall<WooWebhook>(
-      "GET",
-      `/wp-json/wc/v3/webhooks/${webhookId}`,
-    );
+    const { data } = await this.apiCall<WooWebhook>("GET", `/wp-json/wc/v3/webhooks/${webhookId}`);
     return data;
   }
 
@@ -1340,11 +1329,7 @@ export class WooClient {
    * Create a webhook.
    */
   async createWebhook(webhook: Partial<WooWebhook>): Promise<WooWebhook> {
-    const { data } = await this.apiCall<WooWebhook>(
-      "POST",
-      "/wp-json/wc/v3/webhooks",
-      webhook,
-    );
+    const { data } = await this.apiCall<WooWebhook>("POST", "/wp-json/wc/v3/webhooks", webhook);
     return data;
   }
 
@@ -1378,9 +1363,7 @@ export class WooClient {
   /**
    * Get WooCommerce settings.
    */
-  async getSettings(
-    group?: string,
-  ): Promise<Array<{ id: string; label: string; value: unknown }>> {
+  async getSettings(group?: string): Promise<Array<{ id: string; label: string; value: unknown }>> {
     const params: Record<string, string | number | boolean> = {};
     if (group) {
       params.group = group;
@@ -1415,10 +1398,7 @@ export class WooClient {
    * Get WooCommerce system status.
    */
   async getSystemStatus(): Promise<WooSystemStatus> {
-    const { data } = await this.apiCall<WooSystemStatus>(
-      "GET",
-      "/wp-json/wc/v3/system_status",
-    );
+    const { data } = await this.apiCall<WooSystemStatus>("GET", "/wp-json/wc/v3/system_status");
     return data;
   }
 

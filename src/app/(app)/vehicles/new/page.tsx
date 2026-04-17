@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import { getMessages } from "@/lib/i18n";
-import { requireActiveMembership } from "@/lib/session";
 import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import VehicleForm from "../vehicle-form";

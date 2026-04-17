@@ -67,9 +67,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
             <Label htmlFor="syncFrequency">Frequency</Label>
             <Select
               value={formData.syncFrequency}
-              onValueChange={(value) =>
-                setFormData({ ...formData, syncFrequency: value as any })
-              }
+              onValueChange={(value) => setFormData({ ...formData, syncFrequency: value as any })}
             >
               <SelectTrigger id="syncFrequency">
                 <SelectValue />
@@ -102,9 +100,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Label htmlFor="syncDirection">Direction</Label>
               <Select
                 value={formData.syncDirection}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, syncDirection: value as any })
-                }
+                onValueChange={(value) => setFormData({ ...formData, syncDirection: value as any })}
               >
                 <SelectTrigger id="syncDirection">
                   <SelectValue />
@@ -153,9 +149,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Label htmlFor="retryPolicy">Retry Strategy</Label>
               <Select
                 value={formData.retryPolicy}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, retryPolicy: value as any })
-                }
+                onValueChange={(value) => setFormData({ ...formData, retryPolicy: value as any })}
               >
                 <SelectTrigger id="retryPolicy">
                   <SelectValue />
@@ -177,7 +171,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
                 max="10"
                 value={formData.maxRetries}
                 onChange={(e) =>
-                  setFormData({ ...formData, maxRetries: parseInt(e.target.value) })
+                  setFormData({ ...formData, maxRetries: Number.parseInt(e.target.value) })
                 }
                 className="px-3 py-2 border rounded-md w-full"
               />
@@ -190,7 +184,9 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Rate Limiting</CardTitle>
-          <CardDescription>Control API rate limiting to avoid exceeding provider limits.</CardDescription>
+          <CardDescription>
+            Control API rate limiting to avoid exceeding provider limits.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -201,7 +197,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               min="1"
               value={formData.rateLimitPerMin}
               onChange={(e) =>
-                setFormData({ ...formData, rateLimitPerMin: parseInt(e.target.value) })
+                setFormData({ ...formData, rateLimitPerMin: Number.parseInt(e.target.value) })
               }
               className="px-3 py-2 border rounded-md w-full"
             />
@@ -225,9 +221,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Switch
                 id="syncItems"
                 checked={formData.syncItems}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, syncItems: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, syncItems: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -235,9 +229,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Switch
                 id="syncOrders"
                 checked={formData.syncOrders}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, syncOrders: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, syncOrders: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -245,9 +237,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Switch
                 id="syncSuppliers"
                 checked={formData.syncSuppliers}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, syncSuppliers: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, syncSuppliers: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -255,9 +245,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Switch
                 id="syncCategories"
                 checked={formData.syncCategories}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, syncCategories: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, syncCategories: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -275,9 +263,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Switch
                 id="syncPrices"
                 checked={formData.syncPrices}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, syncPrices: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, syncPrices: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -285,9 +271,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Switch
                 id="syncImages"
                 checked={formData.syncImages}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, syncImages: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, syncImages: checked })}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -295,9 +279,7 @@ export function SettingsPanel({ integration }: SettingsPanelProps) {
               <Switch
                 id="syncCustomers"
                 checked={formData.syncCustomers}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, syncCustomers: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, syncCustomers: checked })}
               />
             </div>
           </div>

@@ -43,14 +43,7 @@ const config = [
 
   // Ignore patterns
   {
-    ignores: [
-      ".next/**",
-      "node_modules/**",
-      "dist/**",
-      "e2e/**",
-      "scripts/**",
-      "src/generated/**",
-    ],
+    ignores: [".next/**", "node_modules/**", "dist/**", "e2e/**", "scripts/**", "src/generated/**"],
   },
 ];
 

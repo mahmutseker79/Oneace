@@ -149,7 +149,7 @@ export interface ZohoInventoryAdjustment {
 }
 
 class ZohoClient extends IntegrationClient {
-  private organizationId: string = "";
+  private organizationId = "";
 
   constructor(
     oauthConfig: OAuthConfig,
@@ -188,7 +188,7 @@ class ZohoClient extends IntegrationClient {
   /**
    * Get items from Zoho Inventory.
    */
-  async getItems(limit: number = 100, offset: number = 0): Promise<ZohoItem[]> {
+  async getItems(limit = 100, offset = 0): Promise<ZohoItem[]> {
     try {
       const response = await this.apiCall<{
         code: number;
@@ -253,15 +253,12 @@ class ZohoClient extends IntegrationClient {
    */
   async updateItem(itemId: string, item: Partial<ZohoItem>): Promise<ZohoItem> {
     try {
-      const response = await this.apiCall<{ code: number; item?: ZohoItem }>(
-        `/items/${itemId}`,
-        {
-          method: "PUT",
-          body: {
-            item,
-          },
+      const response = await this.apiCall<{ code: number; item?: ZohoItem }>(`/items/${itemId}`, {
+        method: "PUT",
+        body: {
+          item,
         },
-      );
+      });
 
       if (!response.data.item) {
         throw new Error("No item returned from update");
@@ -277,7 +274,7 @@ class ZohoClient extends IntegrationClient {
   /**
    * Get sales orders from Zoho.
    */
-  async getSalesOrders(limit: number = 100, offset: number = 0): Promise<ZohoSalesOrder[]> {
+  async getSalesOrders(limit = 100, offset = 0): Promise<ZohoSalesOrder[]> {
     try {
       const response = await this.apiCall<{
         code: number;
@@ -319,7 +316,7 @@ class ZohoClient extends IntegrationClient {
   /**
    * Get purchase orders from Zoho.
    */
-  async getPurchaseOrders(limit: number = 100, offset: number = 0): Promise<ZohoPurchaseOrder[]> {
+  async getPurchaseOrders(limit = 100, offset = 0): Promise<ZohoPurchaseOrder[]> {
     try {
       const response = await this.apiCall<{
         code: number;
@@ -342,7 +339,7 @@ class ZohoClient extends IntegrationClient {
   /**
    * Get invoices from Zoho.
    */
-  async getInvoices(limit: number = 100, offset: number = 0): Promise<ZohoInvoice[]> {
+  async getInvoices(limit = 100, offset = 0): Promise<ZohoInvoice[]> {
     try {
       const response = await this.apiCall<{
         code: number;
@@ -365,7 +362,7 @@ class ZohoClient extends IntegrationClient {
   /**
    * Get bills from Zoho.
    */
-  async getBills(limit: number = 100, offset: number = 0): Promise<ZohoBill[]> {
+  async getBills(limit = 100, offset = 0): Promise<ZohoBill[]> {
     try {
       const response = await this.apiCall<{
         code: number;
@@ -388,7 +385,7 @@ class ZohoClient extends IntegrationClient {
   /**
    * Get contacts from Zoho.
    */
-  async getContacts(limit: number = 100, offset: number = 0): Promise<ZohoContact[]> {
+  async getContacts(limit = 100, offset = 0): Promise<ZohoContact[]> {
     try {
       const response = await this.apiCall<{
         code: number;
@@ -411,10 +408,7 @@ class ZohoClient extends IntegrationClient {
   /**
    * Get inventory adjustments from Zoho.
    */
-  async getInventoryAdjustments(
-    limit: number = 100,
-    offset: number = 0,
-  ): Promise<ZohoInventoryAdjustment[]> {
+  async getInventoryAdjustments(limit = 100, offset = 0): Promise<ZohoInventoryAdjustment[]> {
     try {
       const response = await this.apiCall<{
         code: number;

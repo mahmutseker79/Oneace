@@ -64,7 +64,10 @@ export function InstallBanner() {
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
-    const prompt = deferredPrompt as unknown as { prompt?: () => void; userChoice?: Promise<{ outcome: string }> };
+    const prompt = deferredPrompt as unknown as {
+      prompt?: () => void;
+      userChoice?: Promise<{ outcome: string }>;
+    };
     prompt.prompt?.();
     const choice = await prompt.userChoice;
 

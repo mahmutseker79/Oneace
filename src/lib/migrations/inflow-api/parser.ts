@@ -5,17 +5,17 @@
 import type {
   ParsedSnapshot,
   RawItem,
+  RawPurchaseOrder,
   RawStockLevel,
   RawSupplier,
   RawWarehouse,
-  RawPurchaseOrder,
 } from "@/lib/migrations/core/types";
 import type {
-  InflowProduct,
-  InflowVendor,
   InflowLocation,
-  InflowStockLevel,
+  InflowProduct,
   InflowPurchaseOrder,
+  InflowStockLevel,
+  InflowVendor,
 } from "@/lib/migrations/inflow-api/api-client";
 
 interface InflowApiSnapshotInput {
@@ -26,9 +26,7 @@ interface InflowApiSnapshotInput {
   purchaseOrders: InflowPurchaseOrder[];
 }
 
-export function parseInflowApiSnapshot(
-  input: InflowApiSnapshotInput,
-): ParsedSnapshot {
+export function parseInflowApiSnapshot(input: InflowApiSnapshotInput): ParsedSnapshot {
   const adapterWarnings: string[] = [];
 
   // Parse vendors
@@ -57,9 +55,7 @@ export function parseInflowApiSnapshot(
   const items: RawItem[] = [];
   for (const product of input.products) {
     if (!product.sku || product.sku.trim() === "") {
-      adapterWarnings.push(
-        `Product "${product.name}" (ID: ${product.id}) skipped: missing SKU`,
-      );
+      adapterWarnings.push(`Product "${product.name}" (ID: ${product.id}) skipped: missing SKU`);
       continue;
     }
 
@@ -77,7 +73,7 @@ export function parseInflowApiSnapshot(
         product.status?.toUpperCase() === "ACTIVE"
           ? "ACTIVE"
           : product.status?.toUpperCase() === "DISCONTINUED"
-            ? "DISCONTINUED"
+            ? "ARCHIVED"
             : null,
     });
   }
@@ -90,23 +86,21 @@ export function parseInflowApiSnapshot(
   }));
 
   // Parse purchase orders
-  const purchaseOrders: RawPurchaseOrder[] = input.purchaseOrders.map(
-    (po) => ({
-      externalId: po.id,
-      poNumber: po.poNumber,
-      supplierExternalId: po.vendorId,
-      status: normalizeInflowPOStatus(po.status),
-      orderDate: po.orderDate || null,
-      expectedDate: po.expectedDate || null,
-      currency: null,
-      notes: po.notes || null,
-      lines: (po.lines || []).map((line) => ({
-        itemExternalId: line.productId,
-        quantity: line.quantity,
-        unitCost: line.unitCost || null,
-      })),
-    }),
-  );
+  const purchaseOrders: RawPurchaseOrder[] = input.purchaseOrders.map((po) => ({
+    externalId: po.id,
+    poNumber: po.poNumber,
+    supplierExternalId: po.vendorId,
+    status: normalizeInflowPOStatus(po.status),
+    orderDate: po.orderDate || null,
+    expectedDate: po.expectedDate || null,
+    currency: null,
+    notes: po.notes || null,
+    lines: (po.lines || []).map((line) => ({
+      itemExternalId: line.productId,
+      quantity: line.quantity,
+      unitCost: line.unitCost || null,
+    })),
+  }));
 
   return {
     source: "INFLOW",

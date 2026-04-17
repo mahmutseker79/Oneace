@@ -7,13 +7,10 @@
  */
 
 import type { PrismaClient } from "@/generated/prisma";
-import type { PhaseContext } from "@/lib/migrations/core/importer";
-import type { ValidationIssue } from "@/lib/migrations/core/types";
-import {
-  sortCategoriesByParent,
-  type SortResult,
-} from "@/lib/migrations/core/topological-sort";
 import { IdMap, type IdMapKind } from "@/lib/migrations/core/id-map";
+import type { PhaseContext } from "@/lib/migrations/core/importer";
+import { type SortResult, sortCategoriesByParent } from "@/lib/migrations/core/topological-sort";
+import type { ValidationIssue } from "@/lib/migrations/core/types";
 
 export async function importCategories(ctx: PhaseContext): Promise<{
   created: number;
@@ -32,9 +29,7 @@ export async function importCategories(ctx: PhaseContext): Promise<{
   // Sort categories topologically.
   const sortResult = sortCategoriesByParent(ctx.snapshot.categories);
   if (sortResult.issues.some((i) => i.severity === "ERROR")) {
-    errors.push(
-      ...sortResult.issues.filter((i) => i.severity === "ERROR"),
-    );
+    errors.push(...sortResult.issues.filter((i) => i.severity === "ERROR"));
     return { created, updated, failed: ctx.snapshot.categories.length, createdIds, errors };
   }
 

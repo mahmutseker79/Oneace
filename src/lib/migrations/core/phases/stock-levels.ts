@@ -43,10 +43,7 @@ export async function importStockLevels(ctx: PhaseContext): Promise<{
               continue;
             }
 
-            const warehouseId = ctx.idMap.require(
-              "WAREHOUSE",
-              rawLevel.warehouseExternalId,
-            );
+            const warehouseId = ctx.idMap.require("WAREHOUSE", rawLevel.warehouseExternalId);
 
             // Resolve location if provided.
             const locationId = rawLevel.locationExternalId

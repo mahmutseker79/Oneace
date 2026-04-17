@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QBO_MIGRATION_ADAPTER } from "@/lib/migrations/quickbooks-online/adapter";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the QboMigrationClient module
 vi.mock("@/lib/migrations/quickbooks-online/api-client", () => ({
@@ -45,9 +45,7 @@ describe("qbo-adapter (integration, mocked)", () => {
 
   it("requires credentials in fieldMappings for parsing", async () => {
     // Missing credentials should throw
-    await expect(QBO_MIGRATION_ADAPTER.parse([], {})).rejects.toThrow(
-      /credentials/i,
-    );
+    await expect(QBO_MIGRATION_ADAPTER.parse([], {})).rejects.toThrow(/credentials/i);
   });
 
   it("returns ParsedSnapshot when credentials are provided", async () => {

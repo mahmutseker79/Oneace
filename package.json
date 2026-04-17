@@ -41,6 +41,7 @@
     "@sentry/nextjs": "^8",
     "@tanstack/react-query": "^5.62.8",
     "@vercel/analytics": "^1",
+    "@vercel/blob": "^2.3.3",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
     "better-auth": "^1.1.9",

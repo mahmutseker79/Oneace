@@ -1600,7 +1600,8 @@ export const en = {
       kpiClassBItems: "Class B Items",
       autoClassifyButton: "Auto-Classify Items",
       autoClassifyLoading: "Classifying...",
-      autoClassifyHelp: "Updates the ABC classification for all items based on current inventory value",
+      autoClassifyHelp:
+        "Updates the ABC classification for all items based on current inventory value",
       paretoTitle: "Pareto Curve",
       paretoDescription: "Cumulative percentage of inventory value",
       distributionTitle: "Classification Distribution",
@@ -1618,7 +1619,8 @@ export const en = {
       recommendationsTitle: "Count Frequency Recommendations",
       recommendationsDescription: "Recommended count schedules based on ABC classification",
       classALabel: "High-Value Items",
-      classARecommendation: "Count monthly (every 30 days) to ensure accuracy on your most valuable SKUs",
+      classARecommendation:
+        "Count monthly (every 30 days) to ensure accuracy on your most valuable SKUs",
       classBLabel: "Medium-Value Items",
       classBRecommendation: "Count quarterly (every 90 days) to maintain reasonable accuracy",
       classCLabel: "Low-Value Items",
@@ -1697,7 +1699,8 @@ export const en = {
       resumeTitle: "Resume",
       deleteTitle: "Delete",
       deleteDialogTitle: "Delete this scheduled report?",
-      deleteDialogDescription: "No more emails will be sent. Past deliveries are not affected. This cannot be undone.",
+      deleteDialogDescription:
+        "No more emails will be sent. Past deliveries are not affected. This cannot be undone.",
       deleteCancel: "Cancel",
       deleteConfirm: "Delete",
       pausedToast: "Report paused",
@@ -2622,6 +2625,14 @@ export const en = {
       "vehicle.deleted": "Deleted vehicle",
       "vehicle.loaded": "Loaded shipment to vehicle",
       "vehicle.unloaded": "Unloaded shipment from vehicle",
+      "migration.started": "Started data migration",
+      "migration.completed": "Completed data migration",
+      "migration.failed": "Data migration failed",
+      "migration.rollback": "Rolled back data migration",
+      "migration.blob.cleanup": "Cleaned up migration attachment blobs",
+      "migration.sourceFiles.cleanup": "Cleaned up migration source files",
+      "migration.credentials.decrypted": "Decrypted migration credentials",
+      "migration.credentials.reused": "Reused existing migration credentials",
     },
   },
 
@@ -2694,10 +2705,12 @@ export const en = {
 
   countZones: {
     heading: "Count zones",
-    description: "Organize your stock count into physical zones for faster, more accurate counting.",
+    description:
+      "Organize your stock count into physical zones for faster, more accurate counting.",
     newZone: "New zone",
     emptyTitle: "No zones yet",
-    emptyBody: "Create zones to organize your count area. Each zone can have its own barcode for quick scanning.",
+    emptyBody:
+      "Create zones to organize your count area. Each zone can have its own barcode for quick scanning.",
     emptyCta: "Create your first zone",
     columnName: "Name",
     columnColor: "Color",
@@ -2738,7 +2751,8 @@ export const en = {
       generateBarcodesFailed: "Could not generate barcodes.",
     },
     generateBarcodes: "Generate missing barcodes",
-    generateBarcodesConfirm: "Generate barcodes for all zones without one? This will create unique identifiers.",
+    generateBarcodesConfirm:
+      "Generate barcodes for all zones without one? This will create unique identifiers.",
     generateBarcodesSuccess: "{count} barcodes generated",
   },
 

@@ -6,14 +6,14 @@
 
 "use server";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
-import { recordAudit } from "@/lib/audit";
-import { logger } from "@/lib/logger";
-import { z } from "zod";
 import ExcelJS from "exceljs";
+import { z } from "zod";
 
 export type ActionResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -26,7 +26,9 @@ const exportSchema = z.object({
 
 const stockLevelExportSchema = exportSchema.extend({
   warehouseId: z.string().cuid().optional(),
-  status: z.enum(["AVAILABLE", "HOLD", "DAMAGED", "QUARANTINE", "EXPIRED", "IN_TRANSIT", "RESERVED"]).optional(),
+  status: z
+    .enum(["AVAILABLE", "HOLD", "DAMAGED", "QUARANTINE", "EXPIRED", "IN_TRANSIT", "RESERVED"])
+    .optional(),
 });
 
 const movementExportSchema = exportSchema.extend({
@@ -164,10 +166,9 @@ export async function exportItemsAction(input: unknown): Promise<ActionResult<Ex
 
     if (format === "csv") {
       return { ok: true, data: toCSV(headers, rows) };
-    } else {
-      const buffer = await createExcelWorkbook("Items", headers, rows);
-      return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
+    const buffer = await createExcelWorkbook("Items", headers, rows);
+    return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
   } catch (error) {
     logger.error("Failed to export items", { error: error });
     return { ok: false, error: "Failed to export items" };
@@ -210,7 +211,16 @@ export async function exportStockLevelsAction(input: unknown): Promise<ActionRes
       orderBy: [{ warehouse: { code: "asc" } }, { item: { sku: "asc" } }],
     });
 
-    const headers = ["Warehouse Code", "Warehouse Name", "Bin Code", "Item SKU", "Item Name", "Quantity", "Reserved", "Status"];
+    const headers = [
+      "Warehouse Code",
+      "Warehouse Name",
+      "Bin Code",
+      "Item SKU",
+      "Item Name",
+      "Quantity",
+      "Reserved",
+      "Status",
+    ];
 
     const rows = stockLevels.map((sl) => [
       sl.warehouse.code,
@@ -233,10 +243,9 @@ export async function exportStockLevelsAction(input: unknown): Promise<ActionRes
 
     if (format === "csv") {
       return { ok: true, data: toCSV(headers, rows) };
-    } else {
-      const buffer = await createExcelWorkbook("Stock Levels", headers, rows);
-      return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
+    const buffer = await createExcelWorkbook("Stock Levels", headers, rows);
+    return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
   } catch (error) {
     logger.error("Failed to export stock levels", { error: error });
     return { ok: false, error: "Failed to export stock levels" };
@@ -282,7 +291,17 @@ export async function exportMovementsAction(input: unknown): Promise<ActionResul
       orderBy: { createdAt: "desc" },
     });
 
-    const headers = ["Date", "Type", "Item SKU", "Item Name", "Warehouse", "Quantity", "Direction", "Reference", "Note"];
+    const headers = [
+      "Date",
+      "Type",
+      "Item SKU",
+      "Item Name",
+      "Warehouse",
+      "Quantity",
+      "Direction",
+      "Reference",
+      "Note",
+    ];
 
     const rows = movements.map((m) => [
       m.createdAt.toISOString().split("T")[0],
@@ -306,10 +325,9 @@ export async function exportMovementsAction(input: unknown): Promise<ActionResul
 
     if (format === "csv") {
       return { ok: true, data: toCSV(headers, rows) };
-    } else {
-      const buffer = await createExcelWorkbook("Movements", headers, rows);
-      return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
+    const buffer = await createExcelWorkbook("Movements", headers, rows);
+    return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
   } catch (error) {
     logger.error("Failed to export movements", { error: error });
     return { ok: false, error: "Failed to export movements" };
@@ -319,7 +337,9 @@ export async function exportMovementsAction(input: unknown): Promise<ActionResul
 /**
  * Export purchase orders in CSV or XLSX format.
  */
-export async function exportPurchaseOrdersAction(input: unknown): Promise<ActionResult<ExportData>> {
+export async function exportPurchaseOrdersAction(
+  input: unknown,
+): Promise<ActionResult<ExportData>> {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -387,10 +407,9 @@ export async function exportPurchaseOrdersAction(input: unknown): Promise<Action
 
     if (format === "csv") {
       return { ok: true, data: toCSV(headers, rows) };
-    } else {
-      const buffer = await createExcelWorkbook("Purchase Orders", headers, rows);
-      return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
     }
+    const buffer = await createExcelWorkbook("Purchase Orders", headers, rows);
+    return { ok: true, data: { type: "xlsx", base64: buffer.toString("base64") } };
   } catch (error) {
     logger.error("Failed to export purchase orders", { error: error });
     return { ok: false, error: "Failed to export purchase orders" };

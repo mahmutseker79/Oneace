@@ -1,15 +1,17 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { IntegrationFieldMapping } from "@/generated/prisma";
-import { useState } from "react";
-import { toast } from "sonner";
-import { deleteFieldMappingAction, createFieldMappingAction } from "../actions";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,7 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus } from "lucide-react";
+import type { IntegrationFieldMapping } from "@/generated/prisma";
+import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createFieldMappingAction, deleteFieldMappingAction } from "../actions";
 
 interface FieldMappingTableProps {
   integrationId: string;
@@ -97,7 +103,9 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Field Mappings</CardTitle>
-            <CardDescription>Map local fields to remote fields for each entity type.</CardDescription>
+            <CardDescription>
+              Map local fields to remote fields for each entity type.
+            </CardDescription>
           </div>
           <Button onClick={() => setShowDialog(true)} size="sm">
             <Plus className="mr-2 h-4 w-4" />
@@ -131,7 +139,9 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
                         {(entityMappings as typeof mappings).map((mapping) => (
                           <tr key={mapping.id} className="border-b hover:bg-muted/50">
                             <td className="py-2 px-3 font-medium">{mapping.localField}</td>
-                            <td className="py-2 px-3 text-muted-foreground">{mapping.remoteField}</td>
+                            <td className="py-2 px-3 text-muted-foreground">
+                              {mapping.remoteField}
+                            </td>
                             <td className="py-2 px-3">
                               <Badge variant="secondary" className="text-xs">
                                 {mapping.direction}
@@ -203,9 +213,7 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
                 id="localField"
                 placeholder="e.g., sku, name, description"
                 value={formData.localField}
-                onChange={(e) =>
-                  setFormData({ ...formData, localField: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, localField: e.target.value })}
               />
             </div>
 
@@ -215,9 +223,7 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
                 id="remoteField"
                 placeholder="e.g., product_id, title, body_html"
                 value={formData.remoteField}
-                onChange={(e) =>
-                  setFormData({ ...formData, remoteField: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, remoteField: e.target.value })}
               />
             </div>
 
@@ -225,9 +231,7 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
               <Label htmlFor="direction">Sync Direction</Label>
               <Select
                 value={formData.direction}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, direction: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, direction: value })}
               >
                 <SelectTrigger id="direction">
                   <SelectValue />
@@ -246,9 +250,7 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
                 id="transformRule"
                 placeholder="e.g., parseFloat, toUpperCase"
                 value={formData.transformRule}
-                onChange={(e) =>
-                  setFormData({ ...formData, transformRule: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, transformRule: e.target.value })}
               />
             </div>
 
@@ -258,9 +260,7 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
                 id="defaultValue"
                 placeholder="Default value if field is empty"
                 value={formData.defaultValue}
-                onChange={(e) =>
-                  setFormData({ ...formData, defaultValue: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, defaultValue: e.target.value })}
               />
             </div>
 
@@ -270,19 +270,13 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
                 id="isRequired"
                 type="checkbox"
                 checked={formData.isRequired}
-                onChange={(e) =>
-                  setFormData({ ...formData, isRequired: e.target.checked })
-                }
+                onChange={(e) => setFormData({ ...formData, isRequired: e.target.checked })}
                 className="w-4 h-4"
               />
             </div>
 
             <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDialog(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>

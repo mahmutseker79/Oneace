@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  AlertCircle,
-  DollarSign,
-  Download,
-  Package,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { AlertCircle, DollarSign, Download, Package, TrendingUp, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -26,11 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import type { Messages } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
 import { cn, formatCurrency } from "@/lib/utils";
 import { DistributionChart } from "./lazy-distribution-chart";
 import { ParetoChart } from "./lazy-pareto-chart";
-import type { Messages } from "@/lib/i18n";
 
 interface ABCData {
   itemId: string;

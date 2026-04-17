@@ -14,21 +14,18 @@
  */
 
 import type { MigrationAdapter } from "@/lib/migrations/core/adapter";
-import type {
-  FileDetectionResult,
-  FieldMapping,
-  ParsedSnapshot,
-  ValidationReport,
-} from "@/lib/migrations/core/types";
 import type { MigrationScopeOptions } from "@/lib/migrations/core/scope-options";
 import {
   resolvePoHistoryCutoff,
   shouldImportPurchaseOrders,
 } from "@/lib/migrations/core/scope-options";
-import {
-  InflowApiClient,
-  type InflowCredentials,
-} from "@/lib/migrations/inflow-api/api-client";
+import type {
+  FieldMapping,
+  FileDetectionResult,
+  ParsedSnapshot,
+  ValidationReport,
+} from "@/lib/migrations/core/types";
+import { InflowApiClient, type InflowCredentials } from "@/lib/migrations/inflow-api/api-client";
 import { getInflowApiDefaultMappings } from "@/lib/migrations/inflow-api/default-mappings";
 import { parseInflowApiSnapshot } from "@/lib/migrations/inflow-api/parser";
 import { readCredentials } from "@/lib/secure/credentials";
@@ -68,14 +65,9 @@ export const INFLOW_API_ADAPTER: MigrationAdapter = {
     return [];
   },
 
-  async parse(
-    _files,
-    fieldMappings?: Record<string, unknown>,
-  ): Promise<ParsedSnapshot> {
+  async parse(_files, fieldMappings?: Record<string, unknown>): Promise<ParsedSnapshot> {
     if (!fieldMappings) {
-      throw new Error(
-        "inFlow API adapter requires credentials in fieldMappings",
-      );
+      throw new Error("inFlow API adapter requires credentials in fieldMappings");
     }
 
     const creds = extractInflowCredentials(fieldMappings);
@@ -88,14 +80,13 @@ export const INFLOW_API_ADAPTER: MigrationAdapter = {
     const client = new InflowApiClient(creds);
 
     // Fetch all entities in parallel
-    const [products, vendors, locations, stockLevels, purchaseOrders] =
-      await Promise.all([
-        client.getAllProducts(),
-        client.getAllVendors(),
-        client.getAllLocations(),
-        client.getAllStockLevels(),
-        client.getAllPurchaseOrders(),
-      ]);
+    const [products, vendors, locations, stockLevels, purchaseOrders] = await Promise.all([
+      client.getAllProducts(),
+      client.getAllVendors(),
+      client.getAllLocations(),
+      client.getAllStockLevels(),
+      client.getAllPurchaseOrders(),
+    ]);
 
     return parseInflowApiSnapshot({
       products,
@@ -115,9 +106,7 @@ export const INFLOW_API_ADAPTER: MigrationAdapter = {
     scope: MigrationScopeOptions,
   ): Promise<ParsedSnapshot> {
     if (!fieldMappings) {
-      throw new Error(
-        "inFlow API adapter requires credentials in fieldMappings",
-      );
+      throw new Error("inFlow API adapter requires credentials in fieldMappings");
     }
 
     const creds = extractInflowCredentials(fieldMappings);
@@ -146,9 +135,7 @@ export const INFLOW_API_ADAPTER: MigrationAdapter = {
       // Filter by status if OPEN_ONLY
       if (scope.poHistory === "OPEN_ONLY") {
         const closedStatuses = ["RECEIVED", "CLOSED", "CANCELLED"];
-        purchaseOrders = purchaseOrders.filter(
-          (po) => !closedStatuses.includes(String(po.status)),
-        );
+        purchaseOrders = purchaseOrders.filter((po) => !closedStatuses.includes(String(po.status)));
       }
     }
 
@@ -165,11 +152,7 @@ export const INFLOW_API_ADAPTER: MigrationAdapter = {
     return getInflowApiDefaultMappings(snapshot);
   },
 
-  validate(
-    snapshot: ParsedSnapshot,
-    _mappings: FieldMapping[],
-    _scope: any,
-  ): ValidationReport {
+  validate(snapshot: ParsedSnapshot, _mappings: FieldMapping[], _scope: any): ValidationReport {
     const issues: any[] = [];
 
     // Validate all products have SKU
@@ -187,9 +170,7 @@ export const INFLOW_API_ADAPTER: MigrationAdapter = {
     }
 
     // Validate warehouse references
-    const warehouseIds = new Set(
-      snapshot.warehouses.map((w) => w.externalId),
-    );
+    const warehouseIds = new Set(snapshot.warehouses.map((w) => w.externalId));
     for (const stock of snapshot.stockLevels) {
       if (!warehouseIds.has(stock.warehouseExternalId)) {
         issues.push({

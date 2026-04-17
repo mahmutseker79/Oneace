@@ -64,10 +64,7 @@ export async function importCustomFieldValues(ctx: PhaseContext): Promise<{
         for (const val of batch) {
           try {
             const itemId = ctx.idMap.require("ITEM", val.itemExternalId);
-            const fieldDefId = ctx.idMap.require(
-              "CUSTOM_FIELD_DEF",
-              val.fieldExternalId,
-            );
+            const fieldDefId = ctx.idMap.require("CUSTOM_FIELD_DEF", val.fieldExternalId);
 
             // Upsert by (itemId, fieldDefId).
             const existing = await tx.itemCustomFieldValue.findFirst({

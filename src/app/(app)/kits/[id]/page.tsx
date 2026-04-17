@@ -69,24 +69,24 @@ export default async function KitDetailPage({
 
   // Fetch component item details separately since KitComponent doesn't have a direct relation
   const componentItemIds = kit.components.map((c) => c.componentItemId);
-  const componentItems = componentItemIds.length > 0
-    ? await db.item.findMany({
-        where: { id: { in: componentItemIds } },
-        select: { id: true, name: true, sku: true, unit: true },
-      })
-    : [];
+  const componentItems =
+    componentItemIds.length > 0
+      ? await db.item.findMany({
+          where: { id: { in: componentItemIds } },
+          select: { id: true, name: true, sku: true, unit: true },
+        })
+      : [];
   const itemMap = new Map(componentItems.map((i) => [i.id, i]));
 
   // Fetch variant details if any
-  const variantIds = kit.components
-    .map((c) => c.variantId)
-    .filter((v): v is string => v !== null);
-  const variants = variantIds.length > 0
-    ? await db.itemVariant.findMany({
-        where: { id: { in: variantIds } },
-        select: { id: true, name: true },
-      })
-    : [];
+  const variantIds = kit.components.map((c) => c.variantId).filter((v): v is string => v !== null);
+  const variants =
+    variantIds.length > 0
+      ? await db.itemVariant.findMany({
+          where: { id: { in: variantIds } },
+          select: { id: true, name: true },
+        })
+      : [];
   const variantMap = new Map(variants.map((v) => [v.id, v]));
 
   // Fetch warehouses for assemble/disassemble
@@ -141,7 +141,9 @@ export default async function KitDetailPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Type
+            </p>
             <div className="mt-1">
               <Badge variant={typeBadgeVariant(kit.type)}>{kit.type}</Badge>
             </div>
@@ -149,21 +151,30 @@ export default async function KitDetailPage({
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Parent Item</p>
-            <Link href={`/items/${kit.parentItem.id}`} className="mt-1 block text-sm font-semibold text-primary hover:underline">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Parent Item
+            </p>
+            <Link
+              href={`/items/${kit.parentItem.id}`}
+              className="mt-1 block text-sm font-semibold text-primary hover:underline"
+            >
               {kit.parentItem.sku} — {kit.parentItem.name}
             </Link>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Components</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Components
+            </p>
             <p className="mt-1 text-2xl font-bold tabular-nums">{componentCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Status
+            </p>
             <div className="mt-1">
               <Badge variant={kit.isActive ? "success" : "secondary"}>
                 {kit.isActive ? "Active" : "Inactive"}
@@ -178,13 +189,9 @@ export default async function KitDetailPage({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Components</CardTitle>
-            <CardDescription>
-              Items that make up this {kit.type.toLowerCase()}
-            </CardDescription>
+            <CardDescription>Items that make up this {kit.type.toLowerCase()}</CardDescription>
           </div>
-          {canEdit && (
-            <AddComponentDialog kitId={kit.id} items={items} />
-          )}
+          {canEdit && <AddComponentDialog kitId={kit.id} items={items} />}
         </CardHeader>
         <CardContent>
           {componentCount === 0 ? (
@@ -219,7 +226,10 @@ export default async function KitDetailPage({
                       <TableRow key={comp.id}>
                         <TableCell className="font-mono text-xs">
                           {item ? (
-                            <Link href={`/items/${item.id}`} className="text-primary hover:underline">
+                            <Link
+                              href={`/items/${item.id}`}
+                              className="text-primary hover:underline"
+                            >
                               {item.sku}
                             </Link>
                           ) : (
@@ -233,9 +243,7 @@ export default async function KitDetailPage({
                         <TableCell className="text-center tabular-nums font-semibold">
                           {Number(comp.quantity)}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item?.unit ?? "—"}
-                        </TableCell>
+                        <TableCell className="text-muted-foreground">{item?.unit ?? "—"}</TableCell>
                         {canEdit && (
                           <TableCell className="text-right">
                             <DeleteButton

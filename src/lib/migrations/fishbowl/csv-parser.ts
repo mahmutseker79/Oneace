@@ -15,19 +15,19 @@
  * into Raw* canonical types.
  */
 
+import { parseDecimalLocaleAware } from "@/lib/migrations/core/csv-utils";
+import { parseDateFlexible } from "@/lib/migrations/core/date-utils";
 import type {
   ParsedSnapshot,
   RawCategory,
-  RawSupplier,
-  RawWarehouse,
-  RawLocation,
   RawItem,
-  RawStockLevel,
+  RawLocation,
   RawPurchaseOrder,
   RawPurchaseOrderLine,
+  RawStockLevel,
+  RawSupplier,
+  RawWarehouse,
 } from "@/lib/migrations/core/types";
-import { parseDateFlexible } from "@/lib/migrations/core/date-utils";
-import { parseDecimalLocaleAware } from "@/lib/migrations/core/csv-utils";
 
 /**
  * Parse Fishbowl CSV exports into canonical Raw* types.
@@ -100,19 +100,18 @@ export function parseFishbowlCSVs(
  * Parse parts.csv → RawItem[]
  * Columns: PartNumber, Description, Type, UOM, DefaultVendor, Price, Cost, Weight, Length, Width, Height
  */
-function parsePartsCSV(
-  headers: string[],
-  rows: Record<string, string>[],
-): RawItem[] {
+function parsePartsCSV(headers: string[], rows: Record<string, string>[]): RawItem[] {
   const items: RawItem[] = [];
 
   for (const row of rows) {
-    const partNumber = getColumn(row, headers, "PartNumber") || getColumn(row, headers, "Part Number");
+    const partNumber =
+      getColumn(row, headers, "PartNumber") || getColumn(row, headers, "Part Number");
     if (!partNumber || !partNumber.trim()) continue;
 
     const description = getColumn(row, headers, "Description") || "";
     const uom = getColumn(row, headers, "UOM") || null;
-    const defaultVendor = getColumn(row, headers, "DefaultVendor") || getColumn(row, headers, "Default Vendor") || null;
+    const defaultVendor =
+      getColumn(row, headers, "DefaultVendor") || getColumn(row, headers, "Default Vendor") || null;
     const price = parseDecimalLocaleAware(getColumn(row, headers, "Price"));
     const cost = parseDecimalLocaleAware(getColumn(row, headers, "Cost"));
 
@@ -135,20 +134,19 @@ function parsePartsCSV(
  * Parse vendors.csv → RawSupplier[]
  * Columns: VendorName, ContactName, Email, Phone, Address
  */
-function parseVendorsCSV(
-  headers: string[],
-  rows: Record<string, string>[],
-): RawSupplier[] {
+function parseVendorsCSV(headers: string[], rows: Record<string, string>[]): RawSupplier[] {
   const suppliers: RawSupplier[] = [];
 
   for (const row of rows) {
-    const vendorName = getColumn(row, headers, "VendorName") || getColumn(row, headers, "Vendor Name");
+    const vendorName =
+      getColumn(row, headers, "VendorName") || getColumn(row, headers, "Vendor Name");
     if (!vendorName || !vendorName.trim()) continue;
 
     suppliers.push({
       externalId: vendorName,
       name: vendorName,
-      contactName: getColumn(row, headers, "ContactName") || getColumn(row, headers, "Contact Name") || null,
+      contactName:
+        getColumn(row, headers, "ContactName") || getColumn(row, headers, "Contact Name") || null,
       email: getColumn(row, headers, "Email") || null,
       phone: getColumn(row, headers, "Phone") || null,
       address: getColumn(row, headers, "Address") || null,
@@ -162,10 +160,7 @@ function parseVendorsCSV(
  * Parse locationgroups.csv → RawWarehouse[]
  * Columns: Group, Description
  */
-function parseLocationGroupsCSV(
-  headers: string[],
-  rows: Record<string, string>[],
-): RawWarehouse[] {
+function parseLocationGroupsCSV(headers: string[], rows: Record<string, string>[]): RawWarehouse[] {
   const warehouses: RawWarehouse[] = [];
 
   for (const row of rows) {
@@ -175,7 +170,6 @@ function parseLocationGroupsCSV(
     warehouses.push({
       externalId: group,
       name: group,
-      description: getColumn(row, headers, "Description") || null,
     });
   }
 
@@ -186,15 +180,14 @@ function parseLocationGroupsCSV(
  * Parse locations.csv → RawLocation[]
  * Columns: LocationName, LocationGroup, PickFromLocation
  */
-function parseLocationsCSV(
-  headers: string[],
-  rows: Record<string, string>[],
-): RawLocation[] {
+function parseLocationsCSV(headers: string[], rows: Record<string, string>[]): RawLocation[] {
   const locations: RawLocation[] = [];
 
   for (const row of rows) {
-    const locationName = getColumn(row, headers, "LocationName") || getColumn(row, headers, "Location Name");
-    const locationGroup = getColumn(row, headers, "LocationGroup") || getColumn(row, headers, "Location Group");
+    const locationName =
+      getColumn(row, headers, "LocationName") || getColumn(row, headers, "Location Name");
+    const locationGroup =
+      getColumn(row, headers, "LocationGroup") || getColumn(row, headers, "Location Group");
 
     if (!locationName || !locationName.trim()) continue;
 
@@ -212,16 +205,16 @@ function parseLocationsCSV(
  * Parse stocklevels.csv → RawStockLevel[]
  * Columns: PartNumber, Location, QtyOnHand, QtyAllocated, QtyAvailable
  */
-function parseStockLevelsCSV(
-  headers: string[],
-  rows: Record<string, string>[],
-): RawStockLevel[] {
+function parseStockLevelsCSV(headers: string[], rows: Record<string, string>[]): RawStockLevel[] {
   const levels: RawStockLevel[] = [];
 
   for (const row of rows) {
-    const partNumber = getColumn(row, headers, "PartNumber") || getColumn(row, headers, "Part Number");
+    const partNumber =
+      getColumn(row, headers, "PartNumber") || getColumn(row, headers, "Part Number");
     const location = getColumn(row, headers, "Location");
-    const qtyOnHand = parseDecimalLocaleAware(getColumn(row, headers, "QtyOnHand") || getColumn(row, headers, "Qty On Hand"));
+    const qtyOnHand = parseDecimalLocaleAware(
+      getColumn(row, headers, "QtyOnHand") || getColumn(row, headers, "Qty On Hand"),
+    );
 
     if (!partNumber || !partNumber.trim()) continue;
 
@@ -240,10 +233,7 @@ function parseStockLevelsCSV(
  * Parse pos.csv → RawPurchaseOrder[]
  * Columns: PO, Vendor, PODate, Status, Total
  */
-function parsePOsCSV(
-  headers: string[],
-  rows: Record<string, string>[],
-): RawPurchaseOrder[] {
+function parsePOsCSV(headers: string[], rows: Record<string, string>[]): RawPurchaseOrder[] {
   const pos: RawPurchaseOrder[] = [];
 
   for (const row of rows) {
@@ -282,9 +272,12 @@ function attachPOLineItems(
 
   for (const row of rows) {
     const po = getColumn(row, headers, "PO");
-    const partNumber = getColumn(row, headers, "PartNumber") || getColumn(row, headers, "Part Number");
+    const partNumber =
+      getColumn(row, headers, "PartNumber") || getColumn(row, headers, "Part Number");
     const qty = parseDecimalLocaleAware(getColumn(row, headers, "Qty"));
-    const unitCost = parseDecimalLocaleAware(getColumn(row, headers, "UnitCost") || getColumn(row, headers, "Unit Cost"));
+    const unitCost = parseDecimalLocaleAware(
+      getColumn(row, headers, "UnitCost") || getColumn(row, headers, "Unit Cost"),
+    );
 
     if (!po || !po.trim() || !partNumber || !partNumber.trim()) continue;
 
@@ -312,7 +305,11 @@ function parseUOMConversions(
     const from = getColumn(row, ["FromUOM", "From UOM", "from_uom"], "FromUOM") || "";
     const to = getColumn(row, ["ToUOM", "To UOM", "to_uom"], "ToUOM") || "";
     const factor = parseDecimalLocaleAware(
-      getColumn(row, ["ConversionFactor", "Conversion Factor", "conversion_factor"], "ConversionFactor"),
+      getColumn(
+        row,
+        ["ConversionFactor", "Conversion Factor", "conversion_factor"],
+        "ConversionFactor",
+      ),
     );
 
     if (!from || !to || !factor) continue;
@@ -337,14 +334,12 @@ function getColumn(
   columnName: string,
 ): string | null {
   // Direct match (case-sensitive first for performance).
-  if (row[columnName] !== undefined) return row[columnName];
+  if (row[columnName] !== undefined) return row[columnName] ?? null;
 
   // Case-insensitive match.
   const lower = columnName.toLowerCase();
-  const matched = Object.keys(row).find(
-    (k) => k.toLowerCase() === lower,
-  );
-  return matched ? row[matched] : null;
+  const matched = Object.keys(row).find((k) => k.toLowerCase() === lower);
+  return matched ? (row[matched] ?? null) : null;
 }
 
 /**

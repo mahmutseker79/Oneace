@@ -133,67 +133,65 @@ export default async function SuppliersPage() {
                 />
               ))}
             >
-                <Table className="min-w-[560px]">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t.suppliers.columnName}</TableHead>
-                      <TableHead>{t.suppliers.columnCode}</TableHead>
-                      <TableHead>{t.suppliers.columnContact}</TableHead>
-                      <TableHead>{t.suppliers.columnCountry}</TableHead>
-                      <TableHead>{t.suppliers.columnStatus}</TableHead>
-                      <TableHead className="w-36 text-right">{t.suppliers.columnActions}</TableHead>
+              <Table className="min-w-[560px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.suppliers.columnName}</TableHead>
+                    <TableHead>{t.suppliers.columnCode}</TableHead>
+                    <TableHead>{t.suppliers.columnContact}</TableHead>
+                    <TableHead>{t.suppliers.columnCountry}</TableHead>
+                    <TableHead>{t.suppliers.columnStatus}</TableHead>
+                    <TableHead className="w-36 text-right">{t.suppliers.columnActions}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {suppliers.map((s) => (
+                    <TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-medium">
+                        <Link href={`/suppliers/${s.id}`} className="hover:underline">
+                          {s.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{s.code ?? t.common.none}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {s.contactName ?? s.email ?? t.common.none}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {s.country ?? t.common.none}
+                      </TableCell>
+                      <TableCell>
+                        {s.isActive ? (
+                          <Badge variant="success">{t.suppliers.activeLabel}</Badge>
+                        ) : (
+                          <Badge variant="secondary">{t.suppliers.inactiveLabel}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {canEdit ? (
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={`/suppliers/${s.id}/edit`}>{t.common.edit}</Link>
+                            </Button>
+                          ) : null}
+                          {canDelete ? (
+                            <DeleteButton
+                              labels={{
+                                trigger: t.common.delete,
+                                title: t.suppliers.deleteConfirmTitle,
+                                body: t.suppliers.deleteConfirmBody,
+                                cancel: t.common.cancel,
+                                confirm: t.common.delete,
+                              }}
+                              action={deleteSupplierAction.bind(null, s.id)}
+                              iconOnly
+                            />
+                          ) : null}
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {suppliers.map((s) => (
-                      <TableRow key={s.id} className="hover:bg-muted/50 transition-colors">
-                        <TableCell className="font-medium">
-                          <Link href={`/suppliers/${s.id}`} className="hover:underline">
-                            {s.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {s.code ?? t.common.none}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {s.contactName ?? s.email ?? t.common.none}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {s.country ?? t.common.none}
-                        </TableCell>
-                        <TableCell>
-                          {s.isActive ? (
-                            <Badge variant="success">{t.suppliers.activeLabel}</Badge>
-                          ) : (
-                            <Badge variant="secondary">{t.suppliers.inactiveLabel}</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {canEdit ? (
-                              <Button variant="ghost" size="sm" asChild>
-                                <Link href={`/suppliers/${s.id}/edit`}>{t.common.edit}</Link>
-                              </Button>
-                            ) : null}
-                            {canDelete ? (
-                              <DeleteButton
-                                labels={{
-                                  trigger: t.common.delete,
-                                  title: t.suppliers.deleteConfirmTitle,
-                                  body: t.suppliers.deleteConfirmBody,
-                                  cancel: t.common.cancel,
-                                  confirm: t.common.delete,
-                                }}
-                                action={deleteSupplierAction.bind(null, s.id)}
-                                iconOnly
-                              />
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                  ))}
+                </TableBody>
+              </Table>
             </ResponsiveTable>
           </CardContent>
         </Card>

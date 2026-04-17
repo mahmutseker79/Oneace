@@ -15,25 +15,30 @@
 
 import type { Integration } from "@/generated/prisma";
 import { db as prisma } from "@/lib/db";
-import SyncEngine, { type SyncContext, type SyncEntity, type SyncResult } from "@/lib/integrations/sync-engine";
-import XeroClient, {
-  type XeroContact,
-  type XeroInvoice,
-  type XeroCreditNote,
-  type XeroPayment,
-  type XeroOverpayment,
-  type XeroPrepayment,
-  type XeroAccount,
-  type XeroItem,
-  type XeroPurchaseOrder,
-  type XeroBankTransaction,
-  type XeroManualJournal,
-  type XeroTaxRate,
-  type XeroCurrency,
-  type XeroOrganisation,
-  type XeroApiListResponse,
+import type { ApiResponse } from "@/lib/integrations/base-client";
+import SyncEngine, {
+  type SyncContext,
+  type SyncEntity,
+  type SyncResult,
+} from "@/lib/integrations/sync-engine";
+import type XeroClient from "@/lib/integrations/xero/xero-client";
+import type {
+  XeroAccount,
+  XeroApiListResponse,
+  XeroBankTransaction,
+  XeroContact,
+  XeroCreditNote,
+  XeroCurrency,
+  XeroInvoice,
+  XeroItem,
+  XeroManualJournal,
+  XeroOrganisation,
+  XeroOverpayment,
+  XeroPayment,
+  XeroPrepayment,
+  XeroPurchaseOrder,
+  XeroTaxRate,
 } from "@/lib/integrations/xero/xero-client";
-import { type ApiResponse } from "@/lib/integrations/base-client";
 import { logger } from "@/lib/logger";
 
 // ── Type Definitions ────────────────────────────────────────────
@@ -210,14 +215,21 @@ export class XeroSyncEngine extends SyncEngine {
         });
 
         const pushResult = await this.processBatch(
-          localItems.map((item: { id: string; sku: string | null; name: string; description: string | null }) => ({
-            id: item.id,
-            externalId: this.mapping.itemToXeroItem[item.id],
-            data: {
-              Code: item.sku || item.id,
-              Description: item.description || item.name,
-            },
-          })),
+          localItems.map(
+            (item: {
+              id: string;
+              sku: string | null;
+              name: string;
+              description: string | null;
+            }) => ({
+              id: item.id,
+              externalId: this.mapping.itemToXeroItem[item.id],
+              data: {
+                Code: item.sku || item.id,
+                Description: item.description || item.name,
+              },
+            }),
+          ),
           context,
           async (entity: SyncEntity) => {
             const itemData: Partial<XeroItem> = {
@@ -230,12 +242,7 @@ export class XeroSyncEngine extends SyncEngine {
 
             if (entity.externalId) {
               // Update existing
-              xeroItem = (
-                await this.client.updateItem(
-                  entity.externalId,
-                  itemData,
-                )
-              ).data;
+              xeroItem = (await this.client.updateItem(entity.externalId, itemData)).data;
             } else {
               // Create new
               xeroItem = (await this.client.createItem(itemData)).data;
@@ -255,8 +262,8 @@ export class XeroSyncEngine extends SyncEngine {
 
       if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
         // Pull Xero items to local
-        const modifiedAfter = this.mapping.lastSyncTimestamps["Items"]
-          ? new Date(this.mapping.lastSyncTimestamps["Items"])
+        const modifiedAfter = this.mapping.lastSyncTimestamps.Items
+          ? new Date(this.mapping.lastSyncTimestamps.Items)
           : undefined;
 
         const xeroItemsResponse = await this.client.getItems({ modifiedAfter });
@@ -306,7 +313,7 @@ export class XeroSyncEngine extends SyncEngine {
         result.itemsSkipped += pullResult.skipped;
         result.errors.push(...pullResult.errors);
 
-        this.mapping.lastSyncTimestamps["Items"] = new Date().toISOString();
+        this.mapping.lastSyncTimestamps.Items = new Date().toISOString();
       }
 
       await this.saveMapping(context.integrationId);
@@ -348,23 +355,31 @@ export class XeroSyncEngine extends SyncEngine {
         });
 
         const pushResult = await this.processBatch(
-          localSuppliers.map((supplier: { id: string; name: string; email: string | null; phone: string | null; code: string | null }) => ({
-            id: supplier.id,
-            externalId: this.mapping.supplierToXeroContact[supplier.id],
-            data: {
-              ContactName: supplier.name,
-              EmailAddress: supplier.email || "",
-              Phones: supplier.phone
-                ? [
-                    {
-                      PhoneType: "DEFAULT" as const,
-                      PhoneNumber: supplier.phone,
-                    },
-                  ]
-                : [],
-              TaxNumber: supplier.code || "",
-            },
-          })),
+          localSuppliers.map(
+            (supplier: {
+              id: string;
+              name: string;
+              email: string | null;
+              phone: string | null;
+              code: string | null;
+            }) => ({
+              id: supplier.id,
+              externalId: this.mapping.supplierToXeroContact[supplier.id],
+              data: {
+                ContactName: supplier.name,
+                EmailAddress: supplier.email || "",
+                Phones: supplier.phone
+                  ? [
+                      {
+                        PhoneType: "DEFAULT" as const,
+                        PhoneNumber: supplier.phone,
+                      },
+                    ]
+                  : [],
+                TaxNumber: supplier.code || "",
+              },
+            }),
+          ),
           context,
           async (entity: SyncEntity) => {
             const contactData: Partial<XeroContact> = {
@@ -378,9 +393,7 @@ export class XeroSyncEngine extends SyncEngine {
             let xeroContact: XeroApiListResponse<XeroContact>;
 
             if (entity.externalId) {
-              xeroContact = (
-                await this.client.updateContact(entity.externalId, contactData)
-              ).data;
+              xeroContact = (await this.client.updateContact(entity.externalId, contactData)).data;
             } else {
               xeroContact = (await this.client.createContact(contactData)).data;
             }
@@ -401,8 +414,8 @@ export class XeroSyncEngine extends SyncEngine {
 
       if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
         // Pull Xero contacts (suppliers) to local
-        const modifiedAfter = this.mapping.lastSyncTimestamps["Suppliers"]
-          ? new Date(this.mapping.lastSyncTimestamps["Suppliers"])
+        const modifiedAfter = this.mapping.lastSyncTimestamps.Suppliers
+          ? new Date(this.mapping.lastSyncTimestamps.Suppliers)
           : undefined;
 
         const xeroContactsResponse = await this.client.getContacts({ modifiedAfter });
@@ -419,8 +432,7 @@ export class XeroSyncEngine extends SyncEngine {
             data: {
               name: contact.ContactName,
               email: contact.EmailAddress,
-              phone:
-                contact.Phones?.find((p) => p.PhoneType === "DEFAULT")?.PhoneNumber || "",
+              phone: contact.Phones?.find((p) => p.PhoneType === "DEFAULT")?.PhoneNumber || "",
               code: contact.TaxNumber || "",
             },
           })),
@@ -460,7 +472,7 @@ export class XeroSyncEngine extends SyncEngine {
         result.itemsSkipped += pullResult.skipped;
         result.errors.push(...pullResult.errors);
 
-        this.mapping.lastSyncTimestamps["Suppliers"] = new Date().toISOString();
+        this.mapping.lastSyncTimestamps.Suppliers = new Date().toISOString();
       }
 
       await this.saveMapping(context.integrationId);
@@ -509,7 +521,8 @@ export class XeroSyncEngine extends SyncEngine {
             data: {
               ContactID: this.mapping.supplierToXeroContact[po.supplierId] || "",
               PurchaseOrderNumber: po.poNumber,
-              Date: po.createdAt?.toISOString().split("T")[0] || new Date().toISOString().split("T")[0],
+              Date:
+                po.createdAt?.toISOString().split("T")[0] || new Date().toISOString().split("T")[0],
               LineItems: po.lines.map((line: any) => ({
                 Description: `Item: ${line.itemId}`,
                 Quantity: line.orderedQty,
@@ -542,9 +555,7 @@ export class XeroSyncEngine extends SyncEngine {
             let xeroPO: XeroApiListResponse<XeroPurchaseOrder>;
 
             if (entity.externalId) {
-              xeroPO = (
-                await this.client.updatePurchaseOrder(entity.externalId, zeroPO)
-              ).data;
+              xeroPO = (await this.client.updatePurchaseOrder(entity.externalId, zeroPO)).data;
             } else {
               xeroPO = (await this.client.createPurchaseOrder(zeroPO)).data;
             }
@@ -563,8 +574,8 @@ export class XeroSyncEngine extends SyncEngine {
 
       if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
         // Pull Xero POs to local
-        const modifiedAfter = this.mapping.lastSyncTimestamps["PurchaseOrders"]
-          ? new Date(this.mapping.lastSyncTimestamps["PurchaseOrders"])
+        const modifiedAfter = this.mapping.lastSyncTimestamps.PurchaseOrders
+          ? new Date(this.mapping.lastSyncTimestamps.PurchaseOrders)
           : undefined;
 
         const xeroPOsResponse = await this.client.getPurchaseOrders({ modifiedAfter });
@@ -621,7 +632,7 @@ export class XeroSyncEngine extends SyncEngine {
         result.itemsSkipped += pullResult.skipped;
         result.errors.push(...pullResult.errors);
 
-        this.mapping.lastSyncTimestamps["PurchaseOrders"] = new Date().toISOString();
+        this.mapping.lastSyncTimestamps.PurchaseOrders = new Date().toISOString();
       }
 
       await this.saveMapping(context.integrationId);

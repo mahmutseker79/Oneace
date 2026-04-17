@@ -28,10 +28,7 @@ export async function importLocations(ctx: PhaseContext): Promise<{
 
         for (const rawLoc of batch) {
           try {
-            const warehouseId = ctx.idMap.require(
-              "WAREHOUSE",
-              rawLoc.warehouseExternalId,
-            );
+            const warehouseId = ctx.idMap.require("WAREHOUSE", rawLoc.warehouseExternalId);
             const parentLocationId = rawLoc.parentLocationExternalId
               ? ctx.idMap.get("LOCATION", rawLoc.parentLocationExternalId)
               : null;

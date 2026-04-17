@@ -27,13 +27,7 @@ interface AssignmentFormProps {
   isNew: boolean;
 }
 
-export function AssignmentForm({
-  countId,
-  members,
-  departments,
-  warehouses,
-
-}: AssignmentFormProps) {
+export function AssignmentForm({ countId, members, departments, warehouses }: AssignmentFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 

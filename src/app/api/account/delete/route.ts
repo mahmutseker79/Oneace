@@ -1,8 +1,8 @@
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
-import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 /**

@@ -45,12 +45,7 @@ export function ZoneDeleteDialog({ zoneId, zoneName, countId, labels }: ZoneDele
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setIsOpen(true)}
-        disabled={isPending}
-      >
+      <Button size="sm" variant="ghost" onClick={() => setIsOpen(true)} disabled={isPending}>
         <Trash2 className="h-4 w-4 text-destructive" />
       </Button>
 
@@ -58,9 +53,7 @@ export function ZoneDeleteDialog({ zoneId, zoneName, countId, labels }: ZoneDele
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{labels.deleteTitle}</DialogTitle>
-            <DialogDescription>
-              {labels.deleteConfirm}
-            </DialogDescription>
+            <DialogDescription>{labels.deleteConfirm}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">

@@ -76,9 +76,7 @@ export function AssembleDisassemblePanel({
         <Card>
           <CardHeader>
             <CardTitle>Assemble</CardTitle>
-            <CardDescription>
-              Combine components into {kitName}
-            </CardDescription>
+            <CardDescription>Combine components into {kitName}</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={handleAssemble} className="space-y-4">
@@ -132,9 +130,7 @@ export function AssembleDisassemblePanel({
         <Card>
           <CardHeader>
             <CardTitle>Disassemble</CardTitle>
-            <CardDescription>
-              Break {kitName} back into components
-            </CardDescription>
+            <CardDescription>Break {kitName} back into components</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={handleDisassemble} className="space-y-4">
@@ -192,9 +188,7 @@ export function AssembleDisassemblePanel({
             </p>
           )}
           {success && (
-            <p className="text-sm text-success bg-success/10 rounded-lg px-4 py-3">
-              {success}
-            </p>
+            <p className="text-sm text-success bg-success/10 rounded-lg px-4 py-3">{success}</p>
           )}
         </div>
       )}

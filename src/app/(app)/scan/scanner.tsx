@@ -247,7 +247,10 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
 
               const now = performance.now();
               // Dedup: ignore same barcode within DEDUP_WINDOW_MS
-              if (value === lastCodeRef.current && now - lastCodeTimeRef.current < DEDUP_WINDOW_MS) {
+              if (
+                value === lastCodeRef.current &&
+                now - lastCodeTimeRef.current < DEDUP_WINDOW_MS
+              ) {
                 rafRef.current = requestAnimationFrame(tick);
                 return;
               }

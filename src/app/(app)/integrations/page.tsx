@@ -16,7 +16,9 @@ import { requireActiveMembership } from "@/lib/session";
 import {
   Boxes,
   Factory,
+  FileSpreadsheet,
   Globe,
+  HardDrive,
   Link2,
   Package,
   Receipt,
@@ -25,14 +27,12 @@ import {
   Store,
   Warehouse,
   Webhook,
-  FileSpreadsheet,
-  HardDrive,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { MigrationCard } from "./components/migration-card";
 import { disconnectIntegrationAction } from "./actions";
+import { MigrationCard } from "./components/migration-card";
 
 export const metadata: Metadata = {
   title: "Integrations",
@@ -241,13 +241,7 @@ export default async function IntegrationsPage() {
   });
 
   // Group providers by category
-  const categories = [
-    "accounting",
-    "ecommerce",
-    "erp",
-    "migration",
-    "webhook",
-  ] as const;
+  const categories = ["accounting", "ecommerce", "erp", "migration", "webhook"] as const;
 
   return (
     <div className="space-y-8">
@@ -263,8 +257,7 @@ export default async function IntegrationsPage() {
               <h2 className="mb-4 text-lg font-semibold">{CATEGORY_LABELS[cat]}</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {MIGRATION_SOURCES_INFO.map((info) => {
-                  const lastJob =
-                    lastMigrationMap.get(info.source as any) || null;
+                  const lastJob = lastMigrationMap.get(info.source as any) || null;
                   return (
                     <MigrationCard
                       key={info.source}

@@ -87,7 +87,7 @@ export async function deleteMigrationBlob(url: string): Promise<{ ok: boolean; e
  */
 export async function deleteMigrationBlobs(
   urls: string[],
-  opts?: { concurrency?: number }
+  opts?: { concurrency?: number },
 ): Promise<{ deleted: number; failed: Array<{ url: string; error: string }> }> {
   const concurrency = opts?.concurrency ?? BLOB_CLEANUP_CONCURRENCY;
   const failed: Array<{ url: string; error: string }> = [];
@@ -138,7 +138,7 @@ export async function deleteMigrationBlobs(
  */
 export async function deleteMigrationBlobsForJob(
   db: PrismaClient,
-  migrationJobId: string
+  migrationJobId: string,
 ): Promise<{ deleted: number; failed: Array<{ url: string; error: string }> }> {
   try {
     // Fetch the job and parse importResults
@@ -160,7 +160,10 @@ export async function deleteMigrationBlobsForJob(
     // Parse importResults to find ATTACHMENTS phase
     let attachmentIds: string[] = [];
     if (job.importResults && typeof job.importResults === "object") {
-      const importResults = job.importResults as { version?: number; phases?: Array<{ phase?: string; createdIds?: string[] }> };
+      const importResults = job.importResults as {
+        version?: number;
+        phases?: Array<{ phase?: string; createdIds?: string[] }>;
+      };
       if (importResults.version === 1 && Array.isArray(importResults.phases)) {
         const attachmentsPhase = importResults.phases.find((p) => p.phase === "ATTACHMENTS");
         if (attachmentsPhase && Array.isArray(attachmentsPhase.createdIds)) {

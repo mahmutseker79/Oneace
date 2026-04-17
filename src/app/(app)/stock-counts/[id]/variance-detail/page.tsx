@@ -186,7 +186,11 @@ export default async function VarianceDetailPage({ params }: PageProps) {
               label="Net impact"
               value={formatCurrency(netFinancialImpact)}
               tone={
-                netFinancialImpact > 0 ? "positive" : netFinancialImpact < 0 ? "negative" : "neutral"
+                netFinancialImpact > 0
+                  ? "positive"
+                  : netFinancialImpact < 0
+                    ? "negative"
+                    : "neutral"
               }
             />
             <Stat label="Total |variance| units" value={String(summary.totalAbsVariance)} />

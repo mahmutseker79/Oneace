@@ -248,9 +248,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                         {
                           label: t.movements.columnQuantity,
                           value: (
-                            <span
-                              className={signedQty >= 0 ? "text-success" : "text-destructive"}
-                            >
+                            <span className={signedQty >= 0 ? "text-success" : "text-destructive"}>
                               {qtyPrefix}
                               {absQty} {m.item.unit}
                             </span>
@@ -314,9 +312,7 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
                           <TableCell>{typeBadge(m.type as MovementType)}</TableCell>
                           <TableCell className="text-sm">{warehouseCell}</TableCell>
                           <TableCell className="text-right tabular-nums">
-                            <span
-                              className={signedQty >= 0 ? "text-success" : "text-destructive"}
-                            >
+                            <span className={signedQty >= 0 ? "text-success" : "text-destructive"}>
                               {qtyPrefix}
                               {absQty} {m.item.unit}
                             </span>

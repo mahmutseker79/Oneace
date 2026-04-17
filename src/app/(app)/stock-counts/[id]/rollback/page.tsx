@@ -14,9 +14,7 @@ import { RollbackForm } from "./rollback-form";
 /**
  * Rollback page. Allows rolling back a completed count.
  */
-export async function generateMetadata({
-
-}: {
+export async function generateMetadata(_props: {
   params: { id: string };
 }): Promise<Metadata> {
   const t = await getMessages();

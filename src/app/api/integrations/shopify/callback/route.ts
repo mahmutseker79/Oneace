@@ -22,8 +22,8 @@ function verifyOAuthState(
   if (!organizationId || !userId || !timestamp || !signature) return null;
 
   // Validate timestamp is within 10 minutes
-  const stateTime = parseInt(timestamp, 10);
-  if (isNaN(stateTime)) return null;
+  const stateTime = Number.parseInt(timestamp, 10);
+  if (Number.isNaN(stateTime)) return null;
   const now = Date.now();
   const maxAge = 10 * 60 * 1000; // 10 minutes in milliseconds
   if (now - stateTime > maxAge) return null;

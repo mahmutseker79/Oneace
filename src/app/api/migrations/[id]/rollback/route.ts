@@ -5,17 +5,14 @@
  * Requires authentication, active membership, and integrations.disconnect capability.
  */
 
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
-import { rollbackMigration } from "@/lib/migrations/core/rollback";
 import { recordAudit } from "@/lib/audit";
+import { db } from "@/lib/db";
+import { rollbackMigration } from "@/lib/migrations/core/rollback";
+import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
 import { NextResponse } from "next/server";
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Auth: require active membership.
     const { membership, session } = await requireActiveMembership();
@@ -41,10 +38,7 @@ export async function POST(
     }
 
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "Organization mismatch" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Organization mismatch" }, { status: 404 });
     }
 
     // Invoke rollback.
@@ -82,28 +76,16 @@ export async function POST(
 
     // Map known error types to HTTP status codes.
     if (message.includes("status=")) {
-      return NextResponse.json(
-        { error: message },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: message }, { status: 409 });
     }
     if (message.includes("Organization mismatch")) {
-      return NextResponse.json(
-        { error: message },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: message }, { status: 404 });
     }
     if (message.includes("not found")) {
-      return NextResponse.json(
-        { error: message },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: message }, { status: 404 });
     }
 
     // Generic error.
-    return NextResponse.json(
-      { error: message },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

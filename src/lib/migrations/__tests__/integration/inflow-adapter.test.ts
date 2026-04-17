@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { INFLOW_ADAPTER } from "@/lib/migrations/inflow/adapter";
 import type { UploadedFile } from "@/lib/migrations/core/adapter";
+import { INFLOW_ADAPTER } from "@/lib/migrations/inflow/adapter";
+import { describe, expect, it } from "vitest";
 
 describe("inflow-adapter (integration)", () => {
   it("parses Products CSV and returns ParsedSnapshot with items", async () => {
@@ -11,8 +11,8 @@ P002,Widget B,WID-B`;
     const files: UploadedFile[] = [
       {
         filename: "Products.csv",
+        mimeType: "text/csv",
         buffer: Buffer.from(productsContent),
-        size: Buffer.byteLength(productsContent),
       },
     ];
 
@@ -35,13 +35,13 @@ V001,TechCorp`;
     const files: UploadedFile[] = [
       {
         filename: "Products.csv",
+        mimeType: "text/csv",
         buffer: Buffer.from(productsContent),
-        size: Buffer.byteLength(productsContent),
       },
       {
         filename: "Vendors.csv",
+        mimeType: "text/csv",
         buffer: Buffer.from(vendorsContent),
-        size: Buffer.byteLength(vendorsContent),
       },
     ];
 
@@ -61,8 +61,8 @@ P001,Widget A,WID-A`;
     const files: UploadedFile[] = [
       {
         filename: "Products.csv",
+        mimeType: "text/csv",
         buffer: Buffer.from(productsContent),
-        size: Buffer.byteLength(productsContent),
       },
     ];
 
@@ -83,16 +83,16 @@ P001,Widget,WID-001`;
     const files: UploadedFile[] = [
       {
         filename: "Products.csv",
+        mimeType: "text/csv",
         buffer: Buffer.from(productsContent),
-        size: Buffer.byteLength(productsContent),
       },
     ];
 
     const detection = await INFLOW_ADAPTER.detectFiles(files);
 
     // Should detect Products.csv
-    const productsDetection = detection.find((d) => d.filename === "Products.csv");
-    expect(productsDetection?.detected).toBe(true);
+    const productsDetection = detection.find((d) => d.fileRef === "Products.csv");
+    expect(productsDetection?.entity).toBe("ITEM");
     expect(productsDetection?.confidence).toBe(1.0);
   });
 
@@ -104,8 +104,8 @@ P002,BadWidget,`;
     const files: UploadedFile[] = [
       {
         filename: "Products.csv",
+        mimeType: "text/csv",
         buffer: Buffer.from(productsContent),
-        size: Buffer.byteLength(productsContent),
       },
     ];
 
@@ -113,7 +113,7 @@ P002,BadWidget,`;
     const validation = INFLOW_ADAPTER.validate(snapshot, [], {});
 
     // Should validate successfully (validation issues recorded)
-    expect(validation.valid).toBeDefined();
+    expect(validation).toBeDefined();
     expect(Array.isArray(validation.issues)).toBe(true);
   });
 });

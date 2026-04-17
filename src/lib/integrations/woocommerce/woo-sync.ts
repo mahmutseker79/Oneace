@@ -120,15 +120,17 @@ export class WooSyncEngine extends SyncEngine {
     try {
       if (context.entityType === "products") {
         return await this.syncProducts(context);
-      } else if (context.entityType === "orders") {
-        return await this.syncOrders(context);
-      } else if (context.entityType === "customers") {
-        return await this.syncCustomers(context);
-      } else if (context.entityType === "stock_levels") {
-        return await this.syncStockLevels(context);
-      } else {
-        throw new Error(`Unknown entity type: ${context.entityType}`);
       }
+      if (context.entityType === "orders") {
+        return await this.syncOrders(context);
+      }
+      if (context.entityType === "customers") {
+        return await this.syncCustomers(context);
+      }
+      if (context.entityType === "stock_levels") {
+        return await this.syncStockLevels(context);
+      }
+      throw new Error(`Unknown entity type: ${context.entityType}`);
     } catch (error) {
       const result: SyncResult = {
         success: false,
@@ -239,33 +241,29 @@ export class WooSyncEngine extends SyncEngine {
         // BIDIRECTIONAL: push first, then pull
         const localItems = await this.fetchLocalItems(context.batchSize || 100);
 
-        const pushResults = await this.processBatch(
-          localItems,
-          context,
-          async (entity) => {
-            const item = entity.data as unknown as LocalItem;
-            const wooProduct: Partial<WooProduct> = {
-              name: item.name,
-              sku: item.sku,
-              description: item.description,
-              status: "publish",
-              type: "simple",
-            };
+        const pushResults = await this.processBatch(localItems, context, async (entity) => {
+          const item = entity.data as unknown as LocalItem;
+          const wooProduct: Partial<WooProduct> = {
+            name: item.name,
+            sku: item.sku,
+            description: item.description,
+            status: "publish",
+            type: "simple",
+          };
 
-            const mapping = this.findProductMapping(entity.id);
+          const mapping = this.findProductMapping(entity.id);
 
-            if (mapping) {
-              await this.wooClient.updateProduct(mapping.wooId, wooProduct);
-            } else {
-              const created = await this.wooClient.createProduct(wooProduct);
-              this.addProductMapping({
-                wooId: created.id,
-                oneAceItemId: entity.id,
-                lastSyncedAt: new Date().toISOString(),
-              });
-            }
-          },
-        );
+          if (mapping) {
+            await this.wooClient.updateProduct(mapping.wooId, wooProduct);
+          } else {
+            const created = await this.wooClient.createProduct(wooProduct);
+            this.addProductMapping({
+              wooId: created.id,
+              oneAceItemId: entity.id,
+              lastSyncedAt: new Date().toISOString(),
+            });
+          }
+        });
 
         result.itemsSynced += pushResults.processed;
         result.itemsFailed += pushResults.failed;
@@ -274,16 +272,12 @@ export class WooSyncEngine extends SyncEngine {
 
         const wooProducts = await this.fetchWooProducts(context.batchSize || 100);
 
-        const pullResults = await this.processBatch(
-          wooProducts,
-          context,
-          async (entity) => {
-            const product = entity.data as unknown as WooProduct;
-            logger.info("Would sync product to Items (pull)", {
-              productId: product.id,
-            });
-          },
-        );
+        const pullResults = await this.processBatch(wooProducts, context, async (entity) => {
+          const product = entity.data as unknown as WooProduct;
+          logger.info("Would sync product to Items (pull)", {
+            productId: product.id,
+          });
+        });
 
         result.itemsSynced += pullResults.processed;
         result.itemsFailed += pullResults.failed;
@@ -516,9 +510,7 @@ export class WooSyncEngine extends SyncEngine {
             id: `woo-product-${product.id}`,
             externalId: String(product.id),
             data: product as unknown as Record<string, unknown>,
-            lastModified: product.date_modified
-              ? new Date(product.date_modified)
-              : new Date(),
+            lastModified: product.date_modified ? new Date(product.date_modified) : new Date(),
             checksum: this.computeChecksum({
               id: String(product.id),
               data: product as unknown as Record<string, unknown>,
@@ -556,9 +548,7 @@ export class WooSyncEngine extends SyncEngine {
             id: `woo-order-${order.id}`,
             externalId: String(order.id),
             data: order as unknown as Record<string, unknown>,
-            lastModified: order.date_modified
-              ? new Date(order.date_modified)
-              : new Date(),
+            lastModified: order.date_modified ? new Date(order.date_modified) : new Date(),
             checksum: this.computeChecksum({
               id: String(order.id),
               data: order as unknown as Record<string, unknown>,

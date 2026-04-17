@@ -36,18 +36,17 @@ export async function GET() {
 
   const rl = await rateLimit(`export:${membership.userId}`, RATE_LIMITS.export);
   if (!rl.ok) {
-    return new Response(
-      JSON.stringify({ error: "Export rate limit exceeded. Try again later." }),
-      { status: 429, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Export rate limit exceeded. Try again later." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const plan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
   if (!hasPlanCapability(plan, "exports")) {
     return new Response(
       JSON.stringify({
-        error:
-          "Exports are available on Pro and Business plans. Upgrade to unlock PDF exports.",
+        error: "Exports are available on Pro and Business plans. Upgrade to unlock PDF exports.",
       }),
       { status: 403, headers: { "Content-Type": "application/json" } },
     );

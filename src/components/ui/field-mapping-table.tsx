@@ -39,9 +39,7 @@ export function FieldMappingTable({
 
     sourceHeaders.forEach((source) => {
       const sourceLower = source.toLowerCase();
-      const match = targetKeys.find((t) =>
-        t.toLowerCase().includes(sourceLower),
-      );
+      const match = targetKeys.find((t) => t.toLowerCase().includes(sourceLower));
       if (match) {
         suggested.set(source, match);
       }
@@ -59,10 +57,7 @@ export function FieldMappingTable({
       .slice(0, 3);
   };
 
-  const handleMappingChange = (
-    sourceField: string,
-    targetField: string | undefined,
-  ) => {
+  const handleMappingChange = (sourceField: string, targetField: string | undefined) => {
     const newMappings = mappings.filter((m) => m.sourceField !== sourceField);
     if (targetField) {
       newMappings.push({
@@ -73,10 +68,7 @@ export function FieldMappingTable({
     onChange(newMappings);
   };
 
-  const handleTransformChange = (
-    sourceField: string,
-    transformKey: string | undefined,
-  ) => {
+  const handleTransformChange = (sourceField: string, transformKey: string | undefined) => {
     const mapping = mappings.find((m) => m.sourceField === sourceField);
     if (!mapping) return;
 
@@ -130,9 +122,7 @@ export function FieldMappingTable({
                 <td className="px-3 py-3">
                   <select
                     value={mapping?.targetField || suggested || ""}
-                    onChange={(e) =>
-                      handleMappingChange(header, e.target.value || undefined)
-                    }
+                    onChange={(e) => handleMappingChange(header, e.target.value || undefined)}
                     className="rounded border bg-background px-2 py-1 text-sm"
                   >
                     <option value="">Select target field...</option>
@@ -147,9 +137,7 @@ export function FieldMappingTable({
                   {mapping && (
                     <select
                       value={mapping.transformKey || "none"}
-                      onChange={(e) =>
-                        handleTransformChange(header, e.target.value)
-                      }
+                      onChange={(e) => handleTransformChange(header, e.target.value)}
                       className="rounded border bg-background px-2 py-1 text-sm"
                     >
                       {TRANSFORMS.map((t) => (

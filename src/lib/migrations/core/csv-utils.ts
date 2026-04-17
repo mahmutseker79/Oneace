@@ -85,7 +85,7 @@ function isLikelyWindows1252(buffer: Buffer): boolean {
  */
 export function parseCsv(
   buffer: Buffer,
-  delimiter: string = ",",
+  delimiter = ",",
 ): {
   headers: string[];
   rows: Record<string, string>[];
@@ -106,7 +106,7 @@ export function parseCsv(
   let buffer_accumulate = "";
 
   while (currentLine < lines.length) {
-    let line = lines[currentLine];
+    const line = lines[currentLine];
     buffer_accumulate += (buffer_accumulate ? "\n" : "") + line;
 
     // Check if this line completes a quoted field.
@@ -155,12 +155,10 @@ export function sniffDelimiter(buffer: Buffer): string {
  * Infer a field's type from a sample of values.
  * Returns: "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "JSON".
  */
-export function inferType(
-  values: string[],
-): "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "JSON" {
+export function inferType(values: string[]): "TEXT" | "NUMBER" | "DATE" | "BOOLEAN" | "JSON" {
   if (!values || values.length === 0) return "TEXT";
 
-  const nonEmpty = values.filter((v) => v && v.trim());
+  const nonEmpty = values.filter((v) => v?.trim());
   if (nonEmpty.length === 0) return "TEXT";
 
   let numberCount = 0;
@@ -177,7 +175,7 @@ export function inferType(
     }
 
     // Check number.
-    if (!isNaN(parseFloat(trimmed)) && isFinite(parseFloat(trimmed))) {
+    if (!Number.isNaN(Number.parseFloat(trimmed)) && Number.isFinite(Number.parseFloat(trimmed))) {
       numberCount++;
       continue;
     }
@@ -189,7 +187,6 @@ export function inferType(
       /^\d{1,2}\.\d{1,2}\.\d{2,4}/.test(trimmed)
     ) {
       dateCount++;
-      continue;
     }
   }
 
@@ -276,9 +273,7 @@ export function parseDecimalLocaleAware(value: string | null | undefined): numbe
   if (!trimmed) return null;
 
   // Remove currency symbols and whitespace.
-  let cleaned = trimmed
-    .replace(/[^\d.,\-+]/g, "")
-    .trim();
+  const cleaned = trimmed.replace(/[^\d.,\-+]/g, "").trim();
 
   if (!cleaned) return null;
 
@@ -302,6 +297,6 @@ export function parseDecimalLocaleAware(value: string | null | undefined): numbe
     normalized = cleaned;
   }
 
-  const parsed = parseFloat(normalized);
-  return isNaN(parsed) || !isFinite(parsed) ? null : parsed;
+  const parsed = Number.parseFloat(normalized);
+  return Number.isNaN(parsed) || !Number.isFinite(parsed) ? null : parsed;
 }

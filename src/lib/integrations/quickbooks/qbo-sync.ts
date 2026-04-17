@@ -18,25 +18,25 @@
  * - Inventory quantity & cost sync
  */
 
-import { db } from "@/lib/db";
 import type { ConflictPolicy, SyncDirection } from "@/generated/prisma";
+import { db } from "@/lib/db";
 import type {
-  QBOClient,
-  QBOItem,
-  QBOCustomer,
-  QBOVendor,
-  QBOInvoice,
-  QBOBill,
-  QBOPayment,
-  QBOPurchaseOrder,
   QBOAccount,
-  QBOTaxCode,
-  QBOEstimate,
-  QBOSalesReceipt,
+  QBOBill,
+  QBOClient,
   QBOCreditMemo,
-  QBOJournalEntry,
+  QBOCustomer,
   QBODeposit,
   QBOEntityName,
+  QBOEstimate,
+  QBOInvoice,
+  QBOItem,
+  QBOJournalEntry,
+  QBOPayment,
+  QBOPurchaseOrder,
+  QBOSalesReceipt,
+  QBOTaxCode,
+  QBOVendor,
 } from "@/lib/integrations/quickbooks/qbo-client";
 import {
   type SyncContext,
@@ -83,7 +83,9 @@ const ENTITY_TO_QBO_NAME: Record<QBOSyncEntityType, QBOEntityName> = {
 };
 
 /** All syncable entity types */
-export const ALL_SYNC_ENTITIES: QBOSyncEntityType[] = Object.keys(ENTITY_TO_QBO_NAME) as QBOSyncEntityType[];
+export const ALL_SYNC_ENTITIES: QBOSyncEntityType[] = Object.keys(
+  ENTITY_TO_QBO_NAME,
+) as QBOSyncEntityType[];
 
 // ── ID Mapping helpers ──────────────────────────────────────────
 
@@ -309,17 +311,31 @@ export class QBOSyncEngine extends SyncEngine {
         // Route to the correct inbound handler
         switch (entityType) {
           case "ITEM":
-            await this.upsertItemFromQBO(context.organizationId, entity.data as Record<string, unknown>);
+            await this.upsertItemFromQBO(
+              context.organizationId,
+              entity.data as Record<string, unknown>,
+            );
             break;
           case "CUSTOMER":
-            await this.upsertCustomerFromQBO(context.organizationId, entity.data as Record<string, unknown>);
+            await this.upsertCustomerFromQBO(
+              context.organizationId,
+              entity.data as Record<string, unknown>,
+            );
             break;
           case "SUPPLIER":
-            await this.upsertSupplierFromQBO(context.organizationId, entity.data as Record<string, unknown>);
+            await this.upsertSupplierFromQBO(
+              context.organizationId,
+              entity.data as Record<string, unknown>,
+            );
             break;
           default:
             // For other types, store in sync log for now
-            await this.storeExternalMapping(context.integrationId, entityType, String(entity.externalId), entity.data);
+            await this.storeExternalMapping(
+              context.integrationId,
+              entityType,
+              String(entity.externalId),
+              entity.data,
+            );
             break;
         }
       },
@@ -337,7 +353,11 @@ export class QBOSyncEngine extends SyncEngine {
   // ITEMS SYNC
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncItems(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncItems(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
       await this.pullItems(context, result, lastSyncAt);
     }
@@ -347,7 +367,11 @@ export class QBOSyncEngine extends SyncEngine {
     }
   }
 
-  private async pullItems(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async pullItems(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     const qboItems = lastSyncAt
       ? await this.client.getAllItems(lastSyncAt)
       : await this.client.getAllItems();
@@ -364,7 +388,10 @@ export class QBOSyncEngine extends SyncEngine {
       context,
       async (entity) => {
         const item = entity.data as unknown as QBOItem;
-        await this.upsertItemFromQBO(context.organizationId, item as unknown as Record<string, unknown>);
+        await this.upsertItemFromQBO(
+          context.organizationId,
+          item as unknown as Record<string, unknown>,
+        );
         await this.saveIdMapping(context.integrationId, "ITEM", entity.externalId!, item.id);
       },
     );
@@ -374,7 +401,11 @@ export class QBOSyncEngine extends SyncEngine {
     result.errors.push(...errors);
   }
 
-  private async pushItems(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async pushItems(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     // Find local items that have been modified since last sync
     const localItems = await db.item.findMany({
       where: {
@@ -423,7 +454,10 @@ export class QBOSyncEngine extends SyncEngine {
     result.errors.push(...errors);
   }
 
-  private async upsertItemFromQBO(organizationId: string, raw: Record<string, unknown>): Promise<void> {
+  private async upsertItemFromQBO(
+    organizationId: string,
+    raw: Record<string, unknown>,
+  ): Promise<void> {
     const name = String(raw.name ?? raw.Name ?? "");
     const sku = String(raw.sku ?? raw.Sku ?? raw.id ?? raw.Id ?? "");
     const description = String(raw.description ?? raw.Description ?? "");
@@ -477,16 +511,18 @@ export class QBOSyncEngine extends SyncEngine {
             data: { quantity: Number(qtyOnHand) },
           });
         } else {
-          await db.stockLevel.create({
-            data: {
-              organizationId,
-              itemId: upserted.id,
-              warehouseId: warehouse.id,
-              quantity: Number(qtyOnHand),
-            },
-          }).catch(() => {
-            // Unique constraint may already exist
-          });
+          await db.stockLevel
+            .create({
+              data: {
+                organizationId,
+                itemId: upserted.id,
+                warehouseId: warehouse.id,
+                quantity: Number(qtyOnHand),
+              },
+            })
+            .catch(() => {
+              // Unique constraint may already exist
+            });
         }
       }
     }
@@ -496,7 +532,11 @@ export class QBOSyncEngine extends SyncEngine {
   // CUSTOMERS SYNC
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncCustomers(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncCustomers(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
       await this.pullCustomers(context, result, lastSyncAt);
     }
@@ -511,7 +551,11 @@ export class QBOSyncEngine extends SyncEngine {
    * we store customer data in the integration settings as ID mappings that can be
    * referenced when syncing invoices and sales orders.
    */
-  private async pullCustomers(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async pullCustomers(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     const qboCustomers = lastSyncAt
       ? await this.client.getAllCustomers(lastSyncAt)
       : await this.client.getAllCustomers();
@@ -551,7 +595,11 @@ export class QBOSyncEngine extends SyncEngine {
    * rather than a Customer model, we extract unique customer names from sales orders
    * and push them as QBO customers.
    */
-  private async pushCustomers(context: SyncContext, result: SyncResult, _lastSyncAt: Date | null): Promise<void> {
+  private async pushCustomers(
+    context: SyncContext,
+    result: SyncResult,
+    _lastSyncAt: Date | null,
+  ): Promise<void> {
     // Get unique customer names from sales orders
     const orders = await db.salesOrder.findMany({
       where: {
@@ -591,7 +639,10 @@ export class QBOSyncEngine extends SyncEngine {
     result.errors.push(...errors);
   }
 
-  private async upsertCustomerFromQBO(_organizationId: string, raw: Record<string, unknown>): Promise<void> {
+  private async upsertCustomerFromQBO(
+    _organizationId: string,
+    raw: Record<string, unknown>,
+  ): Promise<void> {
     // OneAce doesn't have a Customer model — customer data is stored
     // as external mappings in the integration settings and referenced
     // by customerName/customerRef on sales orders.
@@ -605,7 +656,11 @@ export class QBOSyncEngine extends SyncEngine {
   // SUPPLIERS (VENDORS) SYNC
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncSuppliers(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncSuppliers(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
       await this.pullSuppliers(context, result, lastSyncAt);
     }
@@ -615,7 +670,11 @@ export class QBOSyncEngine extends SyncEngine {
     }
   }
 
-  private async pullSuppliers(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async pullSuppliers(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     const qboVendors = lastSyncAt
       ? await this.client.getAllVendors(lastSyncAt)
       : await this.client.getAllVendors();
@@ -640,7 +699,11 @@ export class QBOSyncEngine extends SyncEngine {
     result.errors.push(...errors);
   }
 
-  private async pushSuppliers(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async pushSuppliers(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     const localSuppliers = await db.supplier.findMany({
       where: {
         organizationId: context.organizationId,
@@ -685,11 +748,21 @@ export class QBOSyncEngine extends SyncEngine {
     result.errors.push(...errors);
   }
 
-  private async upsertSupplierFromQBO(organizationId: string, raw: Record<string, unknown>): Promise<void> {
+  private async upsertSupplierFromQBO(
+    organizationId: string,
+    raw: Record<string, unknown>,
+  ): Promise<void> {
     const name = String(raw.displayName ?? raw.DisplayName ?? "");
-    const email = String(raw.email ?? (raw.PrimaryEmailAddr as Record<string, unknown>)?.Address ?? "");
-    const phone = String(raw.phone ?? (raw.PrimaryPhone as Record<string, unknown>)?.FreeFormNumber ?? "");
-    const code = name.substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const email = String(
+      raw.email ?? (raw.PrimaryEmailAddr as Record<string, unknown>)?.Address ?? "",
+    );
+    const phone = String(
+      raw.phone ?? (raw.PrimaryPhone as Record<string, unknown>)?.FreeFormNumber ?? "",
+    );
+    const code = name
+      .substring(0, 4)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
 
     await db.supplier
       .create({
@@ -716,7 +789,11 @@ export class QBOSyncEngine extends SyncEngine {
   // INVOICES SYNC
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncInvoices(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncInvoices(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
       const qboInvoices = lastSyncAt
         ? await this.client.getAllInvoices(lastSyncAt)
@@ -750,7 +827,11 @@ export class QBOSyncEngine extends SyncEngine {
 
   private async upsertInvoiceFromQBO(context: SyncContext, inv: QBOInvoice): Promise<void> {
     // Map QBO customer ID to local customer
-    const customerMapping = await this.getIdMappingByExternal(context.integrationId, "CUSTOMER", inv.customerId);
+    const customerMapping = await this.getIdMappingByExternal(
+      context.integrationId,
+      "CUSTOMER",
+      inv.customerId,
+    );
 
     // Store invoice data in sync metadata (invoices may not map 1:1 to sales orders)
     await this.storeExternalMapping(context.integrationId, "INVOICE", inv.id, {
@@ -776,23 +857,29 @@ export class QBOSyncEngine extends SyncEngine {
       });
 
       if (!existingOrder) {
-        await db.salesOrder.create({
-          data: {
-            organizationId: context.organizationId,
-            customerName: inv.customerName ?? "QBO Customer",
-            customerRef: customerMapping.localId,
-            orderNumber: `QBO-${inv.docNumber}`,
-            status: inv.status === "PAID" ? "SHIPPED" : "CONFIRMED",
-            note: `QBO-INV:${inv.id} | Synced from QuickBooks`,
-          },
-        }).catch(() => {
-          // Order number may conflict
-        });
+        await db.salesOrder
+          .create({
+            data: {
+              organizationId: context.organizationId,
+              customerName: inv.customerName ?? "QBO Customer",
+              customerRef: customerMapping.localId,
+              orderNumber: `QBO-${inv.docNumber}`,
+              status: inv.status === "PAID" ? "SHIPPED" : "CONFIRMED",
+              note: `QBO-INV:${inv.id} | Synced from QuickBooks`,
+            },
+          })
+          .catch(() => {
+            // Order number may conflict
+          });
       }
     }
   }
 
-  private async pushInvoices(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async pushInvoices(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     // Find confirmed/shipped sales orders to push as invoices
     const orders = await db.salesOrder.findMany({
       where: {
@@ -857,7 +944,11 @@ export class QBOSyncEngine extends SyncEngine {
   // BILLS SYNC
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncBills(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncBills(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
       const qboBills = lastSyncAt
         ? await this.client.getAllBills(lastSyncAt)
@@ -876,7 +967,11 @@ export class QBOSyncEngine extends SyncEngine {
           const bill = entity.data as unknown as QBOBill;
 
           // Map vendor to supplier
-          const vendorMapping = await this.getIdMappingByExternal(context.integrationId, "SUPPLIER", bill.vendorId);
+          const vendorMapping = await this.getIdMappingByExternal(
+            context.integrationId,
+            "SUPPLIER",
+            bill.vendorId,
+          );
 
           await this.storeExternalMapping(context.integrationId, "BILL", bill.id, {
             docNumber: bill.docNumber,
@@ -902,7 +997,11 @@ export class QBOSyncEngine extends SyncEngine {
   // PAYMENTS SYNC
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncPayments(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncPayments(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
       const qboPayments = lastSyncAt
         ? await this.client.getAllPayments(lastSyncAt)
@@ -927,7 +1026,12 @@ export class QBOSyncEngine extends SyncEngine {
             invoiceRefs: payment.invoiceRefs,
           });
 
-          await this.saveIdMapping(context.integrationId, "PAYMENT", entity.externalId!, payment.id);
+          await this.saveIdMapping(
+            context.integrationId,
+            "PAYMENT",
+            entity.externalId!,
+            payment.id,
+          );
         },
       );
 
@@ -941,7 +1045,11 @@ export class QBOSyncEngine extends SyncEngine {
   // PURCHASE ORDERS SYNC
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncPurchaseOrders(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncPurchaseOrders(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "INBOUND" || context.direction === "BIDIRECTIONAL") {
       const qboPOs = lastSyncAt
         ? await this.client.getAllPurchaseOrders(lastSyncAt)
@@ -959,7 +1067,12 @@ export class QBOSyncEngine extends SyncEngine {
         async (entity) => {
           const po = entity.data as unknown as QBOPurchaseOrder;
           await this.upsertPurchaseOrderFromQBO(context, po);
-          await this.saveIdMapping(context.integrationId, "PURCHASE_ORDER", entity.externalId!, po.id);
+          await this.saveIdMapping(
+            context.integrationId,
+            "PURCHASE_ORDER",
+            entity.externalId!,
+            po.id,
+          );
         },
       );
 
@@ -973,9 +1086,16 @@ export class QBOSyncEngine extends SyncEngine {
     }
   }
 
-  private async upsertPurchaseOrderFromQBO(context: SyncContext, po: QBOPurchaseOrder): Promise<void> {
+  private async upsertPurchaseOrderFromQBO(
+    context: SyncContext,
+    po: QBOPurchaseOrder,
+  ): Promise<void> {
     // Map vendor to local supplier
-    const vendorMapping = await this.getIdMappingByExternal(context.integrationId, "SUPPLIER", po.vendorId);
+    const vendorMapping = await this.getIdMappingByExternal(
+      context.integrationId,
+      "SUPPLIER",
+      po.vendorId,
+    );
 
     let supplierId = vendorMapping?.localId;
 
@@ -1019,7 +1139,11 @@ export class QBOSyncEngine extends SyncEngine {
     });
   }
 
-  private async pushPurchaseOrders(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async pushPurchaseOrders(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     const localPOs = await db.purchaseOrder.findMany({
       where: {
         organizationId: context.organizationId,
@@ -1046,7 +1170,11 @@ export class QBOSyncEngine extends SyncEngine {
 
         const po = entity.data as Record<string, unknown>;
         const supplierId = String(po.supplierId ?? "");
-        const vendorMapping = await this.getIdMapping(context.integrationId, "SUPPLIER", supplierId);
+        const vendorMapping = await this.getIdMapping(
+          context.integrationId,
+          "SUPPLIER",
+          supplierId,
+        );
 
         if (!vendorMapping) return;
 
@@ -1151,113 +1279,188 @@ export class QBOSyncEngine extends SyncEngine {
   // ESTIMATES, SALES RECEIPTS, CREDIT MEMOS, JOURNAL ENTRIES, DEPOSITS
   // ═══════════════════════════════════════════════════════════════
 
-  private async syncEstimates(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncEstimates(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "OUTBOUND") return;
 
-    const qboEstimates = (await this.client.getEstimates({ updatedAfter: lastSyncAt ?? undefined })).items;
+    const qboEstimates = (await this.client.getEstimates({ updatedAfter: lastSyncAt ?? undefined }))
+      .items;
 
     const entities: SyncEntity[] = qboEstimates.map((e) => ({
-      id: e.id, externalId: e.id, data: e as unknown as Record<string, unknown>,
+      id: e.id,
+      externalId: e.id,
+      data: e as unknown as Record<string, unknown>,
     }));
 
-    const { processed, failed, errors } = await this.processBatch(entities, context, async (entity) => {
-      const est = entity.data as unknown as QBOEstimate;
-      await this.storeExternalMapping(context.integrationId, "ESTIMATE", est.id, {
-        docNumber: est.docNumber, customerId: est.customerId,
-        totalAmount: est.totalAmount, status: est.status,
-      });
-      await this.saveIdMapping(context.integrationId, "ESTIMATE", entity.externalId!, est.id);
-    });
+    const { processed, failed, errors } = await this.processBatch(
+      entities,
+      context,
+      async (entity) => {
+        const est = entity.data as unknown as QBOEstimate;
+        await this.storeExternalMapping(context.integrationId, "ESTIMATE", est.id, {
+          docNumber: est.docNumber,
+          customerId: est.customerId,
+          totalAmount: est.totalAmount,
+          status: est.status,
+        });
+        await this.saveIdMapping(context.integrationId, "ESTIMATE", entity.externalId!, est.id);
+      },
+    );
 
     result.itemsSynced += processed;
     result.itemsFailed += failed;
     result.errors.push(...errors);
   }
 
-  private async syncSalesReceipts(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncSalesReceipts(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "OUTBOUND") return;
 
-    const qboReceipts = (await this.client.getSalesReceipts({ updatedAfter: lastSyncAt ?? undefined })).items;
+    const qboReceipts = (
+      await this.client.getSalesReceipts({ updatedAfter: lastSyncAt ?? undefined })
+    ).items;
 
     const entities: SyncEntity[] = qboReceipts.map((r) => ({
-      id: r.id, externalId: r.id, data: r as unknown as Record<string, unknown>,
+      id: r.id,
+      externalId: r.id,
+      data: r as unknown as Record<string, unknown>,
     }));
 
-    const { processed, failed, errors } = await this.processBatch(entities, context, async (entity) => {
-      const receipt = entity.data as unknown as QBOSalesReceipt;
-      await this.storeExternalMapping(context.integrationId, "SALES_RECEIPT", receipt.id, {
-        docNumber: receipt.docNumber, totalAmount: receipt.totalAmount,
-      });
-      await this.saveIdMapping(context.integrationId, "SALES_RECEIPT", entity.externalId!, receipt.id);
-    });
+    const { processed, failed, errors } = await this.processBatch(
+      entities,
+      context,
+      async (entity) => {
+        const receipt = entity.data as unknown as QBOSalesReceipt;
+        await this.storeExternalMapping(context.integrationId, "SALES_RECEIPT", receipt.id, {
+          docNumber: receipt.docNumber,
+          totalAmount: receipt.totalAmount,
+        });
+        await this.saveIdMapping(
+          context.integrationId,
+          "SALES_RECEIPT",
+          entity.externalId!,
+          receipt.id,
+        );
+      },
+    );
 
     result.itemsSynced += processed;
     result.itemsFailed += failed;
     result.errors.push(...errors);
   }
 
-  private async syncCreditMemos(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncCreditMemos(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "OUTBOUND") return;
 
-    const qboMemos = (await this.client.getCreditMemos({ updatedAfter: lastSyncAt ?? undefined })).items;
+    const qboMemos = (await this.client.getCreditMemos({ updatedAfter: lastSyncAt ?? undefined }))
+      .items;
 
     const entities: SyncEntity[] = qboMemos.map((m) => ({
-      id: m.id, externalId: m.id, data: m as unknown as Record<string, unknown>,
+      id: m.id,
+      externalId: m.id,
+      data: m as unknown as Record<string, unknown>,
     }));
 
-    const { processed, failed, errors } = await this.processBatch(entities, context, async (entity) => {
-      const memo = entity.data as unknown as QBOCreditMemo;
-      await this.storeExternalMapping(context.integrationId, "CREDIT_MEMO", memo.id, {
-        docNumber: memo.docNumber, customerId: memo.customerId,
-        totalAmount: memo.totalAmount, balance: memo.balance,
-      });
-      await this.saveIdMapping(context.integrationId, "CREDIT_MEMO", entity.externalId!, memo.id);
-    });
+    const { processed, failed, errors } = await this.processBatch(
+      entities,
+      context,
+      async (entity) => {
+        const memo = entity.data as unknown as QBOCreditMemo;
+        await this.storeExternalMapping(context.integrationId, "CREDIT_MEMO", memo.id, {
+          docNumber: memo.docNumber,
+          customerId: memo.customerId,
+          totalAmount: memo.totalAmount,
+          balance: memo.balance,
+        });
+        await this.saveIdMapping(context.integrationId, "CREDIT_MEMO", entity.externalId!, memo.id);
+      },
+    );
 
     result.itemsSynced += processed;
     result.itemsFailed += failed;
     result.errors.push(...errors);
   }
 
-  private async syncJournalEntries(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncJournalEntries(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "OUTBOUND") return;
 
-    const qboEntries = (await this.client.getJournalEntries({ updatedAfter: lastSyncAt ?? undefined })).items;
+    const qboEntries = (
+      await this.client.getJournalEntries({ updatedAfter: lastSyncAt ?? undefined })
+    ).items;
 
     const entities: SyncEntity[] = qboEntries.map((e) => ({
-      id: e.id, externalId: e.id, data: e as unknown as Record<string, unknown>,
+      id: e.id,
+      externalId: e.id,
+      data: e as unknown as Record<string, unknown>,
     }));
 
-    const { processed, failed, errors } = await this.processBatch(entities, context, async (entity) => {
-      const entry = entity.data as unknown as QBOJournalEntry;
-      await this.storeExternalMapping(context.integrationId, "JOURNAL_ENTRY", entry.id, {
-        docNumber: entry.docNumber, txnDate: entry.txnDate, totalAmount: entry.totalAmount,
-      });
-      await this.saveIdMapping(context.integrationId, "JOURNAL_ENTRY", entity.externalId!, entry.id);
-    });
+    const { processed, failed, errors } = await this.processBatch(
+      entities,
+      context,
+      async (entity) => {
+        const entry = entity.data as unknown as QBOJournalEntry;
+        await this.storeExternalMapping(context.integrationId, "JOURNAL_ENTRY", entry.id, {
+          docNumber: entry.docNumber,
+          txnDate: entry.txnDate,
+          totalAmount: entry.totalAmount,
+        });
+        await this.saveIdMapping(
+          context.integrationId,
+          "JOURNAL_ENTRY",
+          entity.externalId!,
+          entry.id,
+        );
+      },
+    );
 
     result.itemsSynced += processed;
     result.itemsFailed += failed;
     result.errors.push(...errors);
   }
 
-  private async syncDeposits(context: SyncContext, result: SyncResult, lastSyncAt: Date | null): Promise<void> {
+  private async syncDeposits(
+    context: SyncContext,
+    result: SyncResult,
+    lastSyncAt: Date | null,
+  ): Promise<void> {
     if (context.direction === "OUTBOUND") return;
 
-    const qboDeposits = (await this.client.getDeposits({ updatedAfter: lastSyncAt ?? undefined })).items;
+    const qboDeposits = (await this.client.getDeposits({ updatedAfter: lastSyncAt ?? undefined }))
+      .items;
 
     const entities: SyncEntity[] = qboDeposits.map((d) => ({
-      id: d.id, externalId: d.id, data: d as unknown as Record<string, unknown>,
+      id: d.id,
+      externalId: d.id,
+      data: d as unknown as Record<string, unknown>,
     }));
 
-    const { processed, failed, errors } = await this.processBatch(entities, context, async (entity) => {
-      const deposit = entity.data as unknown as QBODeposit;
-      await this.storeExternalMapping(context.integrationId, "DEPOSIT", deposit.id, {
-        txnDate: deposit.txnDate, totalAmount: deposit.totalAmount,
-        depositToAccountId: deposit.depositToAccountId,
-      });
-      await this.saveIdMapping(context.integrationId, "DEPOSIT", entity.externalId!, deposit.id);
-    });
+    const { processed, failed, errors } = await this.processBatch(
+      entities,
+      context,
+      async (entity) => {
+        const deposit = entity.data as unknown as QBODeposit;
+        await this.storeExternalMapping(context.integrationId, "DEPOSIT", deposit.id, {
+          txnDate: deposit.txnDate,
+          totalAmount: deposit.totalAmount,
+          depositToAccountId: deposit.depositToAccountId,
+        });
+        await this.saveIdMapping(context.integrationId, "DEPOSIT", entity.externalId!, deposit.id);
+      },
+    );
 
     result.itemsSynced += processed;
     result.itemsFailed += failed;
@@ -1365,7 +1568,8 @@ export class QBOSyncEngine extends SyncEngine {
       });
 
       const settings = (integration?.settings as Record<string, unknown>) ?? {};
-      const externalData = (settings._externalData as Record<string, Record<string, unknown>>) ?? {};
+      const externalData =
+        (settings._externalData as Record<string, Record<string, unknown>>) ?? {};
 
       if (!externalData[entityType]) externalData[entityType] = {};
       externalData[entityType][externalId] = { ...data, _syncedAt: new Date().toISOString() };
@@ -1392,7 +1596,10 @@ export class QBOSyncEngine extends SyncEngine {
 
   // ── Sync Timestamp Tracking ───────────────────────────────────
 
-  private async getLastSyncTimestamp(integrationId: string, entityType: string): Promise<Date | null> {
+  private async getLastSyncTimestamp(
+    integrationId: string,
+    entityType: string,
+  ): Promise<Date | null> {
     try {
       const integration = await db.integration.findUnique({
         where: { id: integrationId },
@@ -1441,21 +1648,24 @@ export class QBOSyncEngine extends SyncEngine {
       case "ITEM": {
         const items = await this.client.getAllItems();
         return items.map((item) => ({
-          id: item.id, externalId: item.id,
+          id: item.id,
+          externalId: item.id,
           data: item as unknown as Record<string, unknown>,
         }));
       }
       case "CUSTOMER": {
         const customers = await this.client.getAllCustomers();
         return customers.map((c) => ({
-          id: c.id, externalId: c.id,
+          id: c.id,
+          externalId: c.id,
           data: c as unknown as Record<string, unknown>,
         }));
       }
       case "SUPPLIER": {
         const vendors = await this.client.getAllVendors();
         return vendors.map((v) => ({
-          id: v.id, externalId: v.id,
+          id: v.id,
+          externalId: v.id,
           data: v as unknown as Record<string, unknown>,
         }));
       }

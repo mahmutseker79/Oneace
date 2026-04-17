@@ -12,10 +12,14 @@
  *   - Write refreshed token back to the source (Integration.credentials or MigrationJob)
  */
 
+import type { PrismaClient } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import type { PrismaClient } from "@/generated/prisma";
-import { encryptCredentials, readCredentials, auditCredentialsDecrypted } from "@/lib/secure/credentials";
+import {
+  auditCredentialsDecrypted,
+  encryptCredentials,
+  readCredentials,
+} from "@/lib/secure/credentials";
 
 export type QboCredentialMode = "reuse-integration" | "paste";
 
@@ -65,9 +69,7 @@ export async function resolveQboCredentials(opts: {
   });
 
   if (!job || !job.fieldMappings) {
-    throw new Error(
-      `Migration job ${migrationJobId} not found or has no fieldMappings`
-    );
+    throw new Error(`Migration job ${migrationJobId} not found or has no fieldMappings`);
   }
 
   const fieldMappings = job.fieldMappings as Record<string, unknown>;
@@ -93,16 +95,14 @@ export async function resolveQboCredentials(opts: {
 
     if (!integration || !integration.credentials) {
       throw new Error(
-        "No connected QuickBooks Online integration found. Please reconnect in Settings → Integrations."
+        "No connected QuickBooks Online integration found. Please reconnect in Settings → Integrations.",
       );
     }
 
     // Auto-detect encrypted or plaintext credentials
     const storedCreds = readCredentials(integration.credentials);
     if (!storedCreds) {
-      throw new Error(
-        "Integration credentials missing or malformed; please reconnect in Settings"
-      );
+      throw new Error("Integration credentials missing or malformed; please reconnect in Settings");
     }
 
     const realmId = credentialsData.realmId as string;
@@ -120,13 +120,9 @@ export async function resolveQboCredentials(opts: {
 
     return {
       accessToken: String(storedCreds.accessToken || ""),
-      refreshToken: storedCreds.refreshToken
-        ? String(storedCreds.refreshToken)
-        : undefined,
+      refreshToken: storedCreds.refreshToken ? String(storedCreds.refreshToken) : undefined,
       realmId,
-      expiresAt: storedCreds.expiresAt
-        ? new Date(Number(storedCreds.expiresAt))
-        : undefined,
+      expiresAt: storedCreds.expiresAt ? new Date(Number(storedCreds.expiresAt)) : undefined,
       mode: "reuse-integration",
       source: {
         integrationId: integration.id,
@@ -147,13 +143,9 @@ export async function resolveQboCredentials(opts: {
 
     return {
       accessToken: decryptedCreds.accessToken,
-      refreshToken: decryptedCreds.refreshToken
-        ? String(decryptedCreds.refreshToken)
-        : undefined,
+      refreshToken: decryptedCreds.refreshToken ? String(decryptedCreds.refreshToken) : undefined,
       realmId: String(decryptedCreds.realmId || ""),
-      expiresAt: decryptedCreds.expiresAt
-        ? new Date(Number(decryptedCreds.expiresAt))
-        : undefined,
+      expiresAt: decryptedCreds.expiresAt ? new Date(Number(decryptedCreds.expiresAt)) : undefined,
       mode: "paste",
       source: {
         migrationJobId,
@@ -183,7 +175,7 @@ export async function refreshQboToken(
     clientId: string;
     clientSecret: string;
     tokenUrl?: string;
-  }
+  },
 ): Promise<ResolvedQboCredentials> {
   const { realmId } = credentials;
 
@@ -197,12 +189,11 @@ export async function refreshQboToken(
   const refreshPromise = (async () => {
     if (!credentials.refreshToken) {
       throw new Error(
-        "REFRESH_FAILED: No refresh token available; user must reconnect in Settings"
+        "REFRESH_FAILED: No refresh token available; user must reconnect in Settings",
       );
     }
 
-    const tokenUrl =
-      opts.tokenUrl || "https://oauth.platform.intuit.com/oauth2/tokens";
+    const tokenUrl = opts.tokenUrl || "https://oauth.platform.intuit.com/oauth2/tokens";
 
     try {
       const response = await fetch(tokenUrl, {
@@ -219,9 +210,7 @@ export async function refreshQboToken(
       });
 
       if (!response.ok) {
-        throw new Error(
-          `QBO token refresh failed: ${response.status} ${response.statusText}`
-        );
+        throw new Error(`QBO token refresh failed: ${response.status} ${response.statusText}`);
       }
 
       const data = (await response.json()) as {
@@ -232,9 +221,7 @@ export async function refreshQboToken(
       };
 
       const newRefreshToken = data.refresh_token || credentials.refreshToken;
-      const newExpiresAt = new Date(
-        Date.now() + (data.expires_in || 3600) * 1000
-      );
+      const newExpiresAt = new Date(Date.now() + (data.expires_in || 3600) * 1000);
 
       const updated: ResolvedQboCredentials = {
         ...credentials,
@@ -255,7 +242,11 @@ export async function refreshQboToken(
         await db.integration.update({
           where: { id: credentials.source.integrationId },
           data: {
-            credentials: encryptedCreds,
+            // Prisma's JsonValue type doesn't accept our typed
+            // EncryptedCredentials directly; cast through an
+            // intermediate shape so Prisma's strict JSON schema
+            // accepts it. The runtime value is still the same object.
+            credentials: encryptedCreds as unknown as object,
           },
         });
 
@@ -325,7 +316,7 @@ export async function refreshQboToken(
  */
 export function isTokenExpiringSoon(
   credentials: ResolvedQboCredentials,
-  bufferMs: number = 5 * 60 * 1000
+  bufferMs: number = 5 * 60 * 1000,
 ): boolean {
   if (!credentials.expiresAt) {
     return false; // No expiry info, assume valid

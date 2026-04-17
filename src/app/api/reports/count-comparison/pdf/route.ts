@@ -35,18 +35,17 @@ export async function POST(req: Request) {
   // Rate-limit: 10 exports per hour per user (matches low-stock/pdf).
   const rl = await rateLimit(`export:${membership.userId}`, RATE_LIMITS.export);
   if (!rl.ok) {
-    return new Response(
-      JSON.stringify({ error: "Export rate limit exceeded. Try again later." }),
-      { status: 429, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Export rate limit exceeded. Try again later." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const plan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
   if (!hasPlanCapability(plan, "exports")) {
     return new Response(
       JSON.stringify({
-        error:
-          "Exports are available on Pro and Business plans. Upgrade to unlock PDF exports.",
+        error: "Exports are available on Pro and Business plans. Upgrade to unlock PDF exports.",
       }),
       { status: 403, headers: { "Content-Type": "application/json" } },
     );
@@ -61,9 +60,12 @@ export async function POST(req: Request) {
 
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: "Invalid input", issues: parsed.error.issues }, {
-      status: 400,
-    });
+    return Response.json(
+      { error: "Invalid input", issues: parsed.error.issues },
+      {
+        status: 400,
+      },
+    );
   }
   const { count1Id, count2Id } = parsed.data;
 

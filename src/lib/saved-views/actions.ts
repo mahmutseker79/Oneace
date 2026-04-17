@@ -179,7 +179,9 @@ export async function deleteSavedViewAction(id: string): Promise<ActionResult> {
   }
 }
 
-export async function getSavedViewsAction(page: string): Promise<ActionResult<{ views: SavedViewItem[] }>> {
+export async function getSavedViewsAction(
+  page: string,
+): Promise<ActionResult<{ views: SavedViewItem[] }>> {
   const { membership } = await requireActiveMembership();
 
   try {

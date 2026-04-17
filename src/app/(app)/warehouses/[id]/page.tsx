@@ -1,4 +1,5 @@
-import { Barcode, Grid3X3, Pencil } from "lucide-react";import type { Metadata } from "next";
+import { Barcode, Grid3X3, Pencil } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

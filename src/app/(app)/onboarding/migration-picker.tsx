@@ -7,21 +7,21 @@
 // or skips to proceed with empty workspace.
 
 import {
+  Boxes,
   CheckCircle2,
   ChevronRight,
-  Package,
-  Boxes,
-  Warehouse,
   Factory,
-  Receipt,
-  Plus,
   FileSpreadsheet,
   HardDrive,
+  Package,
+  Plus,
+  Receipt,
+  Warehouse,
 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import type { MigrationSource } from "@prisma/client";
+import type { MigrationSource } from "@/generated/prisma";
 
 const MIGRATION_SOURCES: Array<{
   id: MigrationSource | null;
@@ -92,8 +92,9 @@ export function MigrationPicker({ onPick, onSkip }: MigrationPickerProps) {
       <div>
         <h2 className="text-xl font-semibold">Mevcut verini getir?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Sortly, inFlow, Fishbowl, Cin7 Core, SOS Inventory, QuickBooks Online, ve QuickBooks Desktop&rsquo;ten veri taşımayı destekliyoruz.
-          Bu adımı atlayabilir ve sonra yapabilirsiniz.
+          Sortly, inFlow, Fishbowl, Cin7 Core, SOS Inventory, QuickBooks Online, ve QuickBooks
+          Desktop&rsquo;ten veri taşımayı destekliyoruz. Bu adımı atlayabilir ve sonra
+          yapabilirsiniz.
         </p>
       </div>
 
@@ -120,9 +121,7 @@ export function MigrationPicker({ onPick, onSkip }: MigrationPickerProps) {
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                {isSelected ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
-                ) : null}
+                {isSelected ? <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" /> : null}
               </div>
               <div>
                 <span className="font-medium">{source.label}</span>

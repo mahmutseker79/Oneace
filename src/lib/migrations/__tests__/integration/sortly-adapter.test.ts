@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { SORTLY_ADAPTER } from "@/lib/migrations/sortly/adapter";
 import type { UploadedFile } from "@/lib/migrations/core/adapter";
+import { SORTLY_ADAPTER } from "@/lib/migrations/sortly/adapter";
+import { describe, expect, it } from "vitest";
 
 describe("sortly-adapter (integration)", () => {
   it("parses basic Sortly CSV and returns ParsedSnapshot", async () => {
@@ -12,8 +12,8 @@ Widget B,WID-002,50`;
     const files: UploadedFile[] = [
       {
         filename: "items.csv",
+        mimeType: "text/csv",
         buffer: csvBuffer,
-        size: csvBuffer.length,
       },
     ];
 
@@ -35,8 +35,8 @@ Item 2,SKU-002,Electronics/Tablets`;
     const files: UploadedFile[] = [
       {
         filename: "items.csv",
+        mimeType: "text/csv",
         buffer: csvBuffer,
-        size: csvBuffer.length,
       },
     ];
 
@@ -57,8 +57,8 @@ Widget B,`;
     const files: UploadedFile[] = [
       {
         filename: "items.csv",
+        mimeType: "text/csv",
         buffer: csvBuffer,
-        size: csvBuffer.length,
       },
     ];
 
@@ -66,7 +66,7 @@ Widget B,`;
     const validation = SORTLY_ADAPTER.validate(snapshot, [], {});
 
     // Should surface validation issues
-    expect(validation.valid).toBeDefined();
+    expect(validation).toBeDefined();
     expect(Array.isArray(validation.issues)).toBe(true);
   });
 
@@ -75,14 +75,14 @@ Widget B,`;
     const files: UploadedFile[] = [
       {
         filename: "items.csv",
+        mimeType: "text/csv",
         buffer: csvBuffer,
-        size: csvBuffer.length,
       },
     ];
 
     const detection = await SORTLY_ADAPTER.detectFiles(files);
     expect(detection).toHaveLength(1);
-    expect(detection[0]?.detected).toBe(true);
+    expect(detection[0]?.entity).toBe("ITEM");
     expect(detection[0]?.confidence).toBe(1.0); // items.csv is exact match
   });
 });

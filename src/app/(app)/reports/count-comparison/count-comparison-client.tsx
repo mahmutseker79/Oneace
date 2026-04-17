@@ -25,9 +25,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import type { Messages } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
 import { cn } from "@/lib/utils";
-import type { Messages } from "@/lib/i18n";
 
 interface CountData {
   id: string;
@@ -265,7 +265,9 @@ export function CountComparisonClient({ labels }: CountComparisonClientProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-destructive">{varianceStats.withVariance}</div>
+                <div className="text-2xl font-bold text-destructive">
+                  {varianceStats.withVariance}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {((varianceStats.withVariance / varianceStats.totalItems) * 100).toFixed(1)}%
                 </p>

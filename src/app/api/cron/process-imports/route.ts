@@ -7,9 +7,9 @@
  * Usage: Set up a Vercel cron trigger in vercel.json with crons array.
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { processNextJob } from "@/lib/jobs/queue";
 import { logger } from "@/lib/logger";
+import { type NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60; // Vercel Hobby cron timeout
 
@@ -21,18 +21,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!expectedSecret) {
       logger.warn("CRON_SECRET not configured");
-      return NextResponse.json(
-        { error: "Cron secret not configured" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
     }
 
     if (!cronSecret || cronSecret !== expectedSecret) {
       logger.warn("Invalid cron secret provided");
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Process one job
@@ -57,7 +51,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       {
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

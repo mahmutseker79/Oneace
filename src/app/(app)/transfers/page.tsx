@@ -17,7 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
-import { getMessages, getRegion } from "@/lib/i18n";import { hasCapability } from "@/lib/permissions";
+import { getMessages, getRegion } from "@/lib/i18n";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { statusBadgeVariant, statusLabel } from "@/lib/transfer/machine";
 
@@ -114,7 +115,15 @@ export default async function TransfersPage() {
                 href={`/transfers/${transfer.id}`}
                 title={transfer.transferNumber}
                 badge={
-                  <Badge variant={statusBadgeVariant(transfer.status) as "default" | "secondary" | "destructive" | "outline"}>
+                  <Badge
+                    variant={
+                      statusBadgeVariant(transfer.status) as
+                        | "default"
+                        | "secondary"
+                        | "destructive"
+                        | "outline"
+                    }
+                  >
                     {statusLabel(transfer.status)}
                   </Badge>
                 }
@@ -165,7 +174,15 @@ export default async function TransfersPage() {
                     <TableCell>{transfer.fromWarehouse.name}</TableCell>
                     <TableCell>{transfer.toWarehouse.name}</TableCell>
                     <TableCell>
-                      <Badge variant={statusBadgeVariant(transfer.status) as "default" | "secondary" | "destructive" | "outline"}>
+                      <Badge
+                        variant={
+                          statusBadgeVariant(transfer.status) as
+                            | "default"
+                            | "secondary"
+                            | "destructive"
+                            | "outline"
+                        }
+                      >
                         {statusLabel(transfer.status)}
                       </Badge>
                     </TableCell>

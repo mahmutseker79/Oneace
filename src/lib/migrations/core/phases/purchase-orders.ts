@@ -28,19 +28,11 @@ export async function importPurchaseOrders(ctx: PhaseContext): Promise<{
   if (ctx.scope.poHistory === "OPEN_ONLY") {
     filteredPOs = filteredPOs.filter(
       (po) =>
-        po.status &&
-        !["RECEIVED", "CLOSED", "CANCELLED"].includes(
-          String(po.status).toUpperCase(),
-        ),
+        po.status && !["RECEIVED", "CLOSED", "CANCELLED"].includes(String(po.status).toUpperCase()),
     );
-  } else if (
-    ctx.scope.poHistory === "LAST_12_MONTHS" &&
-    ctx.scope.dateRangeStart
-  ) {
+  } else if (ctx.scope.poHistory === "LAST_12_MONTHS" && ctx.scope.dateRangeStart) {
     const cutoff = new Date(ctx.scope.dateRangeStart);
-    filteredPOs = filteredPOs.filter(
-      (po) => po.orderDate && new Date(po.orderDate) >= cutoff,
-    );
+    filteredPOs = filteredPOs.filter((po) => po.orderDate && new Date(po.orderDate) >= cutoff);
   }
 
   const batchSize = 100;
@@ -54,10 +46,7 @@ export async function importPurchaseOrders(ctx: PhaseContext): Promise<{
 
         for (const rawPO of batch) {
           try {
-            const supplierId = ctx.idMap.require(
-              "SUPPLIER",
-              rawPO.supplierExternalId,
-            );
+            const supplierId = ctx.idMap.require("SUPPLIER", rawPO.supplierExternalId);
 
             // Upsert PO by external ID.
             const existing = await tx.purchaseOrder.findFirst({

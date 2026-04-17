@@ -1,12 +1,4 @@
-import {
-  AlertTriangle,
-  CheckCircle2,
-
-
-  Package,
-  ShoppingCart,
-  Truck,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Package, ShoppingCart, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 

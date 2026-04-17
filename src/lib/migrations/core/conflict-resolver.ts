@@ -14,8 +14,8 @@
  */
 
 import type { MigrationSource } from "@/generated/prisma";
-import type { ValidationIssue } from "@/lib/migrations/core/types";
 import type { PrismaClient } from "@/generated/prisma";
+import type { ValidationIssue } from "@/lib/migrations/core/types";
 
 export type ConflictPolicy =
   | "MERGE_BY_EXTERNAL_ID"
@@ -127,9 +127,7 @@ export async function checkSkuCollisions(
     } else {
       // APPEND_SUFFIX or APPEND_SOURCE_SUFFIX — just warn.
       const abbrev =
-        ctx.policy === "APPEND_SOURCE_SUFFIX"
-          ? getSourceAbbreviation(ctx.source)
-          : ctx.source;
+        ctx.policy === "APPEND_SOURCE_SUFFIX" ? getSourceAbbreviation(ctx.source) : ctx.source;
       const newSku = `${item.sku}-${abbrev}`;
       issues.push({
         severity: "WARNING",
@@ -170,18 +168,13 @@ export function resolveSku(
   }
 
   // Same source + ID — it's an update.
-  if (
-    existingItem.externalSource === ctx.source &&
-    existingItem.externalId === externalId
-  ) {
+  if (existingItem.externalSource === ctx.source && existingItem.externalId === externalId) {
     return { finalSku: sku, wasModified: false, shouldSkip: false, issue: null };
   }
 
   // Different item — apply policy.
   if (ctx.policy === "MERGE_BY_EXTERNAL_ID") {
-    throw new Error(
-      `SKU collision: "${sku}" exists with different externalId under MERGE policy`,
-    );
+    throw new Error(`SKU collision: "${sku}" exists with different externalId under MERGE policy`);
   }
 
   if (ctx.policy === "SKIP") {
@@ -201,9 +194,7 @@ export function resolveSku(
 
   // APPEND_SUFFIX or APPEND_SOURCE_SUFFIX.
   const suffix =
-    ctx.policy === "APPEND_SOURCE_SUFFIX"
-      ? getSourceAbbreviation(ctx.source)
-      : `MIG-${ctx.source}`;
+    ctx.policy === "APPEND_SOURCE_SUFFIX" ? getSourceAbbreviation(ctx.source) : `MIG-${ctx.source}`;
   const newSku = `${sku}-${suffix}`;
 
   return {

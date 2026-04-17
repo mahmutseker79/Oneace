@@ -18,17 +18,22 @@
  * so sync primarily queues QBXML requests for later processing.
  */
 
-import SyncEngine, { type SyncContext, type SyncEntity, type SyncResult } from "@/lib/integrations/sync-engine";
-import QBDesktopClient, {
-  type QBDesktopItem,
-  type QBDesktopCustomer,
-  type QBDesktopVendor,
-  type QBDesktopInvoice,
-  type QBDesktopBill,
-  type QBDesktopPurchaseOrder,
-  type QBDesktopPayment,
-} from "./qbd-client";
+import SyncEngine, {
+  type SyncContext,
+  type SyncEntity,
+  type SyncResult,
+} from "@/lib/integrations/sync-engine";
 import { logger } from "@/lib/logger";
+import type QBDesktopClient from "./qbd-client";
+import type {
+  QBDesktopBill,
+  QBDesktopCustomer,
+  QBDesktopInvoice,
+  QBDesktopItem,
+  QBDesktopPayment,
+  QBDesktopPurchaseOrder,
+  QBDesktopVendor,
+} from "./qbd-client";
 
 interface QBDesktopSyncContext extends SyncContext {
   qbdClient: QBDesktopClient;

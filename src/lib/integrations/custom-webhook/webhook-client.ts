@@ -13,8 +13,8 @@
  * This is a standalone class, not extending IntegrationClient.
  */
 
+import crypto from "node:crypto";
 import { logger } from "@/lib/logger";
-import crypto from "crypto";
 
 export interface WebhookConfig {
   url: string;
@@ -67,10 +67,7 @@ class WebhookClient {
    * Generate HMAC-SHA256 signature for payload.
    */
   generateSignature(payload: string): string {
-    return crypto
-      .createHmac("sha256", this.config.secret)
-      .update(payload)
-      .digest("hex");
+    return crypto.createHmac("sha256", this.config.secret).update(payload).digest("hex");
   }
 
   /**
@@ -114,7 +111,7 @@ class WebhookClient {
   /**
    * Send webhook to configured URL with retry logic.
    */
-  async send(event: WebhookEvent, retryAttempt: number = 0): Promise<boolean> {
+  async send(event: WebhookEvent, retryAttempt = 0): Promise<boolean> {
     if (!this.config.active) {
       logger.info("Webhook is inactive, skipping send", { eventId: event.id });
       return false;
@@ -161,7 +158,7 @@ class WebhookClient {
       const delayMs = this.config.retryDelayMs || 1000;
 
       if (retryAttempt < maxRetries) {
-        const backoffDelay = delayMs * Math.pow(2, retryAttempt);
+        const backoffDelay = delayMs * 2 ** retryAttempt;
         logger.warn("Webhook send failed, scheduling retry", {
           eventId: event.id,
           attempt: retryAttempt + 1,
@@ -173,23 +170,22 @@ class WebhookClient {
         // Schedule retry (in real implementation, would use a job queue)
         await new Promise((resolve) => setTimeout(resolve, backoffDelay));
         return this.send(event, retryAttempt + 1);
-      } else {
-        logger.error("Webhook send failed after max retries", {
-          eventId: event.id,
-          attempts: retryAttempt + 1,
-          error,
-        });
-
-        // Log failure for manual review
-        this.failureLog.push({
-          eventId: event.id,
-          error: error instanceof Error ? error.message : "Unknown error",
-          timestamp: new Date(),
-          attempts: retryAttempt + 1,
-        });
-
-        return false;
       }
+      logger.error("Webhook send failed after max retries", {
+        eventId: event.id,
+        attempts: retryAttempt + 1,
+        error,
+      });
+
+      // Log failure for manual review
+      this.failureLog.push({
+        eventId: event.id,
+        error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date(),
+        attempts: retryAttempt + 1,
+      });
+
+      return false;
     }
   }
 

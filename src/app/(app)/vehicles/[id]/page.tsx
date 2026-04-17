@@ -1,10 +1,10 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getMessages } from "@/lib/i18n";
-import { requireActiveMembership } from "@/lib/session";
 import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
 
 import { getVehicleAction } from "../actions";
 import VehicleForm from "../vehicle-form";
@@ -76,7 +76,10 @@ export default async function VehicleDetailPage({
         ) : (
           <div className="mt-4 space-y-3">
             {vehicle.history.map((h) => (
-              <div key={h.id} className="border-border flex items-start gap-3 border-b pb-3 last:border-0">
+              <div
+                key={h.id}
+                className="border-border flex items-start gap-3 border-b pb-3 last:border-0"
+              >
                 <span className="bg-muted rounded-full px-2 py-0.5 text-xs font-medium">
                   {h.action}
                 </span>

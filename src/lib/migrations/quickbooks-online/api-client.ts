@@ -10,9 +10,14 @@
  */
 
 import { db } from "@/lib/db";
-import { logger } from "@/lib/logger";
-import { QBOClient, type QBOItem, type QBOVendor, type QBOPurchaseOrder } from "@/lib/integrations/quickbooks/qbo-client";
 import type { OAuthToken } from "@/lib/integrations/base-client";
+import {
+  QBOClient,
+  type QBOItem,
+  type QBOPurchaseOrder,
+  type QBOVendor,
+} from "@/lib/integrations/quickbooks/qbo-client";
+import { logger } from "@/lib/logger";
 
 export interface QboMigrationCredentials {
   accessToken: string;

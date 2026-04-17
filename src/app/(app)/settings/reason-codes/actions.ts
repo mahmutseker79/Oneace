@@ -9,10 +9,7 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
-import {
-  createReasonCodeSchema,
-  updateReasonCodeSchema,
-} from "@/lib/validation/reason-code";
+import { createReasonCodeSchema, updateReasonCodeSchema } from "@/lib/validation/reason-code";
 
 export type { ActionResult };
 

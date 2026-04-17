@@ -5,12 +5,12 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canRollback } from "@/lib/stockcount/machine";
 import { type ActionResult, cleanFieldErrors } from "@/lib/validation/action-result";
 import { rollbackCountSchema } from "@/lib/validation/count-approval";
-import { logger } from "@/lib/logger";
 
 /**
  * Rollback a completed count. Transitions COMPLETED → ROLLED_BACK.

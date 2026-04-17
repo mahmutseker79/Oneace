@@ -8,11 +8,7 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import type { ActionResult } from "@/lib/validation/action-result";
-import {
-
-  reorderAttachmentsSchema,
-  uploadAttachmentSchema,
-} from "@/lib/validation/attachment";
+import { reorderAttachmentsSchema, uploadAttachmentSchema } from "@/lib/validation/attachment";
 
 export async function uploadAttachmentAction(
   input: Record<string, unknown>,

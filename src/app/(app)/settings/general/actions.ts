@@ -117,7 +117,9 @@ export async function updateOrgSettingsAction(
  * Used by the settings page to populate the form.
  * If OrgSettings doesn't exist yet, this returns the seeded defaults.
  */
-export async function getOrCreateOrgSettingsAction(): Promise<ActionResult<{ data: Record<string, unknown> }>> {
+export async function getOrCreateOrgSettingsAction(): Promise<
+  ActionResult<{ data: Record<string, unknown> }>
+> {
   const { membership } = await requireActiveMembership();
 
   try {

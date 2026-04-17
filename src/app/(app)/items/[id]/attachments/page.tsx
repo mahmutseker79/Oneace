@@ -1,4 +1,5 @@
-import { Download } from "lucide-react";import type { Metadata } from "next";
+import { Download } from "lucide-react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { DeleteButton } from "@/components/shell/delete-button";

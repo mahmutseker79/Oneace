@@ -45,9 +45,7 @@ const CANONICAL_UOMS = new Set([
  * @param fishbowlUom - Raw UOM from Fishbowl CSV
  * @returns Object with normalized UOM and optional warning
  */
-export function validateAndNormalizeUom(
-  fishbowlUom: string | null | undefined,
-): {
+export function validateAndNormalizeUom(fishbowlUom: string | null | undefined): {
   normalizedUom: string | null;
   issue: ValidationIssue | null;
 } {
@@ -81,9 +79,7 @@ export function validateAndNormalizeUom(
  * @param rows - Raw CSV rows from uomconversions.csv
  * @returns Map of conversions and any warnings
  */
-export function buildUomConversionMap(
-  rows: Record<string, string>[],
-): {
+export function buildUomConversionMap(rows: Record<string, string>[]): {
   conversions: Map<string, Record<string, number>>;
   issues: ValidationIssue[];
 } {
@@ -91,14 +87,19 @@ export function buildUomConversionMap(
   const issues: ValidationIssue[] = [];
 
   for (const row of rows) {
-    const from = (row["FromUOM"] || row["from_uom"] || row["From UOM"] || "").trim().toUpperCase();
-    const to = (row["ToUOM"] || row["to_uom"] || row["To UOM"] || "").trim().toUpperCase();
-    const factorStr = (row["ConversionFactor"] || row["conversion_factor"] || row["Conversion Factor"] || "").trim();
+    const from = (row.FromUOM || row.from_uom || row["From UOM"] || "").trim().toUpperCase();
+    const to = (row.ToUOM || row.to_uom || row["To UOM"] || "").trim().toUpperCase();
+    const factorStr = (
+      row.ConversionFactor ||
+      row.conversion_factor ||
+      row["Conversion Factor"] ||
+      ""
+    ).trim();
 
     if (!from || !to || !factorStr) continue;
 
-    const factor = parseFloat(factorStr);
-    if (isNaN(factor) || !isFinite(factor) || factor <= 0) {
+    const factor = Number.parseFloat(factorStr);
+    if (Number.isNaN(factor) || !Number.isFinite(factor) || factor <= 0) {
       issues.push({
         severity: "WARNING",
         entity: "UOM_CONVERSION",

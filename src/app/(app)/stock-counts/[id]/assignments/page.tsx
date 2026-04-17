@@ -1,5 +1,6 @@
+import { Plus } from "lucide-react";
 import type { Metadata } from "next";
-import { Plus } from "lucide-react";import Link from "next/link";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";

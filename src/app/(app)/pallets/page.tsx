@@ -69,11 +69,7 @@ export default async function PalletsPage() {
           icon={Package}
           title="No pallet labels yet"
           description="Create your first pallet label to start tracking pallets by barcode."
-          actions={
-            canCreate
-              ? [{ label: "Create Pallet Label", href: "/pallets/new" }]
-              : undefined
-          }
+          actions={canCreate ? [{ label: "Create Pallet Label", href: "/pallets/new" }] : undefined}
         />
       ) : (
         <Card>

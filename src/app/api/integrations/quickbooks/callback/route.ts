@@ -22,8 +22,8 @@ function verifyOAuthState(
   if (!organizationId || !userId || !timestamp || !signature) return null;
 
   // Validate timestamp is within 10 minutes
-  const stateTime = parseInt(timestamp, 10);
-  if (isNaN(stateTime)) return null;
+  const stateTime = Number.parseInt(timestamp, 10);
+  if (Number.isNaN(stateTime)) return null;
   const now = Date.now();
   const maxAge = 10 * 60 * 1000; // 10 minutes in milliseconds
   if (now - stateTime > maxAge) return null;
@@ -132,14 +132,10 @@ export async function GET(request: NextRequest) {
     });
 
     // Redirect to integrations page with success message
-    return NextResponse.redirect(
-      new URL("/integrations/quickbooks?status=success", request.url),
-    );
+    return NextResponse.redirect(new URL("/integrations/quickbooks?status=success", request.url));
   } catch (error) {
     logger.error("QuickBooks OAuth callback error", { error });
 
-    return NextResponse.redirect(
-      new URL("/integrations/quickbooks?status=error", request.url),
-    );
+    return NextResponse.redirect(new URL("/integrations/quickbooks?status=error", request.url));
   }
 }

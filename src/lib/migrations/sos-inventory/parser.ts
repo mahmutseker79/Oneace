@@ -5,17 +5,17 @@
 import type {
   ParsedSnapshot,
   RawItem,
+  RawPurchaseOrder,
   RawStockLevel,
   RawSupplier,
   RawWarehouse,
-  RawPurchaseOrder,
 } from "@/lib/migrations/core/types";
 import type {
-  SOSItem,
-  SOSVendor,
-  SOSLocation,
   SOSInventoryLocation,
+  SOSItem,
+  SOSLocation,
   SOSPurchaseOrder,
+  SOSVendor,
 } from "@/lib/migrations/sos-inventory/api-client";
 
 interface SOSSnapshotInput {
@@ -55,9 +55,7 @@ export function parseSOSSnapshot(input: SOSSnapshotInput): ParsedSnapshot {
   const items: RawItem[] = [];
   for (const item of input.items) {
     if (!item.sku || item.sku.trim() === "") {
-      adapterWarnings.push(
-        `Item "${item.name}" (ID: ${item.id}) skipped: missing SKU`,
-      );
+      adapterWarnings.push(`Item "${item.name}" (ID: ${item.id}) skipped: missing SKU`);
       continue;
     }
 
@@ -71,42 +69,41 @@ export function parseSOSSnapshot(input: SOSSnapshotInput): ParsedSnapshot {
       costPrice: item.costPrice || null,
       salePrice: item.salePrice || null,
       currency: null,
+      // OneAce ItemStatus only has ACTIVE / ARCHIVED / DRAFT. SOS's
+      // "Discontinued" is the closest analog to ARCHIVED; the rest fall
+      // through to null and the importer applies its own default.
       status:
         item.status?.toUpperCase() === "ACTIVE"
           ? "ACTIVE"
           : item.status?.toUpperCase() === "DISCONTINUED"
-            ? "DISCONTINUED"
+            ? "ARCHIVED"
             : null,
     });
   }
 
   // Parse stock levels
-  const stockLevels: RawStockLevel[] = input.inventoryLocations.map(
-    (inv) => ({
-      itemExternalId: inv.itemId,
-      warehouseExternalId: inv.locationId,
-      quantity: inv.quantity,
-    }),
-  );
+  const stockLevels: RawStockLevel[] = input.inventoryLocations.map((inv) => ({
+    itemExternalId: inv.itemId,
+    warehouseExternalId: inv.locationId,
+    quantity: inv.quantity,
+  }));
 
   // Parse purchase orders
-  const purchaseOrders: RawPurchaseOrder[] = input.purchaseOrders.map(
-    (po) => ({
-      externalId: po.id,
-      poNumber: po.poNumber,
-      supplierExternalId: po.vendorId,
-      status: normalizeSOSPOStatus(po.status),
-      orderDate: po.orderDate || null,
-      expectedDate: po.expectedDate || null,
-      currency: null,
-      notes: po.notes || null,
-      lines: (po.lines || []).map((line) => ({
-        itemExternalId: line.itemId,
-        quantity: line.quantity,
-        unitCost: line.unitCost || null,
-      })),
-    }),
-  );
+  const purchaseOrders: RawPurchaseOrder[] = input.purchaseOrders.map((po) => ({
+    externalId: po.id,
+    poNumber: po.poNumber,
+    supplierExternalId: po.vendorId,
+    status: normalizeSOSPOStatus(po.status),
+    orderDate: po.orderDate || null,
+    expectedDate: po.expectedDate || null,
+    currency: null,
+    notes: po.notes || null,
+    lines: (po.lines || []).map((line) => ({
+      itemExternalId: line.itemId,
+      quantity: line.quantity,
+      unitCost: line.unitCost || null,
+    })),
+  }));
 
   return {
     source: "SOS_INVENTORY",

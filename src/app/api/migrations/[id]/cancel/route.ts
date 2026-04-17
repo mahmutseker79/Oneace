@@ -4,18 +4,15 @@
  * POST /api/migrations/[id]/cancel  — mark migration CANCELLED (only if not currently IMPORTING)
  */
 
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
 import { recordAudit } from "@/lib/audit";
-import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
+import { type NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const { membership, user } = await requireActiveMembership();
@@ -24,7 +21,7 @@ export async function POST(
     if (!hasCapability(membership.role, "integrations.connect")) {
       return NextResponse.json(
         { error: "FORBIDDEN", message: "Insufficient permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -36,16 +33,13 @@ export async function POST(
     if (!job) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Migration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Tenant check
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
     // Cannot cancel if currently IMPORTING (use rollback instead)
@@ -56,7 +50,7 @@ export async function POST(
           message: "Cannot cancel during import. Use rollback after completion.",
           currentStatus: job.status,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -68,7 +62,7 @@ export async function POST(
           message: "Migration is already in a terminal state",
           currentStatus: job.status,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -97,7 +91,7 @@ export async function POST(
     console.error("POST /api/migrations/[id]/cancel error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to cancel migration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

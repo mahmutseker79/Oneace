@@ -8,12 +8,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
-import {
-  checkPlanLimit,
-
-
-  planLimitError,
-} from "@/lib/plans";
+import { checkPlanLimit, planLimitError } from "@/lib/plans";
 // Phase 6A / P2 — narrow rate-limit surface for bulk import. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";

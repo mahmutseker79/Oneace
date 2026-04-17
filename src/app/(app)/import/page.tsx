@@ -5,12 +5,12 @@
  * recent import jobs, and import templates.
  */
 
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Import",
@@ -164,10 +164,7 @@ export default async function ImportPage() {
                       {job.createdAt.toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/import/${job.id}`}
-                        className="text-info hover:text-info/80"
-                      >
+                      <Link href={`/import/${job.id}`} className="text-info hover:text-info/80">
                         View
                       </Link>
                     </td>

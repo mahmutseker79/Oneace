@@ -227,10 +227,7 @@ class OdooClient {
   /**
    * Read product details.
    */
-  async readProducts(
-    ids: number[],
-    fields?: string[],
-  ): Promise<OdooProduct[]> {
+  async readProducts(ids: number[], fields?: string[]): Promise<OdooProduct[]> {
     const defaultFields = [
       "id",
       "name",
@@ -251,9 +248,7 @@ class OdooClient {
   /**
    * Create a new product.
    */
-  async createProduct(
-    values: Partial<OdooProduct>,
-  ): Promise<number> {
+  async createProduct(values: Partial<OdooProduct>): Promise<number> {
     const productId = await this.executeKw<number>("product.product", "create", [], {
       ...values,
     });
@@ -263,10 +258,7 @@ class OdooClient {
   /**
    * Update a product.
    */
-  async updateProduct(
-    id: number,
-    values: Partial<OdooProduct>,
-  ): Promise<boolean> {
+  async updateProduct(id: number, values: Partial<OdooProduct>): Promise<boolean> {
     const result = await this.executeKw<boolean>("product.product", "write", [[id]], {
       ...values,
     });
@@ -285,10 +277,7 @@ class OdooClient {
   /**
    * Read partner details.
    */
-  async readPartners(
-    ids: number[],
-    fields?: string[],
-  ): Promise<OdooPartner[]> {
+  async readPartners(ids: number[], fields?: string[]): Promise<OdooPartner[]> {
     const defaultFields = [
       "id",
       "name",
@@ -320,10 +309,7 @@ class OdooClient {
   /**
    * Read sale order details.
    */
-  async readSaleOrders(
-    ids: number[],
-    fields?: string[],
-  ): Promise<OdooSaleOrder[]> {
+  async readSaleOrders(ids: number[], fields?: string[]): Promise<OdooSaleOrder[]> {
     const defaultFields = [
       "id",
       "name",
@@ -342,9 +328,7 @@ class OdooClient {
   /**
    * Create a new sale order.
    */
-  async createSaleOrder(
-    values: Partial<OdooSaleOrder>,
-  ): Promise<number> {
+  async createSaleOrder(values: Partial<OdooSaleOrder>): Promise<number> {
     const orderId = await this.executeKw<number>("sale.order", "create", [], {
       ...values,
     });
@@ -363,10 +347,7 @@ class OdooClient {
   /**
    * Read purchase order details.
    */
-  async readPurchaseOrders(
-    ids: number[],
-    fields?: string[],
-  ): Promise<OdooPurchaseOrder[]> {
+  async readPurchaseOrders(ids: number[], fields?: string[]): Promise<OdooPurchaseOrder[]> {
     const defaultFields = [
       "id",
       "name",
@@ -394,10 +375,7 @@ class OdooClient {
   /**
    * Read invoice details.
    */
-  async readInvoices(
-    ids: number[],
-    fields?: string[],
-  ): Promise<OdooInvoice[]> {
+  async readInvoices(ids: number[], fields?: string[]): Promise<OdooInvoice[]> {
     const defaultFields = [
       "id",
       "name",
@@ -426,17 +404,8 @@ class OdooClient {
   /**
    * Read stock quant details.
    */
-  async readStockQuants(
-    ids: number[],
-    fields?: string[],
-  ): Promise<OdooStockQuant[]> {
-    const defaultFields = [
-      "id",
-      "product_id",
-      "location_id",
-      "quantity",
-      "reserved_quantity",
-    ];
+  async readStockQuants(ids: number[], fields?: string[]): Promise<OdooStockQuant[]> {
+    const defaultFields = ["id", "product_id", "location_id", "quantity", "reserved_quantity"];
     const quants = await this.executeKw<OdooStockQuant[]>("stock.quant", "read", [ids], {
       fields: fields || defaultFields,
     });

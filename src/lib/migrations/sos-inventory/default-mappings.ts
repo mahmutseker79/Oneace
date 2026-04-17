@@ -4,8 +4,6 @@
 
 import type { FieldMapping, ParsedSnapshot } from "@/lib/migrations/core/types";
 
-export function getSOSDefaultMappings(
-  _snapshot: ParsedSnapshot,
-): FieldMapping[] {
+export function getSOSDefaultMappings(_snapshot: ParsedSnapshot): FieldMapping[] {
   return [];
 }

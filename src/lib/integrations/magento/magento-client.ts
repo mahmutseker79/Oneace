@@ -266,10 +266,9 @@ export class MagentoClient extends IntegrationClient {
         }
       }
 
-      const response = await this.apiCall<MagentoSearchResult<MagentoProduct>>(
-        "/products",
-        { params },
-      );
+      const response = await this.apiCall<MagentoSearchResult<MagentoProduct>>("/products", {
+        params,
+      });
 
       return response.data;
     } catch (error) {
@@ -297,13 +296,10 @@ export class MagentoClient extends IntegrationClient {
    */
   async createProduct(product: Partial<MagentoProduct>): Promise<MagentoProduct> {
     try {
-      const response = await this.apiCall<MagentoProduct>(
-        "/products",
-        {
-          method: "POST",
-          body: { product },
-        },
-      );
+      const response = await this.apiCall<MagentoProduct>("/products", {
+        method: "POST",
+        body: { product },
+      });
 
       return response.data;
     } catch (error) {
@@ -317,13 +313,10 @@ export class MagentoClient extends IntegrationClient {
    */
   async updateProduct(sku: string, product: Partial<MagentoProduct>): Promise<MagentoProduct> {
     try {
-      const response = await this.apiCall<MagentoProduct>(
-        `/products/${sku}`,
-        {
-          method: "PUT",
-          body: { product },
-        },
-      );
+      const response = await this.apiCall<MagentoProduct>(`/products/${sku}`, {
+        method: "PUT",
+        body: { product },
+      });
 
       return response.data;
     } catch (error) {
@@ -376,10 +369,7 @@ export class MagentoClient extends IntegrationClient {
         }
       }
 
-      const response = await this.apiCall<MagentoSearchResult<MagentoOrder>>(
-        "/orders",
-        { params },
-      );
+      const response = await this.apiCall<MagentoSearchResult<MagentoOrder>>("/orders", { params });
 
       return response.data;
     } catch (error) {
@@ -434,20 +424,17 @@ export class MagentoClient extends IntegrationClient {
     trackingNumber?: string,
   ): Promise<number> {
     try {
-      const response = await this.apiCall<{ entity_id: number }>(
-        `/orders/${orderId}/shipments`,
-        {
-          method: "POST",
-          body: {
-            shipment: {
-              items,
-              tracks: trackingNumber
-                ? [{ track_number: trackingNumber, carrier_code: "custom" }]
-                : undefined,
-            },
+      const response = await this.apiCall<{ entity_id: number }>(`/orders/${orderId}/shipments`, {
+        method: "POST",
+        body: {
+          shipment: {
+            items,
+            tracks: trackingNumber
+              ? [{ track_number: trackingNumber, carrier_code: "custom" }]
+              : undefined,
           },
         },
-      );
+      });
 
       return response.data.entity_id;
     } catch (error) {
@@ -464,17 +451,14 @@ export class MagentoClient extends IntegrationClient {
     items: Array<{ order_item_id: number; qty: number }>,
   ): Promise<number> {
     try {
-      const response = await this.apiCall<{ entity_id: number }>(
-        `/orders/${orderId}/invoices`,
-        {
-          method: "POST",
-          body: {
-            invoice: {
-              items,
-            },
+      const response = await this.apiCall<{ entity_id: number }>(`/orders/${orderId}/invoices`, {
+        method: "POST",
+        body: {
+          invoice: {
+            items,
           },
         },
-      );
+      });
 
       return response.data.entity_id;
     } catch (error) {
@@ -491,17 +475,14 @@ export class MagentoClient extends IntegrationClient {
     items: Array<{ order_item_id: number; qty: number }>,
   ): Promise<number> {
     try {
-      const response = await this.apiCall<{ entity_id: number }>(
-        `/orders/${orderId}/refunds`,
-        {
-          method: "POST",
-          body: {
-            creditmemo: {
-              items,
-            },
+      const response = await this.apiCall<{ entity_id: number }>(`/orders/${orderId}/refunds`, {
+        method: "POST",
+        body: {
+          creditmemo: {
+            items,
           },
         },
-      );
+      });
 
       return response.data.entity_id;
     } catch (error) {
@@ -556,13 +537,10 @@ export class MagentoClient extends IntegrationClient {
    */
   async createCustomer(customer: Partial<MagentoCustomer>): Promise<MagentoCustomer> {
     try {
-      const response = await this.apiCall<MagentoCustomer>(
-        "/customers",
-        {
-          method: "POST",
-          body: { customer },
-        },
-      );
+      const response = await this.apiCall<MagentoCustomer>("/customers", {
+        method: "POST",
+        body: { customer },
+      });
 
       return response.data;
     } catch (error) {
@@ -574,15 +552,15 @@ export class MagentoClient extends IntegrationClient {
   /**
    * Update a customer.
    */
-  async updateCustomer(customerId: number, customer: Partial<MagentoCustomer>): Promise<MagentoCustomer> {
+  async updateCustomer(
+    customerId: number,
+    customer: Partial<MagentoCustomer>,
+  ): Promise<MagentoCustomer> {
     try {
-      const response = await this.apiCall<MagentoCustomer>(
-        `/customers/${customerId}`,
-        {
-          method: "PUT",
-          body: { customer },
-        },
-      );
+      const response = await this.apiCall<MagentoCustomer>(`/customers/${customerId}`, {
+        method: "PUT",
+        body: { customer },
+      });
 
       return response.data;
     } catch (error) {
@@ -614,17 +592,14 @@ export class MagentoClient extends IntegrationClient {
    */
   async getInventoryItem(sku: string, sourceCode = "default"): Promise<MagentoInventoryItem> {
     try {
-      const response = await this.apiCall<MagentoInventoryItem>(
-        `/inventory/source-items`,
-        {
-          params: {
-            "searchCriteria[filter_groups][0][filters][0][field]": "sku",
-            "searchCriteria[filter_groups][0][filters][0][value]": sku,
-            "searchCriteria[filter_groups][1][filters][0][field]": "source_code",
-            "searchCriteria[filter_groups][1][filters][0][value]": sourceCode,
-          },
+      const response = await this.apiCall<MagentoInventoryItem>("/inventory/source-items", {
+        params: {
+          "searchCriteria[filter_groups][0][filters][0][field]": "sku",
+          "searchCriteria[filter_groups][0][filters][0][value]": sku,
+          "searchCriteria[filter_groups][1][filters][0][field]": "source_code",
+          "searchCriteria[filter_groups][1][filters][0][value]": sourceCode,
         },
-      );
+      });
 
       return response.data;
     } catch (error) {
@@ -638,7 +613,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async updateInventory(sku: string, quantity: number, sourceCode = "default"): Promise<boolean> {
     try {
-      await this.apiCall(`/inventory/source-items`, {
+      await this.apiCall("/inventory/source-items", {
         method: "POST",
         body: {
           sourceItems: [
@@ -664,9 +639,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async listInventorySources(): Promise<MagentoSearchResult<any>> {
     try {
-      const response = await this.apiCall<MagentoSearchResult<any>>(
-        "/inventory/sources",
-      );
+      const response = await this.apiCall<MagentoSearchResult<any>>("/inventory/sources");
 
       return response.data;
     } catch (error) {
@@ -696,9 +669,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async getCategory(categoryId: number): Promise<MagentoCategory> {
     try {
-      const response = await this.apiCall<MagentoCategory>(
-        `/categories/${categoryId}`,
-      );
+      const response = await this.apiCall<MagentoCategory>(`/categories/${categoryId}`);
 
       return response.data;
     } catch (error) {
@@ -712,13 +683,10 @@ export class MagentoClient extends IntegrationClient {
    */
   async createCategory(category: Partial<MagentoCategory>): Promise<MagentoCategory> {
     try {
-      const response = await this.apiCall<MagentoCategory>(
-        "/categories",
-        {
-          method: "POST",
-          body: { category },
-        },
-      );
+      const response = await this.apiCall<MagentoCategory>("/categories", {
+        method: "POST",
+        body: { category },
+      });
 
       return response.data;
     } catch (error) {
@@ -730,15 +698,15 @@ export class MagentoClient extends IntegrationClient {
   /**
    * Update a category.
    */
-  async updateCategory(categoryId: number, category: Partial<MagentoCategory>): Promise<MagentoCategory> {
+  async updateCategory(
+    categoryId: number,
+    category: Partial<MagentoCategory>,
+  ): Promise<MagentoCategory> {
     try {
-      const response = await this.apiCall<MagentoCategory>(
-        `/categories/${categoryId}`,
-        {
-          method: "PUT",
-          body: { category },
-        },
-      );
+      const response = await this.apiCall<MagentoCategory>(`/categories/${categoryId}`, {
+        method: "PUT",
+        body: { category },
+      });
 
       return response.data;
     } catch (error) {
@@ -754,9 +722,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async listTaxRates(): Promise<MagentoSearchResult<any>> {
     try {
-      const response = await this.apiCall<MagentoSearchResult<any>>(
-        "/taxRates/search",
-      );
+      const response = await this.apiCall<MagentoSearchResult<any>>("/taxRates/search");
 
       return response.data;
     } catch (error) {
@@ -770,9 +736,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async listTaxRules(): Promise<MagentoSearchResult<any>> {
     try {
-      const response = await this.apiCall<MagentoSearchResult<any>>(
-        "/taxRules/search",
-      );
+      const response = await this.apiCall<MagentoSearchResult<any>>("/taxRules/search");
 
       return response.data;
     } catch (error) {
@@ -788,9 +752,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async listCouponRules(): Promise<MagentoSearchResult<any>> {
     try {
-      const response = await this.apiCall<MagentoSearchResult<any>>(
-        "/coupons/search",
-      );
+      const response = await this.apiCall<MagentoSearchResult<any>>("/coupons/search");
 
       return response.data;
     } catch (error) {
@@ -804,13 +766,10 @@ export class MagentoClient extends IntegrationClient {
    */
   async createCoupon(coupon: any): Promise<any> {
     try {
-      const response = await this.apiCall<any>(
-        "/coupons",
-        {
-          method: "POST",
-          body: { coupon },
-        },
-      );
+      const response = await this.apiCall<any>("/coupons", {
+        method: "POST",
+        body: { coupon },
+      });
 
       return response.data;
     } catch (error) {
@@ -826,9 +785,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async listCmsPages(): Promise<MagentoSearchResult<any>> {
     try {
-      const response = await this.apiCall<MagentoSearchResult<any>>(
-        "/cmsPage/search",
-      );
+      const response = await this.apiCall<MagentoSearchResult<any>>("/cmsPage/search");
 
       return response.data;
     } catch (error) {
@@ -842,9 +799,7 @@ export class MagentoClient extends IntegrationClient {
    */
   async listCmsBlocks(): Promise<MagentoSearchResult<any>> {
     try {
-      const response = await this.apiCall<MagentoSearchResult<any>>(
-        "/cmsBlock/search",
-      );
+      const response = await this.apiCall<MagentoSearchResult<any>>("/cmsBlock/search");
 
       return response.data;
     } catch (error) {

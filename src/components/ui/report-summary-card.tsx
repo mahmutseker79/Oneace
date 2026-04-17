@@ -54,8 +54,7 @@ export function ReportSummaryCard({ metrics, className }: ReportSummaryCardProps
                 <span
                   className={cn(
                     "text-xs font-medium",
-                    metric.trendDirection === "positive" &&
-                      "text-success",
+                    metric.trendDirection === "positive" && "text-success",
                     metric.trendDirection === "negative" && "text-destructive",
                     metric.trendDirection === "neutral" && "text-muted-foreground",
                     !metric.trendDirection && "text-muted-foreground",

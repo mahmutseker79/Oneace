@@ -72,8 +72,8 @@ export default function PermissionsPage() {
         </li>
       </ul>
       <p>
-        &quot;Members&quot; counts active memberships + pending invitations. If you have 2 active members and
-        1 pending invite, that counts as 3.
+        &quot;Members&quot; counts active memberships + pending invitations. If you have 2 active
+        members and 1 pending invite, that counts as 3.
       </p>
 
       <h2>Inviting team members</h2>

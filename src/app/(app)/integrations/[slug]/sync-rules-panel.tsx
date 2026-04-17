@@ -1,16 +1,17 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { IntegrationSyncRule } from "@/generated/prisma";
-import { useState } from "react";
-import { toast } from "sonner";
-import { deleteSyncRuleAction, createSyncRuleAction } from "../actions";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,14 +19,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import type { IntegrationSyncRule } from "@/generated/prisma";
+import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSyncRuleAction, deleteSyncRuleAction } from "../actions";
 
 interface SyncRulesPanelProps {
   integrationId: string;
   rules: IntegrationSyncRule[];
 }
 
-const ACTION_COLORS: Record<string, "default" | "secondary" | "success" | "destructive" | "warning"> = {
+const ACTION_COLORS: Record<
+  string,
+  "default" | "secondary" | "success" | "destructive" | "warning"
+> = {
   SYNC: "success",
   SKIP: "secondary",
   TRANSFORM: "default",
@@ -80,7 +89,7 @@ export function SyncRulesPanel({ integrationId, rules }: SyncRulesPanelProps) {
       entityType: formData.entityType,
       condition: conditionJson,
       action: formData.action,
-      priority: parseInt(formData.priority),
+      priority: Number.parseInt(formData.priority),
     });
     setIsLoading(false);
 
@@ -143,9 +152,7 @@ export function SyncRulesPanel({ integrationId, rules }: SyncRulesPanelProps) {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Priority: {rule.priority}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Priority: {rule.priority}</p>
                     {typeof rule.condition === "object" && (
                       <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
                         {JSON.stringify(rule.condition, null, 2)}
@@ -194,9 +201,7 @@ export function SyncRulesPanel({ integrationId, rules }: SyncRulesPanelProps) {
                 <Label htmlFor="entity">Entity Type</Label>
                 <Select
                   value={formData.entityType}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, entityType: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, entityType: value })}
                 >
                   <SelectTrigger id="entity">
                     <SelectValue />
@@ -219,9 +224,7 @@ export function SyncRulesPanel({ integrationId, rules }: SyncRulesPanelProps) {
                 <Label htmlFor="action">Action</Label>
                 <Select
                   value={formData.action}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, action: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, action: value })}
                 >
                   <SelectTrigger id="action">
                     <SelectValue />
@@ -264,11 +267,7 @@ export function SyncRulesPanel({ integrationId, rules }: SyncRulesPanelProps) {
             </div>
 
             <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowDialog(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>

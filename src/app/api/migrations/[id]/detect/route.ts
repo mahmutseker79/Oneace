@@ -4,20 +4,17 @@
  * POST /api/migrations/[id]/detect  — run adapter.detectFiles + adapter.suggestMappings
  */
 
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
 import { recordAudit } from "@/lib/audit";
+import { db } from "@/lib/db";
 import { getAdapterFor } from "@/lib/migrations/core/adapter";
 import { loadStoredFiles } from "@/lib/migrations/core/source-file-store";
-import { NextRequest, NextResponse } from "next/server";
+import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
+import { type NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const { membership, user } = await requireActiveMembership();
@@ -26,7 +23,7 @@ export async function POST(
     if (!hasCapability(membership.role, "integrations.connect")) {
       return NextResponse.json(
         { error: "FORBIDDEN", message: "Insufficient permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -38,16 +35,13 @@ export async function POST(
     if (!job) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Migration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Tenant check
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
     // State check: FILES_UPLOADED
@@ -58,21 +52,17 @@ export async function POST(
           message: "Files must be uploaded first",
           currentStatus: job.status,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     // Load files from storage
-    const uploadedFiles = await loadStoredFiles(
-      { db },
-      membership.organizationId,
-      id
-    );
+    const uploadedFiles = await loadStoredFiles({ db }, membership.organizationId, id);
 
     if (!uploadedFiles || uploadedFiles.length === 0) {
       return NextResponse.json(
         { error: "BAD_REQUEST", message: "No files found in migration" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,13 +102,13 @@ export async function POST(
         detections,
         suggestedMappings: fieldMappings,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error("POST /api/migrations/[id]/detect error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "File detection failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

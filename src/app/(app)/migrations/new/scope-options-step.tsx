@@ -56,7 +56,9 @@ export function ScopeOptionsStep({
     });
   };
 
-  const handleCheckboxChange = (field: "includeCustomFields" | "includeAttachments" | "includeArchivedItems") => {
+  const handleCheckboxChange = (
+    field: "includeCustomFields" | "includeAttachments" | "includeArchivedItems",
+  ) => {
     onChange({
       ...value,
       [field]: !value[field],
@@ -75,9 +77,7 @@ export function ScopeOptionsStep({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Satınalma Siparişleri (PO) Geçmişi</CardTitle>
-          <CardDescription>
-            Kaynaktan ne kadar eski PO'lar getireceğini seç
-          </CardDescription>
+          <CardDescription>Kaynaktan ne kadar eski PO'lar getireceğini seç</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -115,10 +115,7 @@ export function ScopeOptionsStep({
               onCheckedChange={() => handleCheckboxChange("includeCustomFields")}
               className="mt-1"
             />
-            <Label
-              htmlFor="custom-fields"
-              className="flex-1 cursor-pointer"
-            >
+            <Label htmlFor="custom-fields" className="flex-1 cursor-pointer">
               <div className="font-medium">Özel alanları (custom fields) içe al</div>
               <div className="text-sm text-muted-foreground mt-0.5">
                 Kaynakta tanımlanmış özel alanları OneAce&apos;e aktarır
@@ -133,10 +130,7 @@ export function ScopeOptionsStep({
               onCheckedChange={() => handleCheckboxChange("includeAttachments")}
               className="mt-1"
             />
-            <Label
-              htmlFor="attachments"
-              className="flex-1 cursor-pointer"
-            >
+            <Label htmlFor="attachments" className="flex-1 cursor-pointer">
               <div className="font-medium">Ürün fotoğraflarını içe al</div>
               <div className="text-sm text-muted-foreground mt-0.5">
                 Ürünlerle ilişkili görselleri ve belgeler indir
@@ -151,10 +145,7 @@ export function ScopeOptionsStep({
               onCheckedChange={() => handleCheckboxChange("includeArchivedItems")}
               className="mt-1"
             />
-            <Label
-              htmlFor="archived"
-              className="flex-1 cursor-pointer"
-            >
+            <Label htmlFor="archived" className="flex-1 cursor-pointer">
               <div className="font-medium">Arşivlenmiş ürünleri de getir</div>
               <div className="text-sm text-muted-foreground mt-0.5">
                 Kaynakta arşivlenmiş veya pasif olarak işaretlenmiş ürünleri dahil et
@@ -165,20 +156,11 @@ export function ScopeOptionsStep({
       </Card>
 
       <div className="flex gap-2 pt-4">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          disabled={isLoading}
-          className="gap-2"
-        >
+        <Button variant="outline" onClick={onBack} disabled={isLoading} className="gap-2">
           <ChevronLeft className="h-4 w-4" />
           Geri
         </Button>
-        <Button
-          onClick={onNext}
-          disabled={isLoading}
-          className="gap-2"
-        >
+        <Button onClick={onNext} disabled={isLoading} className="gap-2">
           İleri
           <ChevronRight className="h-4 w-4" />
         </Button>

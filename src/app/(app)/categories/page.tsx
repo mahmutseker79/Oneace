@@ -86,10 +86,7 @@ export default async function CategoriesPage() {
     <div className="space-y-6">
       <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
-      <PageHeader
-        title={t.categories.heading}
-        description={t.categories.subtitle}
-      />
+      <PageHeader title={t.categories.heading} description={t.categories.subtitle} />
 
       {canCreate ? (
         <Card>

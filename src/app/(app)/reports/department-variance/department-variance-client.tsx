@@ -18,10 +18,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UpgradePrompt } from "@/components/ui/upgrade-prompt";
+import type { Messages } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import { VarianceChart } from "./lazy-variance-chart";
-import type { Messages } from "@/lib/i18n";
 
 interface DepartmentVariance {
   departmentId: string;

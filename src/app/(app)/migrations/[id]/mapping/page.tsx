@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FieldMappingTable } from "@/components/ui/field-mapping-table";
 import { PageHeader } from "@/components/ui/page-header";
-import type { FieldMapping } from "@/lib/migrations/core/types";
 import { db } from "@/lib/db";
+import type { FieldMapping } from "@/lib/migrations/core/types";
 import { requireActiveMembership } from "@/lib/session";
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Field Mapping",

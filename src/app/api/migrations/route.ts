@@ -5,13 +5,13 @@
  * POST /api/migrations     — create a new migration job
  */
 
-import { z } from "zod";
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
-import { recordAudit } from "@/lib/audit";
 import type { MigrationSource } from "@/generated/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { recordAudit } from "@/lib/audit";
+import { db } from "@/lib/db";
+import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
+import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET: List migrations
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     console.error("GET /api/migrations error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to list migrations" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (!hasCapability(membership.role, "integrations.connect")) {
       return NextResponse.json(
         { error: "FORBIDDEN", message: "Insufficient permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "BAD_REQUEST", message: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     console.error("POST /api/migrations error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to create migration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

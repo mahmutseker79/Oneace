@@ -123,10 +123,7 @@ export class AmazonSyncEngine extends SyncEngine {
   /**
    * Save ID mapping to integration settings.
    */
-  private async saveIdMapping(
-    integrationId: string,
-    mapping: AmazonIdMapping,
-  ): Promise<void> {
+  private async saveIdMapping(integrationId: string, mapping: AmazonIdMapping): Promise<void> {
     try {
       const integration = await db.integration.findUnique({
         where: { id: integrationId },
@@ -226,7 +223,7 @@ export class AmazonSyncEngine extends SyncEngine {
                     organizationId: context.organizationId,
                     sku,
                     name: (entity.data.title as string) || "Amazon Product",
-                    description: (entity.data.description as string),
+                    description: entity.data.description as string,
                     salePrice: entity.data.price
                       ? Math.round((entity.data.price as number) * 100)
                       : null,
@@ -309,8 +306,13 @@ export class AmazonSyncEngine extends SyncEngine {
               const orderData = entity.data;
 
               // Map Amazon status to OneAce status
-              let status: "DRAFT" | "CONFIRMED" | "ALLOCATED" | "PARTIALLY_SHIPPED" | "SHIPPED" | "CANCELLED" =
-                "DRAFT";
+              let status:
+                | "DRAFT"
+                | "CONFIRMED"
+                | "ALLOCATED"
+                | "PARTIALLY_SHIPPED"
+                | "SHIPPED"
+                | "CANCELLED" = "DRAFT";
               if ((orderData.status as string).toLowerCase() === "shipped") {
                 status = "SHIPPED";
               } else if ((orderData.status as string).toLowerCase() === "partiallly shipped") {
@@ -323,13 +325,16 @@ export class AmazonSyncEngine extends SyncEngine {
               const existingOrder = await db.salesOrder.findFirst({
                 where: {
                   organizationId: context.organizationId,
-                  orderNumber: (orderData.orderNumber as string),
+                  orderNumber: orderData.orderNumber as string,
                 },
               });
 
               let salesOrderId: string;
-              const shippingAddress = orderData.shippingAddress as Record<string, unknown> | undefined;
-              const customerName = (shippingAddress?.name as string | undefined) || "Amazon Customer";
+              const shippingAddress = orderData.shippingAddress as
+                | Record<string, unknown>
+                | undefined;
+              const customerName =
+                (shippingAddress?.name as string | undefined) || "Amazon Customer";
 
               if (existingOrder) {
                 // Update existing order
@@ -346,7 +351,7 @@ export class AmazonSyncEngine extends SyncEngine {
                 const newOrder = await db.salesOrder.create({
                   data: {
                     organizationId: context.organizationId,
-                    orderNumber: (orderData.orderNumber as string),
+                    orderNumber: orderData.orderNumber as string,
                     customerName,
                     customerRef: amazonOrderId,
                     status,
@@ -358,11 +363,12 @@ export class AmazonSyncEngine extends SyncEngine {
               }
 
               // Sync line items
-              const lineItems = (orderData.lineItems as Array<{
-                asin: string;
-                sku?: string;
-                quantityOrdered: number;
-              }>) || [];
+              const lineItems =
+                (orderData.lineItems as Array<{
+                  asin: string;
+                  sku?: string;
+                  quantityOrdered: number;
+                }>) || [];
 
               for (const lineItem of lineItems) {
                 const sku = lineItem.sku || lineItem.asin;

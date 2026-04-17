@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
 import {
   defaultScopeOptions,
   parseScopeOptions,
-  tryParseScopeOptions,
   resolvePoHistoryCutoff,
   shouldImportPurchaseOrders,
+  tryParseScopeOptions,
 } from "@/lib/migrations/core/scope-options";
+import { describe, expect, it } from "vitest";
 
 describe("scope-options", () => {
   describe("defaultScopeOptions", () => {
@@ -100,7 +100,7 @@ describe("scope-options", () => {
       const cutoff = resolvePoHistoryCutoff("LAST_12_MONTHS");
       expect(cutoff).not.toBeNull();
       const now = new Date();
-      const diff = now.getTime() - cutoff!.getTime();
+      const diff = now.getTime() - cutoff?.getTime();
       // Should be approximately 365 days (±1 day for rounding)
       const expectedMs = 365 * 24 * 60 * 60 * 1000;
       expect(Math.abs(diff - expectedMs)).toBeLessThan(2 * 24 * 60 * 60 * 1000);
@@ -109,7 +109,12 @@ describe("scope-options", () => {
 
   describe("shouldImportPurchaseOrders", () => {
     it("returns false when poHistory is SKIP", () => {
-      const opts = { poHistory: "SKIP" as const, includeCustomFields: true, includeAttachments: true, includeArchivedItems: false };
+      const opts = {
+        poHistory: "SKIP" as const,
+        includeCustomFields: true,
+        includeAttachments: true,
+        includeArchivedItems: false,
+      };
       expect(shouldImportPurchaseOrders(opts)).toBe(false);
     });
 
@@ -119,12 +124,22 @@ describe("scope-options", () => {
     });
 
     it("returns true for ALL", () => {
-      const opts = { poHistory: "ALL" as const, includeCustomFields: true, includeAttachments: true, includeArchivedItems: false };
+      const opts = {
+        poHistory: "ALL" as const,
+        includeCustomFields: true,
+        includeAttachments: true,
+        includeArchivedItems: false,
+      };
       expect(shouldImportPurchaseOrders(opts)).toBe(true);
     });
 
     it("returns true for OPEN_ONLY", () => {
-      const opts = { poHistory: "OPEN_ONLY" as const, includeCustomFields: true, includeAttachments: true, includeArchivedItems: false };
+      const opts = {
+        poHistory: "OPEN_ONLY" as const,
+        includeCustomFields: true,
+        includeAttachments: true,
+        includeArchivedItems: false,
+      };
       expect(shouldImportPurchaseOrders(opts)).toBe(true);
     });
   });

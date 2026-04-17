@@ -34,12 +34,7 @@ import { z } from "zod";
  *                      (RECEIVED, CLOSED, CANCELLED).
  *   SKIP             — don't touch POs at all.
  */
-export const PO_HISTORY_SCOPES = [
-  "ALL",
-  "LAST_12_MONTHS",
-  "OPEN_ONLY",
-  "SKIP",
-] as const;
+export const PO_HISTORY_SCOPES = ["ALL", "LAST_12_MONTHS", "OPEN_ONLY", "SKIP"] as const;
 export type PoHistoryScope = (typeof PO_HISTORY_SCOPES)[number];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -62,10 +57,7 @@ export const MigrationScopeOptionsSchema = z
      * agree on the cutoff instant. Clients pass `undefined`; the
      * server stamps it.
      */
-    dateRangeStart: z
-      .string()
-      .datetime({ offset: true })
-      .optional(),
+    dateRangeStart: z.string().datetime({ offset: true }).optional(),
   })
   .strict();
 
@@ -88,9 +80,7 @@ export function defaultScopeOptions(): MigrationScopeOptions {
  * throws) for invalid shapes so callers can fall back to defaults
  * without crashing an in-flight job.
  */
-export function tryParseScopeOptions(
-  raw: unknown,
-): MigrationScopeOptions | null {
+export function tryParseScopeOptions(raw: unknown): MigrationScopeOptions | null {
   const result = MigrationScopeOptionsSchema.safeParse(raw);
   return result.success ? result.data : null;
 }
@@ -113,10 +103,7 @@ export function parseScopeOptions(raw: unknown): MigrationScopeOptions {
  *   SKIP             → null (caller skips PO import entirely)
  *   LAST_12_MONTHS   → now - 365 days
  */
-export function resolvePoHistoryCutoff(
-  scope: PoHistoryScope,
-  now: Date = new Date(),
-): Date | null {
+export function resolvePoHistoryCutoff(scope: PoHistoryScope, now: Date = new Date()): Date | null {
   if (scope === "LAST_12_MONTHS") {
     const cutoff = new Date(now);
     cutoff.setUTCDate(cutoff.getUTCDate() - 365);
@@ -130,8 +117,6 @@ export function resolvePoHistoryCutoff(
  * Convenience helper the orchestrator uses to short-circuit the PO
  * phase without re-reading the scope blob.
  */
-export function shouldImportPurchaseOrders(
-  opts: MigrationScopeOptions,
-): boolean {
+export function shouldImportPurchaseOrders(opts: MigrationScopeOptions): boolean {
   return opts.poHistory !== "SKIP";
 }

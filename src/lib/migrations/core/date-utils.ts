@@ -32,7 +32,7 @@ export function parseDateFlexible(input: string | null | undefined): string | nu
     if (isoMatch) {
       const [, year, month, day] = isoMatch;
       const d = new Date(`${year}-${month}-${day}T00:00:00Z`);
-      if (!isNaN(d.getTime())) {
+      if (!Number.isNaN(d.getTime())) {
         return d.toISOString().split("T")[0];
       }
     }
@@ -42,11 +42,11 @@ export function parseDateFlexible(input: string | null | undefined): string | nu
   if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
     const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
     if (match) {
-      let [, m, d, y] = match;
-      const year = parseInt(y, 10);
+      const [, m, d, y] = match;
+      const year = Number.parseInt(y, 10);
       const yearFull = y.length === 2 ? (year > 30 ? 1900 + year : 2000 + year) : year;
-      const month = parseInt(m, 10);
-      const day = parseInt(d, 10);
+      const month = Number.parseInt(m, 10);
+      const day = Number.parseInt(d, 10);
 
       // Heuristic: if day <= 12 and month <= 12, we can't be sure. Prefer MM/DD (US).
       // If day > 12, it's definitely DD/MM. If month > 12, it's definitely MM/DD.
@@ -55,13 +55,13 @@ export function parseDateFlexible(input: string | null | undefined): string | nu
       } else if (day > 12) {
         // Must be DD/MM, swap.
         const dateObj = new Date(yearFull, day - 1, month, 0, 0, 0);
-        if (!isNaN(dateObj.getTime())) {
+        if (!Number.isNaN(dateObj.getTime())) {
           return dateObj.toISOString().split("T")[0];
         }
       } else {
         // Ambiguous; treat as MM/DD (US default).
         const dateObj = new Date(yearFull, month - 1, day, 0, 0, 0);
-        if (!isNaN(dateObj.getTime())) {
+        if (!Number.isNaN(dateObj.getTime())) {
           return dateObj.toISOString().split("T")[0];
         }
       }
@@ -72,15 +72,15 @@ export function parseDateFlexible(input: string | null | undefined): string | nu
   if (/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(trimmed)) {
     const match = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
     if (match) {
-      let [, d, m, y] = match;
-      const year = parseInt(y, 10);
+      const [, d, m, y] = match;
+      const year = Number.parseInt(y, 10);
       const yearFull = y.length === 2 ? (year > 30 ? 1900 + year : 2000 + year) : year;
-      const month = parseInt(m, 10);
-      const day = parseInt(d, 10);
+      const month = Number.parseInt(m, 10);
+      const day = Number.parseInt(d, 10);
 
       if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
         const dateObj = new Date(yearFull, month - 1, day, 0, 0, 0);
-        if (!isNaN(dateObj.getTime())) {
+        if (!Number.isNaN(dateObj.getTime())) {
           return dateObj.toISOString().split("T")[0];
         }
       }
@@ -91,17 +91,17 @@ export function parseDateFlexible(input: string | null | undefined): string | nu
   if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(trimmed)) {
     const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
     if (match) {
-      let [, possibleDay, possibleMonth, y] = match;
-      const year = parseInt(y, 10);
+      const [, possibleDay, possibleMonth, y] = match;
+      const year = Number.parseInt(y, 10);
       const yearFull = y.length === 2 ? (year > 30 ? 1900 + year : 2000 + year) : year;
 
       // Try DD/MM interpretation if month > 12 or day is clearly larger.
-      const d = parseInt(possibleDay, 10);
-      const m = parseInt(possibleMonth, 10);
+      const d = Number.parseInt(possibleDay, 10);
+      const m = Number.parseInt(possibleMonth, 10);
 
       if (d > 12 && m <= 12) {
         const dateObj = new Date(yearFull, m - 1, d, 0, 0, 0);
-        if (!isNaN(dateObj.getTime())) {
+        if (!Number.isNaN(dateObj.getTime())) {
           return dateObj.toISOString().split("T")[0];
         }
       }
@@ -118,9 +118,7 @@ export function parseDateFlexible(input: string | null | undefined): string | nu
  * @param values - Array of date strings from a single column
  * @returns Object with dominant format and inconsistency flag
  */
-export function analyzeColumnDateFormats(
-  values: (string | null | undefined)[],
-): {
+export function analyzeColumnDateFormats(values: (string | null | undefined)[]): {
   dominantFormat: string | null;
   isInconsistent: boolean;
   count: { iso8601: number; slashFormat: number; periodFormat: number; unparseable: number };
@@ -144,8 +142,7 @@ export function analyzeColumnDateFormats(
     }
   }
 
-  const total =
-    count.iso8601 + count.slashFormat + count.periodFormat + count.unparseable;
+  const total = count.iso8601 + count.slashFormat + count.periodFormat + count.unparseable;
   if (total === 0) return { dominantFormat: null, isInconsistent: false, count };
 
   let dominantFormat: string | null = null;

@@ -12,10 +12,10 @@
  * 4. Client polls job status for updates
  */
 
+import type { ImportEntity, ImportJob, ImportSource, ImportStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
 import { ImportEngine } from "@/lib/import/import-engine";
 import { logger } from "@/lib/logger";
-import type { ImportEntity, ImportJob, ImportSource, ImportStatus } from "@/generated/prisma";
 
 /**
  * Enqueue an import job for processing.

@@ -5,11 +5,11 @@
  * DELETE /api/migrations/[id]     — soft-delete a migration (only if PENDING/CANCELLED/FAILED)
  */
 
-import { db } from "@/lib/db";
-import { requireActiveMembership } from "@/lib/session";
-import { hasCapability } from "@/lib/permissions";
 import { recordAudit } from "@/lib/audit";
-import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { hasCapability } from "@/lib/permissions";
+import { requireActiveMembership } from "@/lib/session";
+import { type NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -17,10 +17,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 // GET: Fetch migration details
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function GET(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const { membership } = await requireActiveMembership();
@@ -32,16 +29,13 @@ export async function GET(
     if (!job) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Migration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Tenant check
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
     return NextResponse.json({ migration: job }, { status: 200 });
@@ -49,7 +43,7 @@ export async function GET(
     console.error("GET /api/migrations/[id] error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to fetch migration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -58,10 +52,7 @@ export async function GET(
 // DELETE: Soft-delete a migration (only if not yet started)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function DELETE(
-  request: NextRequest,
-  context: RouteContext
-) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const { membership, user } = await requireActiveMembership();
@@ -70,7 +61,7 @@ export async function DELETE(
     if (!hasCapability(membership.role, "integrations.connect")) {
       return NextResponse.json(
         { error: "FORBIDDEN", message: "Insufficient permissions" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -81,16 +72,13 @@ export async function DELETE(
     if (!job) {
       return NextResponse.json(
         { error: "NOT_FOUND", message: "Migration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Tenant check
     if (job.organizationId !== membership.organizationId) {
-      return NextResponse.json(
-        { error: "FORBIDDEN", message: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
     // Only allow deletion in safe states
@@ -110,7 +98,7 @@ export async function DELETE(
           message: `Cannot delete migration in ${job.status} state`,
           currentStatus: job.status,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -139,7 +127,7 @@ export async function DELETE(
     console.error("DELETE /api/migrations/[id] error:", error);
     return NextResponse.json(
       { error: "INTERNAL_ERROR", message: "Failed to delete migration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

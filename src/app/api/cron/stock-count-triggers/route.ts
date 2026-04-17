@@ -10,8 +10,8 @@
  * publicly reachable for the cron scheduler.
  */
 
-import { logger } from "@/lib/logger";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { runTriggerPass } from "@/lib/stockcount/triggers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -28,10 +28,7 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       logger.error("CRON_SECRET not configured — cron endpoint disabled");
-      return NextResponse.json(
-        { error: "Cron endpoint not configured" },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: "Cron endpoint not configured" }, { status: 503 });
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
@@ -84,9 +81,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error("Cron trigger pass failed", { error });
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

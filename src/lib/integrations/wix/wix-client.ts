@@ -75,12 +75,18 @@ export interface WixContact {
   emails?: Array<{ email: string; primary?: boolean }>;
   phones?: Array<{ phone: string; primary?: boolean }>;
   addresses?: Array<{
-    address?: { city?: string; country?: string; postalCode?: string; state?: string; street?: string };
+    address?: {
+      city?: string;
+      country?: string;
+      postalCode?: string;
+      state?: string;
+      street?: string;
+    };
   }>;
 }
 
 class WixClient extends IntegrationClient {
-  private siteId: string = "";
+  private siteId = "";
 
   constructor(
     oauthConfig: OAuthConfig,
@@ -105,7 +111,7 @@ class WixClient extends IntegrationClient {
   /**
    * Get products from Wix Stores.
    */
-  async getProducts(limit: number = 100, offset: number = 0): Promise<WixProduct[]> {
+  async getProducts(limit = 100, offset = 0): Promise<WixProduct[]> {
     try {
       const response = await this.apiCall<{
         items?: WixProduct[];
@@ -182,7 +188,7 @@ class WixClient extends IntegrationClient {
   /**
    * Get orders from Wix.
    */
-  async getOrders(limit: number = 100, offset: number = 0): Promise<WixOrder[]> {
+  async getOrders(limit = 100, offset = 0): Promise<WixOrder[]> {
     try {
       const response = await this.apiCall<{
         orders?: WixOrder[];
@@ -223,12 +229,9 @@ class WixClient extends IntegrationClient {
    */
   async getInventory(productId: string): Promise<WixInventory | null> {
     try {
-      const response = await this.apiCall<WixInventory>(
-        `/stores/products/${productId}/inventory`,
-        {
-          method: "GET",
-        },
-      );
+      const response = await this.apiCall<WixInventory>(`/stores/products/${productId}/inventory`, {
+        method: "GET",
+      });
 
       return response.data;
     } catch (error) {
@@ -240,20 +243,14 @@ class WixClient extends IntegrationClient {
   /**
    * Update inventory for a product.
    */
-  async updateInventory(
-    productId: string,
-    quantity: number,
-  ): Promise<WixInventory> {
+  async updateInventory(productId: string, quantity: number): Promise<WixInventory> {
     try {
-      const response = await this.apiCall<WixInventory>(
-        `/stores/products/${productId}/inventory`,
-        {
-          method: "PATCH",
-          body: {
-            quantity,
-          },
+      const response = await this.apiCall<WixInventory>(`/stores/products/${productId}/inventory`, {
+        method: "PATCH",
+        body: {
+          quantity,
         },
-      );
+      });
 
       return response.data;
     } catch (error) {
@@ -265,7 +262,7 @@ class WixClient extends IntegrationClient {
   /**
    * Get contacts from Wix.
    */
-  async getContacts(limit: number = 100, offset: number = 0): Promise<WixContact[]> {
+  async getContacts(limit = 100, offset = 0): Promise<WixContact[]> {
     try {
       const response = await this.apiCall<{
         items?: WixContact[];

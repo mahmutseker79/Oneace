@@ -19,7 +19,7 @@
  * - OAuth with shop-specific URLs
  */
 
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
 import {
   IntegrationClient,
   type OAuthConfig,
@@ -158,8 +158,23 @@ export interface ShopifyOrder {
   test: boolean;
   orderNumber: number;
   status: "any" | "authorized" | "pending" | "paid" | "partial" | "refunded" | "voided";
-  financialStatus: "authorized" | "pending" | "paid" | "refunded" | "voided" | "partially_paid" | "partially_refunded" | "any" | "authorized";
-  fulfillmentStatus?: "fulfilled" | "partial" | "restocked" | "cancelled" | "unshipped" | "scheduled";
+  financialStatus:
+    | "authorized"
+    | "pending"
+    | "paid"
+    | "refunded"
+    | "voided"
+    | "partially_paid"
+    | "partially_refunded"
+    | "any"
+    | "authorized";
+  fulfillmentStatus?:
+    | "fulfilled"
+    | "partial"
+    | "restocked"
+    | "cancelled"
+    | "unshipped"
+    | "scheduled";
   currency: string;
   totalPrice: string;
   subtotalPrice: string;
@@ -198,7 +213,14 @@ export interface ShopifyLineItem {
 export interface ShopifyFulfillment {
   id: string;
   orderId: string;
-  status: "pending" | "confirmed" | "in_transit" | "delivered" | "failure" | "cancelled" | "scheduled";
+  status:
+    | "pending"
+    | "confirmed"
+    | "in_transit"
+    | "delivered"
+    | "failure"
+    | "cancelled"
+    | "scheduled";
   createdAt: string;
   updatedAt: string;
   trackingInfo?: {
@@ -450,12 +472,14 @@ export class ShopifyClient extends IntegrationClient {
   // PRODUCTS
   // ═══════════════════════════════════════════════════════════════
 
-  async getProducts(options: {
-    limit?: number;
-    cursor?: string;
-    status?: "active" | "draft" | "archived";
-    updatedAfter?: Date;
-  } = {}): Promise<ShopifyPagedResult<ShopifyProduct>> {
+  async getProducts(
+    options: {
+      limit?: number;
+      cursor?: string;
+      status?: "active" | "draft" | "archived";
+      updatedAfter?: Date;
+    } = {},
+  ): Promise<ShopifyPagedResult<ShopifyProduct>> {
     const query = `
       query getProducts($first: Int!, $after: String, $query: String) {
         products(first: $first, after: $after, query: $query) {
@@ -515,7 +539,8 @@ export class ShopifyClient extends IntegrationClient {
 
     const conditions: string[] = [];
     if (options.status) conditions.push(`status:${options.status}`);
-    if (options.updatedAfter) conditions.push(`updated_at:>='${options.updatedAfter.toISOString()}'`);
+    if (options.updatedAfter)
+      conditions.push(`updated_at:>='${options.updatedAfter.toISOString()}'`);
 
     const result = await this.graphql<{
       products: {
@@ -750,11 +775,13 @@ export class ShopifyClient extends IntegrationClient {
   // COLLECTIONS
   // ═══════════════════════════════════════════════════════════════
 
-  async getCollections(options: {
-    limit?: number;
-    cursor?: string;
-    type?: "smart" | "custom";
-  } = {}): Promise<ShopifyPagedResult<ShopifyCollection>> {
+  async getCollections(
+    options: {
+      limit?: number;
+      cursor?: string;
+      type?: "smart" | "custom";
+    } = {},
+  ): Promise<ShopifyPagedResult<ShopifyCollection>> {
     const query = `
       query getCollections($first: Int!, $after: String) {
         collections(first: $first, after: $after) {
@@ -810,14 +837,16 @@ export class ShopifyClient extends IntegrationClient {
   // ORDERS
   // ═══════════════════════════════════════════════════════════════
 
-  async getOrders(options: {
-    limit?: number;
-    cursor?: string;
-    status?: ShopifyOrder["status"];
-    financialStatus?: ShopifyOrder["financialStatus"];
-    fulfillmentStatus?: ShopifyOrder["fulfillmentStatus"];
-    updatedAfter?: Date;
-  } = {}): Promise<ShopifyPagedResult<ShopifyOrder>> {
+  async getOrders(
+    options: {
+      limit?: number;
+      cursor?: string;
+      status?: ShopifyOrder["status"];
+      financialStatus?: ShopifyOrder["financialStatus"];
+      fulfillmentStatus?: ShopifyOrder["fulfillmentStatus"];
+      updatedAfter?: Date;
+    } = {},
+  ): Promise<ShopifyPagedResult<ShopifyOrder>> {
     const query = `
       query getOrders($first: Int!, $after: String, $query: String) {
         orders(first: $first, after: $after, query: $query) {
@@ -905,8 +934,10 @@ export class ShopifyClient extends IntegrationClient {
     const conditions: string[] = [];
     if (options.status) conditions.push(`status:${options.status}`);
     if (options.financialStatus) conditions.push(`financial_status:${options.financialStatus}`);
-    if (options.fulfillmentStatus) conditions.push(`fulfillment_status:${options.fulfillmentStatus}`);
-    if (options.updatedAfter) conditions.push(`updated_at:>='${options.updatedAfter.toISOString()}'`);
+    if (options.fulfillmentStatus)
+      conditions.push(`fulfillment_status:${options.fulfillmentStatus}`);
+    if (options.updatedAfter)
+      conditions.push(`updated_at:>='${options.updatedAfter.toISOString()}'`);
 
     const result = await this.graphql<{
       orders: {
@@ -1142,11 +1173,13 @@ export class ShopifyClient extends IntegrationClient {
   // CUSTOMERS
   // ═══════════════════════════════════════════════════════════════
 
-  async getCustomers(options: {
-    limit?: number;
-    cursor?: string;
-    query?: string;
-  } = {}): Promise<ShopifyPagedResult<ShopifyCustomer>> {
+  async getCustomers(
+    options: {
+      limit?: number;
+      cursor?: string;
+      query?: string;
+    } = {},
+  ): Promise<ShopifyPagedResult<ShopifyCustomer>> {
     const query = `
       query getCustomers($first: Int!, $after: String, $query: String) {
         customers(first: $first, after: $after, query: $query) {
@@ -1221,7 +1254,9 @@ export class ShopifyClient extends IntegrationClient {
     });
 
     return {
-      items: result.customers.edges.map((e) => this.mapCustomer(e.node as unknown as ShopifyCustomer)),
+      items: result.customers.edges.map((e) =>
+        this.mapCustomer(e.node as unknown as ShopifyCustomer),
+      ),
       pageInfo: result.customers.pageInfo,
     };
   }
@@ -1637,10 +1672,7 @@ export class ShopifyClient extends IntegrationClient {
   /**
    * Verify webhook signature (HMAC-SHA256).
    */
-  verifyWebhookSignature(
-    data: Buffer | string,
-    signature: string,
-  ): boolean {
+  verifyWebhookSignature(data: Buffer | string, signature: string): boolean {
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET || "";
     const buffer = typeof data === "string" ? Buffer.from(data, "utf-8") : data;
     const hmac = createHmac("sha256", secret);
