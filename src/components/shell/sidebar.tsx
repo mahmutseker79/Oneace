@@ -22,6 +22,8 @@ import {
   ScanLine,
   Settings,
   ShoppingCart,
+  Tag,
+  ToggleRight,
   Truck,
   Users,
   Warehouse,
@@ -62,6 +64,8 @@ export type SidebarLabels = {
     picks?: string;
     import?: string;
     export?: string;
+    labels?: string;
+    statusChange?: string;
     // God-Mode — dashboard nav item
     dashboard?: string;
   };
@@ -125,6 +129,8 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
         { label: labels.nav.scan, href: "/scan", icon: ScanLine },
         { label: labels.nav.suppliers, href: "/suppliers", icon: Truck },
         { label: labels.nav.categories, href: "/categories", icon: FolderOpen },
+        { label: labels.nav.labels ?? "Labels", href: "/labels", icon: Tag },
+        { label: labels.nav.statusChange ?? "Status Change", href: "/inventory/status-change", icon: ToggleRight },
       ],
     },
     {
