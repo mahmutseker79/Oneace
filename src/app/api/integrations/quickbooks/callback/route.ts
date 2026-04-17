@@ -63,12 +63,30 @@ export async function GET(request: NextRequest) {
     // Exchange code for token
     const token = await client.exchangeCodeForToken(code);
 
-    // Store integration in database
-    await db.integration.create({
-      data: {
+    // Test connection by fetching company info
+    client.setCredentials(token);
+    let companyName = "";
+    try {
+      const companyInfo = await client.getCompanyInfo();
+      companyName = companyInfo.companyName;
+    } catch (companyError) {
+      logger.warn("Could not fetch QBO company info during connect", { companyError });
+    }
+
+    // Upsert integration (handles reconnection case)
+    await db.integration.upsert({
+      where: {
+        organizationId_provider: {
+          organizationId,
+          provider: "QUICKBOOKS_ONLINE",
+        },
+      },
+      create: {
         organizationId,
         provider: "QUICKBOOKS_ONLINE",
         status: "CONNECTED",
+        externalAccountId: realmId,
+        externalStoreName: companyName || undefined,
         credentials: {
           accessToken: token.accessToken,
           refreshToken: token.refreshToken,
@@ -78,24 +96,50 @@ export async function GET(request: NextRequest) {
         settings: {
           connectedAt: new Date().toISOString(),
           connectedBy: userId,
+          companyName,
         },
+        syncItems: true,
+        syncOrders: true,
+        syncSuppliers: true,
+        syncCustomers: true,
+        syncStockLevels: true,
+        syncPrices: true,
+      },
+      update: {
+        status: "CONNECTED",
+        externalAccountId: realmId,
+        externalStoreName: companyName || undefined,
+        credentials: {
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          expiresAt: token.expiresAt,
+          realmId,
+        },
+        settings: {
+          connectedAt: new Date().toISOString(),
+          connectedBy: userId,
+          companyName,
+          reconnectedAt: new Date().toISOString(),
+        },
+        lastError: null,
       },
     });
 
     logger.info("QuickBooks integration connected", {
       organizationId,
       realmId,
+      companyName,
     });
 
-    // Redirect to settings page with success message
+    // Redirect to integrations page with success message
     return NextResponse.redirect(
-      new URL("/settings/integrations/quickbooks?status=success", request.url),
+      new URL("/integrations/quickbooks?status=success", request.url),
     );
   } catch (error) {
     logger.error("QuickBooks OAuth callback error", { error });
 
     return NextResponse.redirect(
-      new URL("/settings/integrations/quickbooks?status=error", request.url),
+      new URL("/integrations/quickbooks?status=error", request.url),
     );
   }
 }
