@@ -10,7 +10,8 @@
  * page 404-ing.
  */
 
-import { Clock, Mail, Plus } from "lucide-react";import type { Metadata } from "next";
+import { Clock, Mail, Plus } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -37,6 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ScheduledReportsPage() {
   const { membership } = await requireActiveMembership();
+  const messages = await getMessages();
+  const labels = messages.reports.scheduledReportActions;
   const plan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
   const hasAccess = hasPlanCapability(plan, "scheduledReports");
 
@@ -144,7 +148,7 @@ export default async function ScheduledReportsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <ScheduledReportActions id={r.id} isActive={r.isActive} />
+                      <ScheduledReportActions id={r.id} isActive={r.isActive} labels={labels} />
                     </TableCell>
                   </TableRow>
                 ))}

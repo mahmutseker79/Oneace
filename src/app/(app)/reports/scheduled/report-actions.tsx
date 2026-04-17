@@ -27,13 +27,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { deleteScheduledReport, updateScheduledReport } from "./actions";
+import type { Messages } from "@/lib/i18n";
 
 interface Props {
   id: string;
   isActive: boolean;
+  labels: Messages["reports"]["scheduledReportActions"];
 }
 
-export function ScheduledReportActions({ id, isActive }: Props) {
+export function ScheduledReportActions({ id, isActive, labels }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -42,10 +44,10 @@ export function ScheduledReportActions({ id, isActive }: Props) {
     startTransition(async () => {
       const res = await updateScheduledReport({ id, isActive: !isActive });
       if (res.ok) {
-        toast.success(isActive ? "Report paused" : "Report resumed");
+        toast.success(isActive ? labels.pausedToast : labels.resumedToast);
         router.refresh();
       } else {
-        toast.error(res.error ?? "Failed to update report");
+        toast.error(res.error ?? labels.updateError);
       }
     });
   }
@@ -54,11 +56,11 @@ export function ScheduledReportActions({ id, isActive }: Props) {
     startTransition(async () => {
       const res = await deleteScheduledReport(id);
       if (res.ok) {
-        toast.success("Report deleted");
+        toast.success(labels.deletedToast);
         setDeleteOpen(false);
         router.refresh();
       } else {
-        toast.error(res.error ?? "Failed to delete report");
+        toast.error(res.error ?? labels.deleteError);
       }
     });
   }
@@ -70,7 +72,7 @@ export function ScheduledReportActions({ id, isActive }: Props) {
         size="sm"
         onClick={toggleActive}
         disabled={pending}
-        title={isActive ? "Pause" : "Resume"}
+        title={isActive ? labels.pauseTitle : labels.resumeTitle}
       >
         {isActive ? (
           <PauseCircle className="h-4 w-4" />
@@ -80,22 +82,19 @@ export function ScheduledReportActions({ id, isActive }: Props) {
       </Button>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" disabled={pending} title="Delete">
+          <Button variant="ghost" size="sm" disabled={pending} title={labels.deleteTitle}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this scheduled report?</AlertDialogTitle>
-            <AlertDialogDescription>
-              No more emails will be sent. Past deliveries are not affected. This cannot
-              be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{labels.deleteDialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{labels.deleteDialogDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{labels.deleteCancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={pending}>
-              Delete
+              {labels.deleteConfirm}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

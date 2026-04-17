@@ -503,7 +503,7 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
 
         if (delta > 0) {
           // Create ISSUE movement
-          const _movement = await tx.stockMovement.create({
+          await tx.stockMovement.create({
             data: {
               organizationId: orgId,
               itemId: line.itemId,
@@ -511,10 +511,11 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
               type: "ISSUE",
               quantity: delta,
               direction: -1,
-              reference: existing.orderNumber,
+              reference: `SO-${existing.orderNumber}`,
+              note: `Sales order shipment`,
+              createdByUserId: session.user.id,
             },
           });
-          // TODO: Link movement to salesOrderLineId via update if schema allows
 
           // Decrement both quantity and reservedQty
           const stock = await tx.stockLevel.findFirst({
@@ -579,6 +580,10 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
 
     revalidatePath("/sales-orders");
     revalidatePath(`/sales-orders/${existing.id}`);
+    // Ship creates ISSUE movements and updates stock levels — bust caches
+    revalidatePath("/movements");
+    revalidatePath("/items");
+    revalidatePath("/dashboard");
     return { ok: true, id: existing.id };
   } catch (_error) {
     return { ok: false, error: t.salesOrders?.errors?.shipFailed ?? "Failed to ship" };
