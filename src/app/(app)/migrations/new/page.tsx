@@ -246,7 +246,7 @@ export default function NewMigrationPage() {
   }
 
   async function pickSource(source: MigrationSource) {
-    setState((s) => ({ ...s, source, isLoading: true, error: null }));
+    setState((s) => ({ ...s, isLoading: true, error: null }));
     try {
       const result = await createMigrationJobAction(source);
       const meta = getSourceMeta(source);
@@ -258,7 +258,13 @@ export default function NewMigrationPage() {
         isLoading: false,
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kaynak oluşturulamadı.");
+      // Keep user on source-selection screen so they can retry or pick another
+      setState((s) => ({
+        ...s,
+        source: null,
+        isLoading: false,
+        error: err instanceof Error ? err.message : "Kaynak oluşturulamadı.",
+      }));
     }
   }
 
@@ -440,10 +446,12 @@ export default function NewMigrationPage() {
     ) : null;
 
   // ───────────────────────────────────────────────────────────────────
-  // Step: Source selection
+  // Step: Source selection — render whenever on source step regardless
+  // of transient source value, so a failed createJob doesn't leave a
+  // blank screen.
   // ───────────────────────────────────────────────────────────────────
 
-  if (state.step === "source" && !state.source) {
+  if (state.step === "source") {
     return (
       <div className="space-y-6">
         <PageHeader
@@ -653,7 +661,21 @@ export default function NewMigrationPage() {
     );
   }
 
-  return null;
+  // Fallback — should never hit in practice, but prevents blank screen
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Yeni Göç Başlat" description="Beklenmeyen durum" />
+      {renderError()}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Sihirbaz bilinmeyen bir duruma ({state.step}) düştü. Sıfırdan başlamak için:
+          </p>
+          <Button onClick={resetWizard}>Baştan Başla</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

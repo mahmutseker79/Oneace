@@ -49,7 +49,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       userId: session.user.id,
     });
 
-    // Emit audit event.
+    // Emit audit event with correct signature (flat fields, no nested objects).
     await recordAudit({
       organizationId: membership.organizationId,
       actorId: session.user.id,

@@ -44,7 +44,7 @@ type SaveMappingRequest = z.infer<typeof SaveMappingSchema>;
 export async function PUT(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -135,11 +135,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
     // Audit log
     await recordAudit({
-      db,
       organizationId: membership.organizationId,
+      actorId: session.user.id,
       action: "migration.mapping_saved",
-      actor: user,
-      entity: { type: "MigrationJob", id },
+      entityType: "migration_job",
+      entityId: id,
       metadata: { fieldMappingCount: fieldMappings.length },
     });
 

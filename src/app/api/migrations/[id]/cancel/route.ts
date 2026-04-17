@@ -15,7 +15,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -66,23 +66,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Update to CANCELLED
+    // Update to CANCELLED with notes (no cancelledAt field)
+    const cancellationNote = `Cancelled by user at ${new Date().toISOString()}`;
+    const updatedNotes = job.notes ? `${job.notes}; ${cancellationNote}` : cancellationNote;
     const updated = await db.migrationJob.update({
       where: { id },
       data: {
         status: "CANCELLED",
-        cancelledAt: new Date(),
-        notes: "Cancelled by user",
+        notes: updatedNotes,
       },
     });
 
     // Audit log
     await recordAudit({
-      db,
       organizationId: membership.organizationId,
+      actorId: session.user.id,
       action: "migration.cancelled",
-      actor: user,
-      entity: { type: "MigrationJob", id },
+      entityType: "migration_job",
+      entityId: id,
       metadata: { previousStatus: job.status },
     });
 

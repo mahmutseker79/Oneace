@@ -3,6 +3,11 @@
  *
  * Thin wrappers around the HTTP API routes, scoped to one organization.
  * Used by both the onboarding Step 3 wizard and the migrations hub pages.
+ *
+ * Schema note: MigrationJob has no `cancelledAt` column. Cancellation is
+ * tracked by { status: "CANCELLED", notes: "..." } + `updatedAt` (auto).
+ * Also no `detectedFiles` / `snapshot` column — those live inside
+ * `fieldMappings` or `importResults` JSON.
  */
 
 "use server";
@@ -29,9 +34,9 @@ import { revalidatePath } from "next/cache";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function createMigrationJobAction(source: MigrationSource): Promise<{ id: string }> {
-  const { membership, user } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
 
-  if (!hasCapability(membership.role, "integrations.connect")) {
+  if (!hasCapability(membership.role, "migrations.create")) {
     throw new Error("Insufficient permissions");
   }
 
@@ -39,17 +44,17 @@ export async function createMigrationJobAction(source: MigrationSource): Promise
     data: {
       organizationId: membership.organizationId,
       sourcePlatform: source,
-      status: "PENDING" as const,
-      createdById: user.id,
+      status: "PENDING",
+      createdByUserId: session.user.id,
     },
   });
 
   await recordAudit({
-    db,
     organizationId: membership.organizationId,
+    actorId: session.user.id,
     action: "migration.created",
-    actor: user,
-    entity: { type: "MigrationJob", id: job.id },
+    entityType: "migration_job",
+    entityId: job.id,
     metadata: { source },
   });
 
@@ -59,24 +64,18 @@ export async function createMigrationJobAction(source: MigrationSource): Promise
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// deleteMigrationJobAction
+// deleteMigrationJobAction (soft-cancel with notes marker)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function deleteMigrationJobAction(id: string): Promise<{ success: boolean }> {
-  const { membership, user } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
 
-  if (!hasCapability(membership.role, "integrations.connect")) {
+  if (!hasCapability(membership.role, "migrations.delete")) {
     throw new Error("Insufficient permissions");
   }
 
-  const job = await db.migrationJob.findUnique({
-    where: { id },
-  });
-
-  if (!job) {
-    throw new Error("Migration not found");
-  }
-
+  const job = await db.migrationJob.findUnique({ where: { id } });
+  if (!job) throw new Error("Migration not found");
   if (job.organizationId !== membership.organizationId) {
     throw new Error("Access denied");
   }
@@ -90,7 +89,6 @@ export async function deleteMigrationJobAction(id: string): Promise<{ success: b
     "FAILED",
     "CANCELLED",
   ];
-
   if (!DELETABLE_STATES.includes(job.status)) {
     throw new Error(`Cannot delete migration in ${job.status} state`);
   }
@@ -98,23 +96,21 @@ export async function deleteMigrationJobAction(id: string): Promise<{ success: b
   await db.migrationJob.update({
     where: { id },
     data: {
-      status: "CANCELLED" as const,
-      cancelledAt: new Date(),
-      notes: "Deleted by user",
+      status: "CANCELLED",
+      notes: `Deleted by user at ${new Date().toISOString()}`,
     },
   });
 
   await recordAudit({
-    db,
     organizationId: membership.organizationId,
+    actorId: session.user.id,
     action: "migration.deleted",
-    actor: user,
-    entity: { type: "MigrationJob", id },
+    entityType: "migration_job",
+    entityId: id,
     metadata: { previousStatus: job.status },
   });
 
   revalidatePath("/migrations");
-
   return { success: true };
 }
 
@@ -123,20 +119,14 @@ export async function deleteMigrationJobAction(id: string): Promise<{ success: b
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function cancelMigrationJobAction(id: string): Promise<{ success: boolean }> {
-  const { membership, user } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
 
-  if (!hasCapability(membership.role, "integrations.connect")) {
+  if (!hasCapability(membership.role, "migrations.cancel")) {
     throw new Error("Insufficient permissions");
   }
 
-  const job = await db.migrationJob.findUnique({
-    where: { id },
-  });
-
-  if (!job) {
-    throw new Error("Migration not found");
-  }
-
+  const job = await db.migrationJob.findUnique({ where: { id } });
+  if (!job) throw new Error("Migration not found");
   if (job.organizationId !== membership.organizationId) {
     throw new Error("Access denied");
   }
@@ -144,7 +134,6 @@ export async function cancelMigrationJobAction(id: string): Promise<{ success: b
   if (job.status === "IMPORTING") {
     throw new Error("Cannot cancel during import. Use rollback after completion.");
   }
-
   if (["COMPLETED", "CANCELLED"].includes(job.status)) {
     throw new Error("Migration is already in a terminal state");
   }
@@ -152,23 +141,21 @@ export async function cancelMigrationJobAction(id: string): Promise<{ success: b
   await db.migrationJob.update({
     where: { id },
     data: {
-      status: "CANCELLED" as const,
-      cancelledAt: new Date(),
-      notes: "Cancelled by user",
+      status: "CANCELLED",
+      notes: `Cancelled by user at ${new Date().toISOString()}`,
     },
   });
 
   await recordAudit({
-    db,
     organizationId: membership.organizationId,
+    actorId: session.user.id,
     action: "migration.cancelled",
-    actor: user,
-    entity: { type: "MigrationJob", id },
+    entityType: "migration_job",
+    entityId: id,
     metadata: { previousStatus: job.status },
   });
 
   revalidatePath("/migrations");
-
   return { success: true };
 }
 
@@ -183,20 +170,14 @@ export async function saveMappingAction(
     scopeOptions?: MigrationScopeOptions;
   },
 ): Promise<{ success: boolean }> {
-  const { membership, user } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
 
-  if (!hasCapability(membership.role, "integrations.connect")) {
+  if (!hasCapability(membership.role, "migrations.create")) {
     throw new Error("Insufficient permissions");
   }
 
-  const job = await db.migrationJob.findUnique({
-    where: { id },
-  });
-
-  if (!job) {
-    throw new Error("Migration not found");
-  }
-
+  const job = await db.migrationJob.findUnique({ where: { id } });
+  if (!job) throw new Error("Migration not found");
   if (job.organizationId !== membership.organizationId) {
     throw new Error("Access denied");
   }
@@ -205,30 +186,36 @@ export async function saveMappingAction(
     throw new Error(`Cannot edit mapping in ${job.status} state`);
   }
 
-  const updateData: any = {
-    fieldMappings: payload.fieldMappings,
+  // fieldMappings is Json — store as object so we can nest mappings + credentials + detections
+  const existingFm = (job.fieldMappings as Record<string, unknown>) ?? {};
+  const nextFm = {
+    ...existingFm,
+    mappings: payload.fieldMappings,
   };
 
+  const updateData: Record<string, unknown> = {
+    fieldMappings: nextFm,
+  };
   if (payload.scopeOptions) {
     updateData.scopeOptions = payload.scopeOptions;
   }
 
   await db.migrationJob.update({
     where: { id },
-    data: updateData,
+    // biome-ignore lint/suspicious/noExplicitAny: Prisma JSON update typing
+    data: updateData as any,
   });
 
   await recordAudit({
-    db,
     organizationId: membership.organizationId,
+    actorId: session.user.id,
     action: "migration.mapping_saved",
-    actor: user,
-    entity: { type: "MigrationJob", id },
+    entityType: "migration_job",
+    entityId: id,
     metadata: { fieldMappingCount: payload.fieldMappings.length },
   });
 
   revalidatePath("/migrations");
-
   return { success: true };
 }
 
@@ -237,20 +224,14 @@ export async function saveMappingAction(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function startMigrationAction(id: string): Promise<{ success: boolean }> {
-  const { membership, user } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
 
-  if (!hasCapability(membership.role, "integrations.connect")) {
+  if (!hasCapability(membership.role, "migrations.start")) {
     throw new Error("Insufficient permissions");
   }
 
-  const job = await db.migrationJob.findUnique({
-    where: { id },
-  });
-
-  if (!job) {
-    throw new Error("Migration not found");
-  }
-
+  const job = await db.migrationJob.findUnique({ where: { id } });
+  if (!job) throw new Error("Migration not found");
   if (job.organizationId !== membership.organizationId) {
     throw new Error("Access denied");
   }
@@ -259,12 +240,6 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
     throw new Error("Migration must be validated before starting");
   }
 
-  // Audit fix (High-4): previously this server action called fetch() to
-  // its own /api/migrations/[id]/start route. Cookies don't forward
-  // reliably across that internal hop on some hosts, and it doubles the
-  // round-trip cost. Call the same logic directly: flip the job to
-  // IMPORTING, then kick off `runMigrationImport` in a void closure.
-  // The HTTP route remains available for external callers and tests.
   await db.migrationJob.update({
     where: { id },
     data: { status: "IMPORTING", startedAt: new Date() },
@@ -281,14 +256,18 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
   void (async () => {
     try {
       const adapter = await getAdapterFor(job.sourcePlatform);
-      const snapshot = await adapter.parse(uploadedFiles, fieldMappings);
+      // biome-ignore lint/suspicious/noExplicitAny: adapter.parse signature varies by source
+      const adapterAny = adapter as any;
+      const snapshot = adapterAny.parseWithScope
+        ? await adapterAny.parseWithScope(uploadedFiles, fieldMappings, scope)
+        : await adapterAny.parse(uploadedFiles, fieldMappings);
       await runMigrationImport({
         db,
         migrationJobId: id,
         organizationId: membership.organizationId,
         snapshot,
         scopeOptions: scope,
-        auditUserId: user.id,
+        auditUserId: session.user.id,
       });
     } catch (err) {
       await db.migrationJob.update({
@@ -303,7 +282,7 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
 
   await recordAudit({
     organizationId: membership.organizationId,
-    actorId: user.id,
+    actorId: session.user.id,
     action: "migration.started",
     entityType: "migration_job",
     entityId: id,
@@ -312,7 +291,6 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
 
   revalidatePath("/migrations");
   revalidatePath(`/migrations/${id}`);
-
   return { success: true };
 }
 
@@ -321,56 +299,46 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function rollbackMigrationAction(id: string): Promise<{ success: boolean }> {
-  const { membership, user } = await requireActiveMembership();
+  const { membership, session } = await requireActiveMembership();
 
-  if (!hasCapability(membership.role, "integrations.connect")) {
+  if (!hasCapability(membership.role, "migrations.rollback")) {
     throw new Error("Insufficient permissions");
   }
 
-  const job = await db.migrationJob.findUnique({
-    where: { id },
-  });
-
-  if (!job) {
-    throw new Error("Migration not found");
-  }
-
+  const job = await db.migrationJob.findUnique({ where: { id } });
+  if (!job) throw new Error("Migration not found");
   if (job.organizationId !== membership.organizationId) {
     throw new Error("Access denied");
   }
 
-  // Call the rollback function
   const result = await rollbackMigration({
     db,
     migrationJobId: id,
     organizationId: membership.organizationId,
-    userId: user.id,
+    userId: session.user.id,
   });
 
   if (!result.success) {
     throw new Error("Rollback encountered errors");
   }
 
-  // Update job status to CANCELLED
   await db.migrationJob.update({
     where: { id },
     data: {
-      status: "CANCELLED" as const,
-      cancelledAt: new Date(),
-      notes: `Rolled back: ${result.deletedCounts.ITEMS} items, etc.`,
+      status: "CANCELLED",
+      notes: `Rolled back by user at ${new Date().toISOString()} (items: ${result.deletedCounts.ITEMS ?? 0})`,
     },
   });
 
   await recordAudit({
-    db,
     organizationId: membership.organizationId,
+    actorId: session.user.id,
     action: "migration.rollback_complete",
-    actor: user,
-    entity: { type: "MigrationJob", id },
+    entityType: "migration_job",
+    entityId: id,
     metadata: { deletedCounts: result.deletedCounts },
   });
 
   revalidatePath("/migrations");
-
   return { success: true };
 }

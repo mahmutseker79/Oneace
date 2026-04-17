@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -102,23 +102,24 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Soft delete: mark as CANCELLED with deletion timestamp
+    // Soft delete: mark as CANCELLED and update notes with deletion timestamp
+    const deletionNote = `Deleted by user at ${new Date().toISOString()}`;
+    const updatedNotes = job.notes ? `${job.notes}; ${deletionNote}` : deletionNote;
     const updated = await db.migrationJob.update({
       where: { id },
       data: {
         status: "CANCELLED",
-        cancelledAt: new Date(),
-        notes: "Deleted by user",
+        notes: updatedNotes,
       },
     });
 
     // Audit log
     await recordAudit({
-      db,
       organizationId: membership.organizationId,
+      actorId: session.user.id,
       action: "migration.deleted",
-      actor: user,
-      entity: { type: "MigrationJob", id },
+      entityType: "migration_job",
+      entityId: id,
       metadata: { previousStatus: job.status },
     });
 

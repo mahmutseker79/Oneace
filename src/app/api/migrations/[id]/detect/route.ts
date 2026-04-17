@@ -17,7 +17,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -76,23 +76,27 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const snapshot = await adapter.parse(uploadedFiles);
     const fieldMappings = adapter.suggestMappings(snapshot);
 
-    // Transition to MAPPING_REVIEW
+    // Transition to MAPPING_REVIEW, nest detections inside fieldMappings
+    const existingFm = (job.fieldMappings as Record<string, unknown>) ?? {};
     const updated = await db.migrationJob.update({
       where: { id },
       data: {
         status: "MAPPING_REVIEW",
-        detectedFiles: detections,
-        fieldMappings,
+        fieldMappings: {
+          ...existingFm,
+          detections,
+          mappings: fieldMappings,
+        },
       },
     });
 
     // Audit log
     await recordAudit({
-      db,
       organizationId: membership.organizationId,
+      actorId: session.user.id,
       action: "migration.detection_complete",
-      actor: user,
-      entity: { type: "MigrationJob", id },
+      entityType: "migration_job",
+      entityId: id,
       metadata: { detectedFileCount: detections.length },
     });
 

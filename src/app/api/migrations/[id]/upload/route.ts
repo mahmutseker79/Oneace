@@ -17,7 +17,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -112,11 +112,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Audit log
     await recordAudit({
-      db,
       organizationId: membership.organizationId,
+      actorId: session.user.id,
       action: "migration.files_uploaded",
-      actor: user,
-      entity: { type: "MigrationJob", id },
+      entityType: "migration_job",
+      entityId: id,
       metadata: { fileCount: files.length },
     });
 

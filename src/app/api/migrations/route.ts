@@ -65,7 +65,7 @@ type CreateMigrationRequest = z.infer<typeof CreateMigrationSchema>;
 
 export async function POST(request: NextRequest) {
   try {
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -93,17 +93,17 @@ export async function POST(request: NextRequest) {
         organizationId: membership.organizationId,
         sourcePlatform: source as MigrationSource,
         status: "PENDING",
-        createdById: user.id,
+        createdByUserId: session.user.id,
       },
     });
 
     // Audit log
     await recordAudit({
-      db,
       organizationId: membership.organizationId,
+      actorId: session.user.id,
       action: "migration.created",
-      actor: user,
-      entity: { type: "MigrationJob", id: job.id },
+      entityType: "migration_job",
+      entityId: job.id,
       metadata: { source },
     });
 

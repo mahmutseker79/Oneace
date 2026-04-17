@@ -18,7 +18,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -100,23 +100,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const hasErrors = validationReport.issues.some((i) => i.severity === "ERROR");
 
     // Update job: VALIDATING → VALIDATED or FAILED
+    // Store validationReport only; snapshot is re-parsed on demand to save storage
     const nextStatus = hasErrors ? "FAILED" : "VALIDATED";
     const updated = await db.migrationJob.update({
       where: { id },
       data: {
         status: nextStatus,
-        snapshot: snapshot,
         validationReport: validationReport,
       },
     });
 
     // Audit log
     await recordAudit({
-      db,
       organizationId: membership.organizationId,
+      actorId: session.user.id,
       action: "migration.validation_complete",
-      actor: user,
-      entity: { type: "MigrationJob", id },
+      entityType: "migration_job",
+      entityId: id,
       metadata: {
         resultStatus: nextStatus,
         errorCount: validationReport.issues.filter((i) => i.severity === "ERROR").length,

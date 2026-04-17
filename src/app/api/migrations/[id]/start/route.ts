@@ -20,7 +20,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const { membership, user } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permission
     if (!hasCapability(membership.role, "integrations.connect")) {
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           organizationId: membership.organizationId,
           snapshot,
           scopeOptions: scope,
-          auditUserId: user.id,
+          auditUserId: session.user.id,
         });
 
         // runMigrationImport already writes status + importResults + audit
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         // not nested actor/entity objects.
         await recordAudit({
           organizationId: membership.organizationId,
-          actorId: user.id,
+          actorId: session.user.id,
           action: result.success ? "migration.completed" : "migration.failed",
           entityType: "migration_job",
           entityId: id,
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Audit log — same signature fix as inside the background closure.
     await recordAudit({
       organizationId: membership.organizationId,
-      actorId: user.id,
+      actorId: session.user.id,
       action: "migration.started",
       entityType: "migration_job",
       entityId: id,

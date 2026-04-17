@@ -42,7 +42,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
         phases,
         lastUpdate: job.updatedAt,
         completedAt: job.completedAt,
-        cancelledAt: job.cancelledAt,
       },
       { status: 200 },
     );
