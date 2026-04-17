@@ -40,20 +40,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: |
-          set +e
-          pnpm typecheck
-          EXIT=$?
-          echo "=== typecheck exit=$EXIT ==="
-          if [ $EXIT -ne 0 ]; then
-            echo "=== tsconfig.json ==="
-            cat tsconfig.json
-            echo "=== prisma generated exists? ==="
-            ls -la src/generated/prisma/ 2>&1 | head -5 || echo "MISSING"
-            echo "=== escaped path check ==="
-            find src -name 'migration-*' -type f 2>&1 | head -10
-          fi
-          exit $EXIT
+        run: pnpm typecheck
 
       - name: Lint (Biome)
         run: |
@@ -101,8 +88,11 @@ jobs:
     timeout-minutes: 10
 
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      # prisma validate is offline schema validation, but the schema's
+      # datasource requires both URLs to be non-empty strings. Fall back
+      # to dummy URLs if secrets aren't configured — no connection is made.
+      DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://ci:ci@localhost:5432/ci' }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL || 'postgresql://ci:ci@localhost:5432/ci' }}
 
     steps:
       - name: Checkout
@@ -126,16 +116,4 @@ jobs:
         run: pnpm db:generate
 
       - name: Validate Prisma schema
-        run: |
-          set +e
-          pnpm prisma validate
-          EXIT=$?
-          echo "=== prisma validate exit=$EXIT ==="
-          if [ $EXIT -ne 0 ]; then
-            echo "=== env check ==="
-            echo "DATABASE_URL set: ${DATABASE_URL:+yes}"
-            echo "DIRECT_URL set: ${DIRECT_URL:+yes}"
-            echo "=== schema head ==="
-            head -20 prisma/schema.prisma
-          fi
-          exit $EXIT
+        run: pnpm prisma validate
