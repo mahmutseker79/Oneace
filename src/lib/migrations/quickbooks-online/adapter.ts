@@ -25,37 +25,42 @@ import { resolvePoHistoryCutoff, shouldImportPurchaseOrders } from "@/lib/migrat
 import { QboMigrationClient, type QboMigrationCredentials } from "@/lib/migrations/quickbooks-online/api-client";
 import { parseQboSnapshot } from "@/lib/migrations/quickbooks-online/parser";
 import { getQboDefaultMappings } from "@/lib/migrations/quickbooks-online/default-mappings";
+import { readCredentials, auditCredentialsDecrypted } from "@/lib/secure/credentials";
 
 /**
  * Extract QBO credentials from fieldMappings.
  * Handles two modes:
- *   1. Direct credentials: { accessToken, refreshToken, expiresAt, realmId }
+ *   1. Direct credentials: { accessToken, refreshToken, expiresAt, realmId } (may be encrypted or plaintext)
  *   2. Existing integration: { useExistingIntegration: true, organizationId, ...}
+ *
+ * Auto-detects encrypted (EncryptedCredentials) vs plaintext via readCredentials.
  */
 function extractQboCredentials(fieldMappings: Record<string, unknown>): QboMigrationCredentials | null {
   const creds = fieldMappings.credentials;
 
-  // Mode 1: Direct OAuth credentials
-  if (creds && typeof creds === "object") {
-    const c = creds as Record<string, unknown>;
+  if (!creds || typeof creds !== "object") {
+    return null;
+  }
 
-    // Check if useExistingIntegration flag is set (will be resolved by adapter below)
-    if (c.useExistingIntegration === true) {
-      return {
-        accessToken: "", // Placeholder; will be fetched from Integration row
-        realmId: c.realmId as string || "",
-      } as QboMigrationCredentials;
-    }
+  const c = creds as Record<string, unknown>;
 
-    // Check for direct credentials
-    if (typeof c.accessToken === "string" && typeof c.realmId === "string") {
-      return {
-        accessToken: c.accessToken,
-        refreshToken: c.refreshToken ? String(c.refreshToken) : undefined,
-        expiresAt: c.expiresAt ? Number(c.expiresAt) : Date.now() + 3600 * 1000,
-        realmId: c.realmId,
-      };
-    }
+  // Check if useExistingIntegration flag is set (will be resolved by adapter below)
+  if (c.useExistingIntegration === true) {
+    return {
+      accessToken: "", // Placeholder; will be fetched from Integration row
+      realmId: c.realmId as string || "",
+    } as QboMigrationCredentials;
+  }
+
+  // Auto-detect encrypted or plaintext credentials
+  const decrypted = readCredentials(creds);
+  if (decrypted && typeof decrypted.accessToken === "string" && typeof decrypted.realmId === "string") {
+    return {
+      accessToken: decrypted.accessToken,
+      refreshToken: decrypted.refreshToken ? String(decrypted.refreshToken) : undefined,
+      expiresAt: decrypted.expiresAt ? Number(decrypted.expiresAt) : Date.now() + 3600 * 1000,
+      realmId: decrypted.realmId,
+    };
   }
 
   return null;
@@ -97,14 +102,26 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
           provider: "QUICKBOOKS_ONLINE",
           status: "CONNECTED",
         },
-        select: { credentials: true },
+        select: { id: true, credentials: true },
       });
 
       if (!integration || !integration.credentials) {
         throw new Error("No connected QBO integration found for this organization");
       }
 
-      const storedCreds = integration.credentials as Record<string, unknown>;
+      // Auto-detect encrypted or plaintext credentials
+      const storedCreds = readCredentials(integration.credentials);
+      if (!storedCreds) {
+        throw new Error("Integration credentials missing or malformed");
+      }
+
+      // Audit the decryption
+      await auditCredentialsDecrypted({
+        organizationId: orgId,
+        integrationId: integration.id,
+        reason: "import",
+      });
+
       finalCreds = {
         accessToken: String(storedCreds.accessToken || ""),
         refreshToken: storedCreds.refreshToken ? String(storedCreds.refreshToken) : undefined,
@@ -170,14 +187,26 @@ export const QBO_MIGRATION_ADAPTER: MigrationAdapter = {
           provider: "QUICKBOOKS_ONLINE",
           status: "CONNECTED",
         },
-        select: { credentials: true },
+        select: { id: true, credentials: true },
       });
 
       if (!integration || !integration.credentials) {
         throw new Error("No connected QBO integration found for this organization");
       }
 
-      const storedCreds = integration.credentials as Record<string, unknown>;
+      // Auto-detect encrypted or plaintext credentials
+      const storedCreds = readCredentials(integration.credentials);
+      if (!storedCreds) {
+        throw new Error("Integration credentials missing or malformed");
+      }
+
+      // Audit the decryption
+      await auditCredentialsDecrypted({
+        organizationId: orgId,
+        integrationId: integration.id,
+        reason: "import",
+      });
+
       finalCreds = {
         accessToken: String(storedCreds.accessToken || ""),
         refreshToken: storedCreds.refreshToken ? String(storedCreds.refreshToken) : undefined,

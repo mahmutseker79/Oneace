@@ -14,17 +14,24 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import {
+  Boxes,
+  Factory,
   Globe,
   Link2,
   Package,
+  Receipt,
   ShoppingBag,
   ShoppingCart,
   Store,
+  Warehouse,
   Webhook,
+  FileSpreadsheet,
+  HardDrive,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MigrationCard } from "./components/migration-card";
 import { disconnectIntegrationAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -38,7 +45,7 @@ interface ProviderInfo {
   slug: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  category: "accounting" | "ecommerce" | "erp" | "webhook";
+  category: "accounting" | "ecommerce" | "erp" | "migration" | "webhook";
 }
 
 const PROVIDERS: ProviderInfo[] = [
@@ -144,10 +151,50 @@ const PROVIDERS: ProviderInfo[] = [
   },
 ];
 
+// Migration source labels for non-provider migrations
+const MIGRATION_SOURCES_INFO = [
+  {
+    source: "SORTLY",
+    name: "Sortly",
+    icon: Package,
+  },
+  {
+    source: "INFLOW",
+    name: "inFlow",
+    icon: Boxes,
+  },
+  {
+    source: "FISHBOWL",
+    name: "Fishbowl",
+    icon: Warehouse,
+  },
+  {
+    source: "CIN7",
+    name: "Cin7 Core",
+    icon: Factory,
+  },
+  {
+    source: "SOS_INVENTORY",
+    name: "SOS Inventory",
+    icon: Receipt,
+  },
+  {
+    source: "QUICKBOOKS_ONLINE",
+    name: "QuickBooks Online (Göç)",
+    icon: FileSpreadsheet,
+  },
+  {
+    source: "QUICKBOOKS_DESKTOP",
+    name: "QuickBooks Desktop (Göç)",
+    icon: HardDrive,
+  },
+];
+
 const CATEGORY_LABELS: Record<string, string> = {
   accounting: "Accounting & Finance",
   ecommerce: "E-commerce",
   erp: "ERP Systems",
+  migration: "Rakipten Göç / Migration",
   webhook: "Webhooks & Custom",
 };
 
@@ -170,8 +217,37 @@ export default async function IntegrationsPage() {
 
   const connectedMap = new Map(connectedIntegrations.map((i) => [i.provider, i]));
 
+  // Fetch completed migration jobs for this org to show last migration
+  const completedMigrations = await db.migrationJob.findMany({
+    where: {
+      organizationId: membership.organizationId,
+      status: "COMPLETED",
+    },
+    orderBy: { completedAt: "desc" },
+    distinct: ["sourcePlatform"],
+  });
+
+  const lastMigrationMap = new Map();
+  completedMigrations.forEach((job) => {
+    if (!lastMigrationMap.has(job.sourcePlatform)) {
+      const importResults = job.importResults as {
+        totals?: { items?: number };
+      } | null;
+      lastMigrationMap.set(job.sourcePlatform, {
+        completedAt: job.completedAt,
+        itemsImported: importResults?.totals?.items ?? 0,
+      });
+    }
+  });
+
   // Group providers by category
-  const categories = ["accounting", "ecommerce", "erp", "webhook"] as const;
+  const categories = [
+    "accounting",
+    "ecommerce",
+    "erp",
+    "migration",
+    "webhook",
+  ] as const;
 
   return (
     <div className="space-y-8">
@@ -181,6 +257,28 @@ export default async function IntegrationsPage() {
       />
 
       {categories.map((cat) => {
+        if (cat === "migration") {
+          return (
+            <section key={cat}>
+              <h2 className="mb-4 text-lg font-semibold">{CATEGORY_LABELS[cat]}</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {MIGRATION_SOURCES_INFO.map((info) => {
+                  const lastJob =
+                    lastMigrationMap.get(info.source as any) || null;
+                  return (
+                    <MigrationCard
+                      key={info.source}
+                      source={info.source as any}
+                      lastJob={lastJob}
+                      canStart={hasCapability(membership.role, "migrations.create")}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          );
+        }
+
         const providersInCat = PROVIDERS.filter((p) => p.category === cat);
         if (providersInCat.length === 0) return null;
 

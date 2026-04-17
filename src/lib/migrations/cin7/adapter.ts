@@ -24,29 +24,36 @@ import {
 } from "@/lib/migrations/cin7/api-client";
 import { getCin7DefaultMappings } from "@/lib/migrations/cin7/default-mappings";
 import { parseCin7Snapshot } from "@/lib/migrations/cin7/parser";
+import { readCredentials } from "@/lib/secure/credentials";
 
 /**
  * Helper to extract Cin7 credentials from fieldMappings.
+ * Auto-detects encrypted (EncryptedCredentials) vs plaintext.
  * Returns null if credentials are missing or malformed.
  */
 function extractCin7Credentials(
   fieldMappings: Record<string, unknown>,
 ): Cin7Credentials | null {
   const creds = fieldMappings.credentials;
-  if (
-    creds &&
-    typeof creds === "object" &&
-    "accountId" in creds &&
-    "applicationKey" in creds
-  ) {
-    const c = creds as Record<string, unknown>;
-    if (typeof c.accountId === "string" && typeof c.applicationKey === "string") {
-      return {
-        accountId: c.accountId,
-        applicationKey: c.applicationKey,
-      };
-    }
+  if (!creds || typeof creds !== "object") {
+    return null;
   }
+
+  // Auto-detect encrypted or plaintext credentials
+  const decrypted = readCredentials(creds);
+  if (
+    decrypted &&
+    "accountId" in decrypted &&
+    "applicationKey" in decrypted &&
+    typeof decrypted.accountId === "string" &&
+    typeof decrypted.applicationKey === "string"
+  ) {
+    return {
+      accountId: decrypted.accountId,
+      applicationKey: decrypted.applicationKey,
+    };
+  }
+
   return null;
 }
 

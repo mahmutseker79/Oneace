@@ -17,12 +17,16 @@
 import type { ImportPhase, PhaseResult } from "@/lib/migrations/core/types";
 import type { PrismaClient } from "@/generated/prisma";
 import { recordAudit } from "@/lib/audit";
+import { deleteMigrationBlobs } from "@/lib/migrations/core/blob-cleanup";
+import { logger } from "@/lib/logger";
 
 export interface RollbackResult {
   migrationJobId: string;
   startedAt: string;
   completedAt: string;
   deletedCounts: Record<ImportPhase, number>;
+  blobsDeleted: number;
+  blobsFailed: number;
   errors: Array<{ phase: ImportPhase; entityId: string; message: string }>;
   success: boolean;
 }
@@ -54,6 +58,8 @@ export async function rollbackMigration(opts: {
     ATTACHMENTS: 0,
     PURCHASE_ORDERS: 0,
   };
+  let blobsDeleted = 0;
+  let blobsFailed = 0;
   const errors: Array<{ phase: ImportPhase; entityId: string; message: string }> = [];
 
   // Fetch the job; assert organization match.
@@ -128,14 +134,54 @@ export async function rollbackMigration(opts: {
           break;
 
         case "ATTACHMENTS":
-          deletedCounts.ATTACHMENTS = await rollbackPhase({
-            db: opts.db,
-            phase: "ATTACHMENTS",
-            createdIds: phase.createdIds,
-            organizationId: opts.organizationId,
-            sourcePlatform: job.sourcePlatform,
-            errors,
-          });
+          // Collect blob URLs BEFORE deleting rows
+          try {
+            const attachments = await opts.db.itemAttachment.findMany({
+              where: {
+                id: { in: phase.createdIds },
+                organizationId: opts.organizationId,
+              },
+              select: { fileUrl: true },
+            });
+            const blobUrls = attachments
+              .map((a) => a.fileUrl)
+              .filter((url) => url.includes("/migrations/"));
+
+            // Delete DB rows
+            deletedCounts.ATTACHMENTS = await rollbackPhase({
+              db: opts.db,
+              phase: "ATTACHMENTS",
+              createdIds: phase.createdIds,
+              organizationId: opts.organizationId,
+              sourcePlatform: job.sourcePlatform,
+              errors,
+            });
+
+            // Delete blobs after DB rows are gone (non-blocking)
+            if (blobUrls.length > 0) {
+              const blobResult = await deleteMigrationBlobs(blobUrls);
+              blobsDeleted += blobResult.deleted;
+              blobsFailed += blobResult.failed.length;
+              if (blobResult.failed.length > 0) {
+                logger.warn("Some attachment blobs failed to delete during rollback", {
+                  migrationJobId: opts.migrationJobId,
+                  deleted: blobResult.deleted,
+                  failed: blobResult.failed.length,
+                });
+              }
+            }
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            logger.error("Error during attachment rollback", {
+              error: message,
+              migrationJobId: opts.migrationJobId,
+            });
+            errors.push({
+              phase: "ATTACHMENTS",
+              entityId: "blob-cleanup-error",
+              message,
+            });
+          }
           break;
 
         case "STOCK_LEVELS":
@@ -268,6 +314,8 @@ export async function rollbackMigration(opts: {
       source: job.sourcePlatform,
       deletedCounts,
       totalDeleted,
+      blobsDeleted,
+      blobsFailed,
       errorCount: errors.length,
     },
   });
@@ -278,6 +326,8 @@ export async function rollbackMigration(opts: {
     startedAt,
     completedAt,
     deletedCounts,
+    blobsDeleted,
+    blobsFailed,
     errors,
     success: errors.length === 0,
   };

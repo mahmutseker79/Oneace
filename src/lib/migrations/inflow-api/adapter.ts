@@ -31,25 +31,31 @@ import {
 } from "@/lib/migrations/inflow-api/api-client";
 import { getInflowApiDefaultMappings } from "@/lib/migrations/inflow-api/default-mappings";
 import { parseInflowApiSnapshot } from "@/lib/migrations/inflow-api/parser";
+import { readCredentials } from "@/lib/secure/credentials";
 
 function extractInflowCredentials(
   fieldMappings: Record<string, unknown>,
 ): InflowCredentials | null {
   const creds = fieldMappings.credentials;
-  if (
-    creds &&
-    typeof creds === "object" &&
-    "apiToken" in creds &&
-    "companyId" in creds
-  ) {
-    const c = creds as Record<string, unknown>;
-    if (typeof c.apiToken === "string" && typeof c.companyId === "string") {
-      return {
-        apiToken: c.apiToken,
-        companyId: c.companyId,
-      };
-    }
+  if (!creds || typeof creds !== "object") {
+    return null;
   }
+
+  // Auto-detect encrypted or plaintext credentials
+  const decrypted = readCredentials(creds);
+  if (
+    decrypted &&
+    "apiToken" in decrypted &&
+    "companyId" in decrypted &&
+    typeof decrypted.apiToken === "string" &&
+    typeof decrypted.companyId === "string"
+  ) {
+    return {
+      apiToken: decrypted.apiToken,
+      companyId: decrypted.companyId,
+    };
+  }
+
   return null;
 }
 

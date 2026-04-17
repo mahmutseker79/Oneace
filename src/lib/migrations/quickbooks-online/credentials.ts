@@ -15,6 +15,7 @@
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import type { PrismaClient } from "@/generated/prisma";
+import { encryptCredentials, readCredentials, auditCredentialsDecrypted } from "@/lib/secure/credentials";
 
 export type QboCredentialMode = "reuse-integration" | "paste";
 
@@ -96,12 +97,26 @@ export async function resolveQboCredentials(opts: {
       );
     }
 
-    const storedCreds = integration.credentials as Record<string, unknown>;
+    // Auto-detect encrypted or plaintext credentials
+    const storedCreds = readCredentials(integration.credentials);
+    if (!storedCreds) {
+      throw new Error(
+        "Integration credentials missing or malformed; please reconnect in Settings"
+      );
+    }
+
     const realmId = credentialsData.realmId as string;
 
     if (!realmId) {
       throw new Error("realmId required even when reusing existing integration");
     }
+
+    // Audit the decryption
+    await auditCredentialsDecrypted({
+      organizationId,
+      integrationId: integration.id,
+      reason: "import",
+    });
 
     return {
       accessToken: String(storedCreds.accessToken || ""),
@@ -120,15 +135,24 @@ export async function resolveQboCredentials(opts: {
   }
 
   // Mode 2: Direct credentials provided by user
-  if (typeof credentialsData.accessToken === "string") {
+  // These may be encrypted or plaintext (auto-detected)
+  const decryptedCreds = readCredentials(credentialsData);
+  if (decryptedCreds && typeof decryptedCreds.accessToken === "string") {
+    // Audit the decryption
+    await auditCredentialsDecrypted({
+      organizationId,
+      migrationJobId,
+      reason: "import",
+    });
+
     return {
-      accessToken: credentialsData.accessToken,
-      refreshToken: credentialsData.refreshToken
-        ? String(credentialsData.refreshToken)
+      accessToken: decryptedCreds.accessToken,
+      refreshToken: decryptedCreds.refreshToken
+        ? String(decryptedCreds.refreshToken)
         : undefined,
-      realmId: String(credentialsData.realmId || ""),
-      expiresAt: credentialsData.expiresAt
-        ? new Date(Number(credentialsData.expiresAt))
+      realmId: String(decryptedCreds.realmId || ""),
+      expiresAt: decryptedCreds.expiresAt
+        ? new Date(Number(decryptedCreds.expiresAt))
         : undefined,
       mode: "paste",
       source: {
@@ -221,14 +245,17 @@ export async function refreshQboToken(
 
       // Write back to source
       if (credentials.source?.integrationId) {
+        // Encrypt before persisting to Integration
+        const encryptedCreds = encryptCredentials({
+          accessToken: data.access_token,
+          refreshToken: newRefreshToken,
+          expiresAt: newExpiresAt.getTime(),
+        });
+
         await db.integration.update({
           where: { id: credentials.source.integrationId },
           data: {
-            credentials: {
-              accessToken: data.access_token,
-              refreshToken: newRefreshToken,
-              expiresAt: newExpiresAt.getTime(),
-            },
+            credentials: encryptedCreds,
           },
         });
 
@@ -245,21 +272,21 @@ export async function refreshQboToken(
 
         if (job && typeof job.fieldMappings === "object" && job.fieldMappings !== null) {
           const fieldMappings = job.fieldMappings as Record<string, unknown>;
-          const currentCreds =
-            (fieldMappings.credentials as Record<string, unknown>) || {};
+
+          // Encrypt the updated credentials
+          const encryptedCreds = encryptCredentials({
+            accessToken: data.access_token,
+            refreshToken: newRefreshToken,
+            expiresAt: newExpiresAt.getTime(),
+            refreshedAt: new Date().toISOString(),
+          });
 
           await db.migrationJob.update({
             where: { id: credentials.source.migrationJobId },
             data: {
               fieldMappings: {
                 ...fieldMappings,
-                credentials: {
-                  ...currentCreds,
-                  accessToken: data.access_token,
-                  refreshToken: newRefreshToken,
-                  expiresAt: newExpiresAt.getTime(),
-                  refreshedAt: new Date().toISOString(),
-                },
+                credentials: encryptedCreds,
               } as any,
             },
           });

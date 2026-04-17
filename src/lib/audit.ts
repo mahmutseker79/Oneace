@@ -140,6 +140,13 @@ export type AuditAction =
   | "webhook.updated"
   | "webhook.deleted"
   | "webhook.tested"
+  // --- Phase MIG-S8: Migration lifecycle (competitor imports) --------
+  | "migration.started"
+  | "migration.completed"
+  | "migration.failed"
+  | "migration.rollback"
+  | "migration.sourceFiles.cleanup"
+  | "migration.blob.cleanup"
   // --- Phase V4: Reason Codes -----------------------------------------------
   | "reason_code.created"
   | "reason_code.updated"
@@ -236,6 +243,8 @@ export type AuditEntityType =
   | "import_job"
   | "import_template"
   | "webhook"
+  // Phase MIG-S8: Migration jobs (competitor imports)
+  | "migration_job"
   // Phase V4: Reason Codes & Stock Status
   | "reason_code"
   | "stock_level"

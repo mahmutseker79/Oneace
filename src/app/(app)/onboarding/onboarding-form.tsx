@@ -1,17 +1,19 @@
 "use client";
 
-// Phase 4.1 — Multi-step onboarding wizard.
+// Phase 4.1 + S3 — Multi-step onboarding wizard.
 //
-// Replaces the single-field org-name form with a 3-step flow:
+// 4-step flow:
 //   Step 1: Name your workspace (existing org creation API)
 //   Step 2: What do you primarily track? (contextual, no DB write)
-//   Step 3: Invite your team (optional, uses invitation API)
+//   Step 3: Mevcut verini getir? (migration picker, optional)
+//   Step 4: Invite your team (optional, uses invitation API)
 //
 // Design rules:
-//   - Step 2 and 3 can be skipped without consequence.
+//   - Steps 2, 3, 4 can be skipped without consequence.
 //   - Org is created at step 1; subsequent steps are additive.
 //   - All steps show a visual progress indicator.
-//   - "Skip" is always visible on steps 2 and 3.
+//   - Step 3 creates a MigrationJob if user picks a source.
+//   - Skip on step 3 clears migrationSourceHint and advances to step 4.
 
 import {
   Box,
@@ -29,6 +31,8 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MigrationPicker } from "./migration-picker";
+import type { MigrationSource } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Types + constants
@@ -372,18 +376,82 @@ function Step3({
 
 export function OnboardingForm(_props: { labels: unknown }) {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [, setOrgId] = useState("");
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [orgId, setOrgId] = useState("");
   const [orgName, setOrgName] = useState("");
+  const [migrationSource, setMigrationSource] = useState<MigrationSource | null>(null);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
 
-  function finish() {
-    router.push("/items");
+  const [, startTransition] = useTransition();
+
+  async function finish() {
+    // Mark onboarding as completed via PATCH
+    try {
+      const res = await fetch("/api/onboarding/organization", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ onboardingCompletedAt: true }),
+      });
+      if (!res.ok) {
+        console.error("Failed to mark onboarding completed");
+      }
+    } catch (err) {
+      console.error("Error marking onboarding completed:", err);
+    }
+
+    // If a migration was selected, navigate to the migration job.
+    // Otherwise go to dashboard.
+    if (migrationSource && orgId) {
+      // Migration job is already created in Step 3.
+      // Navigate to migration detail page (created by MigrationJob POST response).
+      // For now, redirect to /migrations to view the job.
+      router.push("/migrations");
+    } else {
+      router.push("/items");
+    }
     router.refresh();
+  }
+
+  async function handleMigrationPick(source: MigrationSource | null) {
+    if (!source) {
+      // User skipped migration
+      setMigrationSource(null);
+      setMigrationError(null);
+      setStep(4);
+      return;
+    }
+
+    // User picked a migration source — create a MigrationJob
+    setMigrationError(null);
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/onboarding/migration-start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source }),
+        });
+
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            message?: string;
+          };
+          setMigrationError(body.message ?? "Failed to start migration. Please try again.");
+          return;
+        }
+
+        await res.json(); // consume response
+        setMigrationSource(source);
+        // Continue to Step 4 (invite team), don't navigate away yet
+        setStep(4);
+      } catch (err) {
+        setMigrationError(err instanceof Error ? err.message : "Network error");
+      }
+    });
   }
 
   return (
     <div>
-      <StepProgress current={step} total={3} />
+      <StepProgress current={step} total={4} />
 
       {step === 1 && (
         <Step1
@@ -405,7 +473,20 @@ export function OnboardingForm(_props: { labels: unknown }) {
         />
       )}
 
-      {step === 3 && <Step3 orgName={orgName} onFinish={finish} />}
+      {step === 3 && (
+        <MigrationPicker onPick={handleMigrationPick} onSkip={() => handleMigrationPick(null)} />
+      )}
+
+      {step === 3 && migrationError && (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive mt-4"
+        >
+          {migrationError}
+        </div>
+      )}
+
+      {step === 4 && <Step3 orgName={orgName} onFinish={finish} />}
     </div>
   );
 }

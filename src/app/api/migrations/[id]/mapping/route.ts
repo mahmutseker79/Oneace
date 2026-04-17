@@ -13,6 +13,7 @@ import {
   MigrationScopeOptionsSchema,
 } from "@/lib/migrations/core/scope-options";
 import type { FieldMapping } from "@/lib/migrations/core/types";
+import { encryptCredentials, isEncryptedCredentials } from "@/lib/secure/credentials";
 import { NextRequest, NextResponse } from "next/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -102,9 +103,29 @@ export async function PUT(
 
     const { fieldMappings, scopeOptions } = parsed.data;
 
+    // Prepare fieldMappings with encrypted credentials if present
+    const fieldMappingsObj: Record<string, unknown> = {
+      mappings: fieldMappings,
+    };
+
+    // Check if there are credentials to encrypt
+    const body_typed = body as Record<string, unknown>;
+    if (
+      body_typed.credentials &&
+      typeof body_typed.credentials === "object"
+    ) {
+      const creds = body_typed.credentials as Record<string, unknown>;
+      // Only encrypt if not already encrypted
+      if (!isEncryptedCredentials(creds)) {
+        fieldMappingsObj.credentials = encryptCredentials(creds);
+      } else {
+        fieldMappingsObj.credentials = creds;
+      }
+    }
+
     // Update job with new mappings and optional scope options
     const updateData: any = {
-      fieldMappings: fieldMappings as FieldMapping[],
+      fieldMappings: fieldMappingsObj,
     };
 
     if (scopeOptions) {

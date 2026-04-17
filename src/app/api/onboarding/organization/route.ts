@@ -69,10 +69,12 @@ export async function POST(request: Request) {
 
   // P3.2 — Create org with an OWNER membership and a default location
   // in a single nested write so the user never lands on an empty dashboard.
+  // Phase MIG-S3: set onboardingStep=2 (Step 1 is complete, Step 2 is next).
   const org = await db.organization.create({
     data: {
       name: parsed.data.name,
       slug,
+      onboardingStep: 2,
       memberships: {
         create: {
           userId: session.user.id,
@@ -137,3 +139,55 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ organization: org }, { status: 201 });
 }
+
+// Phase MIG-S3 — PATCH handler to update onboarding state.
+// Accepts { onboardingStep?: number, onboardingCompletedAt?: true }
+
+const patchSchema = z.object({
+  onboardingStep: z.number().int().min(1).max(4).optional(),
+  onboardingCompletedAt: z.literal(true).optional(),
+});
+
+export async function PATCH(request: Request) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  // Ensure user has an active membership
+  const membership = await db.membership.findFirst({
+    where: { userId: session.user.id, deactivatedAt: null },
+    include: { organization: true },
+  });
+
+  if (!membership) {
+    return NextResponse.json({ message: "No active membership" }, { status: 403 });
+  }
+
+  const body = (await request.json().catch(() => null)) as unknown;
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { message: "Invalid request", issues: parsed.error.issues },
+      { status: 400 },
+    );
+  }
+
+  const { onboardingStep, onboardingCompletedAt } = parsed.data;
+
+  const updateData: Record<string, unknown> = {};
+  if (onboardingStep !== undefined) {
+    updateData.onboardingStep = onboardingStep;
+  }
+  if (onboardingCompletedAt) {
+    updateData.onboardingCompletedAt = new Date();
+  }
+
+  const updated = await db.organization.update({
+    where: { id: membership.organizationId },
+    data: updateData,
+  });
+
+  return NextResponse.json({ organization: updated }, { status: 200 });
+}
+

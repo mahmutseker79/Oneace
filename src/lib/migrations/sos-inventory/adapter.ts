@@ -23,37 +23,40 @@ import {
 } from "@/lib/migrations/sos-inventory/api-client";
 import { getSOSDefaultMappings } from "@/lib/migrations/sos-inventory/default-mappings";
 import { parseSOSSnapshot } from "@/lib/migrations/sos-inventory/parser";
+import { readCredentials } from "@/lib/secure/credentials";
 
 function extractSOSCredentials(
   fieldMappings: Record<string, unknown>,
 ): SOSCredentials | null {
   const creds = fieldMappings.credentials;
-  if (
-    creds &&
-    typeof creds === "object" &&
-    "accessToken" in creds &&
-    "refreshToken" in creds &&
-    "clientId" in creds &&
-    "clientSecret" in creds &&
-    "realmId" in creds
-  ) {
-    const c = creds as Record<string, unknown>;
-    if (
-      typeof c.accessToken === "string" &&
-      typeof c.refreshToken === "string" &&
-      typeof c.clientId === "string" &&
-      typeof c.clientSecret === "string" &&
-      typeof c.realmId === "string"
-    ) {
-      return {
-        accessToken: c.accessToken,
-        refreshToken: c.refreshToken,
-        clientId: c.clientId,
-        clientSecret: c.clientSecret,
-        realmId: c.realmId,
-      };
-    }
+  if (!creds || typeof creds !== "object") {
+    return null;
   }
+
+  // Auto-detect encrypted or plaintext credentials
+  const decrypted = readCredentials(creds);
+  if (
+    decrypted &&
+    "accessToken" in decrypted &&
+    "refreshToken" in decrypted &&
+    "clientId" in decrypted &&
+    "clientSecret" in decrypted &&
+    "realmId" in decrypted &&
+    typeof decrypted.accessToken === "string" &&
+    typeof decrypted.refreshToken === "string" &&
+    typeof decrypted.clientId === "string" &&
+    typeof decrypted.clientSecret === "string" &&
+    typeof decrypted.realmId === "string"
+  ) {
+    return {
+      accessToken: decrypted.accessToken,
+      refreshToken: decrypted.refreshToken,
+      clientId: decrypted.clientId,
+      clientSecret: decrypted.clientSecret,
+      realmId: decrypted.realmId,
+    };
+  }
+
   return null;
 }
 
