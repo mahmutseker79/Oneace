@@ -12,6 +12,7 @@ import {
   Boxes,
   ChevronDown,
   ClipboardList,
+  Database,
   FileDown,
   FileUp,
   FolderOpen,
@@ -71,6 +72,7 @@ export type SidebarLabels = {
     // Data tools
     import?: string;
     export?: string;
+    migrations?: string;
     // Integrations
     integrations?: string;
     // Legacy aliases
@@ -178,10 +180,15 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     items: [{ label: labels.nav.reports, href: "/reports", icon: BarChart3 }],
   };
 
-  // ── Data Tools — import/export ─────────────────────────────────
+  // ── Data Tools — import/export/migrations ──────────────────────
   const dataToolsItems: NavItem[] = [
     { label: labels.nav.import ?? "Import", href: "/import", icon: FileUp },
     { label: labels.nav.export ?? "Export", href: "/export", icon: FileDown },
+    {
+      label: labels.nav.migrations ?? "Göç / Migrations",
+      href: "/migrations",
+      icon: Database,
+    },
   ];
 
   // ── Admin — users, audit, integrations, settings ───────────────

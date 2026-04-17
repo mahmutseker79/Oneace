@@ -127,6 +127,7 @@ export const en = {
     // Data tools group
     import: "Import",
     export: "Export",
+    migrations: "Göç / Migrations",
     // Integrations (standalone top-level)
     integrations: "Integrations",
     // Legacy aliases
