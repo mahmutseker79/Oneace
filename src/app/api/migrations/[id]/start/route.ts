@@ -15,6 +15,11 @@ import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
 import { type NextRequest, NextResponse } from "next/server";
 
+// Vercel: extend max execution from the 10s default so small imports
+// (up to a few thousand rows) finish in-request. Larger imports still
+// need a job queue — this just raises the synchronous ceiling.
+export const maxDuration = 300;
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, context: RouteContext) {
