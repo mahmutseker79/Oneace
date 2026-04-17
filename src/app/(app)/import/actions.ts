@@ -6,8 +6,10 @@
 
 "use server";
 
-import type { ImportStatus } from "@/generated/prisma";import { recordAudit } from "@/lib/audit";
+import type { ImportStatus } from "@/generated/prisma";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { enqueueImportJob } from "@/lib/jobs/queue";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
@@ -142,8 +144,8 @@ export async function startImportAction(
       },
     });
 
-    // TODO: Queue async import job (background job queue)
-    // ImportEngine.executeImport(...)
+    // Enqueue the job for background processing via cron route
+    await enqueueImportJob(jobId);
 
     // Record audit event
     await recordAudit({

@@ -9,14 +9,15 @@ import { requireActiveMembership } from "@/lib/session";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
+import { ExportClient } from "./export-client";
 
 export const metadata: Metadata = {
   title: "Export",
 };
 
 export default async function ExportPage() {
-  const { membership: _membership } = await requireActiveMembership();
-  const _t = await getMessages();
+  const { membership } = await requireActiveMembership();
+  const t = await getMessages();
 
   const exportOptions = [
     {
@@ -26,39 +27,21 @@ export default async function ExportPage() {
       formats: ["CSV", "Excel"],
     },
     {
-      id: "SUPPLIER",
-      label: "Suppliers",
-      description: "Export vendor information",
+      id: "STOCK_LEVEL",
+      label: "Stock Levels",
+      description: "Export current inventory levels by warehouse",
+      formats: ["CSV", "Excel"],
+    },
+    {
+      id: "STOCK_MOVEMENT",
+      label: "Stock Movements",
+      description: "Export stock transaction history",
       formats: ["CSV", "Excel"],
     },
     {
       id: "PURCHASE_ORDER",
       label: "Purchase Orders",
-      description: "Export PO data",
-      formats: ["CSV", "Excel"],
-    },
-    {
-      id: "STOCK_LEVEL",
-      label: "Stock Levels",
-      description: "Export current inventory levels",
-      formats: ["CSV", "Excel"],
-    },
-    {
-      id: "CATEGORY",
-      label: "Categories",
-      description: "Export product categories",
-      formats: ["CSV", "Excel"],
-    },
-    {
-      id: "WAREHOUSE",
-      label: "Warehouses",
-      description: "Export warehouse/location data",
-      formats: ["CSV", "Excel"],
-    },
-    {
-      id: "CUSTOMER",
-      label: "Customers",
-      description: "Export customer information",
+      description: "Export PO data and history",
       formats: ["CSV", "Excel"],
     },
   ];
@@ -79,14 +62,11 @@ export default async function ExportPage() {
             </div>
 
             <div className="space-y-2">
-              {option.formats.map((format) => (
-                <button
-                  key={format}
-                  className="w-full px-3 py-2 text-sm font-medium border rounded hover:bg-muted transition"
-                >
-                  Export as {format}
-                </button>
-              ))}
+              <ExportClient
+                exportType={option.id}
+                label={option.label}
+                formats={option.formats}
+              />
             </div>
           </div>
         ))}

@@ -180,7 +180,18 @@ export type AuditAction =
   // --- Scheduled reports lifecycle ------------------------------------------
   | "scheduled_report.created"
   | "scheduled_report.updated"
-  | "scheduled_report.deleted";
+  | "scheduled_report.deleted"
+  // --- Count zones lifecycle (Phase V4+) ------------------------------------
+  | "count_zone.created"
+  | "count_zone.updated"
+  | "count_zone.deleted"
+  | "count_zone.barcodes_generated"
+  // --- Vehicle lifecycle (Asset management) --------------------------------
+  | "vehicle.created"
+  | "vehicle.updated"
+  | "vehicle.deleted"
+  | "vehicle.loaded"
+  | "vehicle.unloaded";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
@@ -231,7 +242,8 @@ export type AuditEntityType =
   | "saved_view"
   | "attachment"
   | "location_level"
-  | "scheduled_report";
+  | "scheduled_report"
+  | "count_zone";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so
