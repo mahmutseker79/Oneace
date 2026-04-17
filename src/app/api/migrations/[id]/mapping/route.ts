@@ -81,8 +81,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "FORBIDDEN", message: "Access denied" }, { status: 403 });
     }
 
-    // State check: MAPPING_REVIEW or VALIDATED (allow re-edit)
-    if (!["MAPPING_REVIEW", "VALIDATED"].includes(job.status)) {
+    // State check: PENDING (API-mode credential entry), MAPPING_REVIEW (post-upload),
+    // or VALIDATED (allow re-edit before import starts).
+    if (!["PENDING", "MAPPING_REVIEW", "VALIDATED"].includes(job.status)) {
       return NextResponse.json(
         {
           error: "INVALID_STATE",
@@ -121,7 +122,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       updateData.scopeOptions = scopeOptions;
     }
 
-    // Stay in MAPPING_REVIEW (don't auto-advance)
+    // Advance PENDING → MAPPING_REVIEW once credentials are provided
+    // (API-mode source jumps straight to mapping without the upload step).
+    if (job.status === "PENDING" && fieldMappingsObj.credentials) {
+      updateData.status = "MAPPING_REVIEW";
+    }
+
     const updated = await db.migrationJob.update({
       where: { id },
       data: updateData,

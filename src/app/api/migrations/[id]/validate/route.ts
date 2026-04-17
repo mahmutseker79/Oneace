@@ -57,19 +57,35 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // Load files
+    // API-mode sources don't have uploaded files; they pull from external API
+    // using credentials stashed in fieldMappings. File-mode sources need the
+    // uploaded artifacts. We load files but tolerate empty for API mode.
+    const API_SOURCES = new Set(["CIN7", "SOS_INVENTORY", "QUICKBOOKS_ONLINE", "INFLOW_API"]);
+    const isApiMode = API_SOURCES.has(job.sourcePlatform);
+
     const uploadedFiles = await loadStoredFiles({ db }, membership.organizationId, id);
 
-    if (!uploadedFiles || uploadedFiles.length === 0) {
+    if (!isApiMode && (!uploadedFiles || uploadedFiles.length === 0)) {
       return NextResponse.json(
         { error: "BAD_REQUEST", message: "No files found in migration" },
         { status: 400 },
       );
     }
 
-    // Get adapter and parse
+    // Get adapter and parse. File-mode adapters use `adapter.parse(files)`,
+    // API-mode adapters may implement `parseWithScope(files, fieldMappings, scope)`.
+    // We pass fieldMappings as the optional 2nd arg to `parse` too (file-mode
+    // adapters ignore it) so API adapters can extract credentials.
     const adapter = await getAdapterFor(job.sourcePlatform);
-    const snapshot = await adapter.parse(uploadedFiles);
+    const fieldMappingsRaw = (job.fieldMappings as Record<string, unknown>) ?? {};
+    const scope = parseScopeOptions(job.scopeOptions);
+    const files = uploadedFiles ?? [];
+
+    // biome-ignore lint/suspicious/noExplicitAny: adapter signatures vary per source
+    const adapterAny = adapter as any;
+    const snapshot = adapterAny.parseWithScope
+      ? await adapterAny.parseWithScope(files, fieldMappingsRaw, scope)
+      : await adapterAny.parse(files, fieldMappingsRaw);
 
     // Parse stored mappings and scope options
     const fieldMappings = job.fieldMappings as any[];

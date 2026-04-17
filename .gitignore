@@ -4,6 +4,9 @@ node_modules
 .pnp.js
 .pnpm-store
 
+# local scratch folder
+tmp/
+
 # build
 .next
 out
