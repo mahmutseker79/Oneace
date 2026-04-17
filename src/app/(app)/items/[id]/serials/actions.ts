@@ -217,6 +217,15 @@ export async function moveSerialAction(input: Record<string, unknown>): Promise<
     return { ok: false, error: "Serial number not found" };
   }
 
+  // Validate target warehouse belongs to the same organization
+  const targetWarehouse = await db.warehouse.findFirst({
+    where: { id: data.toWarehouseId, organizationId: membership.organizationId },
+    select: { id: true },
+  });
+  if (!targetWarehouse) {
+    return { ok: false, error: "Target warehouse not found" };
+  }
+
   try {
     await db.serialNumber.update({
       where: { id: data.serialNumberId },

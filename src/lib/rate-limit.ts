@@ -251,6 +251,7 @@ export const RATE_LIMITS = {
   // API and general operations
   apiGeneral: { max: 100, windowSeconds: 60 }, // 100 req/min
   export: { max: 10, windowSeconds: 60 }, // 10 exports/min
+  report: { max: 30, windowSeconds: 60 }, // 30 report views/min
 } as const;
 
 // --- Public entry point -----------------------------------------------

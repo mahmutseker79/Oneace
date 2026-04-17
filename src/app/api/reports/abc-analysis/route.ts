@@ -13,6 +13,7 @@ import { db } from "@/lib/db";
 import { buildExcelWorkbook, excelResponse, todayIsoDate } from "@/lib/excel";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability } from "@/lib/plans";
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { calculateABC } from "@/lib/reports/abc-calculator";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -51,6 +52,12 @@ export async function POST(req: Request) {
 
   try {
     const { membership } = await requireActiveMembership();
+
+    // Rate limit report access per org
+    const rl = await rateLimit(`report:abc-analysis:${membership.organizationId}`, RATE_LIMITS.report);
+    if (!rl.ok) {
+      return Response.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     // Check plan capability
     const plan = membership.organization.plan as "FREE" | "PRO" | "BUSINESS";
