@@ -217,14 +217,25 @@ export default async function IntegrationsPage() {
 
   const connectedMap = new Map(connectedIntegrations.map((i) => [i.provider, i]));
 
-  // Fetch completed migration jobs for this org to show last migration
+  // Fetch completed migration jobs for this org to show last migration per platform.
+  // NOTE: We intentionally dedupe in JS (not Prisma `distinct`) because
+  // `distinct: ["sourcePlatform"]` combined with `orderBy: { completedAt: "desc" }`
+  // generates SELECT DISTINCT ... ORDER BY completedAt DESC, which PostgreSQL
+  // rejects unless the ordered column also appears in DISTINCT — Neon's pooled
+  // connection surfaces this as a Server Components render crash.
+  // The JS dedupe below preserves "latest per source" semantics by iterating in
+  // completedAt-desc order and keeping the first occurrence per platform.
   const completedMigrations = await db.migrationJob.findMany({
     where: {
       organizationId: membership.organizationId,
       status: "COMPLETED",
     },
     orderBy: { completedAt: "desc" },
-    distinct: ["sourcePlatform"],
+    select: {
+      sourcePlatform: true,
+      completedAt: true,
+      importResults: true,
+    },
   });
 
   const lastMigrationMap = new Map();

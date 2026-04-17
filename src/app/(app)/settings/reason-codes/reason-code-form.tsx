@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -110,6 +111,7 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
           </DialogDescription>
         </DialogHeader>
 
+        <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
@@ -206,6 +208,7 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
             </Button>
           </div>
         </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

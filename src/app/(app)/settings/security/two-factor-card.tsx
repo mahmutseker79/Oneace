@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, Unlock } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { disableTwoFactorAction, getTwoFactorStatusAction } from "./actions";
 import { TwoFactorSetup } from "./two-factor-setup";
 
@@ -57,18 +57,30 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
   // Check initial status
   const [statusLoaded, setStatusLoaded] = useState(false);
 
-  if (!statusLoaded) {
-    startTransition(async () => {
+  // Load 2FA status once on mount.
+  // IMPORTANT: Do NOT call startTransition during render — that causes React
+  // error #419 ("suspended input") because the async setState fires while
+  // React is still committing, creating an infinite re-render loop.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
       try {
         const status = await getTwoFactorStatusAction();
+        if (cancelled) return;
         setIsEnabled(status.enabled);
         setStatusLoaded(true);
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : labels.error);
         setStatusLoaded(true);
       }
-    });
-  }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // labels.error is stable (derived from static i18n). Running once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleDisable() {
     if (!disableCode) {

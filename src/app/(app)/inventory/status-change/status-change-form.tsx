@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -94,8 +95,9 @@ export function StatusChangeForm({ items, warehouses, reasonCodes }: StatusChang
   const statusOptions = stockStatusEnum.options;
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FormField
           control={form.control}
           name="itemId"
@@ -283,6 +285,7 @@ export function StatusChangeForm({ items, warehouses, reasonCodes }: StatusChang
       <Button type="submit" disabled={isPending} className="w-full">
         {isPending ? "Processing..." : "Change Stock Status"}
       </Button>
-    </form>
+      </form>
+    </Form>
   );
 }
