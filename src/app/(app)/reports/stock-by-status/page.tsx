@@ -58,15 +58,24 @@ const STATUS_ORDER = [
   "IN_TRANSIT",
   "RESERVED",
 ];
+/**
+ * Semantic status colors mapped to design tokens (src/app/globals.css).
+ * Inline style consumers pick these up as CSS custom property references
+ * so dark mode overrides in `.dark { --success: … }` apply automatically.
+ *
+ * Fallback hex values are kept for defense-in-depth (edge runtime / SSR
+ * before stylesheet parse), matching the light-theme token values.
+ */
 const STATUS_COLORS: Record<string, string> = {
-  AVAILABLE: "#10b981",
-  HOLD: "#f59e0b",
-  DAMAGED: "#ef4444",
-  QUARANTINE: "#f97316",
-  EXPIRED: "#6b7280",
-  IN_TRANSIT: "#3b82f6",
-  RESERVED: "#8b5cf6",
+  AVAILABLE: "var(--success, #10b981)",
+  HOLD: "var(--warning, #f59e0b)",
+  DAMAGED: "var(--chart-danger, #ef4444)",
+  QUARANTINE: "var(--stock-low, #fb923c)",
+  EXPIRED: "var(--chart-neutral, #6b7280)",
+  IN_TRANSIT: "var(--info, #3b82f6)",
+  RESERVED: "var(--chart-1, #a78bfa)",
 };
+const STATUS_COLOR_FALLBACK = "var(--chart-neutral, #6b7280)";
 
 export default async function StockByStatusReportPage() {
   const { membership } = await requireActiveMembership();
@@ -217,7 +226,7 @@ export default async function StockByStatusReportPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {statusSummaries.map((summary) => {
-          const statusColor = STATUS_COLORS[summary.status] || "#6b7280";
+          const statusColor = STATUS_COLORS[summary.status] || STATUS_COLOR_FALLBACK;
           return (
             <Card key={summary.status}>
               <CardHeader>

@@ -474,6 +474,26 @@
   --color-chart-warning: var(--chart-warning);
   --color-chart-info: var(--chart-info);
   --color-chart-neutral: var(--chart-neutral);
+
+  /* Shadow tokens exposed to Tailwind — `shadow-card`, `shadow-popover`, etc. */
+  --shadow-card: var(--shadow-card);
+  --shadow-card-hover: var(--shadow-card-hover);
+  --shadow-elevated: var(--shadow-elevated);
+  --shadow-popover: var(--shadow-popover);
+  --shadow-focus: var(--shadow-focus);
+  --shadow-inner-token: var(--shadow-inner);
+}
+
+/* ============================================================
+   Form control height tokens — atomic sizing for Button / Input /
+   SelectTrigger / Textarea so they stay in lock-step. Values mirror
+   the Button size scale already in use.
+   ============================================================ */
+
+:root {
+  --control-h-sm: 2.25rem;   /* 36px */
+  --control-h-md: 2.5rem;    /* 40px */
+  --control-h-lg: 2.75rem;   /* 44px */
 }
 
 @layer base {
@@ -655,5 +675,20 @@
 
   .table-row-hover:hover {
     background-color: var(--surface-sunken);
+  }
+}
+
+/* Reduced motion — respects OS-level "Reduce motion" preference.
+   Collapses all animations and transitions to an imperceptible duration
+   so motion-sensitive users aren't triggered by page transitions,
+   hover effects, chart tweens, or Radix data-state animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

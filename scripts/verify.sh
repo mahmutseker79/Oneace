@@ -329,6 +329,32 @@ if [ "$MODE" = "full" ]; then
 fi
 
 # ═══════════════════════════════════════════════════
+# PHASE 8: DESIGN TOKEN SYNC (tokens.json ↔ globals.css)
+# ═══════════════════════════════════════════════════
+header "8. Design Token Sync"
+
+TOKEN_SCRIPT="scripts/check-tokens.mjs"
+if [ -f "$TOKEN_SCRIPT" ] && command -v node >/dev/null 2>&1; then
+  # Capture output and exit status; swallow stdout unless there's a drift.
+  if TOKEN_OUT=$(node "$TOKEN_SCRIPT" 2>&1); then
+    # Strip ANSI colors for counting
+    TOKEN_PLAIN=$(echo "$TOKEN_OUT" | sed 's/\x1b\[[0-9;]*m//g')
+    TOKEN_SUMMARY=$(echo "$TOKEN_PLAIN" | grep -E "ok.*warn.*fail" | head -1)
+    pass "Token sync: ${TOKEN_SUMMARY:-no summary parsed}"
+    # Surface any warnings (non-fatal) so drift is visible.
+    WARN_LINES=$(echo "$TOKEN_PLAIN" | grep -c "^  ⚠" || true)
+    if [ "$WARN_LINES" -gt 0 ]; then
+      warn "Token sync has ${WARN_LINES} warning(s) — run \`node ${TOKEN_SCRIPT}\` for details"
+    fi
+  else
+    fail "Token sync drift detected — run \`node ${TOKEN_SCRIPT}\` for details"
+    echo "$TOKEN_OUT" | sed 's/\x1b\[[0-9;]*m//g' | grep -E "^  ✗" | head -5
+  fi
+else
+  warn "Token sync skipped (scripts/check-tokens.mjs or node unavailable)"
+fi
+
+# ═══════════════════════════════════════════════════
 # SUMMARY
 # ═══════════════════════════════════════════════════
 echo ""
