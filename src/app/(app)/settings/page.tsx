@@ -1,4 +1,4 @@
-import { CreditCard } from "lucide-react";
+import { CreditCard, Plug } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -210,6 +210,22 @@ export default async function SettingsPage() {
             }}
           />
         ) : null}
+
+        {/* Integrations card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plug className="h-4 w-4 text-muted-foreground" />
+              Integrations
+            </CardTitle>
+            <CardDescription>Connect QuickBooks, Shopify, and other services.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/settings/integrations">Manage integrations</Link>
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Phase 12.3 — Billing card */}
         <Card>
