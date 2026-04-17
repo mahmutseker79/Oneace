@@ -45,12 +45,15 @@ async function handleGetTrend(_req?: Request) {
       select: {
         id: true,
         completedAt: true,
-        entries: {
+        // Use snapshots (expected qty) joined with entries (counted qty)
+        snapshots: {
           select: {
-            countedQty: true,
-            snapshot: {
+            expectedQuantity: true,
+            itemId: true,
+            warehouseId: true,
+            entries: {
               select: {
-                systemQty: true,
+                countedQuantity: true,
               },
             },
           },
@@ -64,14 +67,15 @@ async function handleGetTrend(_req?: Request) {
 
     for (const count of completedCounts) {
       if (!count.completedAt) continue;
-      const dateStr = count.completedAt.toISOString().split("T")[0];
+      const dateStr = count.completedAt.toISOString().split("T")[0] ?? "";
 
       let countVarianceSum = 0;
       let countItemCount = 0;
 
-      for (const entry of count.entries) {
-        const systemQty = entry.snapshot?.systemQty ?? 0;
-        const countedQty = entry.countedQty;
+      for (const snapshot of count.snapshots) {
+        const systemQty = snapshot.expectedQuantity;
+        // Sum all counted entries for this snapshot
+        const countedQty = snapshot.entries.reduce((sum, e) => sum + e.countedQuantity, 0);
         if (systemQty === 0 && countedQty === 0) continue;
 
         // Absolute variance percentage
