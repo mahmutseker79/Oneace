@@ -3,11 +3,16 @@
  *
  * GET /api/reports/variance-trend — Get variance trend data
  * POST /api/reports/variance-trend/export — Export trend data
+ *
+ * Calculates actual variance percentages from completed stock counts,
+ * grouped by completion date. Each data point represents the average
+ * absolute variance percentage for counts completed on that day.
  */
 
 import { z } from "zod";
 
 import { csvResponse, serializeCsv } from "@/lib/csv";
+import { db } from "@/lib/db";
 import { buildExcelWorkbook, excelResponse, todayIsoDate } from "@/lib/excel";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -18,26 +23,75 @@ const ExportSchema = z.object({
 
 async function handleGetTrend(_req?: Request) {
   try {
-    await requireActiveMembership();
+    const { membership } = await requireActiveMembership();
 
-    // Generate 30-day trend (synthetic for now, would come from historical snapshots)
-    const trendData = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
+    // Fetch completed stock counts from the last 90 days with their entries
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
 
-      // Synthetic variance calculation: start at 8%, vary by day
-      const baseVariance = 8;
-      const noise = Math.sin(i / 5) * 3;
-      const variance = Math.max(0, baseVariance + noise);
+    const completedCounts = await db.stockCount.findMany({
+      where: {
+        organizationId: membership.organizationId,
+        state: "COMPLETED",
+        completedAt: { gte: since },
+      },
+      select: {
+        id: true,
+        completedAt: true,
+        entries: {
+          select: {
+            countedQty: true,
+            snapshot: {
+              select: {
+                systemQty: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { completedAt: "asc" },
+    });
 
-      trendData.push({
-        date: dateStr,
-        variance: Number.parseFloat(variance.toFixed(2)),
-      });
+    // Group counts by date and calculate average variance per day
+    const varianceByDate = new Map<string, { totalVariance: number; totalItems: number }>();
+
+    for (const count of completedCounts) {
+      if (!count.completedAt) continue;
+      const dateStr = count.completedAt.toISOString().split("T")[0];
+
+      let countVarianceSum = 0;
+      let countItemCount = 0;
+
+      for (const entry of count.entries) {
+        const systemQty = entry.snapshot?.systemQty ?? 0;
+        const countedQty = entry.countedQty;
+        if (systemQty === 0 && countedQty === 0) continue;
+
+        // Absolute variance percentage
+        const denominator = systemQty || 1; // avoid division by zero
+        const variancePct = Math.abs((countedQty - systemQty) / denominator) * 100;
+        countVarianceSum += variancePct;
+        countItemCount++;
+      }
+
+      const existing = varianceByDate.get(dateStr) ?? { totalVariance: 0, totalItems: 0 };
+      existing.totalVariance += countVarianceSum;
+      existing.totalItems += countItemCount;
+      varianceByDate.set(dateStr, existing);
     }
 
+    // Build trend data array
+    const trendData = Array.from(varianceByDate.entries())
+      .map(([date, { totalVariance, totalItems }]) => ({
+        date,
+        variance: totalItems > 0
+          ? Number.parseFloat((totalVariance / totalItems).toFixed(2))
+          : 0,
+        countItems: totalItems,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // If no data, return empty array (UI will show "no data" state)
     return Response.json(trendData);
   } catch (error) {
     console.error("Get trend error:", error);
@@ -54,6 +108,7 @@ async function handleExport(req: Request) {
       const csv = serializeCsv(data, [
         { header: "Date", value: (r) => r.date },
         { header: "Variance %", value: (r) => r.variance.toFixed(2) },
+        { header: "Items Counted", value: (r) => r.countItems ?? "" },
       ]);
       return csvResponse(`variance-trend-${todayIsoDate()}.csv`, csv);
     }
@@ -62,6 +117,7 @@ async function handleExport(req: Request) {
       const workbook = await buildExcelWorkbook("Variance Trend", data, [
         { header: "Date", key: "date", value: (r) => r.date, width: 12 },
         { header: "Variance %", key: "var", value: (r) => r.variance, width: 12, numFmt: "0.00%" },
+        { header: "Items Counted", key: "items", value: (r) => r.countItems ?? 0, width: 14 },
       ]);
       return excelResponse(`variance-trend-${todayIsoDate()}.xlsx`, workbook);
     }
