@@ -176,7 +176,11 @@ export type AuditAction =
   | "serial.created"
   | "serial.bulk_created"
   | "serial.moved"
-  | "serial.status_updated";
+  | "serial.status_updated"
+  // --- Scheduled reports lifecycle ------------------------------------------
+  | "scheduled_report.created"
+  | "scheduled_report.updated"
+  | "scheduled_report.deleted";
 
 /**
  * Canonical `entityType` values. Paired with the action prefix in most
@@ -226,7 +230,8 @@ export type AuditEntityType =
   | "org_settings"
   | "saved_view"
   | "attachment"
-  | "location_level";
+  | "location_level"
+  | "scheduled_report";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so

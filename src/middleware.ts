@@ -29,6 +29,13 @@ const PUBLIC_PREFIXES = [
   "/docs",
   // Stripe webhook must be publicly accessible — Stripe POSTs from outside.
   "/api/billing/webhook",
+  // External integration webhooks (Shopify, QuickBooks) and health check
+  "/api/integrations/shopify/webhooks",
+  "/api/integrations/quickbooks/webhooks",
+  "/api/webhooks/inbound",
+  "/api/health",
+  // Cron jobs use Vercel CRON_SECRET header, not session cookies
+  "/api/cron",
 ];
 
 export function middleware(request: NextRequest) {

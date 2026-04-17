@@ -12,6 +12,7 @@
 
 import { z } from "zod";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -54,7 +55,7 @@ export async function createScheduledReport(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const t = await getMessages();
-    const { session: _session, membership } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permissions
     if (!hasCapability(membership.role, "reports.schedule")) {
@@ -88,6 +89,15 @@ export async function createScheduledReport(
       },
     });
 
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "scheduled_report.created",
+      entityType: "scheduled_report",
+      entityId: report.id,
+      metadata: { name: validated.name, reportType: validated.reportType },
+    });
+
     return { ok: true, data: { id: report.id } };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -106,7 +116,7 @@ export async function updateScheduledReport(
 ): Promise<ActionResult> {
   try {
     const t = await getMessages();
-    const { membership } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permissions
     if (!hasCapability(membership.role, "reports.schedule")) {
@@ -138,6 +148,15 @@ export async function updateScheduledReport(
       },
     });
 
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "scheduled_report.updated",
+      entityType: "scheduled_report",
+      entityId: validated.id,
+      metadata: { changes: Object.keys(validated).filter((k) => k !== "id") },
+    });
+
     return { ok: true } as ActionResult<void>;
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -154,7 +173,7 @@ export async function updateScheduledReport(
 export async function deleteScheduledReport(reportId: string): Promise<ActionResult> {
   try {
     const t = await getMessages();
-    const { membership } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
 
     // Check permissions
     if (!hasCapability(membership.role, "reports.schedule")) {
@@ -172,6 +191,15 @@ export async function deleteScheduledReport(reportId: string): Promise<ActionRes
 
     // Delete
     await db.scheduledReport.delete({ where: { id: reportId } });
+
+    await recordAudit({
+      organizationId: membership.organizationId,
+      actorId: session.user.id,
+      action: "scheduled_report.deleted",
+      entityType: "scheduled_report",
+      entityId: reportId,
+      metadata: { name: report.name },
+    });
 
     return { ok: true } as ActionResult<void>;
   } catch (error) {

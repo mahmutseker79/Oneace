@@ -2424,6 +2424,9 @@ export const en = {
       "serial.bulk_created": "Created serial numbers",
       "serial.moved": "Moved serial number",
       "serial.status_updated": "Updated serial number status",
+      "scheduled_report.created": "Created scheduled report",
+      "scheduled_report.updated": "Updated scheduled report",
+      "scheduled_report.deleted": "Deleted scheduled report",
     },
   },
 
