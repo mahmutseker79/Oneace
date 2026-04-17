@@ -1233,6 +1233,41 @@ enum SyncDirection {
   BIDIRECTIONAL
 }
 
+enum SyncFrequency {
+  MANUAL
+  REALTIME
+  EVERY_5_MIN
+  EVERY_15_MIN
+  EVERY_30_MIN
+  HOURLY
+  EVERY_6_HOURS
+  DAILY
+  WEEKLY
+}
+
+enum ConflictPolicy {
+  REMOTE_WINS
+  LOCAL_WINS
+  NEWEST_WINS
+  MANUAL_REVIEW
+  SKIP
+}
+
+enum RetryPolicy {
+  NONE
+  LINEAR
+  EXPONENTIAL
+}
+
+enum SyncRuleAction {
+  SYNC
+  SKIP
+  TRANSFORM
+  FLAG_REVIEW
+  CREATE_ONLY
+  UPDATE_ONLY
+}
+
 enum ReportType {
   STOCK_VALUE
   LOW_STOCK
@@ -1654,13 +1689,124 @@ model Integration {
   settings         Json?
   lastSyncAt       DateTime?
   lastError        String?
+  // Sync configuration
+  syncFrequency    SyncFrequency       @default(MANUAL)
+  syncDirection    SyncDirection       @default(BIDIRECTIONAL)
+  conflictPolicy   ConflictPolicy      @default(REMOTE_WINS)
+  retryPolicy      RetryPolicy         @default(EXPONENTIAL)
+  maxRetries       Int                 @default(3)
+  rateLimitPerMin  Int                 @default(60)
+  // Feature flags per integration
+  syncItems        Boolean             @default(true)
+  syncOrders       Boolean             @default(true)
+  syncSuppliers    Boolean             @default(false)
+  syncCategories   Boolean             @default(false)
+  syncStockLevels  Boolean             @default(true)
+  syncPrices       Boolean             @default(true)
+  syncImages       Boolean             @default(false)
+  syncCustomers    Boolean             @default(false)
+  // Filters
+  syncFilterJson   Json?
+  // Metadata
+  externalAccountId String?
+  externalStoreName String?
+  webhookSecret     String?
+  webhookUrl        String?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
   organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   syncLogs         SyncLog[]
+  fieldMappings    IntegrationFieldMapping[]
+  syncRules        IntegrationSyncRule[]
+  webhookEvents    IntegrationWebhookEvent[]
+  syncSchedules    IntegrationSyncSchedule[]
 
   @@unique([organizationId, provider])
+}
+
+// =========================
+// IntegrationFieldMapping — custom field mapping between OneAce ↔ external
+// =========================
+model IntegrationFieldMapping {
+  id               String       @id @default(cuid())
+  integrationId    String
+  entityType       ImportEntity
+  localField       String
+  remoteField      String
+  direction        SyncDirection @default(BIDIRECTIONAL)
+  transformRule    String?
+  defaultValue     String?
+  isRequired       Boolean      @default(false)
+  isActive         Boolean      @default(true)
+  sortOrder        Int          @default(0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  integration      Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, entityType, localField])
+  @@index([integrationId])
+}
+
+// =========================
+// IntegrationSyncRule — conditional sync rules
+// =========================
+model IntegrationSyncRule {
+  id               String       @id @default(cuid())
+  integrationId    String
+  name             String
+  entityType       ImportEntity
+  condition        Json
+  action           SyncRuleAction @default(SYNC)
+  priority         Int          @default(0)
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  integration      Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId])
+}
+
+// =========================
+// IntegrationWebhookEvent — granular webhook event subscriptions
+// =========================
+model IntegrationWebhookEvent {
+  id               String       @id @default(cuid())
+  integrationId    String
+  eventType        String
+  endpointUrl      String
+  isActive         Boolean      @default(true)
+  secret           String?
+  lastTriggeredAt  DateTime?
+  failCount        Int          @default(0)
+  createdAt        DateTime     @default(now())
+
+  integration      Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, eventType, endpointUrl])
+  @@index([integrationId])
+}
+
+// =========================
+// IntegrationSyncSchedule — cron-based sync scheduling
+// =========================
+model IntegrationSyncSchedule {
+  id               String       @id @default(cuid())
+  integrationId    String
+  entityType       ImportEntity
+  direction        SyncDirection
+  cronExpression   String
+  isActive         Boolean      @default(true)
+  lastRunAt        DateTime?
+  nextRunAt        DateTime?
+  createdAt        DateTime     @default(now())
+
+  integration      Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, entityType, direction])
+  @@index([integrationId])
 }
 
 // =========================

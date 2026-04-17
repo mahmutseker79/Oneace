@@ -189,6 +189,7 @@ export async function addSalesOrderLineAction(formData: FormData): Promise<Actio
 
     await db.salesOrderLine.create({
       data: {
+        organizationId: orgId,
         salesOrderId: input.salesOrderId,
         itemId: input.itemId,
         variantId: input.variantId,

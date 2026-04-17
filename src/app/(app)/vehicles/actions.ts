@@ -300,6 +300,7 @@ export async function loadShipmentAction(input: LoadShipmentInput): Promise<Acti
 
     await db.assetHistory.create({
       data: {
+        organizationId: membership.organizationId,
         assetId: parsed.data.vehicleId,
         action: "ASSIGNED",
         note: parsed.data.notes || `Shipment loaded${parsed.data.salesOrderId ? ` (SO: ${parsed.data.salesOrderId})` : ""}`,
@@ -346,6 +347,7 @@ export async function unloadShipmentAction(
 
     await db.assetHistory.create({
       data: {
+        organizationId: membership.organizationId,
         assetId: vehicleId,
         action: "RETURNED",
         note: `Shipment unloaded (ref: ${historyId})`,

@@ -194,6 +194,7 @@ export async function addTransferLineAction(input: AddTransferLineInput): Promis
   try {
     const line = await db.stockTransferLine.create({
       data: {
+        organizationId: orgId,
         transferId,
         itemId,
         variantId: variantId ?? null,
