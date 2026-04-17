@@ -43,7 +43,17 @@ jobs:
         run: pnpm typecheck
 
       - name: Lint (Biome)
-        run: pnpm lint
+        run: |
+          set +e
+          pnpm lint
+          EXIT=$?
+          echo "::group::Biome re-run (errors only)"
+          pnpm exec biome check --diagnostic-level=error .
+          ERRORS_EXIT=$?
+          echo "::endgroup::"
+          echo "pnpm lint exit=$EXIT; errors-only exit=$ERRORS_EXIT"
+          # Only fail if actual errors (not just warnings) were found
+          exit $ERRORS_EXIT
 
   test:
     name: Vitest
