@@ -387,7 +387,10 @@ export const en = {
   },
 
   items: {
-    metaTitle: "Items",
+    // v1.5 step 11 — browser tab reads "Inventory" to match the sidebar
+    // wrapper label. Page heading stays "Items" because the Inventory
+    // wrapper tab row highlights "Items" as the active sub-page.
+    metaTitle: "Inventory",
     heading: "Items",
     subtitle: "Every SKU you stock, in one searchable place.",
     newItem: "New item",
@@ -974,7 +977,9 @@ export const en = {
   },
 
   stockCounts: {
-    metaTitle: "Stock counts",
+    // v1.5 step 11 — browser tab reads "Counts" to match the sidebar
+    // label. In-page heading stays "Stock counts" for clarity.
+    metaTitle: "Counts",
     heading: "Stock counts",
     subtitle: "Physical counts with variance review and an honest audit trail.",
     newCount: "New count",
@@ -1280,7 +1285,10 @@ export const en = {
   },
 
   purchaseOrders: {
-    metaTitle: "Purchase orders",
+    // v1.5 step 11 — browser tab reads "Orders" to match the sidebar
+    // wrapper label. Page heading stays "Purchase orders" since that's
+    // the specific sub-page inside the Orders wrapper.
+    metaTitle: "Orders",
     heading: "Purchase orders",
     subtitle: "Track stock you've ordered from suppliers until it arrives.",
     newPurchaseOrder: "New purchase order",
@@ -2125,7 +2133,9 @@ export const en = {
   },
 
   users: {
-    metaTitle: "Users",
+    // v1.5 step 11 — browser tab reads "Team" to match the sidebar
+    // wrapper label (Members/Departments live under the Team wrapper).
+    metaTitle: "Team",
     heading: "Team members",
     subtitle: "Invite teammates, manage roles, and remove access.",
     invite: {
