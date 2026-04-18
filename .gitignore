@@ -48,6 +48,23 @@ src/generated/
 coverage
 .nyc_output
 
+# P3-2 (audit v1.1 §5.31) — scratch outputs from manual test / audit
+# runs. These belong in a developer's local scratch area, not the
+# committed tree. `test-artifacts/` is the P8 manual-regression dump;
+# `TEST_REPORT.md` is a per-session rollup; `test-results/` and
+# `playwright-report/` are the default Playwright output sinks.
+/test-artifacts/
+/TEST_REPORT.md
+/test-results/
+/playwright-report/
+
+# P3-2 (audit v1.1 §5.31) — FUSE-sandbox trash names. When a file
+# cannot be unlinked in the Cowork FUSE mount (common for read-only
+# source dumps), the delete is simulated by renaming it to a dotfile
+# trash name. Never commit those.
+.*.trash.*
+src/app/.*.trash.*
+
 # vercel
 .vercel
 
