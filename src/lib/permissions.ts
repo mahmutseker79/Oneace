@@ -8,9 +8,20 @@
  * Role hierarchy (highest → lowest):
  *   OWNER    → full org control
  *   ADMIN    → manage operational config + team + all inventory ops
- *   MANAGER  → same as MEMBER (legacy enum value, unused in practice)
+ *   MANAGER  → DEPRECATED alias for MEMBER (see below)
  *   MEMBER   → day-to-day inventory operations ("Operator" in UI)
  *   VIEWER   → read-only access
+ *
+ * P2-3 (audit v1.0 §5.16) — ghost MANAGER cleanup.
+ * The MANAGER enum value survives for historical data, but it is
+ * no longer assignable (see `ASSIGNABLE_ROLES`) and no longer
+ * carries any bespoke capability in `CAPABILITY_MAP`. Capability
+ * lookups for MANAGER are normalised through `normalizeLegacyRole`
+ * and resolved against the MEMBER row, so an org that still has a
+ * MANAGER membership in the database keeps exactly the access an
+ * Operator has. A later migration will collapse MANAGER → MEMBER
+ * at the schema level; until then, keeping the alias live is the
+ * backwards-compatible path.
  *
  * The enum values come from `prisma/schema.prisma` and MUST NOT be
  * changed here — this module consumes them, never redefines them.
@@ -177,19 +188,19 @@ export type Capability =
  */
 const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   // --- Items ---
-  "items.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "items.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "items.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "items.delete": new Set<Role>(["OWNER", "ADMIN"]),
-  "items.import": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.import": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
 
   // --- Item attachments ---
-  "items.attachments.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "items.attachments.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.attachments.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "items.attachments.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "items.attachments.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Item serials ---
-  "items.serials.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "items.serials.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "items.serials.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "items.serials.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "items.serials.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Locations (hierarchy) ---
@@ -201,17 +212,16 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "settings.manage": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Movements ---
-  "movements.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "movements.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
 
   // --- Stock counts ---
-  "stockCounts.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "stockCounts.addEntry": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER", "COUNTER"]),
+  "stockCounts.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "stockCounts.addEntry": new Set<Role>(["OWNER", "ADMIN", "MEMBER", "COUNTER"]),
   "stockCounts.reconcile": new Set<Role>(["OWNER", "ADMIN"]),
   "stockCounts.cancel": new Set<Role>(["OWNER", "ADMIN"]),
   "stockCounts.submitForApproval": new Set<Role>([
     "OWNER",
     "ADMIN",
-    "MANAGER",
     "MEMBER",
     "COUNTER",
   ]),
@@ -220,16 +230,16 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "stockCounts.rollback": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Purchase orders ---
-  "purchaseOrders.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "purchaseOrders.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "purchaseOrders.send": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "purchaseOrders.receive": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "purchaseOrders.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "purchaseOrders.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "purchaseOrders.send": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "purchaseOrders.receive": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "purchaseOrders.cancel": new Set<Role>(["OWNER", "ADMIN"]),
   "purchaseOrders.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Suppliers ---
-  "suppliers.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "suppliers.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "suppliers.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "suppliers.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "suppliers.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Warehouses & bins ---
@@ -239,7 +249,7 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "bins.create": new Set<Role>(["OWNER", "ADMIN"]),
   "bins.edit": new Set<Role>(["OWNER", "ADMIN"]),
   "bins.delete": new Set<Role>(["OWNER", "ADMIN"]),
-  "bins.transfer": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "bins.transfer": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
 
   // --- Labels ---
   "labels.create": new Set<Role>(["OWNER", "ADMIN"]),
@@ -247,8 +257,8 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "labels.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Categories ---
-  "categories.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "categories.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "categories.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "categories.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "categories.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Departments (Phase B) ---
@@ -257,18 +267,18 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "departments.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Count assignments (Phase B) ---
-  "countAssignments.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "countAssignments.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "countAssignments.remove": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Count templates (Phase B) ---
-  "countTemplates.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "countTemplates.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "countTemplates.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "countTemplates.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "countTemplates.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Reports & exports ---
-  "reports.export": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "reports.export": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "reports.schedule": new Set<Role>(["OWNER", "ADMIN"]),
-  "reports.abcClassify": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "reports.abcClassify": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
 
   // --- Reorder config ---
   "reorderConfig.edit": new Set<Role>(["OWNER", "ADMIN"]),
@@ -276,10 +286,10 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   // --- Phase E: Integrations ---
   "integrations.connect": new Set<Role>(["OWNER", "ADMIN"]),
   "integrations.disconnect": new Set<Role>(["OWNER", "ADMIN"]),
-  "integrations.sync": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "integrations.sync": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
 
   // --- Phase E: Imports ---
-  "imports.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "imports.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "imports.cancel": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Migrations (competitor data migration) ---
@@ -295,39 +305,39 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "webhooks.delete": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Inventory management ---
-  "inventory.manageStatus": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "inventory.manageStatus": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
 
   // --- Transfers ---
-  "transfers.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "transfers.ship": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "transfers.receive": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "transfers.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "transfers.ship": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "transfers.receive": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "transfers.cancel": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Sales orders ---
-  "salesOrders.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "salesOrders.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "salesOrders.confirm": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
-  "salesOrders.allocate": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
-  "salesOrders.ship": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "salesOrders.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "salesOrders.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "salesOrders.confirm": new Set<Role>(["OWNER", "ADMIN"]),
+  "salesOrders.allocate": new Set<Role>(["OWNER", "ADMIN"]),
+  "salesOrders.ship": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
   "salesOrders.cancel": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Kits ---
-  "kits.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "kits.edit": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "kits.assemble": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "kits.disassemble": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
+  "kits.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "kits.edit": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "kits.assemble": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "kits.disassemble": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
 
   // --- Pick tasks ---
-  "picks.create": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "picks.assign": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
-  "picks.start": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "picks.complete": new Set<Role>(["OWNER", "ADMIN", "MANAGER", "MEMBER"]),
-  "picks.verify": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
+  "picks.create": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "picks.assign": new Set<Role>(["OWNER", "ADMIN"]),
+  "picks.start": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "picks.complete": new Set<Role>(["OWNER", "ADMIN", "MEMBER"]),
+  "picks.verify": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Assets ---
   "assets.create": new Set<Role>(["OWNER", "ADMIN"]),
   "assets.edit": new Set<Role>(["OWNER", "ADMIN"]),
-  "assets.assign": new Set<Role>(["OWNER", "ADMIN", "MANAGER"]),
+  "assets.assign": new Set<Role>(["OWNER", "ADMIN"]),
 
   // --- Org admin ---
   "org.editProfile": new Set<Role>(["OWNER", "ADMIN"]),
@@ -350,6 +360,23 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
 // ---------------------------------------------------------------------------
 
 /**
+ * P2-3 (audit v1.0 §5.16) — collapse the legacy MANAGER alias.
+ *
+ * Historical memberships may still carry `role === "MANAGER"`. The
+ * capability map no longer lists MANAGER in any set, so a raw lookup
+ * would silently return `false` for every capability and break those
+ * users. This helper is the single place we translate MANAGER into
+ * its live equivalent (MEMBER) before touching `CAPABILITY_MAP`.
+ *
+ * Exported so tests can pin the behavior explicitly. Leave this
+ * function in place until the accompanying schema migration
+ * rewrites `Membership.role` from MANAGER to MEMBER org-wide.
+ */
+export function normalizeLegacyRole(role: Role): Role {
+  return role === "MANAGER" ? "MEMBER" : role;
+}
+
+/**
  * Check whether a role has a specific capability.
  *
  * This is the primary check used by server actions:
@@ -358,19 +385,24 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
  *   return { ok: false, error: t.permissions.forbidden };
  * }
  * ```
+ *
+ * MANAGER is normalised to MEMBER — see `normalizeLegacyRole`.
  */
 export function hasCapability(role: Role, capability: Capability): boolean {
-  return CAPABILITY_MAP[capability].has(role);
+  return CAPABILITY_MAP[capability].has(normalizeLegacyRole(role));
 }
 
 /**
  * Return all capabilities a role has. Useful for sending a capability
  * bag to the client so UI components can show/hide without a round trip.
+ *
+ * MANAGER is normalised to MEMBER — see `normalizeLegacyRole`.
  */
 export function capabilitiesForRole(role: Role): Set<Capability> {
+  const effectiveRole = normalizeLegacyRole(role);
   const caps = new Set<Capability>();
   for (const [cap, roles] of Object.entries(CAPABILITY_MAP)) {
-    if (roles.has(role)) {
+    if (roles.has(effectiveRole)) {
       caps.add(cap as Capability);
     }
   }
