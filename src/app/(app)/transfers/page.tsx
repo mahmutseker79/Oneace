@@ -2,6 +2,8 @@ import { ArrowLeftRight, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { LOCATIONS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,7 +36,7 @@ function fmtDate(value: Date | null | undefined, locale: string): string {
 
 export default async function TransfersPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
+  const t = await getMessages();
   const region = await getRegion();
 
   const canCreate = hasCapability(membership.role, "transfers.create");
@@ -54,6 +56,10 @@ export default async function TransfersPage() {
   if (transfers.length === 0) {
     return (
       <div className="space-y-6">
+        <WrapperTabs
+          tabs={resolveWrapperTabs(LOCATIONS_TAB_SPECS, t)}
+          ariaLabel="Locations sections"
+        />
         <PageHeader
           title="Stock Transfers"
           description="Manage inter-warehouse transfers"
@@ -91,6 +97,10 @@ export default async function TransfersPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(LOCATIONS_TAB_SPECS, t)}
+        ariaLabel="Locations sections"
+      />
       <PageHeader
         title="Stock Transfers"
         description={`${transfers.length} transfer${transfers.length !== 1 ? "s" : ""}`}
