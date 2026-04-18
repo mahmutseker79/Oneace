@@ -45,11 +45,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Role } from "@/generated/prisma";
 import type { AuditAction } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { hasPlanCapability } from "@/lib/plans";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 // Phase 3 — audit log filters.
@@ -144,8 +144,8 @@ export default async function AuditPage({
     );
   }
 
-  // Admins only. Short-circuits before the DB query.
-  if (membership.role !== Role.OWNER && membership.role !== Role.ADMIN) {
+  // P0-5 — centralized capability check. Short-circuits before the DB query.
+  if (!hasCapability(membership.role, "audit.view")) {
     return (
       <div className="space-y-6">
         <PageHeader

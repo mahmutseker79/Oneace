@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+
+import { type Capability, hasCapability } from "@/lib/permissions";
 
 /**
  * Shape returned by `getActiveOrgPreferences`. `null` fields mean the
@@ -87,6 +89,39 @@ export const requireActiveMembership = cache(async () => {
   const membership = fromCookie ?? memberships[0]!;
 
   return { session, membership, memberships };
+});
+
+/**
+ * P0-5 remediation — server-side capability guard for privileged pages.
+ *
+ * Wraps `requireActiveMembership` and additionally asserts that the active
+ * membership's role holds the given capability. Behavior:
+ *   - Not authenticated  → redirect to /login (inherited).
+ *   - No active org      → redirect to /onboarding (inherited).
+ *   - Missing capability → render the Next.js 404 page (via `notFound()`).
+ *
+ * 404 is preferred over 403 here because the canonical UX for "page the
+ * user shouldn't know exists" in this app is `notFound()`, which matches
+ * the admin sidebar's role-gated visibility (if you can't see the link,
+ * you also can't see the page). API routes should return 403 via the
+ * existing `hasCapability` check — this helper is page-shaped.
+ *
+ * Use it at the top of any server-component `page.tsx` whose data is
+ * sensitive regardless of what the UI hides:
+ *
+ * ```ts
+ * export default async function AdminPage() {
+ *   const { membership } = await requireCapability("audit.view");
+ *   // ...
+ * }
+ * ```
+ */
+export const requireCapability = cache(async (capability: Capability) => {
+  const ctx = await requireActiveMembership();
+  if (!hasCapability(ctx.membership.role, capability)) {
+    notFound();
+  }
+  return ctx;
 });
 
 /**

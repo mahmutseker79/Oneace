@@ -16,7 +16,7 @@ import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
 import { buildInvitationUrl } from "@/lib/invitations";
 import { checkPlanLimit } from "@/lib/plans";
-import { requireActiveMembership } from "@/lib/session";
+import { requireCapability } from "@/lib/session";
 
 import { InvitationRow } from "./invitation-row";
 import { InviteForm } from "./invite-form";
@@ -52,7 +52,9 @@ const dateFmt = new Intl.DateTimeFormat(undefined, {
 });
 
 export default async function UsersPage() {
-  const { membership, session } = await requireActiveMembership();
+  // P0-5 — capability guard. Users page exposes the team list and invite
+  // flow; anyone who couldn't invite shouldn't be able to read the list.
+  const { membership, session } = await requireCapability("team.invite");
   const t = await getMessages();
   const region = await getRegion();
 

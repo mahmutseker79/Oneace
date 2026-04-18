@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
-import { requireActiveMembership } from "@/lib/session";
+import { requireCapability } from "@/lib/session";
 import { hasAnnualBilling, hasStripe } from "@/lib/stripe";
 
 import { BillingPage } from "./billing-client";
@@ -30,7 +30,9 @@ export default async function BillingSettingsPage({
 }: {
   searchParams?: SearchParams;
 }) {
-  const { membership } = await requireActiveMembership();
+  // P0-5 — capability guard. Billing data (plan, Stripe customer ID,
+  // usage limits) is sensitive and shouldn't be visible to non-admins.
+  const { membership } = await requireCapability("org.billing");
 
   // Phase 13.4 — load usage counts for limit indicators in billing UI
   // Phase 16.2 — also load billingInterval, cancelAtPeriodEnd, cancelAt
