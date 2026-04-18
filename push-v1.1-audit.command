@@ -1,19 +1,21 @@
 #!/bin/bash
-# Push v1.1 audit remediations (P1 + P2 tiers).
+# Push v1.1 audit remediations (P1 + P2 + P3 tiers).
 #
 # Run from the sandbox into your terminal after a session ends.
 # What this script does:
 #   1. Fix FUSE git index.
 #   2. Push the working branch (phase-1-p0-remediations) to main.
-#   3. Push both audit tags (rc1 = P1 close, rc2 = P2 close).
+#   3. Push all three audit tags (rc1 = P1 close, rc2 = P2 close,
+#      rc3 = P3 close).
 #   4. Fast-forward the stable branch on the remote to HEAD.
 #   5. Run the 7-phase verify in deploy mode to confirm Vercel sync.
 #
 # Tags included:
-#   v1.1.0-rc1-p1-remediations — §5.19–§5.22 (prior session)
-#   v1.1.0-rc2-p2-remediations — §5.23–§5.28 (this session)
+#   v1.1.0-rc1-p1-remediations — §5.19–§5.22 (session 1)
+#   v1.1.0-rc2-p2-remediations — §5.23–§5.28 (session 2)
+#   v1.1.0-rc3-p3-remediations — §5.29–§5.32 + §7.4 PII (this session)
 #
-# Stable points at rc2 HEAD (commit 6dd542c).
+# Stable points at rc3 HEAD (commit 0d93a2e).
 
 cd ~/Documents/Claude/Projects/OneAce/oneace || exit 1
 exec > ~/Documents/Claude/Projects/OneAce/oneace/push-v1.1-audit.log 2>&1
@@ -31,6 +33,9 @@ git push origin v1.1.0-rc1-p1-remediations
 echo "=== Pushing P2 tag (rc2) ==="
 git push origin v1.1.0-rc2-p2-remediations
 
+echo "=== Pushing P3 tag (rc3) ==="
+git push origin v1.1.0-rc3-p3-remediations
+
 echo "=== Fast-forwarding stable on remote ==="
 git push origin stable --force-with-lease
 
@@ -38,5 +43,7 @@ echo "=== Verify (full, incl. Vercel deploy) ==="
 ./scripts/verify.sh deploy
 
 echo ""
-echo "=== v1.1 AUDIT REMEDIATIONS RELEASED (rc1 + rc2) ==="
-echo "Next phase: P3 tier (TBD) — see ONEACE-FULL-STACK-AUDIT-v1.1.md §6."
+echo "=== v1.1 AUDIT REMEDIATIONS RELEASED (rc1 + rc2 + rc3) ==="
+echo "v1.1 P3 closes §5.29 (coverage), §5.30 (zod bodies), §5.31"
+echo "(hygiene), §5.32 (OpenAPI parity) + §7.4 (PII denylist bonus)."
+echo "Next phase: audit v1.2 scoping — review audit doc §7 outstanding."
