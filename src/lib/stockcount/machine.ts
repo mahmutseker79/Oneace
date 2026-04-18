@@ -71,8 +71,10 @@ export function canTransition(from: StockCountState, to: StockCountState): boole
   if (from === "PENDING_APPROVAL" && to === "REJECTED") return true;
   if (from === "APPROVED" && to === "COMPLETED") return true;
   if (from === "REJECTED" && to === "IN_PROGRESS") return true;
-  // Phase 17+: rollback from completed
-  if (from === "COMPLETED" && to === "ROLLED_BACK") return true;
+  // Phase 17+: rollback from completed — DISABLED by P0-4 (audit v1.0).
+  // See `canRollback` for rationale. The transition stays defined here
+  // in a comment so the real implementation knows where to re-enable it.
+  // if (from === "COMPLETED" && to === "ROLLED_BACK") return true;
   return false;
 }
 
@@ -145,11 +147,40 @@ export function canReject(state: StockCountState): boolean {
 }
 
 /**
- * Returns true if the count can be rolled back.
- * Only COMPLETED counts can be rolled back.
+ * Returns true if the count can be safely rolled back.
+ *
+ * P0-4 remediation (audit v1.0): rollback previously reported "success"
+ * for any COMPLETED count but did NOT reverse the posted stock movements
+ * — it only flipped the state label. That silently diverged the ledger
+ * from inventory state. Until a true reversing-movement implementation
+ * lands, we refuse rollback for every state.
+ *
+ * Pre-post states (OPEN / IN_PROGRESS / REQUIRES_RECOUNT /
+ * PENDING_APPROVAL) should use CANCEL or REJECT instead — both real,
+ * implemented transitions that don't require any movement reversal.
+ *
+ * When real rollback is implemented, this function should return true
+ * ONLY for states where the inverse-movement generator knows how to
+ * undo the reconciliation atomically in a transaction.
  */
-export function canRollback(state: StockCountState): boolean {
-  return state === "COMPLETED";
+export function canRollback(_state: StockCountState): boolean {
+  return false;
+}
+
+/**
+ * Reason a given state cannot be rolled back, for surfacing a specific
+ * error code/string to the caller. Returns null if `canRollback` would
+ * have returned true (defensive — today it never does).
+ */
+export function rollbackDenialReason(state: StockCountState): string | null {
+  if (canRollback(state)) return null;
+  if (state === "COMPLETED" || state === "APPROVED") {
+    return "CANNOT_ROLLBACK_POST_POSTED";
+  }
+  if (state === "ROLLED_BACK" || state === "CANCELLED" || state === "REJECTED") {
+    return "CANNOT_ROLLBACK_TERMINAL";
+  }
+  return "CANNOT_ROLLBACK_PRE_POST";
 }
 
 /**

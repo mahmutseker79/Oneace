@@ -16,7 +16,18 @@
  */
 export type ActionResult<T extends object = { id: string }> =
   | ({ ok: true } & T)
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+  | {
+      ok: false;
+      error: string;
+      fieldErrors?: Record<string, string[]>;
+      /**
+       * Optional machine-readable error code. Lets callers distinguish
+       * between distinct failure modes (e.g. "CANNOT_ROLLBACK_POST_POSTED"
+       * vs. a generic validation failure) without string-matching the
+       * human message.
+       */
+      code?: string;
+    };
 
 /**
  * Zod's `.flatten().fieldErrors` on a discriminated union produces

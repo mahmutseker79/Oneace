@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
-import { canRollback } from "@/lib/stockcount/machine";
+import { canRollback, rollbackDenialReason } from "@/lib/stockcount/machine";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -47,6 +47,15 @@ export default async function RollbackPage({
   const countLabel = count.name;
 
   if (!canRollback(count.state as typeof count.state)) {
+    // P0-4: map the state to a specific message so the user understands
+    // why rollback is refused and which workflow to use instead.
+    const code = rollbackDenialReason(count.state as typeof count.state);
+    const message =
+      code === "CANNOT_ROLLBACK_POST_POSTED"
+        ? "Rollback is temporarily unavailable for completed counts. The reversing-movement step is not yet implemented, so flipping this count's state would leave the ledger out of sync with inventory. Contact support to manually reverse these adjustments."
+        : code === "CANNOT_ROLLBACK_TERMINAL"
+          ? "This count is already in a terminal state and has no movements left to undo."
+          : "This count has not posted any stock movements yet. Cancel or reject it from the count detail page instead of rolling back.";
     return (
       <div className="space-y-6">
         <PageHeader
@@ -63,10 +72,11 @@ export default async function RollbackPage({
           ]}
         />
         <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              This count cannot be rolled back (current status: {count.state})
+          <CardContent className="pt-6 space-y-2">
+            <p className="text-sm">
+              <span className="font-medium">Current status:</span> {count.state}
             </p>
+            <p className="text-sm text-muted-foreground">{message}</p>
           </CardContent>
         </Card>
       </div>
