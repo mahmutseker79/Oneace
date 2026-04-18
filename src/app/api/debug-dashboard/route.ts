@@ -5,14 +5,36 @@
  * path. docs/openapi.yaml MUST declare the same path with every
  * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
  * pins the two in lockstep.
+ *
+ * God-Mode v2 §2.1 — this route exposes raw Prisma error strings
+ * from a matrix of probe queries, which leaks schema / query shape.
+ * That's acceptable in dev but not in prod. The `isDebugRouteAllowed`
+ * gate below enforces: in prod, OWNER role + explicit
+ * `ENABLE_DEBUG_DASHBOARD=true` opt-in; otherwise 404 so the route is
+ * invisible to unauthorised callers.
  */
 import { db } from "@/lib/db";
+import { isDebugRouteAllowed } from "@/lib/debug-gate";
+import { env } from "@/lib/env";
 import { requireActiveMembership } from "@/lib/session";
+import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
     const { membership } = await requireActiveMembership();
+    if (
+      !isDebugRouteAllowed({
+        nodeEnv: env.NODE_ENV,
+        enableDebugDashboard: env.ENABLE_DEBUG_DASHBOARD,
+        role: membership.role,
+      })
+    ) {
+      // Use the same `notFound()` shape as `requireCapability` so
+      // unauthorised callers see the exact response they'd see for
+      // a route that doesn't exist.
+      notFound();
+    }
     const orgId = membership.organizationId;
     const results: Record<string, string> = {};
 

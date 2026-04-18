@@ -173,6 +173,41 @@ const schema = z.object({
   // When unset, analytics is disabled (graceful degradation).
   NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_POSTHOG_HOST: optionalUrl.default("https://us.i.posthog.com"),
+
+  // --- Outbound webhook signing (optional, Phase E) --------------------
+  // HMAC-SHA256 secret used by `WebhookDispatcher` to sign outbound
+  // webhook payloads. Previously this had an insecure `"default-secret"`
+  // fallback in the dispatcher constructor, which meant any deploy
+  // that forgot to set the var would sign payloads with a well-known
+  // string — a silent downgrade of tenant trust. We now require an
+  // explicit secret at construction time; this optional env var is the
+  // canonical source and is validated for minimum length so operators
+  // can't paste a 6-char placeholder. Leave unset to disable outbound
+  // dispatch (the dispatcher constructor will throw on instantiation,
+  // which matches the behavior of every other webhook route that 503s
+  // when its signing key is missing).
+  WEBHOOK_SECRET: z
+    .string()
+    .min(32, "WEBHOOK_SECRET must be at least 32 characters when set (a strong random string)")
+    .optional(),
+
+  // --- God-Mode v2 §2.1 — debug-dashboard gate -------------------------
+  // `/api/debug-dashboard` is a diagnostic route that runs a matrix of
+  // probe queries against the active organization's data and surfaces
+  // raw Prisma error strings. Useful in dev; not appropriate to expose
+  // in production — even to authenticated users — because the error
+  // output leaks schema shape and query structure. We now gate the
+  // route behind this flag AND an OWNER role check; in production with
+  // the flag unset the route returns 404 as if it didn't exist (the
+  // same UX the admin-sidebar uses for privileged pages).
+  //
+  // Accepted values: "true" / "1" → enabled. Anything else (including
+  // unset) → disabled. Default is disabled so a prod deploy without
+  // the var set is already in the safe posture.
+  ENABLE_DEBUG_DASHBOARD: z
+    .enum(["true", "false", "1", "0"])
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
 });
 
 // Require the mail pair to be all-or-nothing: having `RESEND_API_KEY`
