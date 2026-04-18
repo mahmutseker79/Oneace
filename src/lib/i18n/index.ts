@@ -17,17 +17,16 @@ import { type Messages, en } from "./messages/en";
 
 /**
  * Locale → messages map. Add new imports here when you add a new language file.
+ *
+ * Audit v1.1 §5.23 — the old catalog silently aliased 7 "scaffolded" locales
+ * back to `en`, which let the README claim multilingual support while the
+ * product shipped English to everyone. The honest scaffold is: one entry, one
+ * dictionary. A new locale must land a real messages file *and* a new
+ * `SUPPORTED_LOCALES` entry in the same change — the `locale-parity` test
+ * will fail loudly otherwise.
  */
 const catalog: Record<Locale, Messages> = {
   en,
-  // Placeholder fallbacks — swap out as real translations land.
-  es: en,
-  de: en,
-  fr: en,
-  pt: en,
-  it: en,
-  nl: en,
-  ar: en,
 };
 
 function isSupportedLocale(value: string | undefined | null): value is Locale {
