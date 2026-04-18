@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm install --legacy-peer-deps",
+  "git": {
+    "deploymentEnabled": {
+      "dependabot/*": false
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/stock-count-triggers",
