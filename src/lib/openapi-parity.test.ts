@@ -148,45 +148,27 @@ function parseOpenApi(text: string): Record<string, Methods> {
 
 // ── Frozen state ──────────────────────────────────────────────────
 //
-// The audit accepted these gaps at P3 kickoff. The test's job is
-// to prevent the lists from growing. Expect each entry to carry a
-// pointer or follow-up note so the next remediation knows what to
-// do.
+// v1.1.1 backlog-clear (2026-04-18): both lists cleared. Every route
+// is now documented in openapi.yaml, and every exported HTTP method
+// is declared in the spec. The arrays and the stale-checks below are
+// retained intentionally — any future drift has an obvious,
+// symmetric landing pad:
 //
-// DOCUMENTED_GAPS: routes whose tag is NOT declared in openapi.yaml.
-// KNOWN_METHOD_MISMATCHES: routes whose tag IS in openapi.yaml but
-// whose method set differs. Value is {missing?, extra?} expressed
-// from the route's perspective (missing = route has it but doc does
-// not; extra = doc has it but route does not).
-const DOCUMENTED_GAPS: readonly string[] = [
-  "/cron/cleanup-migration-files",
-  "/cron/cleanup-notifications",
-  "/cron/process-imports",
-  "/migrations",
-  "/migrations/{id}",
-  "/migrations/{id}/cancel",
-  "/migrations/{id}/detect",
-  "/migrations/{id}/mapping",
-  "/migrations/{id}/rollback",
-  "/migrations/{id}/start",
-  "/migrations/{id}/status",
-  "/migrations/{id}/upload",
-  "/migrations/{id}/validate",
-  "/onboarding/migration-start",
-  "/webhooks/resend",
-];
+// DOCUMENTED_GAPS: add the OpenAPI path when a new route ships
+// before the spec is updated. Remove the entry when the spec catches
+// up (the stale-gap test below fails otherwise).
+//
+// KNOWN_METHOD_MISMATCHES: add the method delta when exports and the
+// spec diverge ({ missing?: methods route has but doc does not;
+// extra?: methods doc has but route does not }). Remove the entry
+// when the divergence is resolved (the still-diverges test below
+// fails otherwise).
+const DOCUMENTED_GAPS: readonly string[] = [];
 
 const KNOWN_METHOD_MISMATCHES: Record<
   string,
   { missing?: readonly string[]; extra?: readonly string[] }
-> = {
-  // GET is the QuickBooks verification challenge handler — added
-  // after the spec was drafted. Not yet rolled into openapi.yaml.
-  "/integrations/quickbooks/webhooks": { missing: ["GET"] },
-  // PATCH is the "update org settings" handler — pending follow-up
-  // in the onboarding remediation track.
-  "/onboarding/organization": { missing: ["PATCH"] },
-};
+> = {};
 
 // ── Load everything once ─────────────────────────────────────────
 
@@ -277,6 +259,15 @@ describe("P3-4 §5.32 — KNOWN_METHOD_MISMATCHES entries are still mismatches",
   // If a known-mismatch becomes a match (route updated or spec
   // updated), the entry must be removed so future regressions are
   // caught. Same pattern as the stale-gap check above.
+  //
+  // v1.1.1 (2026-04-18): list is currently empty. Keep the sentinel
+  // `it` below so vitest doesn't complain about an empty describe —
+  // it documents the invariant ("no known mismatches right now") and
+  // silently passes. When an entry is added back, the for-loop below
+  // creates a real test per entry and this sentinel still passes.
+  it("KNOWN_METHOD_MISMATCHES is either empty or contains only live divergences", () => {
+    expect(typeof KNOWN_METHOD_MISMATCHES).toBe("object");
+  });
   for (const [oapi, expected] of Object.entries(KNOWN_METHOD_MISMATCHES)) {
     it(`${oapi} still diverges as documented`, () => {
       const route = ROUTES.find((r) => fsPathToOpenApi(r.tag ?? "") === oapi);
