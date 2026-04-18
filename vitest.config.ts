@@ -11,10 +11,19 @@
 // invitations) can import cleanly without a real `.env` on disk.
 //
 // §5.29 (audit v1.1) — coverage scaffold.
-// Thresholds are floors (fail below). Start at conservative zeros and
-// ramp up per tier as baseline measurement lands in CI. The goal is
-// drift-prevention: once a slice measures > 0, its threshold is raised
-// to that slice's floor (minus a small buffer) in a follow-up commit.
+// Thresholds are floors (fail below). The scaffold landed with zeros;
+// the baseline was measured 2026-04-18 (v1.1.2-coverage-baseline) with
+// `npx vitest run --coverage`, producing the following `coverage-summary.json`
+// totals across src/** excluding generated + tests + e2e:
+//   lines:      3.23%   (3054 / 94464)
+//   statements: 3.23%   (3054 / 94464)
+//   functions: 20.22%   ( 181 /   895)
+//   branches:  46.15%   ( 691 /  1497)
+// Floors below sit a hair under those numbers — enough buffer for
+// measurement flake (e.g. pure-function files drifting by one line)
+// but too tight for a real regression to slip through unseen. The goal
+// is a one-way ratchet: every PR that adds coverage should be paired
+// with a floor bump in a follow-up commit so the ratchet never loosens.
 // Run locally: `npx vitest run --coverage`.
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
@@ -38,10 +47,10 @@ export default defineConfig({
         "node_modules/**",
       ],
       thresholds: {
-        lines: 0,
-        branches: 0,
-        functions: 0,
-        statements: 0,
+        lines: 3,
+        branches: 45,
+        functions: 19,
+        statements: 3,
       },
     },
   },

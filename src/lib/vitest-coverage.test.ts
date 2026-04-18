@@ -11,11 +11,15 @@
 //     get flattered by 100% coverage of generated code
 //   - thresholds exist for lines, branches, functions, statements
 //
-// Initial floors are 0 — this is a scaffold, not a lint fence. The
-// follow-up commit after first coverage run raises each floor to
-// (measured - buffer). Dropping the thresholds entirely would defeat
-// the point of this guard, so we assert they EXIST rather than that
-// they have a specific value.
+// Floors were raised from 0 to measured-baseline-minus-buffer on
+// 2026-04-18 (v1.1.2-coverage-baseline) after the first real
+// `npx vitest run --coverage` pass. The floors below are minimum-
+// expected values; the guard fails if someone lowers any of them,
+// which would be a one-way unratcheting of the coverage guarantee.
+// Raising them in a PR that also raises measured coverage is the
+// expected forward motion; lowering them requires an explicit audit
+// finding and a replacement test. Dropping the thresholds block or
+// removing a metric would also fail the earlier shape assertions.
 //
 // Static read only — no vitest/config import at runtime; we parse the
 // source file textually so the assertion fires before the config is
@@ -106,6 +110,40 @@ describe("P3-1 §5.29 — vitest coverage scaffold is present", () => {
       ).toBe(true);
     }
   });
+});
+
+// Ratchet guard — measured baseline 2026-04-18. Floors below may rise
+// (coverage work ships) but must never fall (silent regression).
+// Values are INTEGERS — vitest thresholds compare as numbers, and the
+// regex extraction here treats the configured floor as a digit run.
+// If a future refactor adds fractional thresholds (`lines: 3.5`), the
+// regex below needs `\d+(?:\.\d+)?` — update both call sites together.
+const MINIMUM_FLOORS: Record<string, number> = {
+  lines: 3,
+  statements: 3,
+  functions: 19,
+  branches: 45,
+};
+
+describe("P3-1 §5.29 — coverage thresholds ratchet guard (v1.1.2 baseline)", () => {
+  const thresholdsMatch = VITEST_CONFIG.match(
+    /thresholds\s*:\s*\{([\s\S]*?)\}/,
+  );
+  const body = thresholdsMatch?.[1] ?? "";
+  for (const [metric, floor] of Object.entries(MINIMUM_FLOORS)) {
+    it(`thresholds.${metric} is at least ${floor} (measured baseline - buffer)`, () => {
+      const m = body.match(new RegExp(`\\b${metric}\\s*:\\s*(\\d+)`));
+      expect(
+        m,
+        `thresholds.${metric} must be a numeric literal`,
+      ).not.toBeNull();
+      const configured = Number(m![1]);
+      expect(
+        configured,
+        `thresholds.${metric} = ${configured} is below the 2026-04-18 baseline floor of ${floor}. Raise it (and MINIMUM_FLOORS above) when coverage work ships; never lower it.`,
+      ).toBeGreaterThanOrEqual(floor);
+    });
+  }
 });
 
 describe("P3-1 §5.29 — @vitest/coverage-v8 is pinned in devDependencies", () => {
