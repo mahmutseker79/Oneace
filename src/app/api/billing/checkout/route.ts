@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import {
   type BillingInterval,
@@ -52,8 +53,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated." }, { status: 401 });
   }
 
-  if (membership.role !== "OWNER" && membership.role !== "ADMIN") {
-    return NextResponse.json({ error: "Only OWNER or ADMIN can manage billing." }, { status: 403 });
+  // P0-1 remediation: centralized capability check. Previously this used
+  // an inline role comparison that drifted from the permissions module and
+  // would need to be updated by hand if the billing role set ever changed.
+  if (!hasCapability(membership.role, "org.billing")) {
+    return NextResponse.json(
+      { error: "You do not have permission to manage billing." },
+      { status: 403 },
+    );
   }
 
   // Parse body — Phase 15.1: accepts optional `interval` ("month" | "year")

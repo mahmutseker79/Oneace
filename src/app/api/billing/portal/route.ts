@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { getStripeClient, hasStripe } from "@/lib/stripe";
 
@@ -35,8 +36,12 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated." }, { status: 401 });
   }
 
-  if (membership.role !== "OWNER" && membership.role !== "ADMIN") {
-    return NextResponse.json({ error: "Only OWNER or ADMIN can access billing." }, { status: 403 });
+  // P0-1 remediation: centralized capability check.
+  if (!hasCapability(membership.role, "org.billing")) {
+    return NextResponse.json(
+      { error: "You do not have permission to access billing." },
+      { status: 403 },
+    );
   }
 
   const org = await db.organization.findUnique({
