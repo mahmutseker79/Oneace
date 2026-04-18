@@ -42,7 +42,12 @@ export function ForgotPasswordForm() {
           }
         ).forgetPassword?.({
           email,
-          redirectTo: `${window.location.origin}/auth/reset-password`,
+          // God-Mode v2 §1.2 — pre-remediation this pointed at
+          // /auth/reset-password, a route that was never built so the
+          // link in the email 404'd. The canonical public reset page
+          // lives at /reset-password (sibling to /login, /register,
+          // /forgot-password) — see `src/app/(auth)/reset-password/`.
+          redirectTo: `${window.location.origin}/reset-password`,
         });
       } catch {
         // Swallow — the confirmation screen is shown regardless.

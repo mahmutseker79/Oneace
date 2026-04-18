@@ -22,6 +22,10 @@ const PUBLIC_PATHS = [
   "/login",
   "/register",
   "/forgot-password",
+  // Password-reset landing page — the link Better Auth emails points
+  // here and MUST be reachable without an existing session cookie
+  // (the whole point of the flow is that the user cannot sign in).
+  "/reset-password",
   // Phase 12 — public marketing pages
   "/pricing",
 ];
@@ -29,6 +33,16 @@ const PUBLIC_PATHS = [
 // Prefix-based public paths (all sub-routes are public)
 const PUBLIC_PREFIXES = [
   "/docs",
+  // Phase 14 remediation (God-Mode v2):
+  // - /invite/[token] renders a "sign in to accept" CTA for signed-out
+  //   users. Before this entry existed, the middleware redirected
+  //   invitees to /login without the invite token in the query, breaking
+  //   the invitation flow for any user who wasn't already signed in.
+  // - /legal/* are public marketing pages (terms of service, privacy
+  //   policy). The register form links to them and they are legally
+  //   required to be reachable without an account.
+  "/invite/",
+  "/legal/",
   // Stripe webhook must be publicly accessible — Stripe POSTs from outside.
   "/api/billing/webhook",
   // External integration webhooks (Shopify, QuickBooks) and health check
@@ -39,6 +53,20 @@ const PUBLIC_PREFIXES = [
   // Cron jobs use Vercel CRON_SECRET header, not session cookies
   "/api/cron",
 ];
+
+/**
+ * God-Mode v2 remediation — centralised public-route classifier so
+ * tests can pin the policy without re-implementing it. Keep this in
+ * lock-step with the `PUBLIC_PATHS` / `PUBLIC_PREFIXES` lists above.
+ */
+export function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_PATHS.includes(pathname)) return true;
+  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return true;
+  if (pathname.startsWith("/api/auth")) return true;
+  if (pathname.startsWith("/_next")) return true;
+  if (pathname.includes(".")) return true;
+  return false;
+}
 
 // --- Audit v1.2 §5.34 — API rate-limit default ---------------------------
 //
@@ -142,13 +170,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Public pages and static assets pass through untouched.
-  if (
-    PUBLIC_PATHS.includes(pathname) ||
-    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix)) ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/_next") ||
-    pathname.includes(".")
-  ) {
+  if (isPublicPath(pathname)) {
     return NextResponse.next({
       request: { headers: passthroughHeaders },
     });
