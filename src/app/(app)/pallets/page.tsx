@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DeleteButton } from "@/components/shell/delete-button";
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { INVENTORY_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -32,6 +34,10 @@ export default async function PalletsPage() {
   if (!result.ok) {
     return (
       <div className="space-y-6">
+        <WrapperTabs
+          tabs={resolveWrapperTabs(INVENTORY_TAB_SPECS, t)}
+          ariaLabel="Inventory sections"
+        />
         <PageHeader
           title="Pallet Labels"
           description="Manage and print pallet barcodes for inventory tracking"
@@ -49,6 +55,10 @@ export default async function PalletsPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(INVENTORY_TAB_SPECS, t)}
+        ariaLabel="Inventory sections"
+      />
       <div className="flex items-center justify-between">
         <PageHeader
           title="Pallet Labels"

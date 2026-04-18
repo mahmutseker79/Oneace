@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
 import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
 import { DeleteButton } from "@/components/shell/delete-button";
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { INVENTORY_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -84,6 +86,10 @@ export default async function CategoriesPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(INVENTORY_TAB_SPECS, t)}
+        ariaLabel="Inventory sections"
+      />
       <AdvancedFeatureBanner labels={t.advancedFeature} plan={orgPlan} />
 
       <PageHeader title={t.categories.heading} description={t.categories.subtitle} />

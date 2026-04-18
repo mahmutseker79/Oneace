@@ -2,6 +2,8 @@ import { Package, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { INVENTORY_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function KitsPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
+  const t = await getMessages();
 
   // P10.1 — capability flag for conditional UI rendering
   const canCreate = hasCapability(membership.role, "kits.create");
@@ -51,6 +53,10 @@ export default async function KitsPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(INVENTORY_TAB_SPECS, t)}
+        ariaLabel="Inventory sections"
+      />
       <PageHeader
         title="Kits & Bundles"
         description="Manage kit and bundle definitions"
