@@ -12,8 +12,12 @@ import { requireActiveMembership } from "@/lib/session";
 import { barcodeValueSchema } from "@/lib/validation/barcode";
 import { warehouseInputSchema } from "@/lib/validation/warehouse";
 
+// Audit v1.2 §5.33 — `isFirst` is populated only by createWarehouseAction
+// on success. Mirrors the items pattern: the companion client form fires
+// FIRST_WAREHOUSE_CREATED when isFirst is true. Update / delete / assign
+// barcode do NOT set it.
 export type ActionResult =
-  | { ok: true; id: string }
+  | { ok: true; id: string; isFirst?: boolean }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 function formToInput(formData: FormData) {
@@ -88,7 +92,12 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
         isDefault: input.isDefault,
       },
     });
-    return { ok: true, id: warehouse.id };
+    // v1.2 §5.33 — the plan-limit count is computed against
+    // `isArchived: false` (soft-deleted warehouses don't count against
+    // the limit). The analytics semantics line up with that: a user's
+    // "first warehouse" is the first *active* one they ever provision,
+    // which is also the activation moment we care about in PostHog.
+    return { ok: true, id: warehouse.id, isFirst: currentWhCount === 0 };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {

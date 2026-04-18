@@ -36,6 +36,26 @@ export const AnalyticsEvents = {
   // --- Feature adoption (wired) ---
   TWO_FACTOR_ENABLED: "two_factor_enabled",
   ITEM_IMAGE_UPLOADED: "item_image_uploaded",
+
+  // --- v1.2 §5.33 — activation call-site follow-through ---
+  // These lived in PlannedAnalyticsEvents at v1.1 close because the
+  // enabling seams (server-action return shape for first-event detection,
+  // client-side track() placement) weren't wired yet. v1.2 Phase-3.1
+  // adds: (a) an `isFirst` boolean on create/complete server actions
+  // computed from a Prisma count === 0 check within the same request,
+  // (b) a `track()` call-site in the companion client form which fires
+  // the one-time FIRST_* event when isFirst is true AND the steady-state
+  // event (ITEM_CREATED / COUNT_STARTED / BARCODE_SCANNED) on every
+  // success. Firing from the client form (not the server action) is
+  // deliberate — `track()` is a no-op on the server, so placing it in
+  // the form is what actually gets events into PostHog.
+  ITEM_CREATED: "item_created",
+  FIRST_ITEM_CREATED: "first_item_created",
+  FIRST_WAREHOUSE_CREATED: "first_warehouse_created",
+  COUNT_STARTED: "count_started",
+  FIRST_COUNT_COMPLETED: "first_count_completed",
+  BARCODE_SCANNED: "barcode_scanned",
+  FIRST_SCAN: "first_scan",
 } as const;
 
 export type AnalyticsEventName =
@@ -48,15 +68,6 @@ export type AnalyticsEventName =
  * them as gaps; each has a JSDoc note explaining the unblocker.
  */
 export const PlannedAnalyticsEvents = {
-  /** Needs per-user first-event tracking (e.g. `user.firstItemAt`). */
-  FIRST_ITEM_CREATED: "first_item_created",
-  /** Needs per-user first-event tracking (e.g. `user.firstWarehouseAt`). */
-  FIRST_WAREHOUSE_CREATED: "first_warehouse_created",
-  /** Needs per-user first-event tracking (e.g. `user.firstScanAt`). */
-  FIRST_SCAN: "first_scan",
-  /** Needs per-user first-event tracking (e.g. `user.firstCountAt`). */
-  FIRST_COUNT_COMPLETED: "first_count_completed",
-
   // --- Conversion (wiring lives in Stripe webhook / server-side) ---
   /** Wired from server-side billing webhook once receipts ship. */
   UPGRADE_CLICKED: "upgrade_clicked",
@@ -65,25 +76,19 @@ export const PlannedAnalyticsEvents = {
   /** Fires from Stripe webhook; queue for v1.2 (needs server sink). */
   SUBSCRIPTION_CREATED: "subscription_created",
 
-  // --- Retention (wired inline with the respective create/view actions in v1.2) ---
-  /** Queue for v1.2: item-create server action. */
-  ITEM_CREATED: "item_created",
-  /** Queue for v1.2: movement-log server action. */
+  // --- Retention (needs server-side sink — still blocked on v1.2 §7.x) ---
+  /** Queue: movement-log server action — blocked on server-sink story. */
   MOVEMENT_LOGGED: "movement_logged",
-  /** Queue for v1.2: count-start server action. */
-  COUNT_STARTED: "count_started",
-  /** Queue for v1.2: per-report page mount effect. */
+  /** Queue: per-report page mount effect — blocked on SSR-safe track(). */
   REPORT_VIEWED: "report_viewed",
-  /** Queue for v1.2: export action completion. */
+  /** Queue: export action completion — blocked on server-sink story. */
   REPORT_EXPORTED: "report_exported",
-  /** Queue for v1.2: PO-create server action. */
+  /** Queue: PO-create server action — blocked on server-sink story. */
   PO_CREATED: "po_created",
 
   // --- Feature adoption (queued) ---
-  /** Queue for v1.2: bin-create server action. */
+  /** Queue for v1.3: bin-create server action. */
   BIN_CREATED: "bin_created",
-  /** Queue for v1.2: scanner success handler (needs debounce). */
-  BARCODE_SCANNED: "barcode_scanned",
 } as const;
 
 interface PostHogClient {

@@ -11,6 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Warehouse } from "@/generated/prisma";
+// Audit v1.2 §5.33 — client-side analytics seam; see items/item-form.tsx
+// for the design rationale (track() is a server-side no-op).
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 
 import { createWarehouseAction, updateWarehouseAction } from "./actions";
 
@@ -74,6 +78,14 @@ export function WarehouseForm({ labels, mode, initial }: WarehouseFormProps) {
         setError(result.error);
         setFieldErrors(result.fieldErrors ?? {});
         return;
+      }
+      // v1.2 §5.33 — one-time FIRST_WAREHOUSE_CREATED fires only when
+      // the server action reports this was the org's first active
+      // warehouse. No steady-state `WAREHOUSE_CREATED` event is in
+      // the taxonomy — warehouses are low-frequency and the FIRST_*
+      // signal is the only one product cares about for activation.
+      if (mode === "create" && result.isFirst) {
+        track(AnalyticsEvents.FIRST_WAREHOUSE_CREATED, { id: result.id });
       }
       resetUnsaved();
       router.push("/warehouses");

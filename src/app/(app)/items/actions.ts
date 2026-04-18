@@ -23,8 +23,16 @@ import {
   validateImportRows,
 } from "@/lib/validation/item-import";
 
+// Audit v1.2 §5.33 — `isFirst` is only populated on createItemAction's
+// success path. It carries the "was this org's *first* item?" signal to
+// the client form so the client can fire the one-time FIRST_ITEM_CREATED
+// analytics event alongside the steady-state ITEM_CREATED. Computed from
+// the same `currentItemCount` we already load for plan-limit enforcement
+// (count === 0 → this insert is the first), so there is no extra DB hit.
+// updateItemAction and deleteItemAction do NOT populate isFirst — the
+// field is optional and its absence means "not a first-event signal".
 export type ActionResult =
-  | { ok: true; id: string }
+  | { ok: true; id: string; isFirst?: boolean }
   | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
 
 export async function createItemAction(formData: FormData): Promise<ActionResult> {
@@ -89,7 +97,11 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
       entityId: item.id,
       metadata: { sku: input.sku, name: input.name, status: input.status },
     });
-    return { ok: true, id: item.id };
+    // v1.2 §5.33 — reuse the count we already loaded for plan-limit
+    // enforcement. At that point the item has not yet been inserted,
+    // so `currentItemCount === 0` means this insert was the org's
+    // first item. The client form reads this to fire FIRST_ITEM_CREATED.
+    return { ok: true, id: item.id, isFirst: currentItemCount === 0 };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {

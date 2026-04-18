@@ -155,5 +155,79 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
         `expected image-upload.tsx in call sites, got: ${sites.join(", ")}`,
       ).toBe(true);
     });
+
+    // --- v1.2 §5.33 — activation call-site follow-through ---
+    // These pin the seams added by Phase-3.1. Each event MUST fire from
+    // its designated client form (not the server action), because
+    // `track()` is a server-side no-op and firing from the action would
+    // silently drop the event in production.
+
+    it("item_created fires from items/item-form.tsx", () => {
+      const sites = findCallSites("ITEM_CREATED", AnalyticsEvents.ITEM_CREATED);
+      expect(
+        sites.some((p) => p.endsWith("items/item-form.tsx")),
+        `expected items/item-form.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
+
+    it("first_item_created fires from items/item-form.tsx", () => {
+      const sites = findCallSites(
+        "FIRST_ITEM_CREATED",
+        AnalyticsEvents.FIRST_ITEM_CREATED,
+      );
+      expect(
+        sites.some((p) => p.endsWith("items/item-form.tsx")),
+        `expected items/item-form.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
+
+    it("first_warehouse_created fires from warehouses/warehouse-form.tsx", () => {
+      const sites = findCallSites(
+        "FIRST_WAREHOUSE_CREATED",
+        AnalyticsEvents.FIRST_WAREHOUSE_CREATED,
+      );
+      expect(
+        sites.some((p) => p.endsWith("warehouses/warehouse-form.tsx")),
+        `expected warehouses/warehouse-form.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
+
+    it("count_started fires from stock-counts/new-count-form.tsx", () => {
+      const sites = findCallSites("COUNT_STARTED", AnalyticsEvents.COUNT_STARTED);
+      expect(
+        sites.some((p) => p.endsWith("stock-counts/new-count-form.tsx")),
+        `expected stock-counts/new-count-form.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
+
+    it("first_count_completed fires from reconcile-form.tsx", () => {
+      const sites = findCallSites(
+        "FIRST_COUNT_COMPLETED",
+        AnalyticsEvents.FIRST_COUNT_COMPLETED,
+      );
+      expect(
+        sites.some((p) => p.endsWith("reconcile/reconcile-form.tsx")),
+        `expected reconcile-form.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
+
+    it("barcode_scanned fires from scan/scanner.tsx", () => {
+      const sites = findCallSites(
+        "BARCODE_SCANNED",
+        AnalyticsEvents.BARCODE_SCANNED,
+      );
+      expect(
+        sites.some((p) => p.endsWith("scan/scanner.tsx")),
+        `expected scan/scanner.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
+
+    it("first_scan fires from scan/scanner.tsx", () => {
+      const sites = findCallSites("FIRST_SCAN", AnalyticsEvents.FIRST_SCAN);
+      expect(
+        sites.some((p) => p.endsWith("scan/scanner.tsx")),
+        `expected scan/scanner.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
   });
 });

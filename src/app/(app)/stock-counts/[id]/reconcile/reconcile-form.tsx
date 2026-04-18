@@ -11,6 +11,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+// Audit v1.2 §5.33 — FIRST_COUNT_COMPLETED is the activation event
+// product cares about ("did the user get all the way through a cycle?").
+// We fire from the client because track() is a server-side no-op.
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 
 import { completeStockCountAction } from "../../actions";
 
@@ -57,6 +62,17 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
       if (!result.ok) {
         setError(result.error);
         return;
+      }
+      // v1.2 §5.33 — fire only when the server action reports this
+      // was the first-ever completed count for the org. The server
+      // computes this from a prior-completed count === 0 check BEFORE
+      // the transaction that flips state to COMPLETED, so the signal
+      // is stable even under concurrent reconciles.
+      if (result.isFirstCompleted) {
+        track(AnalyticsEvents.FIRST_COUNT_COMPLETED, {
+          id: result.id,
+          postedMovements: result.postedMovements,
+        });
       }
       setPosted(result.postedMovements);
       setDone(true);

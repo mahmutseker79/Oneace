@@ -28,6 +28,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+// Audit v1.2 §5.33 — scanner fires BARCODE_SCANNED on every successful
+// lookup (FIRST_SCAN on the first one). Scanner is client-only, so
+// track() reaches PostHog + Vercel Analytics; no server action threading
+// required (unlike items/warehouses/stock-counts).
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 import {
   type BarcodeDetectorLike,
   type DetectorEngine,
@@ -185,6 +191,22 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
 
         setResult(res);
 
+        // v1.2 §5.33 — fire BARCODE_SCANNED on every successful lookup
+        // (found or not — the scanner completed a round-trip to the
+        // server and back, which is the signal product cares about).
+        // FIRST_SCAN is derived from the session-lifetime scanCount via
+        // the functional updater so we dodge stale-closure bugs: the
+        // callback sees the authoritative previous value even when two
+        // rapid scans land in the same render batch. An org-scoped
+        // FIRST_SCAN would need a server-side lookup (no per-user
+        // `firstScanAt` column yet) — this session-scoped proxy is the
+        // honest best we can do without schema work. Good enough for
+        // activation dashboards; the over-fire rate is bounded by
+        // session count per user and is well below PostHog noise floor.
+        track(AnalyticsEvents.BARCODE_SCANNED, {
+          code,
+          found: res.found,
+        });
         if (res.found) {
           if (fromCamera) scanSuccess();
           addScanEntry({
@@ -195,7 +217,12 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
             quantity: 1,
           });
           setHistory(getScanHistory());
-          setScanCount((c) => c + 1);
+          setScanCount((c) => {
+            if (c === 0) {
+              track(AnalyticsEvents.FIRST_SCAN, { code, found: true });
+            }
+            return c + 1;
+          });
         } else {
           if (fromCamera) scanError();
           addScanEntry({
@@ -206,7 +233,12 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
             quantity: 0,
           });
           setHistory(getScanHistory());
-          setScanCount((c) => c + 1);
+          setScanCount((c) => {
+            if (c === 0) {
+              track(AnalyticsEvents.FIRST_SCAN, { code, found: false });
+            }
+            return c + 1;
+          });
           // Auto-open quick add when scanning unknown barcode
           if (fromCamera && continuousMode) {
             setQuickAddBarcode(code);
