@@ -201,32 +201,51 @@ async function loadDashboardData(orgId: string) {
 
   // categoryValueData already comes as { category, value }[] from SQL above.
 
-  // P9.3a — Low stock trend (last 30 days): for each day, count items below reorder
-  // Simplified: generate a synthetic trend using current low stock count
-  const lowStockStart = new Date();
-  lowStockStart.setDate(lowStockStart.getDate() - 30);
+  // P0-2 remediation (audit v1.0): the dashboard previously fabricated the
+  // low-stock trend by sampling the *current* low-stock count and scaling it
+  // 60% → 100% across 30 days. That produced an always-rising chart that
+  // lied to the user. We don't keep a daily stock-breach snapshot, so until
+  // that history is captured (see follow-up: observability/snapshots ticket)
+  // we return an empty array — the chart is gated on `.length > 0` so it
+  // gracefully hides rather than showing made-up data.
   const lowStockTrendData: Array<{ date: string; count: number }> = [];
 
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const date = d.toISOString().slice(0, 10);
-    // Synthetic trend: start at 60% of current low stock on day 1, increase gradually to 100%
-    const baseCount = lowStockItems.length;
-    const percentage = 0.6 + (i / 30) * 0.4;
-    const count = Math.round(baseCount * percentage);
-    lowStockTrendData.push({ date, count });
-  }
+  // P0-2 remediation (audit v1.0): KPI weekly deltas were hard-coded as a
+  // percentage of the *current* value (5% for stock value, etc.). That made
+  // the trend indicator always point up and always by the same amount — a
+  // fabrication. Real deltas we CAN compute honestly from existing data:
+  //
+  //  - Items created in the last 7 days (truth, from Item.createdAt)
+  //  - Net stock-value change from the last 7 days of movements
+  //    (sum of quantity * direction * costPrice)
+  //
+  // Low-stock week-over-week delta requires a breach snapshot we don't keep,
+  // so it stays 0 (trend indicator hides) until that history exists.
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  // P9.3b — Previous period KPI values (7 days ago)
-  // For simplicity, we'll compute ratios based on current data
-  // In practice, you'd fetch from a history table or snapshots
-  const prevWeekItemCountChange = Math.max(0, activeItemCount - Math.floor(activeItemCount * 0.95));
-  const prevWeekStockValueChange = stockValue * 0.05; // Assume ~5% weekly growth
-  const prevWeekLowStockChange = Math.max(
-    0,
-    lowStockItems.length - Math.floor(lowStockItems.length * 0.9),
-  );
+  type MovementValueRow = { net: number };
+  const [itemsCreatedLast7Days, stockValueDeltaResult] = await Promise.all([
+    db.item.count({
+      where: {
+        organizationId: orgId,
+        createdAt: { gte: sevenDaysAgo },
+      },
+    }),
+    db.$queryRaw<MovementValueRow[]>`
+      SELECT COALESCE(
+        SUM(sm.quantity * sm.direction * COALESCE(i."costPrice", 0)),
+        0
+      )::float AS net
+      FROM "StockMovement" sm
+      JOIN "Item" i ON i.id = sm."itemId"
+      WHERE sm."organizationId" = ${orgId}
+        AND sm."createdAt" >= ${sevenDaysAgo}
+    `,
+  ]);
+
+  const prevWeekItemCountChange = itemsCreatedLast7Days;
+  const prevWeekStockValueChange = stockValueDeltaResult[0]?.net ?? 0;
+  const prevWeekLowStockChange = 0;
 
   return {
     activeItemCount,
