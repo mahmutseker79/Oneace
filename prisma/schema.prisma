@@ -2800,3 +2800,23 @@ model ItemCustomFieldValue {
   @@index([definitionId])
   @@index([itemId])
 }
+
+/// §5.27 — Cron idempotency ledger.
+///
+/// Every scheduled route calls `withCronIdempotency(name, fn)`. The helper
+/// derives a per-day runId (`cron:<name>:<YYYY-MM-DD>`) and uses this
+/// table as the source of truth. Upsert-on-start + completedAt-on-finish
+/// lets a retried invocation short-circuit with `skipped: true` instead
+/// of re-running the job body. Without this, a Vercel Cron 5xx retry
+/// could double-delete, double-trigger, or double-notify.
+model CronRun {
+  runId       String    @id // e.g. "cron:stock-count-triggers:2026-04-18"
+  name        String // the cron name slug, without the date suffix
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  error       String? // truncated message if the run failed
+  result      Json? // small summary payload (counts, etc.) — NOT logs
+
+  @@index([name])
+  @@index([startedAt])
+}

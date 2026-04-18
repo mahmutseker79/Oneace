@@ -10,6 +10,7 @@
  * publicly reachable for the cron scheduler.
  */
 
+import { withCronIdempotency } from "@/lib/cron/with-idempotency";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { runTriggerPass } from "@/lib/stockcount/triggers";
@@ -19,6 +20,10 @@ import { type NextRequest, NextResponse } from "next/server";
  * GET /api/cron/stock-count-triggers
  *
  * Vercel Cron sends GET requests. Accepts Bearer token for auth.
+ *
+ * §5.27 — Wrapped in `withCronIdempotency`. If the scheduler retries
+ * after a 5xx (or if someone manually curls the endpoint twice), the
+ * second call short-circuits and the trigger pass does not re-run.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -36,49 +41,64 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const now = new Date();
+    const outcome = await withCronIdempotency("stock-count-triggers", async () => {
+      const now = new Date();
 
-    // Fetch all organizations that have at least one recurring template.
-    const orgs = await db.organization.findMany({
-      where: {
-        countTemplates: {
-          some: { isRecurring: true },
+      // Fetch all organizations that have at least one recurring template.
+      const orgs = await db.organization.findMany({
+        where: {
+          countTemplates: {
+            some: { isRecurring: true },
+          },
         },
-      },
-      select: { id: true },
-    });
+        select: { id: true },
+      });
 
-    if (orgs.length === 0) {
-      return NextResponse.json({ triggered: 0, results: [] });
-    }
-
-    // Run trigger pass per organization (isolated tenant scoping).
-    const allResults: Array<{
-      organizationId: string;
-      templateId: string;
-      countId: string | null;
-      reason: string;
-    }> = [];
-
-    for (const org of orgs) {
-      const results = await runTriggerPass(org.id, now);
-      for (const r of results) {
-        allResults.push({ organizationId: org.id, ...r });
+      if (orgs.length === 0) {
+        return { triggered: 0, results: [] as Array<{
+          organizationId: string;
+          templateId: string;
+          countId: string | null;
+          reason: string;
+        }> };
       }
+
+      // Run trigger pass per organization (isolated tenant scoping).
+      const allResults: Array<{
+        organizationId: string;
+        templateId: string;
+        countId: string | null;
+        reason: string;
+      }> = [];
+
+      for (const org of orgs) {
+        const results = await runTriggerPass(org.id, now);
+        for (const r of results) {
+          allResults.push({ organizationId: org.id, ...r });
+        }
+      }
+
+      const triggered = allResults.filter((r) => r.countId !== null).length;
+
+      logger.info("Cron trigger pass complete", {
+        organizations: orgs.length,
+        triggered,
+        total: allResults.length,
+      });
+
+      return { triggered, results: allResults };
+    });
+
+    if (outcome.skipped) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: "already ran today",
+        runId: outcome.runId,
+      });
     }
 
-    const triggered = allResults.filter((r) => r.countId !== null).length;
-
-    logger.info("Cron trigger pass complete", {
-      organizations: orgs.length,
-      triggered,
-      total: allResults.length,
-    });
-
-    return NextResponse.json({
-      triggered,
-      results: allResults,
-    });
+    return NextResponse.json(outcome.result);
   } catch (error) {
     logger.error("Cron trigger pass failed", { error });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

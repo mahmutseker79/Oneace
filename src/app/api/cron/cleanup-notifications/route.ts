@@ -25,6 +25,7 @@
  *   operates cross-tenant.
  */
 
+import { withCronIdempotency } from "@/lib/cron/with-idempotency";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { type NextRequest, NextResponse } from "next/server";
@@ -70,62 +71,88 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const dryRun = request.nextUrl.searchParams.get("dryRun") === "1";
-    const now = new Date();
-    const readCutoff = new Date(
-      now.getTime() - READ_RETENTION_DAYS * 24 * 60 * 60 * 1000,
-    );
 
-    // Pass 1 — expired rows (producers that set expiresAt).
-    const expiredFilter = { expiresAt: { lt: now, not: null } } as const;
-    // Pass 2 — read-aged rows (any producer, including legacy ones
-    // with null expiresAt). We use `AND` with `readAt: { not: null }`
-    // so unread rows are never implicitly aged out by this pass.
-    const readAgedFilter = {
-      readAt: { lt: readCutoff, not: null },
-    } as const;
+    // §5.27 — dry runs are read-only (pure count()); re-running is
+    // harmless so we skip the idempotency ledger. Real deletes go
+    // through `withCronIdempotency` so a Vercel retry after a 5xx
+    // doesn't re-enter the deleteMany batching loops.
+    const doCleanup = async () => {
+      const now = new Date();
+      const readCutoff = new Date(
+        now.getTime() - READ_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+      );
 
-    let expiredDeleted = 0;
-    let readAgedDeleted = 0;
+      // Pass 1 — expired rows (producers that set expiresAt).
+      const expiredFilter = { expiresAt: { lt: now, not: null } } as const;
+      // Pass 2 — read-aged rows (any producer, including legacy ones
+      // with null expiresAt). We use `AND` with `readAt: { not: null }`
+      // so unread rows are never implicitly aged out by this pass.
+      const readAgedFilter = {
+        readAt: { lt: readCutoff, not: null },
+      } as const;
 
-    if (dryRun) {
-      expiredDeleted = await db.notification.count({ where: expiredFilter });
-      readAgedDeleted = await db.notification.count({ where: readAgedFilter });
-    } else {
-      // Batched delete — loop until no rows match, capped to avoid
-      // runaway loops in case a producer keeps inserting pre-expired
-      // rows during the run.
-      for (let pass = 0; pass < 20; pass++) {
-        const { count } = await db.notification.deleteMany({
-          where: expiredFilter,
-          // Prisma does not support LIMIT on deleteMany across all
-          // providers; instead we rely on the index on `expiresAt`
-          // to keep each pass cheap and break when count < BATCH_SIZE.
-        });
-        expiredDeleted += count;
-        if (count < BATCH_SIZE) break;
+      let expiredDeleted = 0;
+      let readAgedDeleted = 0;
+
+      if (dryRun) {
+        expiredDeleted = await db.notification.count({ where: expiredFilter });
+        readAgedDeleted = await db.notification.count({ where: readAgedFilter });
+      } else {
+        // Batched delete — loop until no rows match, capped to avoid
+        // runaway loops in case a producer keeps inserting pre-expired
+        // rows during the run.
+        for (let pass = 0; pass < 20; pass++) {
+          const { count } = await db.notification.deleteMany({
+            where: expiredFilter,
+            // Prisma does not support LIMIT on deleteMany across all
+            // providers; instead we rely on the index on `expiresAt`
+            // to keep each pass cheap and break when count < BATCH_SIZE.
+          });
+          expiredDeleted += count;
+          if (count < BATCH_SIZE) break;
+        }
+        for (let pass = 0; pass < 20; pass++) {
+          const { count } = await db.notification.deleteMany({
+            where: readAgedFilter,
+          });
+          readAgedDeleted += count;
+          if (count < BATCH_SIZE) break;
+        }
       }
-      for (let pass = 0; pass < 20; pass++) {
-        const { count } = await db.notification.deleteMany({
-          where: readAgedFilter,
-        });
-        readAgedDeleted += count;
-        if (count < BATCH_SIZE) break;
-      }
-    }
 
-    const summary: CleanupSummary = {
-      expiredDeleted,
-      readAgedDeleted,
-      dryRun,
-      tookMs: Date.now() - started,
+      const summary: CleanupSummary = {
+        expiredDeleted,
+        readAgedDeleted,
+        dryRun,
+        tookMs: Date.now() - started,
+      };
+
+      logger.info("cleanup-notifications: finished", {
+        tag: "cron.cleanup-notifications",
+        ...summary,
+      });
+
+      return summary;
     };
 
-    logger.info("cleanup-notifications: finished", {
-      tag: "cron.cleanup-notifications",
-      ...summary,
-    });
+    if (dryRun) {
+      const summary = await doCleanup();
+      return NextResponse.json({ ok: true, ...summary });
+    }
 
-    return NextResponse.json({ ok: true, ...summary });
+    const outcome = await withCronIdempotency(
+      "cleanup-notifications",
+      doCleanup,
+    );
+    if (outcome.skipped) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: "already ran today",
+        runId: outcome.runId,
+      });
+    }
+    return NextResponse.json({ ok: true, ...outcome.result });
   } catch (error) {
     logger.error("cleanup-notifications: failed", {
       tag: "cron.cleanup-notifications",
