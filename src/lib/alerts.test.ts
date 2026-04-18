@@ -69,12 +69,26 @@ describe("evaluateAlerts", () => {
       }),
     });
 
-    // Should fan out notifications to both members
+    // Should fan out notifications to both members.
+    // §5.24 — call now includes `skipDuplicates: true` so same-day
+    // re-fires collapse on the `Notification_dedup` unique index,
+    // and each row carries a non-null `dedupKey` + `expiresAt`.
     expect(mockDb.notification.createMany).toHaveBeenCalledWith({
       data: expect.arrayContaining([
-        expect.objectContaining({ userId: "user-1", alertId: "alert-1" }),
-        expect.objectContaining({ userId: "user-2", alertId: "alert-1" }),
+        expect.objectContaining({
+          userId: "user-1",
+          alertId: "alert-1",
+          dedupKey: expect.any(String),
+          expiresAt: expect.any(Date),
+        }),
+        expect.objectContaining({
+          userId: "user-2",
+          alertId: "alert-1",
+          dedupKey: expect.any(String),
+          expiresAt: expect.any(Date),
+        }),
       ]),
+      skipDuplicates: true,
     });
   });
 

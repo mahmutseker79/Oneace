@@ -1072,6 +1072,17 @@ model Alert {
   @@index([organizationId, itemId, type])
 }
 
+// Audit v1.1 §5.24 — Notification now has retention + dedup fields.
+//   * `expiresAt` — set by producers (alerts.ts fan-out uses now + 90 days).
+//     The cleanup-notifications cron (`api/cron/cleanup-notifications`)
+//     deletes anything past its `expiresAt`, so growth is bounded even
+//     if nobody ever clicks "mark read".
+//   * `dedupKey` — nullable; producers that want idempotency pass a
+//     hash of (source + day + userId) so repeated fan-outs within the
+//     same dedup window collapse. The compound unique index below lets
+//     Prisma `createMany({ skipDuplicates: true })` do the dedup in a
+//     single round-trip. Null dedupKey means "no dedup" — Postgres
+//     treats NULLs as distinct, so legacy rows never conflict.
 model Notification {
   id             String    @id @default(cuid())
   organizationId String
@@ -1082,15 +1093,19 @@ model Notification {
   href           String? // click-through deep link, e.g. "/items/{id}"
   readAt         DateTime?
   createdAt      DateTime  @default(now())
+  expiresAt      DateTime? // §5.24 — retention; cleanup cron deletes past this
+  dedupKey       String? // §5.24 — hash(source + day + userId), opt-in dedup
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   alert        Alert?       @relation(fields: [alertId], references: [id], onDelete: SetNull)
 
+  @@unique([organizationId, userId, dedupKey], name: "Notification_dedup")
   @@index([userId, readAt])
   @@index([organizationId, userId])
   @@index([alertId])
   @@index([organizationId])
+  @@index([expiresAt]) // §5.24 — supports cleanup cron's `expiresAt < now()` scan
 }
 
 // =========================

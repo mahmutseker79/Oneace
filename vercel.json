@@ -9,6 +9,10 @@
     {
       "path": "/api/cron/cleanup-migration-files",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-notifications",
+      "schedule": "15 3 * * *"
     }
   ]
 }
