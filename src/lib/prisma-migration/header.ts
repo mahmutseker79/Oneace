@@ -45,7 +45,7 @@ export const BASELINE_CUTOFF_DATE = "20260419";
 /** Parse a migration directory name of the form `YYYYMMDDHHMMSS_slug`. */
 export function extractMigrationDate(dirname: string): string | null {
   const match = /^(\d{8})(\d{0,6})?_/.exec(dirname);
-  return match ? match[1] : null;
+  return match?.[1] ?? null;
 }
 
 /** True when a migration directory is subject to ADR-004 header enforcement. */
@@ -91,7 +91,12 @@ export function parseMigrationHeader(sql: string): HeaderParseResult {
     if (scanned > 20) break;
     const match = /^--\s*MIGRATION-TYPE\s*:\s*(.+?)\s*$/i.exec(line);
     if (!match) continue;
+    // Regex capture group `(.+?)` with `$` anchor is required on a
+    // successful match, but `noUncheckedIndexedAccess` still widens
+    // the tuple slot to `string | undefined`. Guard explicitly so
+    // callers see a clean `rawValue: string` on every present-branch.
     const rawValue = match[1];
+    if (rawValue === undefined) continue;
     const normalized = rawValue.toUpperCase() as MigrationType;
     if ((MIGRATION_TYPES as readonly string[]).includes(normalized)) {
       return { type: normalized, present: true, rawValue };
@@ -110,7 +115,9 @@ export function findDuplicateHeaders(sql: string): number[] {
   const lines = sql.split(/\r?\n/);
   const matches: number[] = [];
   for (let i = 0; i < lines.length; i += 1) {
-    if (/^\s*--\s*MIGRATION-TYPE\s*:/i.test(lines[i])) {
+    const line = lines[i];
+    if (line === undefined) continue;
+    if (/^\s*--\s*MIGRATION-TYPE\s*:/i.test(line)) {
       matches.push(i);
     }
   }

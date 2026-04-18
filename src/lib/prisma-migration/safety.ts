@@ -117,6 +117,7 @@ function splitLines(sql: string): StatementLine[] {
   const out: StatementLine[] = [];
   for (let i = 0; i < rawLines.length; i += 1) {
     const raw = rawLines[i];
+    if (raw === undefined) continue;
     const trimmed = raw.trim();
     if (trimmed.length === 0) continue;
     // Pure comment line — skip. An inline `-- adr-004-safety: ignore`
