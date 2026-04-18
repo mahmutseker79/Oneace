@@ -35,7 +35,8 @@ for tag in \
   v1.2.12-p3-sentry-sample-rate \
   v1.2.13-p3-perf-budget \
   v1.2.14-p3-cronrun-retention \
-  v1.2.15-p3-ci-wiring
+  v1.2.15-p3-ci-wiring \
+  v1.2.16-vercel-build-fix
 do
   if git rev-parse "$tag" >/dev/null 2>&1; then
     echo "→ push tag $tag"
