@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { dismissAlert } from "@/lib/alerts";
+// P1-5: bust the app-shell notification cache when notifications change.
+import { revalidateNotifications } from "@/lib/cache/app-shell-cache";
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -18,6 +20,7 @@ export async function markNotificationReadAction(notificationId: string) {
     data: { readAt: new Date() },
   });
 
+  revalidateNotifications(membership.organizationId, session.user.id);
   revalidatePath("/");
 }
 
@@ -33,6 +36,7 @@ export async function markAllNotificationsReadAction() {
     data: { readAt: new Date() },
   });
 
+  revalidateNotifications(membership.organizationId, session.user.id);
   revalidatePath("/");
 }
 
@@ -53,5 +57,6 @@ export async function dismissAlertAction(alertId: string) {
     });
   }
 
+  revalidateNotifications(membership.organizationId, session.user.id);
   revalidatePath("/");
 }

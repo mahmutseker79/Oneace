@@ -4,6 +4,9 @@ import { Prisma } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 import { recordAudit } from "@/lib/audit";
+// P1-5: item create/update/delete and bulk import all change the
+// low-stock badge; bust the cached count.
+import { revalidateLowStock } from "@/lib/cache/app-shell-cache";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
@@ -76,6 +79,8 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
     });
 
     revalidatePath("/items");
+    // P1-5: new item may participate in low-stock count.
+    revalidateLowStock(membership.organizationId);
     await recordAudit({
       organizationId: membership.organizationId,
       actorId: session.user.id,
@@ -142,6 +147,8 @@ export async function updateItemAction(id: string, formData: FormData): Promise<
 
     revalidatePath("/items");
     revalidatePath(`/items/${id}`);
+    // P1-5: status / reorderPoint changes flip low-stock membership.
+    revalidateLowStock(membership.organizationId);
     await recordAudit({
       organizationId: membership.organizationId,
       actorId: session.user.id,
@@ -297,6 +304,8 @@ export async function importItemsAction(input: {
     });
 
     revalidatePath("/items");
+    // P1-5: bulk import can introduce many low-stock candidates.
+    revalidateLowStock(membership.organizationId);
 
     // If createMany's count is lower than toInsert.length, a concurrent
     // import raced us between the findMany above and now. skipDuplicates
@@ -354,6 +363,8 @@ export async function deleteItemAction(id: string): Promise<ActionResult> {
       },
     });
     revalidatePath("/items");
+    // P1-5: a deleted item leaves the low-stock count, so recompute.
+    revalidateLowStock(membership.organizationId);
     // entityId intentionally omitted — the Item row is gone. The id
     // we were given is still useful for cross-referencing audit logs
     // to other tables (e.g. stockMovement.itemId in older rows) so

@@ -2,6 +2,8 @@
 
 import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
+// P1-5: changing reorder points immediately invalidates the low-stock badge.
+import { revalidateLowStock } from "@/lib/cache/app-shell-cache";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -60,4 +62,8 @@ export async function batchUpdateReorderPoints(updates: ReorderUpdate[]) {
     membership.organizationId,
     safeUpdates.map((u) => u.id),
   );
+
+  // P1-5 — bust the low-stock badge cache so the sidebar reflects the
+  // new thresholds on the next render.
+  revalidateLowStock(membership.organizationId);
 }

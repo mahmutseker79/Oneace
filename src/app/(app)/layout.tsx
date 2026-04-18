@@ -8,7 +8,9 @@ import { SwRegister } from "@/components/pwa/sw-register";
 import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { AppShellClient } from "@/components/shell/app-shell-client";
 import { Sidebar } from "@/components/shell/sidebar";
-import { db } from "@/lib/db";
+// P1-5 (audit v1.0 §5.10): app shell queries are tag-cached so the
+// layout doesn't re-run three DB queries on every server-rendered nav.
+import { getLowStockBadge, getNotificationData } from "@/lib/cache/app-shell-cache";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership, requireSession } from "@/lib/session";
@@ -48,27 +50,17 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     userId: session.user.id,
   };
 
-  // ── P8.2 — Low-stock badge for sidebar ────────────────────────────
-  // Lean query: only items with reorderPoint configured (typically small
-  // subset). Indexed by organizationId. Cost: ~1-3ms on warm DB.
-  const lowStockBadge = await (async () => {
-    const itemsWithReorder = await db.item.findMany({
-      where: {
-        organizationId: membership.organizationId,
-        status: "ACTIVE",
-        reorderPoint: { gt: 0 },
-      },
-      select: {
-        reorderPoint: true,
-        stockLevels: { select: { quantity: true } },
-      },
-    });
-    const count = itemsWithReorder.filter((item) => {
-      const onHand = item.stockLevels.reduce((sum, l) => sum + l.quantity, 0);
-      return onHand <= item.reorderPoint;
-    }).length;
-    return count > 0 ? String(count) : undefined;
-  })();
+  // ── P1-5 — App shell queries (tag-cached) ─────────────────────────
+  // The layout re-renders for every server navigation in the app, so
+  // these three queries used to run dozens of times per session even
+  // though the underlying state changes infrequently. Both helpers
+  // live in `@/lib/cache/app-shell-cache` and are invalidated by
+  // `revalidateLowStock` / `revalidateNotifications` from mutation
+  // paths (item edits, reorder config, notification reads, etc.).
+  const [lowStockBadge, { items: notificationItems, unreadCount }] = await Promise.all([
+    getLowStockBadge(membership.organizationId),
+    getNotificationData(membership.organizationId, session.user.id),
+  ]);
 
   // P10.1 — admin section visible only to roles that can manage team,
   // view audit, or edit org settings.
@@ -76,48 +68,6 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     hasCapability(membership.role, "team.invite") ||
     hasCapability(membership.role, "audit.view") ||
     hasCapability(membership.role, "org.editProfile");
-
-  // ── P10.2 — Notification center data ──────────────────────────────
-  // Query recent notifications for the current user. Lean: 20 most
-  // recent, only the fields the UI needs. Separate count query for
-  // the unread badge to avoid over-fetching.
-  const [recentNotifications, unreadCount] = await Promise.all([
-    db.notification.findMany({
-      where: {
-        userId: session.user.id,
-        organizationId: membership.organizationId,
-      },
-      select: {
-        id: true,
-        title: true,
-        message: true,
-        href: true,
-        alertId: true,
-        readAt: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
-    db.notification.count({
-      where: {
-        userId: session.user.id,
-        organizationId: membership.organizationId,
-        readAt: null,
-      },
-    }),
-  ]);
-
-  // Serialize dates for the client component
-  const notificationItems = recentNotifications.map((n) => ({
-    id: n.id,
-    title: n.title,
-    message: n.message,
-    href: n.href,
-    alertId: n.alertId,
-    readAt: n.readAt?.toISOString() ?? null,
-    createdAt: n.createdAt.toISOString(),
-  }));
 
   return (
     <div className="min-h-screen">
