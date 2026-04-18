@@ -181,8 +181,8 @@ importers:
         specifier: ^16.2.4
         version: 16.2.4(@typescript-eslint/parser@8.58.2(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
       postcss:
-        specifier: ^8.5.0
-        version: 8.5.9
+        specifier: ^8.5.10
+        version: 8.5.10
       prisma:
         specifier: ^6.1.0
         version: 6.19.3(typescript@5.9.3)
@@ -4191,8 +4191,8 @@ packages:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.9:
-    resolution: {integrity: sha512-7a70Nsot+EMX9fFU3064K/kdHWZqGVY+BADLyXc8Dfv+mTLLVl6JzJpPaCZ2kQL9gIJvKXSLMHhqdRRjwQeFtw==}
+  postcss@8.5.10:
+    resolution: {integrity: sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres-array@2.0.0:
@@ -6895,7 +6895,7 @@ snapshots:
       '@alloc/quick-lru': 5.2.0
       '@tailwindcss/node': 4.2.2
       '@tailwindcss/oxide': 4.2.2
-      postcss: 8.5.9
+      postcss: 8.5.10
       tailwindcss: 4.2.2
 
   '@tanstack/query-core@5.99.0': {}
@@ -9163,7 +9163,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postcss@8.5.9:
+  postcss@8.5.10:
     dependencies:
       nanoid: 3.3.11
       picocolors: 1.1.1
@@ -9996,7 +9996,7 @@ snapshots:
   vite@5.4.21(@types/node@22.19.17)(lightningcss@1.32.0)(terser@5.46.1):
     dependencies:
       esbuild: 0.21.5
-      postcss: 8.5.9
+      postcss: 8.5.10
       rollup: 4.60.1
     optionalDependencies:
       '@types/node': 22.19.17
