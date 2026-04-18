@@ -6,10 +6,13 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+import { getTracesSampleRate } from "@/lib/sentry-sample-rate";
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
 
-  tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? "0.1"),
+  // v1.2 P3 §5.42 — see sentry-sample-rate.ts for the env matrix.
+  tracesSampleRate: getTracesSampleRate(),
 
   enabled: process.env.NODE_ENV === "production",
 
