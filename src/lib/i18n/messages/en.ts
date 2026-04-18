@@ -92,21 +92,30 @@ export const en = {
 
   nav: {
     dashboard: "Dashboard",
+    // v1.5 primary sidebar (6 items)
+    inventory: "Inventory",
+    locations: "Locations",
+    counts: "Counts",
+    orders: "Orders",
+    reports: "Reports",
+    // v1.5 secondary sidebar (4 items)
+    team: "Team",
+    integrations: "Integrations",
+    settings: "Settings",
+    help: "Help",
+    // ── Legacy labels (still referenced by wrapper tab rows, crumbs,
+    //    and callers that pass the full SidebarLabels contract). ──
     items: "Items",
     categories: "Categories",
     warehouses: "Locations",
-    counts: "Stock Counts",
     stockCounts: "Stock Counts",
     scan: "Scan",
     movements: "Movements",
     suppliers: "Suppliers",
     purchaseOrders: "Purchase Orders",
-    reports: "Reports",
     users: "Members",
     audit: "Audit log",
-    settings: "Settings",
     // Section headings
-    inventory: "Inventory",
     operations: "Operations",
     fulfillment: "Fulfillment",
     analytics: "Analytics",
@@ -128,8 +137,6 @@ export const en = {
     import: "Import",
     export: "Export",
     migrations: "Göç / Migrations",
-    // Integrations (standalone top-level)
-    integrations: "Integrations",
     // Legacy aliases
     activity: "Activity",
     warehouse: "Warehouse",

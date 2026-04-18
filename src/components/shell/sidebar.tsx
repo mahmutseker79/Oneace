@@ -9,6 +9,12 @@
 // phones simply could not reach. Both surfaces now render from
 // `NAV_GROUPS` in `./nav-config`. Adding a new nav item only
 // requires editing that single file.
+//
+// v1.5 IA refactor: the sidebar renders two columns of groups —
+// a primary (top) list and a secondary (bottom) alt-section with
+// Team / Integrations / Settings / Help — separated by a divider.
+// All re-homed items (Movements, Categories, Transfers, Suppliers, …)
+// keep their routes; they're reached via wrapper-page tabs.
 
 import { useState } from "react";
 
@@ -22,9 +28,11 @@ import {
   type NavItem,
   isGroupActive,
   isItemActive,
+  primaryGroups,
   resolveBadge,
   resolveHeading,
   resolveLabel,
+  secondaryGroups,
   visibleGroups,
 } from "./nav-config";
 import type { SidebarLabels } from "./sidebar-labels";
@@ -36,10 +44,14 @@ export type { SidebarLabels } from "./sidebar-labels";
 export function Sidebar({ labels }: { labels: SidebarLabels }) {
   const pathname = usePathname();
   const groups = visibleGroups(labels.showAdmin !== false);
+  const primary = primaryGroups(groups);
+  const secondary = secondaryGroups(groups);
 
   // Track open state per collapsible group, defaulting to "open if
   // a child page is currently active" so the user lands on a panel
-  // that already shows where they are.
+  // that already shows where they are. v1.5 has no collapsible
+  // groups by default — the map stays empty but is wired in case
+  // callers reintroduce one.
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const g of groups) {
@@ -56,7 +68,7 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
 
   function renderItem(item: NavItem) {
     const href = item.href;
-    const isActive = isItemActive(href, pathname);
+    const isActive = isItemActive(item, pathname);
     const Icon = item.icon;
     const label = resolveLabel(item, labels);
     const badge = resolveBadge(item, labels);
@@ -89,20 +101,12 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
     );
   }
 
-  function renderGroup(group: NavGroup) {
+  function renderGroup(group: NavGroup, opts?: { compact?: boolean }) {
+    const compact = opts?.compact === true;
     if (group.mode === "always") {
-      // The "core" group has no heading; other always-on groups do.
       const heading = resolveHeading(group, labels);
-      const isCore = group.id === "core";
-      const isFirstAfterCore = group.id === "data-tools";
       return (
-        <div
-          key={group.id}
-          className={cn(
-            isCore ? "space-y-0.5" : "mt-5",
-            isFirstAfterCore && "mt-4 pt-3 border-t border-sidebar-border/50",
-          )}
-        >
+        <div key={group.id} className={cn(compact ? "space-y-0.5" : "space-y-0.5")}>
           {heading ? (
             <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {heading}
@@ -113,7 +117,8 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       );
     }
 
-    // Collapsible (and admin, which is also collapsible).
+    // Collapsible (and admin, which is also collapsible). Kept for
+    // back-compat — v1.5 primary/secondary groups are "always".
     const heading = resolveHeading(group, labels);
     const open = openGroups[group.id] ?? false;
     return (
@@ -160,9 +165,21 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4">
-        {groups.map(renderGroup)}
+      {/* Navigation — primary column grows, secondary pinned at bottom */}
+      <nav
+        aria-label="Primary"
+        className="flex flex-1 flex-col overflow-y-auto scrollbar-thin px-3 py-4"
+      >
+        <div className="space-y-2">{primary.map((g) => renderGroup(g))}</div>
+
+        {secondary.length > 0 ? (
+          <div
+            aria-label="Secondary"
+            className="mt-auto space-y-2 pt-4 border-t border-sidebar-border/60"
+          >
+            {secondary.map((g) => renderGroup(g, { compact: true }))}
+          </div>
+        ) : null}
       </nav>
 
       {/* Footer */}
