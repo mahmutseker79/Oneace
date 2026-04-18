@@ -17,7 +17,9 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getAdapterFor } from "@/lib/migrations/core/adapter";
 import { runMigrationImport } from "@/lib/migrations/core/importer";
-import { rollbackMigration } from "@/lib/migrations/core/rollback";
+// P1-2 (audit v1.0 §5.7): rollbackMigration deliberately NOT imported.
+// The engine has an updatedIds gap; the action below refuses all calls.
+// import { rollbackMigration } from "@/lib/migrations/core/rollback";
 import {
   type MigrationScopeOptions,
   defaultScopeOptions,
@@ -132,7 +134,12 @@ export async function cancelMigrationJobAction(id: string): Promise<{ success: b
   }
 
   if (job.status === "IMPORTING") {
-    throw new Error("Cannot cancel during import. Use rollback after completion.");
+    // P1-2: rollback is suspended for v1; importing jobs must run to
+    // completion (or fail) before they can be cancelled. Manual
+    // remediation is the only path to undo a completed import.
+    throw new Error(
+      "Cannot cancel during import. Wait for the import to complete or fail.",
+    );
   }
   if (["COMPLETED", "CANCELLED"].includes(job.status)) {
     throw new Error("Migration is already in a terminal state");
@@ -300,49 +307,69 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
 
 // ─────────────────────────────────────────────────────────────────────────────
 // rollbackMigrationAction
+//
+// P1-2 (audit v1.0 §5.7): migration rollback is SUSPENDED for v1.
+//
+// The engine in `src/lib/migrations/core/rollback.ts` only reverts rows
+// recorded in `createdIds` — upserts that *updated* existing rows
+// (matched by external id, SKU, etc.) are silently left in their
+// post-migration state. Calling rollback on a real migration would
+// therefore leave the customer in an inconsistent partial-revert state
+// that's worse than no rollback at all (some rows snap back to the
+// pre-migration shape, others stay updated).
+//
+// Until snapshot-based rollback lands (full point-in-time restore for
+// affected scopes), we refuse all rollback calls at the action and API
+// boundaries. The engine code is preserved as dead-but-correct for
+// when we ship the snapshot version.
+//
+// Manual remediation path: support resets the affected org from a
+// pre-migration backup. Document this in the runbook.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function rollbackMigrationAction(id: string): Promise<{ success: boolean }> {
+export class MigrationRollbackNotImplementedError extends Error {
+  readonly code = "NOT_IMPLEMENTED";
+  constructor() {
+    super(
+      "Migration rollback is not available in v1. Migrations are one-way; " +
+        "contact support for manual remediation from a pre-migration backup.",
+    );
+    this.name = "MigrationRollbackNotImplementedError";
+  }
+}
+
+export async function rollbackMigrationAction(
+  id: string,
+): Promise<{ success: boolean; code?: string }> {
   const { membership, session } = await requireActiveMembership();
 
   if (!hasCapability(membership.role, "migrations.rollback")) {
     throw new Error("Insufficient permissions");
   }
 
+  // Verify ownership before recording the refusal — never let an
+  // unauthorized caller learn whether a job id exists.
   const job = await db.migrationJob.findUnique({ where: { id } });
   if (!job) throw new Error("Migration not found");
   if (job.organizationId !== membership.organizationId) {
     throw new Error("Access denied");
   }
 
-  const result = await rollbackMigration({
-    db,
-    migrationJobId: id,
-    organizationId: membership.organizationId,
-    userId: session.user.id,
-  });
-
-  if (!result.success) {
-    throw new Error("Rollback encountered errors");
-  }
-
-  await db.migrationJob.update({
-    where: { id },
-    data: {
-      status: "CANCELLED",
-      notes: `Rolled back by user at ${new Date().toISOString()} (items: ${result.deletedCounts.ITEMS ?? 0})`,
-    },
-  });
-
   await recordAudit({
     organizationId: membership.organizationId,
     actorId: session.user.id,
-    action: "migration.rollback_complete",
+    action: "migration.rollback_refused",
     entityType: "migration_job",
     entityId: id,
-    metadata: { deletedCounts: result.deletedCounts },
+    metadata: {
+      reason: "NOT_IMPLEMENTED",
+      audit: "v1.0 §5.7 P1-2",
+      previousStatus: job.status,
+    },
   });
 
-  revalidatePath("/migrations");
-  return { success: true };
+  // We DO NOT call `rollbackMigration` here — the engine has the
+  // updatedIds gap noted above. Throw with a stable code the UI and
+  // tests can pin against.
+  throw new MigrationRollbackNotImplementedError();
 }

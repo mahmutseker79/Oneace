@@ -1010,7 +1010,9 @@ function ConfirmStep({
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             İçeri aktarma arka planda çalışır. İlerlemeyi detay sayfasından izleyebilirsiniz.
-            İstediğiniz zaman rollback yapabilirsiniz.
+            {/* P1-2 (audit v1.0 §5.7): rollback is suspended for v1 — migrations are one-way. */}
+            Bu sürümde içe aktarma tek yönlüdür; geri almak için destek ekibiyle iletişime
+            geçmeniz gerekir.
           </p>
         </div>
 
