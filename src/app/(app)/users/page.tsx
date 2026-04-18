@@ -108,7 +108,11 @@ export default async function UsersPage() {
       <PageHeader
         title={t.users.heading}
         description={t.users.subtitle}
-        breadcrumb={[{ label: "Settings", href: "/settings" }, { label: t.users.heading }]}
+        // v1.5 step 9 — IA reshuffled Members/Departments out of
+        // Settings into their own 'Team' wrapper. /users is now the
+        // Team landing so a single-item crumb matches how /settings
+        // itself renders.
+        breadcrumb={[{ label: t.users.heading }]}
       />
 
       {/* Phase 15.3 — member limit nudge */}
