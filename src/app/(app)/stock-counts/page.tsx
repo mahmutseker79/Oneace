@@ -24,15 +24,34 @@ import { requireActiveMembership } from "@/lib/session";
 type CountState = "OPEN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 type Methodology = "CYCLE" | "FULL" | "SPOT" | "BLIND" | "DOUBLE_BLIND" | "DIRECTED";
 
+// v1.5 step 8 — state filter tabs on /stock-counts landing.
+// Three buckets per nav brief: Active (open/in-progress), Scheduled
+// (reserved — not yet modelled in Prisma, shows empty placeholder so
+// the tab is still discoverable), History (completed/cancelled).
+type StateFilter = "all" | "active" | "scheduled" | "history";
+
+type SearchParams = Promise<{ state?: string }>;
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getMessages();
   return { title: t.stockCounts.metaTitle };
 }
 
-export default async function StockCountsPage() {
+export default async function StockCountsPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const { membership } = await requireActiveMembership();
   const t = await getMessages();
   const region = await getRegion();
+
+  const params = (await searchParams) ?? {};
+  const rawState = (params.state ?? "all").toLowerCase();
+  const stateFilter: StateFilter =
+    rawState === "active" || rawState === "scheduled" || rawState === "history"
+      ? (rawState as StateFilter)
+      : "all";
 
   // P10.1 — capability flag for conditional UI rendering
   const canCreate = hasCapability(membership.role, "stockCounts.create");
@@ -189,22 +208,60 @@ export default async function StockCountsPage() {
         />
       ) : (
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.stockCounts.inProgressHeading}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {renderTable(inProgress, t.stockCounts.inProgressEmpty)}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.stockCounts.closedHeading}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {renderTable(closed, t.stockCounts.closedEmpty)}
-            </CardContent>
-          </Card>
+          {/* v1.5 step 8 — state filter strip. Same visual shape as the
+              wrapper-tabs row used elsewhere so /stock-counts reads
+              like the rest of the primary surfaces. */}
+          <div className="flex gap-2 border-b">
+            {[
+              { value: "all", label: "All" },
+              { value: "active", label: "Active" },
+              { value: "scheduled", label: "Scheduled" },
+              { value: "history", label: "History" },
+            ].map((s) => (
+              <Link
+                key={s.value}
+                href={s.value === "all" ? "/stock-counts" : `/stock-counts?state=${s.value}`}
+                className={`px-4 py-2 text-sm border-b-2 transition-colors ${
+                  stateFilter === s.value
+                    ? "border-primary text-primary font-medium"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
+
+          {stateFilter === "scheduled" ? (
+            <Card>
+              <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                Scheduled counts aren&apos;t supported yet. Create an active count from the button
+                above.
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {stateFilter === "all" || stateFilter === "active" ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.stockCounts.inProgressHeading}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {renderTable(inProgress, t.stockCounts.inProgressEmpty)}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {stateFilter === "all" || stateFilter === "history" ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.stockCounts.closedHeading}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {renderTable(closed, t.stockCounts.closedEmpty)}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       )}
     </div>
