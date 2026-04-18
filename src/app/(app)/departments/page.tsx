@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -9,6 +9,7 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
@@ -53,11 +54,19 @@ export default async function DepartmentsPage() {
       />
 
       {departments.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">No departments yet</p>
-          </CardContent>
-        </Card>
+        // P3-2 (audit v1.0 §9.2) — standardize the empty state so
+        // the first-run experience matches the rest of the product
+        // instead of a bare "No departments yet" banner.
+        <EmptyState
+          icon={Building2}
+          title="No departments yet"
+          description="Group your team and inventory by department to slice reports and restrict stock access."
+          actions={
+            canCreate
+              ? [{ label: "New Department", href: "/departments/new", icon: Plus }]
+              : []
+          }
+        />
       ) : (
         <div className="grid gap-4">
           {departments.map((dept) => (
