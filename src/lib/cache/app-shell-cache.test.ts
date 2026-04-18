@@ -96,7 +96,9 @@ describe("P1-5 — (app)/layout.tsx is wired to the cache", () => {
 
   it("runs the two cache reads in parallel", () => {
     // The new code awaits Promise.all([...getLowStockBadge..., ...getNotificationData...])
-    expect(LAYOUT_SOURCE).toMatch(/Promise\.all\(\s*\[[\s\S]*getLowStockBadge[\s\S]*getNotificationData[\s\S]*\]\s*\)/);
+    expect(LAYOUT_SOURCE).toMatch(
+      /Promise\.all\(\s*\[[\s\S]*getLowStockBadge[\s\S]*getNotificationData[\s\S]*\]\s*\)/,
+    );
   });
 });
 

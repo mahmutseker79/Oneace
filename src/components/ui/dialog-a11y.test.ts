@@ -23,7 +23,7 @@
  * has its own server-action / Prisma / i18n dependency graph).
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -90,7 +90,7 @@ describe("Dialog / AlertDialog a11y description coverage (§9.4)", () => {
   });
 
   it.each(consumers)(
-    "$relative ($kind) renders a $kind\Description so Radix doesn't warn",
+    "$relative ($kind) renders a $kindDescription so Radix doesn't warn",
     ({ path, kind }) => {
       const src = readFileSync(path, "utf8");
       const descriptionToken = kind === "Dialog" ? "DialogDescription" : "AlertDialogDescription";

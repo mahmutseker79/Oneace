@@ -137,9 +137,7 @@ export async function cancelMigrationJobAction(id: string): Promise<{ success: b
     // P1-2: rollback is suspended for v1; importing jobs must run to
     // completion (or fail) before they can be cancelled. Manual
     // remediation is the only path to undo a completed import.
-    throw new Error(
-      "Cannot cancel during import. Wait for the import to complete or fail.",
-    );
+    throw new Error("Cannot cancel during import. Wait for the import to complete or fail.");
   }
   if (["COMPLETED", "CANCELLED"].includes(job.status)) {
     throw new Error("Migration is already in a terminal state");

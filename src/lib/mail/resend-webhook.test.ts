@@ -30,10 +30,7 @@ import {
 // ─── Static source reads ──────────────────────────────────────────────
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
-const SCHEMA = readFileSync(
-  resolve(REPO_ROOT, "prisma", "schema.prisma"),
-  "utf8",
-);
+const SCHEMA = readFileSync(resolve(REPO_ROOT, "prisma", "schema.prisma"), "utf8");
 const MIGRATION = readFileSync(
   resolve(
     REPO_ROOT,
@@ -79,9 +76,7 @@ describe("P2-6 §5.28 — Prisma schema for email deliverability", () => {
     // The default must be ACTIVE, otherwise every existing row
     // would need an explicit backfill and the migration would
     // fail on `ADD COLUMN NOT NULL` without a default.
-    expect(user).toMatch(
-      /emailStatus\s+EmailStatus\s+@default\(\s*ACTIVE\s*\)/,
-    );
+    expect(user).toMatch(/emailStatus\s+EmailStatus\s+@default\(\s*ACTIVE\s*\)/);
     // Nullable timestamp — null means "never changed from default".
     expect(user).toMatch(/emailStatusUpdatedAt\s+DateTime\?/);
   });
@@ -101,9 +96,7 @@ describe("P2-6 §5.28 — migration SQL matches Prisma", () => {
     expect(MIGRATION).toMatch(
       /CREATE\s+TYPE\s+"EmailStatus"\s+AS\s+ENUM\s*\(\s*'ACTIVE',\s*'BOUNCED',\s*'COMPLAINED',\s*'UNSUBSCRIBED'\s*\)/i,
     );
-    expect(MIGRATION).toMatch(
-      /SELECT\s+1\s+FROM\s+pg_type\s+WHERE\s+typname\s*=\s*'EmailStatus'/i,
-    );
+    expect(MIGRATION).toMatch(/SELECT\s+1\s+FROM\s+pg_type\s+WHERE\s+typname\s*=\s*'EmailStatus'/i);
   });
 
   it("adds emailStatus + emailStatusUpdatedAt columns with IF NOT EXISTS", () => {
@@ -129,9 +122,7 @@ describe("P2-6 §5.28 — env schema", () => {
     // The route 503s if the secret is absent, so the schema must
     // not make it required (otherwise local dev without email
     // plumbing couldn't even boot).
-    expect(ENV).toMatch(
-      /RESEND_WEBHOOK_SECRET:\s*z\.string\(\)\.min\(1\)\.optional\(\)/,
-    );
+    expect(ENV).toMatch(/RESEND_WEBHOOK_SECRET:\s*z\.string\(\)\.min\(1\)\.optional\(\)/);
   });
 });
 
@@ -139,16 +130,9 @@ describe("P2-6 §5.28 — env schema", () => {
 
 const SECRET = "dGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWZvci1zdml4"; // base64("this-is-a-test-secret-for-svix")
 
-function sign(
-  id: string,
-  timestamp: string,
-  body: string,
-  secret: string,
-): string {
+function sign(id: string, timestamp: string, body: string, secret: string): string {
   const key = Buffer.from(secret, "base64");
-  const mac = createHmac("sha256", key)
-    .update(`${id}.${timestamp}.${body}`)
-    .digest("base64");
+  const mac = createHmac("sha256", key).update(`${id}.${timestamp}.${body}`).digest("base64");
   return `v1,${mac}`;
 }
 
@@ -160,12 +144,7 @@ describe("verifyResendWebhook — happy path", () => {
     const body = JSON.stringify({ type: "email.bounced" });
     const signature = sign(id, ts, body, SECRET);
 
-    const result = verifyResendWebhook(
-      { id, timestamp: ts, signature },
-      body,
-      SECRET,
-      now,
-    );
+    const result = verifyResendWebhook({ id, timestamp: ts, signature }, body, SECRET, now);
     expect(result.ok).toBe(true);
   });
 
@@ -196,12 +175,7 @@ describe("verifyResendWebhook — happy path", () => {
     const bogus = "v1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
     const mixed = `${bogus} ${goodSignature}`;
 
-    const result = verifyResendWebhook(
-      { id, timestamp: ts, signature: mixed },
-      body,
-      SECRET,
-      now,
-    );
+    const result = verifyResendWebhook({ id, timestamp: ts, signature: mixed }, body, SECRET, now);
     expect(result.ok).toBe(true);
   });
 });
@@ -235,12 +209,7 @@ describe("verifyResendWebhook — rejection modes", () => {
   });
 
   it("rejects missing svix-signature", () => {
-    const result = verifyResendWebhook(
-      { id, timestamp: ts, signature: null },
-      body,
-      SECRET,
-      now,
-    );
+    const result = verifyResendWebhook({ id, timestamp: ts, signature: null }, body, SECRET, now);
     expect(result.ok).toBe(false);
   });
 
@@ -256,36 +225,22 @@ describe("verifyResendWebhook — rejection modes", () => {
   });
 
   it("rejects a timestamp outside the ±5-minute window (stale)", () => {
-    const stale = String(
-      Math.floor(now.getTime() / 1000) - SVIX_TOLERANCE_SECONDS - 1,
-    );
+    const stale = String(Math.floor(now.getTime() / 1000) - SVIX_TOLERANCE_SECONDS - 1);
     const signature = sign(id, stale, body, SECRET);
-    const result = verifyResendWebhook(
-      { id, timestamp: stale, signature },
-      body,
-      SECRET,
-      now,
-    );
+    const result = verifyResendWebhook({ id, timestamp: stale, signature }, body, SECRET, now);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toMatch(/tolerance/);
   });
 
   it("rejects a timestamp outside the ±5-minute window (future)", () => {
-    const future = String(
-      Math.floor(now.getTime() / 1000) + SVIX_TOLERANCE_SECONDS + 1,
-    );
+    const future = String(Math.floor(now.getTime() / 1000) + SVIX_TOLERANCE_SECONDS + 1);
     const signature = sign(id, future, body, SECRET);
-    const result = verifyResendWebhook(
-      { id, timestamp: future, signature },
-      body,
-      SECRET,
-      now,
-    );
+    const result = verifyResendWebhook({ id, timestamp: future, signature }, body, SECRET, now);
     expect(result.ok).toBe(false);
   });
 
   it("rejects a tampered body (MAC no longer matches)", () => {
-    const tampered = body + "!";
+    const tampered = `${body}!`;
     const result = verifyResendWebhook(
       { id, timestamp: ts, signature: goodSig },
       tampered,
@@ -298,12 +253,7 @@ describe("verifyResendWebhook — rejection modes", () => {
 
   it("rejects when only non-v1 versions are in the header", () => {
     const v2 = "v2,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-    const result = verifyResendWebhook(
-      { id, timestamp: ts, signature: v2 },
-      body,
-      SECRET,
-      now,
-    );
+    const result = verifyResendWebhook({ id, timestamp: ts, signature: v2 }, body, SECRET, now);
     expect(result.ok).toBe(false);
   });
 

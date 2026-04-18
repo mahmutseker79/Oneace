@@ -19,65 +19,30 @@ import { describe, expect, it, vi } from "vitest";
 // ─── Static source reads ──────────────────────────────────────────────
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
-const SCHEMA = readFileSync(
-  resolve(REPO_ROOT, "prisma", "schema.prisma"),
-  "utf8",
-);
+const SCHEMA = readFileSync(resolve(REPO_ROOT, "prisma", "schema.prisma"), "utf8");
 const HELPER = readFileSync(resolve(__dirname, "with-idempotency.ts"), "utf8");
 const MIGRATION = readFileSync(
-  resolve(
-    REPO_ROOT,
-    "prisma",
-    "migrations",
-    "20260418100000_cron_idempotency",
-    "migration.sql",
-  ),
+  resolve(REPO_ROOT, "prisma", "migrations", "20260418100000_cron_idempotency", "migration.sql"),
   "utf8",
 );
 
 const STOCK_COUNT_ROUTE = readFileSync(
-  resolve(
-    REPO_ROOT,
-    "src",
-    "app",
-    "api",
-    "cron",
-    "stock-count-triggers",
-    "route.ts",
-  ),
+  resolve(REPO_ROOT, "src", "app", "api", "cron", "stock-count-triggers", "route.ts"),
   "utf8",
 );
 const CLEANUP_MIGRATION_ROUTE = readFileSync(
-  resolve(
-    REPO_ROOT,
-    "src",
-    "app",
-    "api",
-    "cron",
-    "cleanup-migration-files",
-    "route.ts",
-  ),
+  resolve(REPO_ROOT, "src", "app", "api", "cron", "cleanup-migration-files", "route.ts"),
   "utf8",
 );
 const CLEANUP_NOTIFICATIONS_ROUTE = readFileSync(
-  resolve(
-    REPO_ROOT,
-    "src",
-    "app",
-    "api",
-    "cron",
-    "cleanup-notifications",
-    "route.ts",
-  ),
+  resolve(REPO_ROOT, "src", "app", "api", "cron", "cleanup-notifications", "route.ts"),
   "utf8",
 );
 
 function sliceModel(name: string): string {
   const marker = `model ${name} {`;
   const start = SCHEMA.indexOf(marker);
-  expect(start, `model ${name} must exist in schema.prisma`).toBeGreaterThan(
-    -1,
-  );
+  expect(start, `model ${name} must exist in schema.prisma`).toBeGreaterThan(-1);
   const bodyStart = start + marker.length;
   const end = SCHEMA.indexOf("\n}", bodyStart);
   return SCHEMA.slice(start, end + 2);
@@ -100,9 +65,7 @@ describe("P2-5 §5.27 — CronRun Prisma model", () => {
   });
 
   it("has `startedAt DateTime @default(now())`", () => {
-    expect(CRON_RUN_MODEL).toMatch(
-      /startedAt\s+DateTime\s+@default\(now\(\)\)/,
-    );
+    expect(CRON_RUN_MODEL).toMatch(/startedAt\s+DateTime\s+@default\(now\(\)\)/);
   });
 
   it("has a nullable `completedAt DateTime?` — null means 'still running or crashed'", () => {
@@ -148,9 +111,7 @@ describe("P2-5 §5.27 — with-idempotency helper source shape", () => {
   });
 
   it("stamps `completedAt` on success", () => {
-    expect(HELPER).toMatch(
-      /db\.cronRun\.update[\s\S]*?completedAt:\s*new Date\(\)/,
-    );
+    expect(HELPER).toMatch(/db\.cronRun\.update[\s\S]*?completedAt:\s*new Date\(\)/);
   });
 
   it("stamps `error` and rethrows on failure (so retries can recover)", () => {
@@ -166,9 +127,7 @@ describe("P2-5 §5.27 — with-idempotency helper source shape", () => {
 
 describe("P2-5 §5.27 — CronRun migration SQL matches Prisma", () => {
   it("creates the CronRun table with IF NOT EXISTS (idempotent reapply)", () => {
-    expect(MIGRATION).toMatch(
-      /CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+"CronRun"/i,
-    );
+    expect(MIGRATION).toMatch(/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+"CronRun"/i);
   });
 
   it("has the same columns as the Prisma model", () => {
@@ -183,9 +142,7 @@ describe("P2-5 §5.27 — CronRun migration SQL matches Prisma", () => {
 
   it("has the two indexes declared on the model", () => {
     expect(MIGRATION).toMatch(/"CronRun_name_idx"\s+ON\s+"CronRun"\("name"\)/i);
-    expect(MIGRATION).toMatch(
-      /"CronRun_startedAt_idx"\s+ON\s+"CronRun"\("startedAt"\)/i,
-    );
+    expect(MIGRATION).toMatch(/"CronRun_startedAt_idx"\s+ON\s+"CronRun"\("startedAt"\)/i);
   });
 });
 
@@ -193,27 +150,19 @@ describe("P2-5 §5.27 — CronRun migration SQL matches Prisma", () => {
 
 describe("P2-5 §5.27 — all daily cron routes import the helper", () => {
   it("stock-count-triggers wraps the job body", () => {
-    expect(STOCK_COUNT_ROUTE).toMatch(
-      /from\s+["']@\/lib\/cron\/with-idempotency["']/,
-    );
-    expect(STOCK_COUNT_ROUTE).toMatch(
-      /withCronIdempotency\(\s*["']stock-count-triggers["']/,
-    );
+    expect(STOCK_COUNT_ROUTE).toMatch(/from\s+["']@\/lib\/cron\/with-idempotency["']/);
+    expect(STOCK_COUNT_ROUTE).toMatch(/withCronIdempotency\(\s*["']stock-count-triggers["']/);
   });
 
   it("cleanup-migration-files wraps the real-delete body (not dryRun)", () => {
-    expect(CLEANUP_MIGRATION_ROUTE).toMatch(
-      /from\s+["']@\/lib\/cron\/with-idempotency["']/,
-    );
+    expect(CLEANUP_MIGRATION_ROUTE).toMatch(/from\s+["']@\/lib\/cron\/with-idempotency["']/);
     expect(CLEANUP_MIGRATION_ROUTE).toMatch(
       /withCronIdempotency\(\s*\n?\s*["']cleanup-migration-files["']/,
     );
   });
 
   it("cleanup-notifications wraps the real-delete body (not dryRun)", () => {
-    expect(CLEANUP_NOTIFICATIONS_ROUTE).toMatch(
-      /from\s+["']@\/lib\/cron\/with-idempotency["']/,
-    );
+    expect(CLEANUP_NOTIFICATIONS_ROUTE).toMatch(/from\s+["']@\/lib\/cron\/with-idempotency["']/);
     expect(CLEANUP_NOTIFICATIONS_ROUTE).toMatch(
       /withCronIdempotency\(\s*\n?\s*["']cleanup-notifications["']/,
     );
@@ -241,9 +190,7 @@ describe("P2-5 §5.27 — internals (pure functions)", () => {
 
     const at = new Date("2026-04-18T23:59:59.999Z");
     expect(utcDayBucket(at)).toBe("2026-04-18");
-    expect(buildRunId("stock-count-triggers", at)).toBe(
-      "cron:stock-count-triggers:2026-04-18",
-    );
+    expect(buildRunId("stock-count-triggers", at)).toBe("cron:stock-count-triggers:2026-04-18");
   });
 
   it("day bucket does not depend on local TZ (uses UTC)", async () => {

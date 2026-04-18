@@ -29,9 +29,7 @@ describe("receivePurchaseOrderAction nonce policy (§5.13)", () => {
     // The failure branch MUST return a structured error, not fall
     // through. Locate the `if (!submissionNonce)` block and check
     // that it returns within its body.
-    const match = source.match(
-      /if\s*\(\s*!submissionNonce\s*\)\s*\{([\s\S]*?)\n\s{2}\}/,
-    );
+    const match = source.match(/if\s*\(\s*!submissionNonce\s*\)\s*\{([\s\S]*?)\n\s{2}\}/);
     expect(match).not.toBeNull();
     const body = match?.[1] ?? "";
     expect(body).toMatch(/return\s*\{\s*ok:\s*false/);

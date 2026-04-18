@@ -59,16 +59,16 @@ export function buildResetPasswordEmail(params: ResetPasswordEmailParams): Reset
   const subject = "Reset your OneAce password";
 
   const text = [
-    `Hi,`,
-    ``,
+    "Hi,",
+    "",
     `We received a request to reset the password for the OneAce account registered to ${params.to}.`,
-    ``,
+    "",
     `Click the link below within ${expiresInMinutes} minutes to choose a new password:`,
     params.resetUrl,
-    ``,
+    "",
     `If you didn't request this, you can ignore this email — your password will stay the same.`,
-    ``,
-    `— OneAce`,
+    "",
+    "— OneAce",
     params.appOrigin,
   ].join("\n");
 

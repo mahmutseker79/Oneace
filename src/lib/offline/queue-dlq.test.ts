@@ -65,9 +65,7 @@ describe("offline queue dead-letter policy (§12.2)", () => {
     // passes { retryable: true }, a capped row must not go back
     // to `pending`. The logical expression below is the one
     // that enforces it.
-    expect(source).toMatch(
-      /opts\.retryable\s*&&\s*!capReached\s*\?\s*"pending"\s*:\s*"failed"/,
-    );
+    expect(source).toMatch(/opts\.retryable\s*&&\s*!capReached\s*\?\s*"pending"\s*:\s*"failed"/);
   });
 
   it("dead-lettered rows carry a diagnostic lastError tag", () => {

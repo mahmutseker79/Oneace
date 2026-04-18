@@ -40,9 +40,7 @@ export type ResendWebhookHeaders = {
   signature: string | null;
 };
 
-export type VerifyResult =
-  | { ok: true }
-  | { ok: false; reason: string };
+export type VerifyResult = { ok: true } | { ok: false; reason: string };
 
 /**
  * Verify a Resend (Svix) webhook delivery.
@@ -80,9 +78,7 @@ export function verifyResendWebhook(
 
   // Decode the signing secret. Resend copies from dashboard look like
   // `whsec_<base64>`, so strip the prefix if present.
-  const rawSecret = secret.startsWith("whsec_")
-    ? secret.slice("whsec_".length)
-    : secret;
+  const rawSecret = secret.startsWith("whsec_") ? secret.slice("whsec_".length) : secret;
   let keyBytes: Buffer;
   try {
     keyBytes = Buffer.from(rawSecret, "base64");
@@ -132,8 +128,7 @@ export const RESEND_STATE_CHANGING_EVENTS = [
   "email.complained",
   "email.unsubscribed",
 ] as const;
-export type ResendStateChangingEvent =
-  (typeof RESEND_STATE_CHANGING_EVENTS)[number];
+export type ResendStateChangingEvent = (typeof RESEND_STATE_CHANGING_EVENTS)[number];
 
 /** Map a Resend event type to the User.emailStatus transition. */
 export function resendEventToStatus(

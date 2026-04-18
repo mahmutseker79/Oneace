@@ -219,12 +219,7 @@ const CAPABILITY_MAP: Record<Capability, ReadonlySet<Role>> = {
   "stockCounts.addEntry": new Set<Role>(["OWNER", "ADMIN", "MEMBER", "COUNTER"]),
   "stockCounts.reconcile": new Set<Role>(["OWNER", "ADMIN"]),
   "stockCounts.cancel": new Set<Role>(["OWNER", "ADMIN"]),
-  "stockCounts.submitForApproval": new Set<Role>([
-    "OWNER",
-    "ADMIN",
-    "MEMBER",
-    "COUNTER",
-  ]),
+  "stockCounts.submitForApproval": new Set<Role>(["OWNER", "ADMIN", "MEMBER", "COUNTER"]),
   "stockCounts.approve": new Set<Role>(["OWNER", "ADMIN", "APPROVER"]),
   "stockCounts.reject": new Set<Role>(["OWNER", "ADMIN", "APPROVER"]),
   "stockCounts.rollback": new Set<Role>(["OWNER", "ADMIN"]),

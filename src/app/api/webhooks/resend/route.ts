@@ -72,13 +72,8 @@ export async function POST(request: NextRequest) {
   // unsigned traffic just because someone forgot to set the env var.
   const secret = env.RESEND_WEBHOOK_SECRET;
   if (!secret) {
-    logger.error(
-      "Resend webhook received but RESEND_WEBHOOK_SECRET is not configured — rejecting",
-    );
-    return NextResponse.json(
-      { error: "Webhook endpoint not configured" },
-      { status: 503 },
-    );
+    logger.error("Resend webhook received but RESEND_WEBHOOK_SECRET is not configured — rejecting");
+    return NextResponse.json({ error: "Webhook endpoint not configured" }, { status: 503 });
   }
 
   // Read raw body first — any JSON.parse before verify would be a
@@ -103,8 +98,7 @@ export async function POST(request: NextRequest) {
     // Distinguish "your request is malformed" (400) from "your MAC
     // doesn't match" (401). Svix/Resend treat both as signals to
     // pause redelivery, so the split is mostly for our logs.
-    const status =
-      verifyResult.reason === "no matching v1 signature" ? 401 : 400;
+    const status = verifyResult.reason === "no matching v1 signature" ? 401 : 400;
     logger.warn("Resend webhook verification failed", {
       reason: verifyResult.reason,
       status,
@@ -121,9 +115,7 @@ export async function POST(request: NextRequest) {
   }
 
   const type = parsed.type ?? "";
-  const isStateChanging = (
-    RESEND_STATE_CHANGING_EVENTS as readonly string[]
-  ).includes(type);
+  const isStateChanging = (RESEND_STATE_CHANGING_EVENTS as readonly string[]).includes(type);
   if (!isStateChanging) {
     // Still ack — Resend treats non-2xx as a retry signal, and we
     // don't want retries for informational events (sent/delivered/
@@ -183,10 +175,7 @@ export async function POST(request: NextRequest) {
     logger.error("Resend webhook DB update failed", { type, email, err: msg });
     // 5xx so Resend retries — transient DB errors should not lose
     // deliverability state.
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

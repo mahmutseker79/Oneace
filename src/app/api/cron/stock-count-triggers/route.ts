@@ -63,12 +63,15 @@ export async function GET(request: NextRequest) {
       });
 
       if (orgs.length === 0) {
-        return { triggered: 0, results: [] as Array<{
-          organizationId: string;
-          templateId: string;
-          countId: string | null;
-          reason: string;
-        }> };
+        return {
+          triggered: 0,
+          results: [] as Array<{
+            organizationId: string;
+            templateId: string;
+            countId: string | null;
+            reason: string;
+          }>,
+        };
       }
 
       // Run trigger pass per organization (isolated tenant scoping).

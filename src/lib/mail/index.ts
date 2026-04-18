@@ -56,8 +56,7 @@ export function getMailer(): Mailer {
   const apiKey = env.RESEND_API_KEY;
   const from = env.MAIL_FROM;
 
-  const inner: Mailer =
-    !apiKey || !from ? new ConsoleMailer() : new ResendMailer(apiKey, from);
+  const inner: Mailer = !apiKey || !from ? new ConsoleMailer() : new ResendMailer(apiKey, from);
 
   // §5.28 — wrap with the deliverability guard so every call site
   // picks up suppression for free.

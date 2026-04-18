@@ -102,12 +102,10 @@ function filePathToRoutePath(absPath: string): string {
     .split("/")
     .filter((p) => p !== "" && p !== "route.ts")
     .filter((p) => !(p.startsWith("(") && p.endsWith(")")));
-  return "/" + segments.join("/");
+  return `/${segments.join("/")}`;
 }
 
-function findExemptEntry(
-  routePath: string,
-): readonly [string, RegExp] | undefined {
+function findExemptEntry(routePath: string): readonly [string, RegExp] | undefined {
   return EXEMPT_PREFIX_AUTH_MARKERS.find(([prefix]) => routePath.startsWith(prefix));
 }
 
@@ -148,7 +146,7 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
           const _ = hasRouteLevelRateLimit(source); // grep keeps test greppable
           expect(
             findExemptEntry(routePath),
-            `Logic error: non-exempt branch should mean findExemptEntry returns undefined`,
+            "Logic error: non-exempt branch should mean findExemptEntry returns undefined",
           ).toBeUndefined();
         });
       }
@@ -158,10 +156,9 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
   describe("middleware.ts wiring invariants", () => {
     it("declares API_RATE_LIMIT_EXEMPT_PREFIXES and applies rateLimit() with a DEFAULT_API_RATE_LIMIT", () => {
       const source = readFileSync(MIDDLEWARE_PATH, "utf8");
-      expect(
-        source,
-        "middleware.ts must declare API_RATE_LIMIT_EXEMPT_PREFIXES",
-      ).toMatch(/API_RATE_LIMIT_EXEMPT_PREFIXES/);
+      expect(source, "middleware.ts must declare API_RATE_LIMIT_EXEMPT_PREFIXES").toMatch(
+        /API_RATE_LIMIT_EXEMPT_PREFIXES/,
+      );
       expect(
         source,
         "middleware.ts must declare DEFAULT_API_RATE_LIMIT (avoid magic numbers)",
@@ -170,10 +167,9 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
         source,
         "middleware.ts must actually call rateLimit() — declaring the exempt list is not enough",
       ).toMatch(/\brateLimit\s*\(/);
-      expect(
-        source,
-        "middleware.ts must return HTTP 429 when the limit is exceeded",
-      ).toMatch(/status:\s*429/);
+      expect(source, "middleware.ts must return HTTP 429 when the limit is exceeded").toMatch(
+        /status:\s*429/,
+      );
     });
 
     it("exempt list drift guard — every test-side prefix appears in middleware.ts", () => {
@@ -197,8 +193,7 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
       const excluded = matcherMatch?.[1] ?? "";
       expect(
         excluded.split("|").some((item) => item === "api" || item.startsWith("api/")),
-        "middleware matcher excludes /api/* — that would defeat the rate-limit default. Current excluded: " +
-          excluded,
+        `middleware matcher excludes /api/* — that would defeat the rate-limit default. Current excluded: ${excluded}`,
       ).toBe(false);
     });
   });
@@ -209,9 +204,7 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
     // different prefix.
     for (const prefix of EXEMPT_PATH_PREFIXES) {
       it(`"${prefix}" matches at least one route.ts under src/app/api`, () => {
-        const matched = routeFiles
-          .map(filePathToRoutePath)
-          .filter((p) => p.startsWith(prefix));
+        const matched = routeFiles.map(filePathToRoutePath).filter((p) => p.startsWith(prefix));
         expect(
           matched.length,
           `No route.ts under src/app/api matches exempt prefix "${prefix}". Typo in EXEMPT_PREFIX_AUTH_MARKERS?`,

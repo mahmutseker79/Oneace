@@ -491,9 +491,9 @@
    ============================================================ */
 
 :root {
-  --control-h-sm: 2.25rem;   /* 36px */
-  --control-h-md: 2.5rem;    /* 40px */
-  --control-h-lg: 2.75rem;   /* 44px */
+  --control-h-sm: 2.25rem; /* 36px */
+  --control-h-md: 2.5rem; /* 40px */
+  --control-h-lg: 2.75rem; /* 44px */
 }
 
 @layer base {

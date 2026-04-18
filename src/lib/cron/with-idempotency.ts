@@ -48,7 +48,7 @@ function buildRunId(name: string, at: Date): string {
 
 /** Truncate long error messages so we don't blow up the `error` column. */
 function truncateError(err: unknown, max = 2000): string {
-  const msg = err instanceof Error ? err.stack ?? err.message : String(err);
+  const msg = err instanceof Error ? (err.stack ?? err.message) : String(err);
   return msg.length > max ? `${msg.slice(0, max)}… [truncated]` : msg;
 }
 

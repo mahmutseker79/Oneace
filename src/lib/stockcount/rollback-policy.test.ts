@@ -19,10 +19,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  type StockCountState,
   canRollback,
   canTransition,
   rollbackDenialReason,
-  type StockCountState,
 } from "@/lib/stockcount/machine";
 
 const ALL_STATES: StockCountState[] = [

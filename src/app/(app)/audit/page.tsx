@@ -48,8 +48,8 @@ import {
 import type { AuditAction } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
-import { hasPlanCapability } from "@/lib/plans";
 import { hasCapability } from "@/lib/permissions";
+import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
 // Phase 3 — audit log filters.

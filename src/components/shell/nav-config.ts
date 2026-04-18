@@ -335,10 +335,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
 // Render helpers — shared between desktop and mobile.
 // ─────────────────────────────────────────────────────────────────────
 
-export function resolveLabel(
-  item: NavItem,
-  labels: SidebarLabels,
-): string {
+export function resolveLabel(item: NavItem, labels: SidebarLabels): string {
   const value = labels.nav[item.labelKey];
   return typeof value === "string" && value.length > 0 ? value : item.fallbackLabel;
 }

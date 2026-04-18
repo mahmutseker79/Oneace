@@ -37,9 +37,7 @@ export default function PrivacyPage() {
       <article className="prose prose-slate max-w-none">
         <header className="not-prose mb-10">
           <p className="text-sm uppercase tracking-wide text-muted-foreground">Legal</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Privacy Policy
-          </h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Privacy Policy</h1>
           <p className="mt-3 text-sm text-muted-foreground">Last updated: {LAST_UPDATED}</p>
         </header>
 
@@ -47,8 +45,7 @@ export default function PrivacyPage() {
           <p>
             This Privacy Policy explains what information OneAce (&quot;OneAce&quot;,
             &quot;we&quot;) collects when you use the OneAce inventory platform
-            (&quot;Service&quot;), how we use it, and the choices you have. It works alongside
-            our{" "}
+            (&quot;Service&quot;), how we use it, and the choices you have. It works alongside our{" "}
             <Link href="/legal/terms" className="font-medium underline">
               Terms of Service
             </Link>
@@ -58,8 +55,8 @@ export default function PrivacyPage() {
           <h2 className="mt-8 text-lg font-semibold">1. Information We Collect</h2>
           <p>
             <strong>Account data.</strong> When you sign up we collect your name, email address,
-            organization name, and a hashed password. If you accept an invitation we also record
-            the inviting user and role.
+            organization name, and a hashed password. If you accept an invitation we also record the
+            inviting user and role.
           </p>
           <p>
             <strong>Inventory data.</strong> All content you create or upload to the Service —
@@ -67,23 +64,23 @@ export default function PrivacyPage() {
             Organization and scoped by Organization id so other tenants cannot access it.
           </p>
           <p>
-            <strong>Usage data.</strong> We log request metadata (IP address, user agent,
-            timestamp, status code, endpoint) needed to operate the Service, detect abuse, and
-            diagnose errors. Product analytics (PostHog) is <em>only</em> collected when the
-            relevant environment variable is configured by the operator.
+            <strong>Usage data.</strong> We log request metadata (IP address, user agent, timestamp,
+            status code, endpoint) needed to operate the Service, detect abuse, and diagnose errors.
+            Product analytics (PostHog) is <em>only</em> collected when the relevant environment
+            variable is configured by the operator.
           </p>
           <p>
-            <strong>Error reports.</strong> Unhandled exceptions and performance traces may be
-            sent to Sentry when enabled by the operator, for debugging. Error reports may include
-            the URL path and a sanitised stack trace.
+            <strong>Error reports.</strong> Unhandled exceptions and performance traces may be sent
+            to Sentry when enabled by the operator, for debugging. Error reports may include the URL
+            path and a sanitised stack trace.
           </p>
 
           <h2 className="mt-8 text-lg font-semibold">2. How We Use Information</h2>
           <p>
             We use information to provide and secure the Service, process transactions, send
-            transactional email (account verification, password reset, invitations,
-            billing receipts), prevent abuse, and improve reliability. We do not sell personal
-            data. We do not use your Inventory Data to train external models.
+            transactional email (account verification, password reset, invitations, billing
+            receipts), prevent abuse, and improve reliability. We do not sell personal data. We do
+            not use your Inventory Data to train external models.
           </p>
 
           <h2 className="mt-8 text-lg font-semibold">3. Sharing With Sub-Processors</h2>
@@ -115,8 +112,8 @@ export default function PrivacyPage() {
 
           <h2 className="mt-8 text-lg font-semibold">4. Data Retention and Deletion</h2>
           <p>
-            Customer Data is retained while your account is active. Closing your account triggers
-            a cascade delete that removes your personal data and your Organization&apos;s Inventory
+            Customer Data is retained while your account is active. Closing your account triggers a
+            cascade delete that removes your personal data and your Organization&apos;s Inventory
             Data from our operational database. Backups are rotated on a rolling 30-day window and
             then purged. You can request an export before closing your account.
           </p>

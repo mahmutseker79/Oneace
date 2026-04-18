@@ -44,14 +44,8 @@ const CREATE = sliceAction(
   "export async function createItemAction",
   "export async function updateItemAction",
 );
-const UPDATE = sliceAction(
-  "export async function updateItemAction",
-  "// --- CSV / bulk import",
-);
-const IMPORT = sliceAction(
-  "export async function importItemsAction",
-  "// --- delete",
-);
+const UPDATE = sliceAction("export async function updateItemAction", "// --- CSV / bulk import");
+const IMPORT = sliceAction("export async function importItemsAction", "// --- delete");
 // deleteItemAction is the last export in the file, so slice to end-of-file.
 const DELETE = (() => {
   const start = ACTIONS_SOURCE.indexOf("export async function deleteItemAction");

@@ -56,19 +56,13 @@ describe("Error boundary coverage (audit v1.1 §5.21)", () => {
 
     it(`${path} is a client component`, () => {
       const contents = readErrorBoundary(path) ?? "";
-      expect(contents, `${path} is not marked "use client"`).toMatch(
-        /^["']use client["'];?/,
-      );
+      expect(contents, `${path} is not marked "use client"`).toMatch(/^["']use client["'];?/);
     });
 
     it(`${path} default-exports an error handler taking { error, reset }`, () => {
       const contents = readErrorBoundary(path) ?? "";
-      expect(contents, `${path} missing default export`).toMatch(
-        /export default function \w+/,
-      );
-      expect(contents, `${path} doesn't destructure error/reset`).toMatch(
-        /\berror\s*,\s*reset\b/,
-      );
+      expect(contents, `${path} missing default export`).toMatch(/export default function \w+/);
+      expect(contents, `${path} doesn't destructure error/reset`).toMatch(/\berror\s*,\s*reset\b/);
     });
 
     it(`${path} delegates to SegmentError (shared UI)`, () => {
@@ -76,12 +70,8 @@ describe("Error boundary coverage (audit v1.1 §5.21)", () => {
       expect(contents, `${path} doesn't import SegmentError`).toMatch(
         /from ["']@\/components\/errors\/segment-error["']/,
       );
-      expect(contents, `${path} doesn't render <SegmentError>`).toMatch(
-        /<SegmentError\b/,
-      );
-      expect(contents, `${path} doesn't pass segmentId`).toMatch(
-        /\bsegmentId=/,
-      );
+      expect(contents, `${path} doesn't render <SegmentError>`).toMatch(/<SegmentError\b/);
+      expect(contents, `${path} doesn't pass segmentId`).toMatch(/\bsegmentId=/);
     });
   }
 
@@ -90,9 +80,7 @@ describe("Error boundary coverage (audit v1.1 §5.21)", () => {
       resolve(__dirname, "..", "components", "errors", "segment-error.tsx"),
       "utf8",
     );
-    expect(src, "SegmentError must route to Sentry").toMatch(
-      /\bcaptureException\(error\)/,
-    );
+    expect(src, "SegmentError must route to Sentry").toMatch(/\bcaptureException\(error\)/);
     expect(src, "SegmentError must breadcrumb to console for dev").toMatch(
       /console\.error\(`\[segment-error:/,
     );

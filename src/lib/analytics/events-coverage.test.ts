@@ -17,14 +17,11 @@
 // This test pins those invariants so the taxonomy can't silently drift
 // back into the "lots of constants, no dashboards" state.
 
-import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { AnalyticsEvents, PlannedAnalyticsEvents } from "@/lib/analytics/events";
 import { describe, expect, it } from "vitest";
-import {
-  AnalyticsEvents,
-  PlannedAnalyticsEvents,
-} from "@/lib/analytics/events";
 
 const SRC_DIR = resolve(__dirname, "..", "..");
 
@@ -41,15 +38,17 @@ function findCallSites(eventKey: string, eventValue: string): string[] {
       )} ${SRC_DIR}`,
       { encoding: "utf8" },
     );
-    return result
-      .split("\n")
-      .filter(Boolean)
-      // Exclude the events.ts declaration itself + this test file.
-      .filter(
-        (p) =>
-          !p.endsWith("src/lib/analytics/events.ts") &&
-          !p.endsWith("src/lib/analytics/events-coverage.test.ts"),
-      );
+    return (
+      result
+        .split("\n")
+        .filter(Boolean)
+        // Exclude the events.ts declaration itself + this test file.
+        .filter(
+          (p) =>
+            !p.endsWith("src/lib/analytics/events.ts") &&
+            !p.endsWith("src/lib/analytics/events-coverage.test.ts"),
+        )
+    );
   } catch {
     return [];
   }
@@ -82,34 +81,22 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
 
   describe("track() facade is the canonical entry point", () => {
     it("track is exported from @/lib/instrumentation with sync signature", () => {
-      const source = readFileSync(
-        resolve(SRC_DIR, "lib", "instrumentation.ts"),
-        "utf8",
-      );
+      const source = readFileSync(resolve(SRC_DIR, "lib", "instrumentation.ts"), "utf8");
       expect(source).toMatch(
         /export function track\(event: string, props\?: Record<string, unknown>\): void/,
       );
     });
 
     it("deprecated trackEvent carries a @deprecated JSDoc tag", () => {
-      const source = readFileSync(
-        resolve(SRC_DIR, "lib", "analytics", "events.ts"),
-        "utf8",
-      );
+      const source = readFileSync(resolve(SRC_DIR, "lib", "analytics", "events.ts"), "utf8");
       // Match the @deprecated tag anywhere above the function declaration.
-      expect(
-        source,
-        "trackEvent() must carry @deprecated tag pointing to track()",
-      ).toMatch(
+      expect(source, "trackEvent() must carry @deprecated tag pointing to track()").toMatch(
         /@deprecated[\s\S]*?Use `track\(\)`[\s\S]*?export function trackEvent/,
       );
     });
 
     it("AnalyticsEvents exports a type-level union (AnalyticsEventName)", () => {
-      const source = readFileSync(
-        resolve(SRC_DIR, "lib", "analytics", "events.ts"),
-        "utf8",
-      );
+      const source = readFileSync(resolve(SRC_DIR, "lib", "analytics", "events.ts"), "utf8");
       expect(source).toMatch(/export type AnalyticsEventName =/);
     });
   });
@@ -124,10 +111,7 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
     });
 
     it("onboarding_completed fires from onboarding-form.tsx", () => {
-      const sites = findCallSites(
-        "ONBOARDING_COMPLETED",
-        AnalyticsEvents.ONBOARDING_COMPLETED,
-      );
+      const sites = findCallSites("ONBOARDING_COMPLETED", AnalyticsEvents.ONBOARDING_COMPLETED);
       expect(
         sites.some((p) => p.endsWith("onboarding-form.tsx")),
         `expected onboarding-form.tsx in call sites, got: ${sites.join(", ")}`,
@@ -135,10 +119,7 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
     });
 
     it("two_factor_enabled fires from two-factor-setup.tsx", () => {
-      const sites = findCallSites(
-        "TWO_FACTOR_ENABLED",
-        AnalyticsEvents.TWO_FACTOR_ENABLED,
-      );
+      const sites = findCallSites("TWO_FACTOR_ENABLED", AnalyticsEvents.TWO_FACTOR_ENABLED);
       expect(
         sites.some((p) => p.endsWith("two-factor-setup.tsx")),
         `expected two-factor-setup.tsx in call sites, got: ${sites.join(", ")}`,
@@ -146,10 +127,7 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
     });
 
     it("item_image_uploaded fires from image-upload.tsx", () => {
-      const sites = findCallSites(
-        "ITEM_IMAGE_UPLOADED",
-        AnalyticsEvents.ITEM_IMAGE_UPLOADED,
-      );
+      const sites = findCallSites("ITEM_IMAGE_UPLOADED", AnalyticsEvents.ITEM_IMAGE_UPLOADED);
       expect(
         sites.some((p) => p.endsWith("image-upload.tsx")),
         `expected image-upload.tsx in call sites, got: ${sites.join(", ")}`,
@@ -171,10 +149,7 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
     });
 
     it("first_item_created fires from items/item-form.tsx", () => {
-      const sites = findCallSites(
-        "FIRST_ITEM_CREATED",
-        AnalyticsEvents.FIRST_ITEM_CREATED,
-      );
+      const sites = findCallSites("FIRST_ITEM_CREATED", AnalyticsEvents.FIRST_ITEM_CREATED);
       expect(
         sites.some((p) => p.endsWith("items/item-form.tsx")),
         `expected items/item-form.tsx in call sites, got: ${sites.join(", ")}`,
@@ -201,10 +176,7 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
     });
 
     it("first_count_completed fires from reconcile-form.tsx", () => {
-      const sites = findCallSites(
-        "FIRST_COUNT_COMPLETED",
-        AnalyticsEvents.FIRST_COUNT_COMPLETED,
-      );
+      const sites = findCallSites("FIRST_COUNT_COMPLETED", AnalyticsEvents.FIRST_COUNT_COMPLETED);
       expect(
         sites.some((p) => p.endsWith("reconcile/reconcile-form.tsx")),
         `expected reconcile-form.tsx in call sites, got: ${sites.join(", ")}`,
@@ -212,10 +184,7 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
     });
 
     it("barcode_scanned fires from scan/scanner.tsx", () => {
-      const sites = findCallSites(
-        "BARCODE_SCANNED",
-        AnalyticsEvents.BARCODE_SCANNED,
-      );
+      const sites = findCallSites("BARCODE_SCANNED", AnalyticsEvents.BARCODE_SCANNED);
       expect(
         sites.some((p) => p.endsWith("scan/scanner.tsx")),
         `expected scan/scanner.tsx in call sites, got: ${sites.join(", ")}`,

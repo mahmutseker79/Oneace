@@ -56,7 +56,13 @@ function headerValue(headerName: string): string {
     // Re-join with "; " to simulate runtime value.
     return arr[1]
       .split(/,\s*\n/)
-      .map((line) => line.trim().replace(/^\/\/.*$/, "").replace(/^"|",?$/g, "").trim())
+      .map((line) =>
+        line
+          .trim()
+          .replace(/^\/\/.*$/, "")
+          .replace(/^"|",?$/g, "")
+          .trim(),
+      )
       .filter(Boolean)
       .join("; ");
   }

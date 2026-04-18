@@ -24,12 +24,7 @@ const GITIGNORE = readFileSync(resolve(REPO_ROOT, ".gitignore"), "utf8");
 const CLAUDE_MD = readFileSync(resolve(REPO_ROOT, "CLAUDE.md"), "utf8");
 
 describe("P3-2 §5.31 — .gitignore covers scratch / report outputs", () => {
-  const patterns = [
-    "/test-artifacts/",
-    "/TEST_REPORT.md",
-    "/test-results/",
-    "/playwright-report/",
-  ];
+  const patterns = ["/test-artifacts/", "/TEST_REPORT.md", "/test-results/", "/playwright-report/"];
   for (const pattern of patterns) {
     it(`ignores '${pattern}'`, () => {
       expect(
@@ -75,11 +70,9 @@ describe("P3-2 §5.31 — CLAUDE.md has an OneAce Architecture section", () => {
   });
 
   it("the section is non-trivial (>=40 lines of prose)", () => {
-    const match = CLAUDE_MD.match(
-      /## OneAce Architecture([\s\S]*?)\n## [A-Z]/,
-    );
+    const match = CLAUDE_MD.match(/## OneAce Architecture([\s\S]*?)\n## [A-Z]/);
     expect(match, "OneAce Architecture section must be bounded by a following H2").not.toBeNull();
-    const body = match![1];
+    const body = match?.[1];
     const lines = body.split("\n").filter((l) => l.trim().length > 0);
     expect(
       lines.length,

@@ -8,12 +8,12 @@ import { SwRegister } from "@/components/pwa/sw-register";
 import { UpdatePrompt } from "@/components/pwa/update-prompt";
 import { AppShellClient } from "@/components/shell/app-shell-client";
 import { Sidebar } from "@/components/shell/sidebar";
-// P1-5 (audit v1.0 §5.10): app shell queries are tag-cached so the
-// layout doesn't re-run three DB queries on every server-rendered nav.
-import { getLowStockBadge, getNotificationData } from "@/lib/cache/app-shell-cache";
 // P1-6 (audit v1.0 §5.12): version label derived from build-time env
 // so the sidebar no longer reads a hardcoded "v0.1.0 · Sprint 0 scaffold".
 import { getAppVersionLine } from "@/lib/app-version";
+// P1-5 (audit v1.0 §5.10): app shell queries are tag-cached so the
+// layout doesn't re-run three DB queries on every server-rendered nav.
+import { getLowStockBadge, getNotificationData } from "@/lib/cache/app-shell-cache";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership, requireSession } from "@/lib/session";

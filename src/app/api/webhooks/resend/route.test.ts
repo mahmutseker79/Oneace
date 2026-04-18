@@ -27,10 +27,7 @@ describe("P2-6 §5.28 — Resend webhook route wiring", () => {
     // Strip line and block comments before the "must not" check —
     // the module-level doc comment intentionally mentions
     // `request.json()` as the anti-pattern we reject.
-    const codeOnly = ROUTE_SRC.replace(/\/\*[\s\S]*?\*\//g, "").replace(
-      /^\s*\*.*$/gm,
-      "",
-    );
+    const codeOnly = ROUTE_SRC.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\*.*$/gm, "");
     expect(codeOnly).not.toMatch(/request\.json\(\)/);
   });
 

@@ -20,17 +20,12 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = resolve(__dirname, "..", "..");
 
-const PACKAGE_JSON = JSON.parse(
-  readFileSync(resolve(REPO_ROOT, "package.json"), "utf8"),
-) as {
+const PACKAGE_JSON = JSON.parse(readFileSync(resolve(REPO_ROOT, "package.json"), "utf8")) as {
   engines?: Record<string, string>;
   packageManager?: string;
 };
 
-const DEPENDABOT_YAML = readFileSync(
-  resolve(REPO_ROOT, ".github", "dependabot.yml"),
-  "utf8",
-);
+const DEPENDABOT_YAML = readFileSync(resolve(REPO_ROOT, ".github", "dependabot.yml"), "utf8");
 
 describe("P2-4 §5.26 — package.json pins Node + pnpm versions", () => {
   it("has an `engines` block", () => {
@@ -88,17 +83,13 @@ describe("P2-4 §5.26 — .github/dependabot.yml covers both ecosystems", () => 
     // Action versions matter too — e.g. `actions/checkout@v3` vs @v4
     // have different Node versions. A drift here is a slow-burn
     // reliability issue, not a security one, but still worth pinning.
-    expect(DEPENDABOT_YAML).toMatch(
-      /package-ecosystem:\s*["']?github-actions["']?/,
-    );
+    expect(DEPENDABOT_YAML).toMatch(/package-ecosystem:\s*["']?github-actions["']?/);
   });
 
   it("schedules npm updates at least weekly", () => {
     // A stricter cadence (daily) generates too much review noise; a
     // looser one (monthly) lets CVEs pile up. Weekly is the floor.
-    expect(DEPENDABOT_YAML).toMatch(
-      /interval:\s*["']?(daily|weekly)["']?/,
-    );
+    expect(DEPENDABOT_YAML).toMatch(/interval:\s*["']?(daily|weekly)["']?/);
   });
 
   it("has an `open-pull-requests-limit` so the queue can't explode", () => {

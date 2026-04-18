@@ -58,8 +58,7 @@ export const AnalyticsEvents = {
   FIRST_SCAN: "first_scan",
 } as const;
 
-export type AnalyticsEventName =
-  (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
+export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
 
 /**
  * Events that cannot be wired from the current app surface — usually

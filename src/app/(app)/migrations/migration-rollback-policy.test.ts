@@ -20,10 +20,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ACTIONS_PATH = resolve(__dirname, "actions.ts");
-const ROUTE_PATH = resolve(
-  __dirname,
-  "../../api/migrations/[id]/rollback/route.ts",
-);
+const ROUTE_PATH = resolve(__dirname, "../../api/migrations/[id]/rollback/route.ts");
 const NEW_PAGE_PATH = resolve(__dirname, "new/page.tsx");
 
 const ACTIONS_SOURCE = readFileSync(ACTIONS_PATH, "utf8");

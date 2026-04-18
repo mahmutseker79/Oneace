@@ -24,7 +24,9 @@ import { describe, expect, it } from "vitest";
  * Mirror of the low-stock trend contract: we DO NOT project forward from
  * current low-stock count. Return empty until snapshots exist.
  */
-function lowStockTrendContract(currentLowStockCount: number): Array<{ date: string; count: number }> {
+function lowStockTrendContract(
+  currentLowStockCount: number,
+): Array<{ date: string; count: number }> {
   void currentLowStockCount;
   return [];
 }

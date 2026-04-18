@@ -17,15 +17,11 @@ describe("isAttachmentUrlForOrg (§5.14)", () => {
   const otherOrg = "clzyxw9876vutsr5432";
 
   it("accepts a URL scoped to the caller's own org", () => {
-    expect(
-      isAttachmentUrlForOrg(`/uploads/items/${myOrg}/abcd1234.jpg`, myOrg),
-    ).toBe(true);
+    expect(isAttachmentUrlForOrg(`/uploads/items/${myOrg}/abcd1234.jpg`, myOrg)).toBe(true);
   });
 
   it("rejects a URL that names a different org", () => {
-    expect(
-      isAttachmentUrlForOrg(`/uploads/items/${otherOrg}/abcd1234.jpg`, myOrg),
-    ).toBe(false);
+    expect(isAttachmentUrlForOrg(`/uploads/items/${otherOrg}/abcd1234.jpg`, myOrg)).toBe(false);
   });
 
   it("tolerates legacy flat URLs that have no org segment", () => {
@@ -42,9 +38,7 @@ describe("isAttachmentUrlForOrg (§5.14)", () => {
   it("accepts absolute https URLs (external CDNs)", () => {
     // Integrations may return a signed URL from a 3rd-party CDN. Those
     // are trusted per-integration, not by this helper.
-    expect(
-      isAttachmentUrlForOrg("https://cdn.example.com/foo/bar.jpg", myOrg),
-    ).toBe(true);
+    expect(isAttachmentUrlForOrg("https://cdn.example.com/foo/bar.jpg", myOrg)).toBe(true);
   });
 
   it("rejects empty or missing URLs", () => {
@@ -54,8 +48,8 @@ describe("isAttachmentUrlForOrg (§5.14)", () => {
   it("is not fooled by a traversal attempt", () => {
     // "../" inside the URL would put the file outside UPLOAD_ROOT on
     // disk, and it definitely shouldn't satisfy a tenancy check.
-    expect(
-      isAttachmentUrlForOrg(`/uploads/items/${otherOrg}/../${myOrg}/x.jpg`, myOrg),
-    ).toBe(false);
+    expect(isAttachmentUrlForOrg(`/uploads/items/${otherOrg}/../${myOrg}/x.jpg`, myOrg)).toBe(
+      false,
+    );
   });
 });

@@ -23,7 +23,7 @@
 // via HMAC, not schema, and their bodies are typed from a known
 // provider payload.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -48,11 +48,13 @@ function listRouteFiles(dir: string): string[] {
 // Strip block comments and line comments so string literals inside
 // comments don't trip the regexes below.
 function stripComments(source: string): string {
-  return source
-    // Block comments.
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    // Line comments — keep the newline so line numbers roughly match.
-    .replace(/(^|[^:"])\/\/[^\n]*/g, "$1");
+  return (
+    source
+      // Block comments.
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      // Line comments — keep the newline so line numbers roughly match.
+      .replace(/(^|[^:"])\/\/[^\n]*/g, "$1")
+  );
 }
 
 const ROUTE_FILES = listRouteFiles(API_ROOT);

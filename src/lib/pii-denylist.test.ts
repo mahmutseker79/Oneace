@@ -16,14 +16,14 @@
 //
 // No DOM / Prisma / env — pure unit test over instrumentation.ts.
 
-import { describe, expect, it, afterEach } from "vitest";
 import {
   PII_DENYLIST,
-  scrubPII,
-  track,
   __clearTestSinks,
   __registerTestSink,
+  scrubPII,
+  track,
 } from "@/lib/instrumentation";
+import { afterEach, describe, expect, it } from "vitest";
 
 describe("P3-3 §7.4 — PII denylist coverage", () => {
   const REQUIRED_KEYS = [
@@ -110,9 +110,7 @@ describe("P3-3 §7.4 — track() applies scrubPII before fan-out", () => {
 
     expect(seen).toHaveLength(1);
     expect(seen[0].event).toBe("user.invited");
-    expect((seen[0].props as Record<string, unknown>).email).toBe(
-      "[redacted:key-denied]",
-    );
+    expect((seen[0].props as Record<string, unknown>).email).toBe("[redacted:key-denied]");
     // Non-denied keys survive.
     expect((seen[0].props as Record<string, unknown>).inviteCode).toBe("abc123");
   });

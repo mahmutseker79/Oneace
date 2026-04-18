@@ -62,8 +62,6 @@ describe("EmptyState adoption on page-level list screens (§9.2)", () => {
     // rendered instead of an EmptyState. Keeping it here as a
     // direct regression fence.
     const source = readSrc("src/app/(app)/departments/page.tsx");
-    expect(source).not.toMatch(
-      /<p[^>]*>\s*No departments yet\s*<\/p>/,
-    );
+    expect(source).not.toMatch(/<p[^>]*>\s*No departments yet\s*<\/p>/);
   });
 });

@@ -91,8 +91,7 @@ async function gatedPost(request: NextRequest) {
           });
           return NextResponse.json(
             {
-              message:
-                "Too many registration attempts for this email. Please try again later.",
+              message: "Too many registration attempts for this email. Please try again later.",
               code: "REGISTER_RATE_LIMIT_EMAIL",
             },
             { status: 429, headers: { "Retry-After": String(emailRl.reset) } },

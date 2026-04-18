@@ -60,17 +60,12 @@ interface CleanupSummary {
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const started = Date.now();
   try {
-    const cronSecret = request.headers
-      .get("Authorization")
-      ?.replace("Bearer ", "");
+    const cronSecret = request.headers.get("Authorization")?.replace("Bearer ", "");
     const expectedSecret = process.env.CRON_SECRET;
 
     if (!expectedSecret) {
       logger.warn("CRON_SECRET not configured for cleanup-notifications");
-      return NextResponse.json(
-        { error: "Cron secret not configured" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
     }
 
     if (!cronSecret || cronSecret !== expectedSecret) {
@@ -86,9 +81,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // doesn't re-enter the deleteMany batching loops.
     const doCleanup = async () => {
       const now = new Date();
-      const readCutoff = new Date(
-        now.getTime() - READ_RETENTION_DAYS * 24 * 60 * 60 * 1000,
-      );
+      const readCutoff = new Date(now.getTime() - READ_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 
       // Pass 1 — expired rows (producers that set expiresAt).
       const expiredFilter = { expiresAt: { lt: now, not: null } } as const;
@@ -148,10 +141,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ ok: true, ...summary });
     }
 
-    const outcome = await withCronIdempotency(
-      "cleanup-notifications",
-      doCleanup,
-    );
+    const outcome = await withCronIdempotency("cleanup-notifications", doCleanup);
     if (outcome.skipped) {
       return NextResponse.json({
         ok: true,
@@ -166,9 +156,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       tag: "cron.cleanup-notifications",
       err: error,
     });
-    return NextResponse.json(
-      { error: "Cleanup failed", detail: String(error) },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Cleanup failed", detail: String(error) }, { status: 500 });
   }
 }

@@ -62,9 +62,7 @@ export default async function DepartmentsPage() {
           title="No departments yet"
           description="Group your team and inventory by department to slice reports and restrict stock access."
           actions={
-            canCreate
-              ? [{ label: "New Department", href: "/departments/new", icon: Plus }]
-              : []
+            canCreate ? [{ label: "New Department", href: "/departments/new", icon: Plus }] : []
           }
         />
       ) : (

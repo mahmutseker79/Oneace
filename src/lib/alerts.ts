@@ -39,16 +39,9 @@ const NOTIFICATION_TTL_DAYS = 90;
 // Change cautiously: a shorter window (hours) would let the same
 // alert spam the bell; a longer one would silently drop legitimate
 // re-trips after an auto-resolve/re-open cycle.
-function notificationDedupKey(
-  source: string,
-  userId: string,
-  now: Date,
-): string {
+function notificationDedupKey(source: string, userId: string, now: Date): string {
   const day = now.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-  return createHash("sha256")
-    .update(`${source}:${userId}:${day}`)
-    .digest("hex")
-    .slice(0, 32);
+  return createHash("sha256").update(`${source}:${userId}:${day}`).digest("hex").slice(0, 32);
 }
 
 /**
@@ -137,9 +130,7 @@ export async function evaluateAlerts(organizationId: string, itemIds: string[]):
         // the cleanup-notifications cron prunes past-TTL rows.
         if (memberUserIds.length > 0) {
           const now = new Date();
-          const expiresAt = new Date(
-            now.getTime() + NOTIFICATION_TTL_DAYS * 24 * 60 * 60 * 1000,
-          );
+          const expiresAt = new Date(now.getTime() + NOTIFICATION_TTL_DAYS * 24 * 60 * 60 * 1000);
           await db.notification.createMany({
             data: memberUserIds.map((userId) => ({
               organizationId,

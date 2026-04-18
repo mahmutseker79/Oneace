@@ -155,7 +155,8 @@ describe("P1-4 disableTwoFactorAction — fresh-credential gate", () => {
 
   it("deletes the 2FA row on successful disable (no zombie secret)", () => {
     // Two delete calls — one after TOTP path, one after backup.
-    const deletes = DISABLE.match(/db\.twoFactorAuth\.delete\(\s*\{[\s\S]*?where:\s*\{\s*userId\s*\}/g) ?? [];
+    const deletes =
+      DISABLE.match(/db\.twoFactorAuth\.delete\(\s*\{[\s\S]*?where:\s*\{\s*userId\s*\}/g) ?? [];
     expect(deletes.length).toBeGreaterThanOrEqual(2);
   });
 

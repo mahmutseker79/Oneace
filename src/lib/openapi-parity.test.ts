@@ -26,17 +26,15 @@
 // cares about `paths:` and the immediate method-keyed children.
 // Schema bodies, examples, and component refs are out of scope.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const API_ROOT = resolve(REPO_ROOT, "src", "app", "api");
 const OPENAPI_PATH = resolve(REPO_ROOT, "docs", "openapi.yaml");
 
-type Methods = Set<
-  "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD"
->;
+type Methods = Set<"GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | "HEAD">;
 const HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"];
 
 interface RouteInfo {
@@ -60,9 +58,7 @@ function listRouteFiles(dir: string): string[] {
 
 /** Next.js [id] / [...all] → OpenAPI {id} / {...all}. */
 function fsPathToOpenApi(tag: string): string {
-  return tag
-    .replace(/\[\.\.\.([^\]]+)\]/g, "{...$1}")
-    .replace(/\[([^\]]+)\]/g, "{$1}");
+  return tag.replace(/\[\.\.\.([^\]]+)\]/g, "{...$1}").replace(/\[([^\]]+)\]/g, "{$1}");
 }
 
 /**
@@ -85,18 +81,13 @@ function readRoute(file: string): RouteInfo {
 
   // export async function METHOD / export function METHOD
   for (const m of content.matchAll(
-    new RegExp(
-      `export\\s+(?:async\\s+)?function\\s+(${methodGroup})\\s*\\(`,
-      "g",
-    ),
+    new RegExp(`export\\s+(?:async\\s+)?function\\s+(${methodGroup})\\s*\\(`, "g"),
   )) {
     methods.add(m[1] as never);
   }
 
   // export const METHOD = ...
-  for (const m of content.matchAll(
-    new RegExp(`export\\s+const\\s+(${methodGroup})\\s*=`, "g"),
-  )) {
+  for (const m of content.matchAll(new RegExp(`export\\s+const\\s+(${methodGroup})\\s*=`, "g"))) {
     methods.add(m[1] as never);
   }
 
@@ -136,9 +127,7 @@ function parseOpenApi(text: string): Record<string, Methods> {
       paths[currentPath] = new Set();
       continue;
     }
-    const methodMatch = line.match(
-      /^ {4}(get|post|put|delete|patch|options|head):/,
-    );
+    const methodMatch = line.match(/^ {4}(get|post|put|delete|patch|options|head):/);
     if (methodMatch && currentPath) {
       paths[currentPath].add(methodMatch[1].toUpperCase() as never);
     }
@@ -198,12 +187,10 @@ describe("P3-4 §5.32 — coverage freeze (no new undocumented routes)", () => {
   }
 
   it("every undocumented route is in DOCUMENTED_GAPS (no new gaps)", () => {
-    const newGaps = undocumented.filter(
-      (p) => !DOCUMENTED_GAPS.includes(p),
-    );
+    const newGaps = undocumented.filter((p) => !DOCUMENTED_GAPS.includes(p));
     expect(
       newGaps,
-      `These routes have no entry in docs/openapi.yaml. Add them to the spec OR to DOCUMENTED_GAPS in this test.`,
+      "These routes have no entry in docs/openapi.yaml. Add them to the spec OR to DOCUMENTED_GAPS in this test.",
     ).toEqual([]);
   });
 
@@ -211,7 +198,7 @@ describe("P3-4 §5.32 — coverage freeze (no new undocumented routes)", () => {
     const stale = DOCUMENTED_GAPS.filter((p) => p in OPENAPI);
     expect(
       stale,
-      `These paths now ARE documented — remove them from DOCUMENTED_GAPS so the next real gap is visible.`,
+      "These paths now ARE documented — remove them from DOCUMENTED_GAPS so the next real gap is visible.",
     ).toEqual([]);
   });
 });
@@ -225,23 +212,15 @@ describe("P3-4 §5.32 — method parity for documented routes", () => {
     it(`${oapi} methods match route.ts exports`, () => {
       const routeMethods = new Set(r.methods);
       const openapiMethods = new Set(OPENAPI[oapi]);
-      const missingInOpenapi = [...routeMethods].filter(
-        (m) => !openapiMethods.has(m),
-      );
-      const extraInOpenapi = [...openapiMethods].filter(
-        (m) => !routeMethods.has(m),
-      );
+      const missingInOpenapi = [...routeMethods].filter((m) => !openapiMethods.has(m));
+      const extraInOpenapi = [...openapiMethods].filter((m) => !routeMethods.has(m));
 
       const known = KNOWN_METHOD_MISMATCHES[oapi];
       const allowedMissing = new Set(known?.missing ?? []);
       const allowedExtra = new Set(known?.extra ?? []);
 
-      const unexpectedMissing = missingInOpenapi.filter(
-        (m) => !allowedMissing.has(m),
-      );
-      const unexpectedExtra = extraInOpenapi.filter(
-        (m) => !allowedExtra.has(m),
-      );
+      const unexpectedMissing = missingInOpenapi.filter((m) => !allowedMissing.has(m));
+      const unexpectedExtra = extraInOpenapi.filter((m) => !allowedExtra.has(m));
 
       expect(
         unexpectedMissing,
@@ -274,7 +253,7 @@ describe("P3-4 §5.32 — KNOWN_METHOD_MISMATCHES entries are still mismatches",
       expect(route, `${oapi} should still exist as a route.ts`).toBeDefined();
       const openapiMethods = OPENAPI[oapi];
       expect(openapiMethods, `${oapi} should still exist in openapi.yaml`).toBeDefined();
-      const routeMethods = route!.methods;
+      const routeMethods = route?.methods;
       const stillMissing = (expected.missing ?? []).filter(
         (m) => !openapiMethods.has(m as never) && routeMethods.has(m as never),
       );

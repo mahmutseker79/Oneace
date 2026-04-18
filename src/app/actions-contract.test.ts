@@ -30,7 +30,7 @@
 // deliberately cheap so every PR can run it against every action
 // file in well under a second.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -91,7 +91,7 @@ describe("P1-4 §5.19 — server action baseline contract", () => {
     expect(ACTION_FILES.length).toBeGreaterThanOrEqual(40);
   });
 
-  describe("every actions.ts starts with \"use server\"", () => {
+  describe('every actions.ts starts with "use server"', () => {
     for (const file of ACTION_FILES) {
       it(`${rel(file)} has the directive on the first non-blank line`, () => {
         const source = readFileSync(file, "utf8");
@@ -99,10 +99,7 @@ describe("P1-4 §5.19 — server action baseline contract", () => {
         // Accept both single- and double-quoted forms. The directive
         // must be the first statement — a top-of-file comment is
         // tolerated only if it's followed by the directive.
-        const withoutLeadingComment = first.replace(
-          /^(?:\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*)+/,
-          "",
-        );
+        const withoutLeadingComment = first.replace(/^(?:\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*)+/, "");
         expect(
           withoutLeadingComment.startsWith('"use server"') ||
             withoutLeadingComment.startsWith("'use server'"),

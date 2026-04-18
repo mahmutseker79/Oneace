@@ -66,10 +66,10 @@ export default function TermsPage() {
 
           <h2 className="mt-8 text-lg font-semibold">3. Your Data</h2>
           <p>
-            You retain ownership of all data you upload or create within the Service
-            (&quot;Customer Data&quot;). You grant OneAce a limited license to host, process, and
-            display Customer Data solely to provide the Service to your Organization. Handling of
-            personal data is described in our{" "}
+            You retain ownership of all data you upload or create within the Service (&quot;Customer
+            Data&quot;). You grant OneAce a limited license to host, process, and display Customer
+            Data solely to provide the Service to your Organization. Handling of personal data is
+            described in our{" "}
             <Link href="/legal/privacy" className="font-medium underline">
               Privacy Policy
             </Link>
@@ -103,9 +103,9 @@ export default function TermsPage() {
           <p>
             The Service is provided on an &quot;as is&quot; and &quot;as available&quot; basis. To
             the maximum extent permitted by law, OneAce disclaims all implied warranties and shall
-            not be liable for indirect, incidental, or consequential damages arising from use of
-            the Service. Our aggregate liability is limited to the fees you paid for the Service in
-            the twelve months preceding the event giving rise to the claim.
+            not be liable for indirect, incidental, or consequential damages arising from use of the
+            Service. Our aggregate liability is limited to the fees you paid for the Service in the
+            twelve months preceding the event giving rise to the claim.
           </p>
 
           <h2 className="mt-8 text-lg font-semibold">8. Changes to These Terms</h2>

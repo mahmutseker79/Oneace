@@ -21,34 +21,24 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..", "..", "..");
-const SCHEMA = readFileSync(
-  resolve(REPO_ROOT, "prisma", "schema.prisma"),
-  "utf8",
-);
-const ALERTS = readFileSync(
-  resolve(REPO_ROOT, "src", "lib", "alerts.ts"),
-  "utf8",
-);
+const SCHEMA = readFileSync(resolve(REPO_ROOT, "prisma", "schema.prisma"), "utf8");
+const ALERTS = readFileSync(resolve(REPO_ROOT, "src", "lib", "alerts.ts"), "utf8");
 const ROUTE = readFileSync(resolve(__dirname, "route.ts"), "utf8");
-const VERCEL = JSON.parse(
-  readFileSync(resolve(REPO_ROOT, "vercel.json"), "utf8"),
-) as { crons?: Array<{ path: string; schedule: string }> };
+const VERCEL = JSON.parse(readFileSync(resolve(REPO_ROOT, "vercel.json"), "utf8")) as {
+  crons?: Array<{ path: string; schedule: string }>;
+};
 
 function sliceModel(name: string): string {
   const marker = `model ${name} {`;
   const start = SCHEMA.indexOf(marker);
-  expect(start, `model ${name} must exist in schema.prisma`).toBeGreaterThan(
-    -1,
-  );
+  expect(start, `model ${name} must exist in schema.prisma`).toBeGreaterThan(-1);
   // Nested braces are not expected inside a Prisma model body, so a
   // simple next-'}' lookup is enough. We start the search AFTER the
   // opening '{' so we find the model's own closing brace, not the
   // opening one.
   const bodyStart = start + marker.length;
   const end = SCHEMA.indexOf("\n}", bodyStart);
-  expect(end, `model ${name} must have a closing brace`).toBeGreaterThan(
-    bodyStart,
-  );
+  expect(end, `model ${name} must have a closing brace`).toBeGreaterThan(bodyStart);
   return SCHEMA.slice(start, end + 2);
 }
 
@@ -118,9 +108,7 @@ describe("P2-2 §5.24 — alerts.ts producer pins expiresAt + dedupKey", () => {
 
 describe("P2-2 §5.24 — cleanup-notifications route", () => {
   it("enforces CRON_SECRET via Bearer header", () => {
-    expect(ROUTE).toMatch(
-      /request\.headers[\s\S]*?Authorization[\s\S]*?Bearer\s/,
-    );
+    expect(ROUTE).toMatch(/request\.headers[\s\S]*?Authorization[\s\S]*?Bearer\s/);
     expect(ROUTE).toMatch(/process\.env\.CRON_SECRET/);
     expect(ROUTE).toMatch(/status:\s*401/);
   });
@@ -140,9 +128,7 @@ describe("P2-2 §5.24 — cleanup-notifications route", () => {
     expect(ROUTE).toMatch(
       /expiredFilter\s*=\s*\{\s*expiresAt:\s*\{\s*lt:\s*now[\s\S]*?not:\s*null/,
     );
-    expect(ROUTE).toMatch(
-      /db\.notification\.deleteMany\(\s*\{\s*where:\s*expiredFilter\b/,
-    );
+    expect(ROUTE).toMatch(/db\.notification\.deleteMany\(\s*\{\s*where:\s*expiredFilter\b/);
   });
 
   it("also ages out read notifications past the retention horizon", () => {
@@ -150,9 +136,7 @@ describe("P2-2 §5.24 — cleanup-notifications route", () => {
     // forgot to set expiresAt) still get pruned once the user
     // clears them.
     expect(ROUTE).toMatch(/READ_RETENTION_DAYS/);
-    expect(ROUTE).toMatch(
-      /readAt:\s*\{\s*lt:\s*readCutoff[\s\S]*?not:\s*null/,
-    );
+    expect(ROUTE).toMatch(/readAt:\s*\{\s*lt:\s*readCutoff[\s\S]*?not:\s*null/);
   });
 
   it("caps delete loops so a runaway producer can't spin forever", () => {
@@ -174,9 +158,7 @@ describe("P2-2 §5.24 — vercel.json registers the cleanup cron", () => {
   });
 
   it("runs the cleanup cron daily (valid cron expression)", () => {
-    const entry = (VERCEL.crons ?? []).find(
-      (c) => c.path === "/api/cron/cleanup-notifications",
-    );
+    const entry = (VERCEL.crons ?? []).find((c) => c.path === "/api/cron/cleanup-notifications");
     expect(entry, "cleanup-notifications cron entry must exist").toBeDefined();
     // 5 cron fields, day and month as '*', hour+minute numeric,
     // weekday '*'. That's the daily shape.

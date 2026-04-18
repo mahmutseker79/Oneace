@@ -514,15 +514,12 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
   // service-account path with its own idempotency story — not to
   // reopen this hole.
   if (!submissionNonce) {
-    logger.warn(
-      "po.receive: submission nonce missing — rejecting to preserve replay protection",
-      {
-        tag: "po.receive.nonce-missing",
-        userId: session.user.id,
-        orgId,
-        purchaseOrderId: input.purchaseOrderId,
-      },
-    );
+    logger.warn("po.receive: submission nonce missing — rejecting to preserve replay protection", {
+      tag: "po.receive.nonce-missing",
+      userId: session.user.id,
+      orgId,
+      purchaseOrderId: input.purchaseOrderId,
+    });
     return { ok: false, error: t.purchaseOrders.errors.receiveFailed };
   }
 

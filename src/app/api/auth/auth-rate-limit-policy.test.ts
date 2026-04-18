@@ -51,7 +51,9 @@ describe("auth route rate-limit policy (§5.15)", () => {
   it("uses a tight sign-in window (≤5 attempts in ≤5 minutes)", () => {
     // Crude but effective: find the sign-in rateLimit call and assert
     // the literal shape. If someone bumps max to 50 we want to notice.
-    const match = source.match(/login:ip:[^`]*`,\s*\{\s*max:\s*(\d+),\s*windowSeconds:\s*(\d+)\s*\}/);
+    const match = source.match(
+      /login:ip:[^`]*`,\s*\{\s*max:\s*(\d+),\s*windowSeconds:\s*(\d+)\s*\}/,
+    );
     expect(match).not.toBeNull();
     if (match) {
       const [, max, window] = match;
@@ -70,7 +72,9 @@ describe("auth route rate-limit policy (§5.15)", () => {
   });
 
   it("uses a tight sign-up per-IP window (≤3 registrations in ≤1 hour)", () => {
-    const match = source.match(/register:ip:[^`]*`,\s*\{\s*max:\s*(\d+),\s*windowSeconds:\s*(\d+)\s*\}/);
+    const match = source.match(
+      /register:ip:[^`]*`,\s*\{\s*max:\s*(\d+),\s*windowSeconds:\s*(\d+)\s*\}/,
+    );
     expect(match).not.toBeNull();
     if (match) {
       const [, max, window] = match;
@@ -104,9 +108,7 @@ describe("auth route rate-limit policy (§5.15)", () => {
     // Count how many JSON bodies inside a 429 branch carry `message:`.
     // There are three such branches today: sign-in, sign-up per-IP, and
     // sign-up per-email. We pin ≥3 to notice accidental regressions.
-    const messageInResponses = source.match(
-      /NextResponse\.json\(\s*\{\s*message:/g,
-    );
+    const messageInResponses = source.match(/NextResponse\.json\(\s*\{\s*message:/g);
     expect(messageInResponses?.length ?? 0).toBeGreaterThanOrEqual(3);
     // Belt-and-braces: the old buggy shape `{ error: "Too many ..." }`
     // must not reappear. (A generic `error:` key elsewhere is fine —

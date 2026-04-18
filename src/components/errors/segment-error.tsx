@@ -48,9 +48,7 @@ export type SegmentErrorProps = {
   segmentId: string;
 };
 
-const DEFAULT_RECOVERY: SegmentErrorLink[] = [
-  { label: "Dashboard", href: "/dashboard" },
-];
+const DEFAULT_RECOVERY: SegmentErrorLink[] = [{ label: "Dashboard", href: "/dashboard" }];
 
 export function SegmentError({
   error,
@@ -81,9 +79,7 @@ export function SegmentError({
         </CardHeader>
         <CardContent className="space-y-3">
           {error.digest ? (
-            <p className="font-mono text-xs text-muted-foreground">
-              Ref: {error.digest}
-            </p>
+            <p className="font-mono text-xs text-muted-foreground">Ref: {error.digest}</p>
           ) : null}
           <div className="grid gap-1.5">
             {recoveryLinks.map((link) => (

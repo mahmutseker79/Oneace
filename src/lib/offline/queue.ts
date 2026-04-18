@@ -335,9 +335,10 @@ export async function markOpFailed(
     // P2-5 — force dead-letter once the attempt cap is reached.
     const capReached = existing.attemptCount >= MAX_OP_ATTEMPTS;
     const nextStatus: CachedPendingOpStatus = opts.retryable && !capReached ? "pending" : "failed";
-    const lastError = capReached && opts.retryable
-      ? `${truncated} (dead-lettered after ${existing.attemptCount} attempts)`
-      : truncated;
+    const lastError =
+      capReached && opts.retryable
+        ? `${truncated} (dead-lettered after ${existing.attemptCount} attempts)`
+        : truncated;
     const updated: CachedPendingOp = {
       ...existing,
       status: nextStatus,

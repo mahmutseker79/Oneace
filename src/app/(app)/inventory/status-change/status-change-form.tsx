@@ -98,193 +98,193 @@ export function StatusChangeForm({ items, warehouses, reasonCodes }: StatusChang
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <FormField
-          control={form.control}
-          name="itemId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Item</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger disabled={isPending}>
-                    <SelectValue placeholder="Select an item" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {items.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="itemId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Item</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger disabled={isPending}>
+                      <SelectValue placeholder="Select an item" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {items.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="warehouseId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Warehouse</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger disabled={isPending}>
-                    <SelectValue placeholder="Select a warehouse" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {warehouses.map((warehouse) => (
-                    <SelectItem key={warehouse.id} value={warehouse.id}>
-                      {warehouse.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <div className="rounded-lg border border-dashed border-info bg-info-light p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <FormField
-              control={form.control}
-              name="fromStatus"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">From Status</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger disabled={isPending} className="bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {statusOptions.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <ArrowRight className="h-5 w-5 text-info mt-6" />
-
-          <div className="flex-1">
-            <FormField
-              control={form.control}
-              name="toStatus"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">To Status</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger disabled={isPending} className="bg-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {statusOptions.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="warehouseId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Warehouse</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger disabled={isPending}>
+                      <SelectValue placeholder="Select a warehouse" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {warehouses.map((warehouse) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      </div>
 
-      <FormField
-        control={form.control}
-        name="quantity"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Quantity to Move</FormLabel>
-            <FormControl>
-              <Input type="number" placeholder="0" {...field} disabled={isPending} />
-            </FormControl>
-            <FormDescription>Number of units to change status</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="reasonCodeId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Reason Code</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
-              <FormControl>
-                <SelectTrigger disabled={isPending}>
-                  <SelectValue placeholder="Select a reason code" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {reasonCodes.map((code) => (
-                  <SelectItem key={code.id} value={code.id}>
-                    {code.label} ({code.category})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormDescription>Reason for the status change</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="note"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Notes (Optional)</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Additional details about this status change"
-                className="resize-none"
-                disabled={isPending}
-                {...field}
+        <div className="rounded-lg border border-dashed border-info bg-info-light p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <FormField
+                control={form.control}
+                name="fromStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">From Status</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger disabled={isPending} className="bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {statusOptions.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </FormControl>
-            <FormDescription>Additional context (max 1000 characters)</FormDescription>
-            <FormMessage />
-          </FormItem>
+            </div>
+
+            <ArrowRight className="h-5 w-5 text-info mt-6" />
+
+            <div className="flex-1">
+              <FormField
+                control={form.control}
+                name="toStatus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">To Status</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger disabled={isPending} className="bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {statusOptions.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        <FormField
+          control={form.control}
+          name="quantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Quantity to Move</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="0" {...field} disabled={isPending} />
+              </FormControl>
+              <FormDescription>Number of units to change status</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="reasonCodeId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Reason Code</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger disabled={isPending}>
+                    <SelectValue placeholder="Select a reason code" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {reasonCodes.map((code) => (
+                    <SelectItem key={code.id} value={code.id}>
+                      {code.label} ({code.category})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>Reason for the status change</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="note"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Notes (Optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Additional details about this status change"
+                  className="resize-none"
+                  disabled={isPending}
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>Additional context (max 1000 characters)</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {state.ok === false && state.error && (
+          <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">
+            {state.error}
+          </div>
         )}
-      />
 
-      {state.ok === false && state.error && (
-        <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">
-          {state.error}
-        </div>
-      )}
+        {state.ok === true && (
+          <div className="rounded-md bg-success-light p-3 text-sm text-success">
+            Stock status changed successfully! ({state.updatedQuantity} units)
+          </div>
+        )}
 
-      {state.ok === true && (
-        <div className="rounded-md bg-success-light p-3 text-sm text-success">
-          Stock status changed successfully! ({state.updatedQuantity} units)
-        </div>
-      )}
-
-      <Button type="submit" disabled={isPending} className="w-full">
-        {isPending ? "Processing..." : "Change Stock Status"}
-      </Button>
+        <Button type="submit" disabled={isPending} className="w-full">
+          {isPending ? "Processing..." : "Change Stock Status"}
+        </Button>
       </form>
     </Form>
   );

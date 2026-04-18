@@ -71,7 +71,7 @@ describe("P1-4 createWarehouseAction — plan limits + default flip", () => {
     expect(CREATE).toMatch(/hasCapability\(\s*membership\.role,\s*"warehouses\.create"\s*\)/);
   });
 
-  it("consults checkPlanLimit(\"warehouses\") before the create (FREE cap = 1)", () => {
+  it('consults checkPlanLimit("warehouses") before the create (FREE cap = 1)', () => {
     expect(CREATE).toMatch(/checkPlanLimit\(whPlan,\s*"warehouses"/);
   });
 
@@ -80,9 +80,7 @@ describe("P1-4 createWarehouseAction — plan limits + default flip", () => {
     // plan — pinning this since a naive refactor could drop the
     // filter and suddenly stop letting tenants replace a retired
     // warehouse.
-    expect(CREATE).toMatch(
-      /db\.warehouse\.count\(\s*\{[\s\S]*?isArchived:\s*false/,
-    );
+    expect(CREATE).toMatch(/db\.warehouse\.count\(\s*\{[\s\S]*?isArchived:\s*false/);
   });
 
   it("runs the default-flip and the create inside a single db.$transaction", () => {
@@ -135,9 +133,7 @@ describe("P1-4 deleteWarehouseAction — last-default guard + failover", () => {
   it("checks remaining count BEFORE letting the default be deleted", () => {
     // The pre-delete `count({ id:{not:id} })` is what lets the
     // guard reject "delete the last warehouse".
-    expect(DELETE).toMatch(
-      /db\.warehouse\.count\(\s*\{[\s\S]*?id:\s*\{\s*not:\s*id\s*\}/,
-    );
+    expect(DELETE).toMatch(/db\.warehouse\.count\(\s*\{[\s\S]*?id:\s*\{\s*not:\s*id\s*\}/);
   });
 
   it("rejects deleting the last default with defaultRequired error", () => {
@@ -153,9 +149,7 @@ describe("P1-4 deleteWarehouseAction — last-default guard + failover", () => {
     expect(DELETE).toMatch(
       /tx\.warehouse\.findFirst\(\s*\{[\s\S]*?orderBy:\s*\{\s*createdAt:\s*"asc"/,
     );
-    expect(DELETE).toMatch(
-      /tx\.warehouse\.update\(\s*\{[\s\S]*?data:\s*\{\s*isDefault:\s*true/,
-    );
+    expect(DELETE).toMatch(/tx\.warehouse\.update\(\s*\{[\s\S]*?data:\s*\{\s*isDefault:\s*true/);
   });
 
   it("records warehouse.deleted with entityId:null and wasDefault flag", () => {

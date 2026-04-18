@@ -98,8 +98,12 @@ function parseSchema(source: string): Record<string, OnDeletePolicy> {
   // and avoids pulling in @prisma/internals just to read the schema.
   const modelRegex = /\bmodel\s+(\w+)\s*\{([\s\S]*?)\n\}/g;
 
-  let modelMatch: RegExpExecArray | null;
-  while ((modelMatch = modelRegex.exec(source)) !== null) {
+  // Use a read-first loop to keep the assignment out of the `while`
+  // condition (satisfies biome's noAssignInExpressions and clarifies
+  // the control flow). `exec` with the /g flag advances `lastIndex`
+  // internally, so calling it in sequence walks every match.
+  let modelMatch: RegExpExecArray | null = modelRegex.exec(source);
+  while (modelMatch !== null) {
     const [, modelName, body] = modelMatch;
 
     // For each line in the model body, if it's a relation targeting User
@@ -125,6 +129,9 @@ function parseSchema(source: string): Record<string, OnDeletePolicy> {
         found[key] = onDeleteMatch[1] as OnDeletePolicy;
       }
     }
+    // Advance the stateful regex to the next model block. Without this,
+    // the loop would spin on the first match forever.
+    modelMatch = modelRegex.exec(source);
   }
 
   return found;
@@ -141,34 +148,23 @@ describe("GDPR user-delete cascade matrix (audit v1.2 §5.35)", () => {
   });
 
   it("every User FK in schema.prisma has an expected policy in EXPECTED_USER_RELATIONS", () => {
-    const unexpected = Object.keys(actual).filter(
-      (k) => !(k in EXPECTED_USER_RELATIONS),
-    );
+    const unexpected = Object.keys(actual).filter((k) => !(k in EXPECTED_USER_RELATIONS));
     expect(
       unexpected,
-      "schema.prisma has User FK relations that are not in EXPECTED_USER_RELATIONS. " +
-        "Adding a new User FK is a GDPR decision: decide Cascade vs SetNull vs Restrict, " +
-        "update docs/gdpr-cascade-matrix.md with the rationale, then add the relation here. " +
-        `Unexpected: ${JSON.stringify(unexpected)}`,
+      `schema.prisma has User FK relations that are not in EXPECTED_USER_RELATIONS. Adding a new User FK is a GDPR decision: decide Cascade vs SetNull vs Restrict, update docs/gdpr-cascade-matrix.md with the rationale, then add the relation here. Unexpected: ${JSON.stringify(unexpected)}`,
     ).toEqual([]);
   });
 
   it("every entry in EXPECTED_USER_RELATIONS still exists in schema.prisma", () => {
-    const missing = Object.keys(EXPECTED_USER_RELATIONS).filter(
-      (k) => !(k in actual),
-    );
+    const missing = Object.keys(EXPECTED_USER_RELATIONS).filter((k) => !(k in actual));
     expect(
       missing,
-      "EXPECTED_USER_RELATIONS lists relations that no longer exist in schema.prisma. " +
-        "Either the relation was renamed/removed (update this list AND the matrix doc) " +
-        "or the parser missed it (investigate the schema diff). " +
-        `Missing: ${JSON.stringify(missing)}`,
+      `EXPECTED_USER_RELATIONS lists relations that no longer exist in schema.prisma. Either the relation was renamed/removed (update this list AND the matrix doc) or the parser missed it (investigate the schema diff). Missing: ${JSON.stringify(missing)}`,
     ).toEqual([]);
   });
 
   it("onDelete policy for every known User FK matches the expected policy", () => {
-    const drift: Array<{ relation: string; expected: OnDeletePolicy; actual: OnDeletePolicy }> =
-      [];
+    const drift: Array<{ relation: string; expected: OnDeletePolicy; actual: OnDeletePolicy }> = [];
     for (const [rel, expectedPolicy] of Object.entries(EXPECTED_USER_RELATIONS)) {
       const actualPolicy = actual[rel];
       if (!actualPolicy) continue; // covered by the "still exists" test
@@ -178,10 +174,7 @@ describe("GDPR user-delete cascade matrix (audit v1.2 §5.35)", () => {
     }
     expect(
       drift,
-      "onDelete policies have drifted from the pinned matrix. For each drift: " +
-        "if the new policy is intentional, update EXPECTED_USER_RELATIONS + docs/gdpr-cascade-matrix.md " +
-        "(and consider whether the account-delete route at src/app/api/account/delete/route.ts needs updating). " +
-        `Drift: ${JSON.stringify(drift, null, 2)}`,
+      `onDelete policies have drifted from the pinned matrix. For each drift: if the new policy is intentional, update EXPECTED_USER_RELATIONS + docs/gdpr-cascade-matrix.md (and consider whether the account-delete route at src/app/api/account/delete/route.ts needs updating). Drift: ${JSON.stringify(drift, null, 2)}`,
     ).toEqual([]);
   });
 
@@ -190,15 +183,11 @@ describe("GDPR user-delete cascade matrix (audit v1.2 §5.35)", () => {
       const policy = actual[concern.relation];
       expect(
         policy,
-        `POLICY_CONCERNS references ${concern.relation} but it no longer exists in schema.prisma — ` +
-          `either remove from POLICY_CONCERNS or restore the relation.`,
+        `POLICY_CONCERNS references ${concern.relation} but it no longer exists in schema.prisma — either remove from POLICY_CONCERNS or restore the relation.`,
       ).toBeDefined();
       expect(
         policy,
-        `${concern.relation} used to be ${concern.currentPolicy} (a documented policy concern). ` +
-          `It is now ${policy}. If this was a deliberate fix, remove it from POLICY_CONCERNS and ` +
-          `update docs/gdpr-cascade-matrix.md + the account-delete route accordingly. ` +
-          `Concern: ${concern.concern}`,
+        `${concern.relation} used to be ${concern.currentPolicy} (a documented policy concern). It is now ${policy}. If this was a deliberate fix, remove it from POLICY_CONCERNS and update docs/gdpr-cascade-matrix.md + the account-delete route accordingly. Concern: ${concern.concern}`,
       ).toBe(concern.currentPolicy);
     }
   });
@@ -249,8 +238,7 @@ describe("GDPR user-delete cascade matrix (audit v1.2 §5.35)", () => {
       for (const model of ["membership", "session", "account", "twoFactorAuth"]) {
         expect(
           source,
-          `delete route must manually deleteMany on ${model} before user.delete() — ` +
-            "audit-event ordering + explicit-over-implicit (see matrix doc).",
+          `delete route must manually deleteMany on ${model} before user.delete() — audit-event ordering + explicit-over-implicit (see matrix doc).`,
         ).toMatch(new RegExp(`\\.${model}\\.deleteMany\\s*\\(`));
       }
     });

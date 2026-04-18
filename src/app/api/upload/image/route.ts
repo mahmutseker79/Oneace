@@ -181,10 +181,7 @@ export async function POST(request: Request) {
     // Next.js static serving finds the file without any custom route.
     // The orgId segment is what lets `validateAttachmentUrl` reject
     // cross-tenant substitution when attachments are later recorded.
-    return NextResponse.json(
-      { url: `/uploads/items/${orgId}/${filename}` },
-      { status: 200 },
-    );
+    return NextResponse.json({ url: `/uploads/items/${orgId}/${filename}` }, { status: 200 });
   } catch (err) {
     logger.error("Image upload failed:", { error: err });
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });

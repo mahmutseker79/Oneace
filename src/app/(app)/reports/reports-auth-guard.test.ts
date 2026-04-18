@@ -54,9 +54,7 @@ describe("P1-6 — report page auth guards", () => {
       // Look for the call form `await requireActiveMembership()` or
       // `await requireCapability("...")` — anywhere in the file is
       // fine; in practice it should be at the top of the page.
-      expect(source).toMatch(
-        /await\s+(requireActiveMembership|requireCapability)\s*\(/,
-      );
+      expect(source).toMatch(/await\s+(requireActiveMembership|requireCapability)\s*\(/);
     },
   );
 
@@ -70,7 +68,9 @@ describe("P1-6 — report page auth guards", () => {
     const firstSignificantLine = source
       .split("\n")
       .map((l) => l.trim())
-      .find((l) => l.length > 0 && !l.startsWith("//") && !l.startsWith("/*") && !l.startsWith("*"));
+      .find(
+        (l) => l.length > 0 && !l.startsWith("//") && !l.startsWith("/*") && !l.startsWith("*"),
+      );
     expect(firstSignificantLine).not.toMatch(/^['"]use client['"]/);
   });
 

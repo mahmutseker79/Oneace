@@ -89,10 +89,7 @@ export function MobileNav({
       const heading = resolveHeading(group, labels);
       const isCore = group.id === "core";
       return (
-        <div
-          key={group.id}
-          className={cn(isCore ? "space-y-1" : "mt-4 border-t pt-4")}
-        >
+        <div key={group.id} className={cn(isCore ? "space-y-1" : "mt-4 border-t pt-4")}>
           {heading ? (
             <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {heading}
@@ -115,13 +112,9 @@ export function MobileNav({
           className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
         >
           <span>{heading}</span>
-          <ChevronDown
-            className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")}
-          />
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
         </button>
-        {isOpen ? (
-          <div className="mt-1 space-y-1">{group.items.map(renderItem)}</div>
-        ) : null}
+        {isOpen ? <div className="mt-1 space-y-1">{group.items.map(renderItem)}</div> : null}
       </div>
     );
   }

@@ -176,7 +176,9 @@ export function track(event: string, props?: Record<string, unknown>): void {
   // even on server imports. Guarded with typeof checks so SSR
   // stays a no-op.
   try {
-    const va = (window as { va?: (action: "event", payload: { name: string; data?: Props }) => void }).va;
+    const va = (
+      window as { va?: (action: "event", payload: { name: string; data?: Props }) => void }
+    ).va;
     va?.("event", { name: event, data: scrubbed });
   } catch {
     // Same rationale as posthog — swallow.

@@ -62,9 +62,7 @@ describe("P1-4 uniqueSlug walker", () => {
   it("scopes the uniqueness check by organizationId (not global)", () => {
     // Two tenants can legitimately have "electronics" as a
     // category slug — the compound key is organizationId + slug.
-    expect(UNIQUE_SLUG).toMatch(
-      /organizationId_slug:\s*\{\s*organizationId,\s*slug\s*\}/,
-    );
+    expect(UNIQUE_SLUG).toMatch(/organizationId_slug:\s*\{\s*organizationId,\s*slug\s*\}/);
   });
 
   it("respects excludeId so a rename to its own current slug is idempotent", () => {
@@ -127,9 +125,7 @@ describe("P1-4 updateCategoryAction — rename with guard", () => {
   });
 
   it("returns notFound if the category does not belong to the tenant", () => {
-    expect(UPDATE).toMatch(
-      /if\s*\(\s*!existing\s*\)[\s\S]*?t\.categories\.errors\.notFound/,
-    );
+    expect(UPDATE).toMatch(/if\s*\(\s*!existing\s*\)[\s\S]*?t\.categories\.errors\.notFound/);
   });
 
   it("re-runs uniqueSlug with excludeId so self-renames don't collide", () => {

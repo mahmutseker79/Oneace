@@ -18,10 +18,7 @@ import { describe, expect, it } from "vitest";
 const REPO_ROOT = resolve(__dirname, "..", "..");
 
 function readWorkflow(name: string): string {
-  return readFileSync(
-    resolve(REPO_ROOT, ".github", "workflows", name),
-    "utf8",
-  );
+  return readFileSync(resolve(REPO_ROOT, ".github", "workflows", name), "utf8");
 }
 
 describe("CI workflow policy (audit v1.1 §5.22)", () => {
@@ -63,10 +60,9 @@ describe("CI workflow policy (audit v1.1 §5.22)", () => {
 
   it("e2e.yml cancels superseded runs on the same ref", () => {
     const yml = readWorkflow("e2e.yml");
-    expect(
-      yml,
-      "concurrency group missing — stale PR runs pile up and waste minutes",
-    ).toMatch(/concurrency:[\s\S]*cancel-in-progress:\s*true/);
+    expect(yml, "concurrency group missing — stale PR runs pile up and waste minutes").toMatch(
+      /concurrency:[\s\S]*cancel-in-progress:\s*true/,
+    );
   });
 
   it("ci.yml and e2e.yml share protected-branch triggers", () => {

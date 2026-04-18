@@ -73,10 +73,10 @@ export class DeliverabilityGuardMailer implements Mailer {
       // than a swallowed critical email because of a transient DB
       // blip.
       const msg = err instanceof Error ? err.message : "unknown error";
-      this.logger.warn(
-        "DeliverabilityGuard: emailStatus lookup failed; allowing send",
-        { to, err: msg },
-      );
+      this.logger.warn("DeliverabilityGuard: emailStatus lookup failed; allowing send", {
+        to,
+        err: msg,
+      });
       return this.inner.send(message);
     }
 

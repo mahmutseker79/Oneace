@@ -125,7 +125,9 @@ describe("DeliverabilityGuardMailer", () => {
     const guarded = new DeliverabilityGuardMailer(inner, db, fakeLogger);
 
     await guarded.send({ ...SAMPLE, to: "  MIXED@case.io  " });
-    const call = (db.user.findUnique as unknown as { mock: { calls: Array<[{ where: { email: string } }]> } }).mock.calls[0][0];
+    const call = (
+      db.user.findUnique as unknown as { mock: { calls: Array<[{ where: { email: string } }]> } }
+    ).mock.calls[0][0];
     expect(call.where.email).toBe("mixed@case.io");
   });
 

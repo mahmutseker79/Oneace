@@ -28,7 +28,7 @@ const APP_LAYOUT = read("src/app/(app)/layout.tsx");
 const MARKETING_LAYOUT = read("src/app/(marketing)/layout.tsx");
 
 describe("P2-3 §5.25 — a11y skip link in (app) layout", () => {
-  it("has an anchor with href=\"#main-content\"", () => {
+  it('has an anchor with href="#main-content"', () => {
     expect(APP_LAYOUT).toMatch(/href=["']#main-content["']/);
   });
 
@@ -48,7 +48,7 @@ describe("P2-3 §5.25 — a11y skip link in (app) layout", () => {
     expect(APP_LAYOUT).toMatch(/focus:not-sr-only\b/);
   });
 
-  it("has a <main id=\"main-content\"> target", () => {
+  it('has a <main id="main-content"> target', () => {
     // The jump target. If the id drifts off <main>, the skip link
     // points at nothing and screen readers announce nothing.
     expect(APP_LAYOUT).toMatch(/<main\s+[^>]*id=["']main-content["']/);
@@ -56,7 +56,7 @@ describe("P2-3 §5.25 — a11y skip link in (app) layout", () => {
 });
 
 describe("P2-3 §5.25 — a11y skip link in (marketing) layout", () => {
-  it("has an anchor with href=\"#main-content\"", () => {
+  it('has an anchor with href="#main-content"', () => {
     expect(MARKETING_LAYOUT).toMatch(/href=["']#main-content["']/);
   });
 
@@ -69,7 +69,7 @@ describe("P2-3 §5.25 — a11y skip link in (marketing) layout", () => {
     expect(MARKETING_LAYOUT).toMatch(/focus:not-sr-only\b/);
   });
 
-  it("has a <main id=\"main-content\"> target", () => {
+  it('has a <main id="main-content"> target', () => {
     expect(MARKETING_LAYOUT).toMatch(/<main\s+[^>]*id=["']main-content["']/);
   });
 });

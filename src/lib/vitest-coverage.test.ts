@@ -30,13 +30,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = resolve(__dirname, "..", "..");
-const VITEST_CONFIG = readFileSync(
-  resolve(REPO_ROOT, "vitest.config.ts"),
-  "utf8",
-);
-const PACKAGE_JSON = JSON.parse(
-  readFileSync(resolve(REPO_ROOT, "package.json"), "utf8"),
-) as {
+const VITEST_CONFIG = readFileSync(resolve(REPO_ROOT, "vitest.config.ts"), "utf8");
+const PACKAGE_JSON = JSON.parse(readFileSync(resolve(REPO_ROOT, "package.json"), "utf8")) as {
   devDependencies?: Record<string, string>;
 };
 
@@ -56,14 +51,12 @@ describe("P3-1 §5.29 — vitest coverage scaffold is present", () => {
   });
 
   it("coverage reporter array includes text, html, json-summary", () => {
-    const reporterMatch = VITEST_CONFIG.match(
-      /reporter\s*:\s*\[([^\]]+)\]/,
-    );
+    const reporterMatch = VITEST_CONFIG.match(/reporter\s*:\s*\[([^\]]+)\]/);
     expect(
       reporterMatch,
       "coverage.reporter must be an array literal so ramp-up parsing is deterministic",
     ).not.toBeNull();
-    const reporters = reporterMatch![1];
+    const reporters = reporterMatch?.[1];
     for (const r of ["text", "html", "json-summary"]) {
       expect(
         reporters.includes(`"${r}"`) || reporters.includes(`'${r}'`),
@@ -73,20 +66,10 @@ describe("P3-1 §5.29 — vitest coverage scaffold is present", () => {
   });
 
   it("coverage excludes generated client, test files, e2e, node_modules", () => {
-    const excludeMatch = VITEST_CONFIG.match(
-      /exclude\s*:\s*\[([\s\S]*?)\]/,
-    );
-    expect(
-      excludeMatch,
-      "coverage.exclude must be an array literal",
-    ).not.toBeNull();
-    const excludes = excludeMatch![1];
-    for (const needle of [
-      "src/generated/",
-      "src/**/*.test.ts",
-      "e2e/",
-      "node_modules/",
-    ]) {
+    const excludeMatch = VITEST_CONFIG.match(/exclude\s*:\s*\[([\s\S]*?)\]/);
+    expect(excludeMatch, "coverage.exclude must be an array literal").not.toBeNull();
+    const excludes = excludeMatch?.[1];
+    for (const needle of ["src/generated/", "src/**/*.test.ts", "e2e/", "node_modules/"]) {
       expect(
         excludes.includes(needle),
         `coverage.exclude must list '${needle}' — generated / test files inflate numbers`,
@@ -95,14 +78,12 @@ describe("P3-1 §5.29 — vitest coverage scaffold is present", () => {
   });
 
   it("coverage thresholds exist for lines/branches/functions/statements", () => {
-    const thresholdsMatch = VITEST_CONFIG.match(
-      /thresholds\s*:\s*\{([\s\S]*?)\}/,
-    );
+    const thresholdsMatch = VITEST_CONFIG.match(/thresholds\s*:\s*\{([\s\S]*?)\}/);
     expect(
       thresholdsMatch,
       "coverage.thresholds must be an object — drops silent regressions",
     ).not.toBeNull();
-    const body = thresholdsMatch![1];
+    const body = thresholdsMatch?.[1];
     for (const metric of ["lines", "branches", "functions", "statements"]) {
       expect(
         new RegExp(`\\b${metric}\\s*:\\s*\\d+`).test(body),
@@ -126,18 +107,13 @@ const MINIMUM_FLOORS: Record<string, number> = {
 };
 
 describe("P3-1 §5.29 — coverage thresholds ratchet guard (v1.1.2 baseline)", () => {
-  const thresholdsMatch = VITEST_CONFIG.match(
-    /thresholds\s*:\s*\{([\s\S]*?)\}/,
-  );
+  const thresholdsMatch = VITEST_CONFIG.match(/thresholds\s*:\s*\{([\s\S]*?)\}/);
   const body = thresholdsMatch?.[1] ?? "";
   for (const [metric, floor] of Object.entries(MINIMUM_FLOORS)) {
     it(`thresholds.${metric} is at least ${floor} (measured baseline - buffer)`, () => {
       const m = body.match(new RegExp(`\\b${metric}\\s*:\\s*(\\d+)`));
-      expect(
-        m,
-        `thresholds.${metric} must be a numeric literal`,
-      ).not.toBeNull();
-      const configured = Number(m![1]);
+      expect(m, `thresholds.${metric} must be a numeric literal`).not.toBeNull();
+      const configured = Number(m?.[1]);
       expect(
         configured,
         `thresholds.${metric} = ${configured} is below the 2026-04-18 baseline floor of ${floor}. Raise it (and MINIMUM_FLOORS above) when coverage work ships; never lower it.`,
