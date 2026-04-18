@@ -4,6 +4,8 @@
  * Allows users to export inventory data in various formats.
  */
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { SETTINGS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -48,6 +50,7 @@ export default async function ExportPage() {
 
   return (
     <div className="space-y-8">
+      <WrapperTabs tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)} ariaLabel="Settings sections" />
       <PageHeader
         title="Export Data"
         description="Export inventory data from OneAce in various formats."

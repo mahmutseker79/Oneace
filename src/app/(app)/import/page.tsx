@@ -5,6 +5,8 @@
  * recent import jobs, and import templates.
  */
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { SETTINGS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
 
 export default async function ImportPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
+  const t = await getMessages();
 
   // Fetch recent import jobs
   const recentJobs = await db.importJob.findMany({
@@ -74,6 +76,7 @@ export default async function ImportPage() {
 
   return (
     <div className="space-y-8">
+      <WrapperTabs tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)} ariaLabel="Settings sections" />
       <PageHeader
         title="Import Data"
         description="Import data from CSV or Excel files into OneAce."

@@ -24,6 +24,8 @@ import { History } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { SETTINGS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,6 +128,10 @@ export default async function AuditPage({
   if (!hasPlanCapability(auditPlan, "auditLog")) {
     return (
       <div className="space-y-6">
+        <WrapperTabs
+          tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)}
+          ariaLabel="Settings sections"
+        />
         <PageHeader
           title={t.audit.heading}
           description={t.audit.subtitle}
@@ -148,6 +154,10 @@ export default async function AuditPage({
   if (!hasCapability(membership.role, "audit.view")) {
     return (
       <div className="space-y-6">
+        <WrapperTabs
+          tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)}
+          ariaLabel="Settings sections"
+        />
         <PageHeader
           title={t.audit.heading}
           description={t.audit.subtitle}
@@ -213,6 +223,7 @@ export default async function AuditPage({
 
   return (
     <div className="space-y-6">
+      <WrapperTabs tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)} ariaLabel="Settings sections" />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">{t.audit.heading}</h1>
         <p className="text-muted-foreground">{t.audit.subtitle}</p>
