@@ -2548,6 +2548,8 @@ export const en = {
       "ui.reorder_config_save": "Saved reorder config",
       "account.data_export": "Exported account data",
       "account.deleted": "Deleted account",
+      "account.session_revoked": "Revoked session",
+      "account.all_sessions_revoked": "Revoked all other sessions",
       // Phase B: Counting Core Expansion
       "department.created": "Created department",
       "department.updated": "Updated department",

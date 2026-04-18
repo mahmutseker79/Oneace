@@ -1,7 +1,11 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
+import { Monitor } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { TwoFactorCard } from "./two-factor-card";
 
 export const metadata: Metadata = {
@@ -67,8 +71,25 @@ export default async function SecuritySettingsPage() {
         backHref="/settings"
       />
 
-      <div className="max-w-2xl">
+      <div className="max-w-2xl space-y-6">
         <TwoFactorCard userId={session.user.id} labels={labels.twoFactor} />
+
+        {/* v1.2 P2 §5.39 — entry point to the active-sessions page. */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Monitor className="h-5 w-5" aria-hidden="true" /> Active sessions
+            </CardTitle>
+            <CardDescription>
+              See where your account is signed in and revoke devices you don't recognise.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline">
+              <Link href="/settings/security/sessions">Manage active sessions</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

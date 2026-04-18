@@ -203,6 +203,145 @@ paths:
         500:
           description: Internal server error
 
+  /account/sessions:
+    get:
+      tags:
+        - Account
+      summary: List the caller's active sessions
+      description: |
+        Returns the Better-Auth `Session` rows for the current user.
+        Each row carries metadata only (no session token). The `current`
+        flag marks the session that authenticated this request.
+
+        Rate limited: 30 requests per minute per user.
+      security:
+        - sessionCookie: []
+      responses:
+        200:
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        userAgent:
+                          type: string
+                          nullable: true
+                        ipAddress:
+                          type: string
+                          nullable: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                        expiresAt:
+                          type: string
+                          format: date-time
+                        current:
+                          type: boolean
+        401:
+          description: Unauthenticated
+        429:
+          description: Rate limit exceeded
+        500:
+          description: Internal server error
+
+  /account/sessions/{id}/revoke:
+    post:
+      tags:
+        - Account
+      summary: Revoke one specific session
+      description: |
+        Deletes the Better-Auth `Session` row with the given id.
+        The session MUST belong to the caller — a foreign id returns
+        404 so a caller cannot probe session ownership. The current
+        session is refused with a dedicated `CURRENT_SESSION` code.
+
+        Rate limited: 10 revokes per minute per user.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  revokedId:
+                    type: string
+        400:
+          description: Cannot revoke the current session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  code:
+                    type: string
+        401:
+          description: Unauthenticated
+        404:
+          description: Session not found (or not owned by caller)
+        429:
+          description: Rate limit exceeded
+        500:
+          description: Internal server error
+
+  /account/sessions/revoke-all:
+    post:
+      tags:
+        - Account
+      summary: Revoke all sessions except the current one
+      description: |
+        Stolen-device recovery. Deletes every Better-Auth `Session`
+        row for the caller EXCEPT the one that authenticated this
+        request. Returns the count of revoked rows so the UI can
+        confirm "Revoked N sessions.".
+
+        Rate limited: 5 per hour per user.
+      security:
+        - sessionCookie: []
+      responses:
+        200:
+          description: Sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  revokedCount:
+                    type: integer
+                  keptSessionId:
+                    type: string
+        401:
+          description: Unauthenticated
+        429:
+          description: Rate limit exceeded
+        500:
+          description: Internal server error
+
   /auth/{...all}:
     get:
       tags:
