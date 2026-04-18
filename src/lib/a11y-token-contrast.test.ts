@@ -26,9 +26,11 @@
 // WCAG-relevant surface.
 //
 // This test is the static half of §5.40. The other half — axe-core +
-// Playwright covering CRITICAL_PATHS — lives as a skeleton under
-// `e2e/a11y.spec.ts`; see the "axe skeleton" describe block at the
-// bottom of this file for the pin that the skeleton exists.
+// Playwright covering CRITICAL_PATHS — lives under `e2e/a11y.spec.ts`
+// and is now LIVE (the follow-up PR installed @axe-core/playwright
+// and dropped the skip gate). The bottom describe block in this file
+// pins the live sweep's shape so a regression can't silently re-add
+// `describe.skip` and disable the whole sweep.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -186,31 +188,50 @@ describe("§5.40 — WCAG 2.1 AA contrast for design token fg/bg pairs", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────
-// Axe skeleton presence pin
+// Live axe sweep shape pin
 // ──────────────────────────────────────────────────────────────────
 
-describe("§5.40 — axe skeleton is parked under e2e/", () => {
-  // Purpose: the real axe sweep can't land in this batch because
-  // @axe-core/playwright isn't a dependency yet and turning it on
-  // will surface a remediation backlog of its own (5-15 violations
-  // per the audit). But we DO want the shape parked now, so the
-  // follow-up PR is "add the dep and flip `.skip` to `.describe`"
-  // rather than "design the test from scratch". Pin the skeleton's
-  // existence + required shape so a drive-by cleanup can't delete it.
-  const skeleton = readFileSync(join(REPO_ROOT, "e2e/a11y.spec.ts"), "utf8");
+describe("§5.40 — axe sweep is live under e2e/", () => {
+  // The skeleton phase is over. @axe-core/playwright is now a
+  // devDependency and e2e/a11y.spec.ts imports AxeBuilder at parse
+  // time. Pin the live shape so a drive-by cleanup can't:
+  //   - re-add a `test.skip` / `describe.skip` (silently disabling
+  //     the entire sweep)
+  //   - drop the CRITICAL_PATHS array (sweep becomes no-op)
+  //   - remove WCAG tag coverage (sweep runs but asserts nothing
+  //     meaningful against the audit scope)
+  //   - remove the allow-list (sweep becomes all-or-nothing and
+  //     gets disabled the first time someone hits a known issue)
+  const spec = readFileSync(join(REPO_ROOT, "e2e/a11y.spec.ts"), "utf8");
 
-  it("skeleton declares the CRITICAL_PATHS array", () => {
-    expect(skeleton).toMatch(/CRITICAL_PATHS\s*(:\s*readonly\s+string\[\])?\s*=/);
+  it("declares the CRITICAL_PATHS array", () => {
+    expect(spec).toMatch(/CRITICAL_PATHS\s*(:\s*readonly\s+string\[\])?\s*=/);
   });
 
-  it("skeleton references WCAG 2.1 AA axe tags", () => {
-    expect(skeleton).toContain("wcag2aa");
-    expect(skeleton).toContain("wcag21aa");
+  it("references WCAG 2.1 AA axe tags", () => {
+    expect(spec).toContain("wcag2aa");
+    expect(spec).toContain("wcag21aa");
   });
 
-  it("skeleton is gated (test.skip or describe.skip) until the dep is added", () => {
-    // Without this gate the file imports @axe-core/playwright at
-    // parse time and every e2e run explodes.
-    expect(skeleton).toMatch(/test\.skip|describe\.skip/);
+  it("imports AxeBuilder from @axe-core/playwright", () => {
+    // The skeleton used a local stub. Once the devDep landed the
+    // import must point at the real package — otherwise the sweep
+    // compiles but runs against a no-op builder.
+    expect(spec).toMatch(/from\s+["']@axe-core\/playwright["']/);
+    expect(spec).toContain("AxeBuilder");
+  });
+
+  it("declares an ACCEPTABLE_VIOLATION_IDS allow-list", () => {
+    // The sweep is a tripwire; the allow-list is the escape valve
+    // for pre-existing, triaged issues. Removing it means the very
+    // first real violation takes the whole sweep offline.
+    expect(spec).toContain("ACCEPTABLE_VIOLATION_IDS");
+  });
+
+  it("is NOT gated by test.skip or describe.skip", () => {
+    // Inverse of the old pin. The dep is installed; the sweep must
+    // actually execute in CI. If someone re-adds a skip to silence
+    // a broken run, this test fails loudly.
+    expect(spec).not.toMatch(/test\.skip|describe\.skip/);
   });
 });

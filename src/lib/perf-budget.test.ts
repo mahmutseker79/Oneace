@@ -18,9 +18,10 @@
 // pins the config shape so a drive-by "cleanup" can't delete the
 // budget and a tightening of thresholds remains a deliberate edit.
 //
-// When the CI wiring lands (a follow-up PR installs the devDeps
-// and adds the workflow job), the real enforcement happens there.
-// This test is the "the budget exists and is sane" tripwire.
+// The CI wiring (`.github/workflows/perf-budget.yml`) + the
+// `size-limit` / `@lhci/cli` devDeps have now landed. The bottom
+// describe blocks pin their presence so the budget can't be
+// silently de-enforced by dropping either half.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -148,5 +149,75 @@ describe("§5.43 — .lighthouserc.json declares perf thresholds", () => {
     if (Array.isArray(a)) {
       expect(a[1]?.minScore).toBeGreaterThanOrEqual(0.9);
     }
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────
+// 3. devDeps — size-limit + LHCI packages must be declared
+// ──────────────────────────────────────────────────────────────────
+
+type PackageJson = {
+  scripts?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+};
+
+const fullPkg = readJson<PackageJson>("package.json");
+
+describe("§5.43 — size-limit and LHCI are wired as devDependencies", () => {
+  // A config without a runner is a paperweight. Pin the tooling so
+  // the workflow below has something to execute.
+
+  it("size-limit is declared as a devDependency", () => {
+    expect(fullPkg.devDependencies?.["size-limit"]).toBeDefined();
+  });
+
+  it("size-limit preset is declared as a devDependency", () => {
+    // The preset-app plugin teaches size-limit how to read the
+    // Next.js build output. Without it the CLI runs but reports 0 B
+    // for every chunk.
+    expect(fullPkg.devDependencies?.["@size-limit/preset-app"]).toBeDefined();
+  });
+
+  it("@lhci/cli is declared as a devDependency", () => {
+    expect(fullPkg.devDependencies?.["@lhci/cli"]).toBeDefined();
+  });
+
+  it("package.json exposes a `size-limit` script", () => {
+    expect(fullPkg.scripts?.["size-limit"]).toMatch(/size-limit/);
+  });
+
+  it("package.json exposes an `lhci` script", () => {
+    expect(fullPkg.scripts?.lhci).toMatch(/lhci\s+autorun/);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────
+// 4. CI workflow — perf-budget.yml must exist and invoke both runners
+// ──────────────────────────────────────────────────────────────────
+
+const workflow = readFileSync(join(REPO_ROOT, ".github/workflows/perf-budget.yml"), "utf8");
+
+describe("§5.43 — .github/workflows/perf-budget.yml enforces the budget in CI", () => {
+  it("workflow has a size-limit job that runs the runner", () => {
+    // A size-limit config with no CI hook is self-reporting only.
+    // Pin the job + the step that actually invokes the CLI.
+    expect(workflow).toMatch(/size-limit:/);
+    expect(workflow).toMatch(/pnpm\s+size-limit/);
+  });
+
+  it("workflow has a lighthouse job that runs LHCI autorun", () => {
+    expect(workflow).toMatch(/lighthouse:/);
+    expect(workflow).toMatch(/lhci\s+autorun/);
+  });
+
+  it("size-limit job builds before measuring", () => {
+    // `size-limit` reads .next/static/chunks — no build, no signal.
+    expect(workflow).toMatch(/pnpm\s+build/);
+  });
+
+  it("workflow triggers on pull_request (PR-time enforcement)", () => {
+    // If the budget only runs post-merge, the first time a regression
+    // gets caught is after it's already on main. Pin PR triggering.
+    expect(workflow).toMatch(/pull_request:/);
   });
 });
