@@ -198,5 +198,20 @@ describe("Analytics event coverage (audit v1.1 §5.20)", () => {
         `expected scan/scanner.tsx in call sites, got: ${sites.join(", ")}`,
       ).toBe(true);
     });
+
+    // --- v1.3 §5.51 F-07 — plan-limit friction signal ---
+    // Fires from the client form whose companion server action can
+    // return `{ code: "PLAN_LIMIT" }`. The items path is the canonical
+    // one (Starter tier's 100-item ceiling is the most-often-hit
+    // limit); warehouse + member limits share the same structured
+    // response shape, and any client form wiring them will add to the
+    // call-site set.
+    it("plan_limit_hit fires from items/item-form.tsx", () => {
+      const sites = findCallSites("PLAN_LIMIT_HIT", AnalyticsEvents.PLAN_LIMIT_HIT);
+      expect(
+        sites.some((p) => p.endsWith("items/item-form.tsx")),
+        `expected items/item-form.tsx in call sites, got: ${sites.join(", ")}`,
+      ).toBe(true);
+    });
   });
 });

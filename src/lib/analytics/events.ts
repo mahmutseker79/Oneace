@@ -56,6 +56,21 @@ export const AnalyticsEvents = {
   FIRST_COUNT_COMPLETED: "first_count_completed",
   BARCODE_SCANNED: "barcode_scanned",
   FIRST_SCAN: "first_scan",
+
+  // --- v1.3 §5.51 F-07 — plan-limit friction signal ---
+  // Fires client-side from a create/import form when the server action
+  // returns `{ code: "PLAN_LIMIT" }`. The point is to make upgrade
+  // friction VISIBLE in PostHog — the dependabot-burn lens of v1.3
+  // also extends to silent limit hits: without this event, the only
+  // signal that a Starter tenant is bouncing off the 100-item ceiling
+  // is that the user stops using the product. With it, the funnel
+  // shows `plan_limit_hit` → `upgrade_clicked` (or its absence) so
+  // pricing can decide whether to adjust limits or nudge UI.
+  // Payload: `{ limitKey, limit, current }` — enough to slice the
+  // dashboard by which limit is hitting which tier, without leaking
+  // PII (no item names, no userId — `track()` attaches posthog
+  // distinct_id automatically for signed-in users).
+  PLAN_LIMIT_HIT: "plan_limit_hit",
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

@@ -250,6 +250,62 @@ export function planLimitError(
 }
 
 /**
+ * Audit v1.3 §5.51 F-07 — structured plan-limit hit response.
+ *
+ * Context:
+ *   Prior to v1.3, server actions that tripped a plan-limit returned
+ *   `{ ok: false, error: planLimitError(...) }` — just a string. The
+ *   client showed the message, but there was no structured signal, so
+ *   no telemetry fired and product could not answer "how many users
+ *   hit the Free-plan item cap last week?". That's a DARK gate — a
+ *   conversion-relevant event the dashboard could not see.
+ *
+ * This helper returns the same human-readable error string PLUS a
+ * typed discriminator `code: "PLAN_LIMIT"` and a `planLimit` payload
+ * carrying (limitKey, limit, current). Client forms consume the
+ * discriminator and fire `track(AnalyticsEvents.PLAN_LIMIT_HIT, ...)`
+ * — `track()` is a server-side no-op, so the call must originate from
+ * the client with the data the server put in the response.
+ *
+ * Why not fire server-side? Two reasons:
+ *   1. The project has no server-side PostHog sink yet (see
+ *      events.ts PlannedAnalyticsEvents notes). Adding one is out of
+ *      scope for this audit pass.
+ *   2. Client-origin events carry the active session context PostHog
+ *      needs to attribute the event to the right user without us
+ *      manually forwarding identity to the server sink.
+ *
+ * Type shape intentionally mirrors the existing `{ ok: false; error }`
+ * shape so callers can spread it without destructuring.
+ */
+export type PlanLimitHitResponse = {
+  ok: false;
+  error: string;
+  code: "PLAN_LIMIT";
+  planLimit: {
+    limitKey: PlanLimit;
+    limit: number;
+    current: number;
+  };
+};
+
+export function planLimitHitResponse(
+  limitKey: PlanLimit,
+  result: Extract<LimitCheckResult, { allowed: false }>,
+): PlanLimitHitResponse {
+  return {
+    ok: false,
+    error: planLimitError(limitKey, result),
+    code: "PLAN_LIMIT",
+    planLimit: {
+      limitKey,
+      limit: result.limit,
+      current: result.current,
+    },
+  };
+}
+
+/**
  * Returns the minimum plan required to unlock a capability.
  * Used by upgrade prompt copy.
  */
