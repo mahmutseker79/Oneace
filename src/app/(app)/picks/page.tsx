@@ -2,6 +2,8 @@ import { ClipboardList, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { ORDERS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PickTasksPage({ searchParams }: { searchParams?: SearchParams }) {
   const { membership, session } = await requireActiveMembership();
-  const _t = await getMessages();
+  const t = await getMessages();
   const region = await getRegion();
 
   const params = (await searchParams) ?? {};
@@ -74,6 +76,7 @@ export default async function PickTasksPage({ searchParams }: { searchParams?: S
 
   return (
     <div className="space-y-6">
+      <WrapperTabs tabs={resolveWrapperTabs(ORDERS_TAB_SPECS, t)} ariaLabel="Orders sections" />
       <PageHeader
         title="Pick Tasks"
         description="Manage picking tasks"

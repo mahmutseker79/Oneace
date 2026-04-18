@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AdvancedFeatureBanner } from "@/components/shell/advanced-feature-banner";
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { ORDERS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -185,6 +187,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
 
   return (
     <div className="space-y-6">
+      <WrapperTabs tabs={resolveWrapperTabs(ORDERS_TAB_SPECS, t)} ariaLabel="Orders sections" />
       <AdvancedFeatureBanner labels={t.advancedFeature} />
 
       <PageHeader
