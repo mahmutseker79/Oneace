@@ -1,4 +1,12 @@
 /**
+ * @openapi-tag: /cron/process-imports
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
+/**
  * Cron endpoint to process pending import jobs.
  *
  * This endpoint is meant to be called by Vercel Cron, which has a 60-second timeout.

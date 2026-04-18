@@ -1,4 +1,12 @@
 /**
+ * @openapi-tag: /cron/cleanup-notifications
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
+/**
  * Notification retention cron (audit v1.1 §5.24).
  *
  * Runs daily at 03:15 (see `vercel.json`). Enforces two bounds on the
