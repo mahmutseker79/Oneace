@@ -23,11 +23,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Privacy Policy — OneAce",
   description:
     "How OneAce collects, uses, and protects personal data when you use the OneAce inventory platform.",
-};
+  path: "/legal/privacy",
+});
 
 const LAST_UPDATED = "April 18, 2026";
 

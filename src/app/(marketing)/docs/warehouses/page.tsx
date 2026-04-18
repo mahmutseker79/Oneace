@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Warehouses & bins — OneAce Docs",
   description: "Set up warehouse locations and bin-level tracking in OneAce.",
-};
+  path: "/docs/warehouses",
+});
 
 export default function WarehousesPage() {
   return (

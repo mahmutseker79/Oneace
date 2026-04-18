@@ -19,12 +19,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+// `buildMarketingMetadata` returns OpenGraph + Twitter + canonical url;
+// legal pages are public content and remain indexable (no `robots`
+// override needed — we inherit the site-wide default).
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Terms of Service — OneAce",
   description:
     "OneAce Terms of Service — the agreement governing use of the OneAce inventory platform.",
-  // robots: allow indexing. Legal pages are content.
-};
+  path: "/legal/terms",
+});
 
 const LAST_UPDATED = "April 18, 2026";
 

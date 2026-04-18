@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Purchase orders — OneAce Docs",
   description:
     "Create purchase orders, receive stock with barcode assistance, and track supplier deliveries.",
-};
+  path: "/docs/purchase-orders",
+});
 
 export default function PurchaseOrdersPage() {
   return (

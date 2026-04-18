@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Reports & exports — OneAce Docs",
   description: "View stock value, movement history, bin inventory, and export data in OneAce.",
-};
+  path: "/docs/reports",
+});
 
 export default function ReportsPage() {
   return (
