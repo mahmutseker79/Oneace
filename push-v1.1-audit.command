@@ -20,8 +20,13 @@
 #   v1.1.2-coverage-baseline  — vitest thresholds raised from 0 to
 #                              measured baseline (3/3/19/45); ratchet
 #                              guard added to shape-guard test (session 5)
+#   v1.1.3-auth-429-message   — register-form showed a generic "Sign up
+#                              failed." on throttle because /api/auth
+#                              returned `{ error: ... }` instead of the
+#                              `{ message, code }` shape better-auth's
+#                              client reads; fixed + pinned (session 6)
 #
-# Stable points at v1.1.2-coverage-baseline HEAD (commit e28a55a).
+# Stable points at v1.1.3-auth-429-message HEAD (commit 1d8ceb5).
 
 cd ~/Documents/Claude/Projects/OneAce/oneace || exit 1
 exec > ~/Documents/Claude/Projects/OneAce/oneace/push-v1.1-audit.log 2>&1
@@ -51,6 +56,9 @@ git push origin v1.1.2-typecheck-clean
 echo "=== Pushing v1.1.2-coverage-baseline tag (thresholds raised) ==="
 git push origin v1.1.2-coverage-baseline
 
+echo "=== Pushing v1.1.3-auth-429-message tag (sign-up UX fix) ==="
+git push origin v1.1.3-auth-429-message
+
 echo "=== Fast-forwarding stable on remote ==="
 git push origin stable --force-with-lease
 
@@ -58,7 +66,7 @@ echo "=== Verify (full, incl. Vercel deploy) ==="
 ./scripts/verify.sh deploy
 
 echo ""
-echo "=== v1.1 AUDIT RELEASED (rc1 + rc2 + rc3 + v1.1.1 + v1.1.2 x2) ==="
+echo "=== v1.1 AUDIT RELEASED (rc1 + rc2 + rc3 + v1.1.1 + v1.1.2 x2 + v1.1.3) ==="
 echo "rc3 closed §5.29 (coverage), §5.30 (zod bodies), §5.31"
 echo "(hygiene), §5.32 (OpenAPI parity) + §7.4 (PII denylist bonus)."
 echo "v1.1.1 emptied the §5.32 drift allowlists — full spec coverage,"
@@ -68,4 +76,8 @@ echo "(Prisma 6 InputJsonValue); §5.17 pin now fully green."
 echo "v1.1.2-coverage-baseline raised vitest thresholds from 0 to"
 echo "measured baseline (lines/st 3, fn 19, br 45) and added a ratchet"
 echo "guard so floors can only move UP, never DOWN."
+echo "v1.1.3-auth-429-message fixed the register-form 429 UX bug:"
+echo "/api/auth rate-limit responses now use the { message, code } shape"
+echo "better-auth's client reads; regression pinned in"
+echo "auth-rate-limit-policy.test.ts."
 echo "Next phase: audit v1.2 scoping — review audit doc §7 outstanding."
