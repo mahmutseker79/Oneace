@@ -280,11 +280,41 @@ export async function markOpSucceeded(id: string): Promise<boolean> {
 }
 
 /**
+ * Maximum number of dispatch attempts a single pending op can
+ * accumulate before it gets dead-lettered (marked `failed`)
+ * regardless of what the dispatcher says.
+ *
+ * P2-5 (audit v1.0 §12.2) — pre-audit the queue had no ceiling
+ * on retries. A dispatcher that returned `{ kind: "retry" }` on
+ * every call would keep bouncing the row between `in_flight` and
+ * `pending` forever, burning client CPU and hiding the underlying
+ * bug. Even "transient" errors can turn permanent (auth token
+ * expired for good, endpoint retired, etc.), so a hard cap is
+ * necessary.
+ *
+ * 8 is chosen so a few online/offline flaps don't tip a row into
+ * the DLQ (typical `online` / `visibilitychange` retry cadence
+ * keeps attempts in the low single digits for a normal session),
+ * but a genuinely broken op surfaces to the review UI within a
+ * minute of reconnection rather than looping forever.
+ */
+export const MAX_OP_ATTEMPTS = 8;
+
+/**
  * Mark a failed op. `retryable: true` resets status to `pending`
  * so the runner will pick it up again on the next drain
  * (typically on the next `online` event). `retryable: false`
  * stamps it as `failed` and leaves it for the user to inspect in
- * a "queued ops that didn't sync" review UI (Sprint 26+).
+ * the /offline/queue review UI.
+ *
+ * P2-5 — even a "retryable" outcome gets forced into the dead-
+ * letter state once `attemptCount` reaches `MAX_OP_ATTEMPTS`.
+ * This prevents infinite retry loops for ops that LOOK transient
+ * (e.g. 5xx / network) but turn out to be permanent. The caller
+ * doesn't need to do anything — `markOpInFlight` already bumps
+ * `attemptCount` on each claim, so by the time a retryable
+ * failure comes back here the count already reflects the attempt
+ * that just failed.
  *
  * `errorMessage` is truncated to 500 chars before storage —
  * server stack traces can be huge and we don't want one bad row
@@ -302,11 +332,17 @@ export async function markOpFailed(
     const existing = await db.pendingOps.get(id);
     if (!existing) return false;
     const truncated = errorMessage.length > 500 ? `${errorMessage.slice(0, 500)}…` : errorMessage;
+    // P2-5 — force dead-letter once the attempt cap is reached.
+    const capReached = existing.attemptCount >= MAX_OP_ATTEMPTS;
+    const nextStatus: CachedPendingOpStatus = opts.retryable && !capReached ? "pending" : "failed";
+    const lastError = capReached && opts.retryable
+      ? `${truncated} (dead-lettered after ${existing.attemptCount} attempts)`
+      : truncated;
     const updated: CachedPendingOp = {
       ...existing,
-      status: opts.retryable ? "pending" : "failed",
+      status: nextStatus,
       updatedAt: new Date().toISOString(),
-      lastError: truncated,
+      lastError,
     };
     await db.pendingOps.put(updated);
     return true;
