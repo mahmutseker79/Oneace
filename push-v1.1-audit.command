@@ -25,13 +25,11 @@
 #                              returned `{ error: ... }` instead of the
 #                              `{ message, code }` shape better-auth's
 #                              client reads; fixed + pinned (session 6)
-#   v1.2.0-audit-brief        — v1.2 audit dossier (12 second-ring
-#                              findings: §5.33 analytics propagation,
-#                              §5.34 rate-limit coverage, §5.35 GDPR
-#                              cascade, +9 P2/P3); brief landed, no
-#                              code changes yet (session 7)
 #
-# Stable points at v1.2.0-audit-brief HEAD (commit fdeefd3).
+# Stable points at v1.1.3-auth-429-message HEAD (commit 1d8ceb5).
+#
+# NOTE: v1.2 dossier landed in a separate session — see
+# `push-v1.2-audit.command` for the v1.2-specific push chain.
 
 cd ~/Documents/Claude/Projects/OneAce/oneace || exit 1
 exec > ~/Documents/Claude/Projects/OneAce/oneace/push-v1.1-audit.log 2>&1
@@ -64,9 +62,6 @@ git push origin v1.1.2-coverage-baseline
 echo "=== Pushing v1.1.3-auth-429-message tag (sign-up UX fix) ==="
 git push origin v1.1.3-auth-429-message
 
-echo "=== Pushing v1.2.0-audit-brief tag (v1.2 dossier landed) ==="
-git push origin v1.2.0-audit-brief
-
 echo "=== Fast-forwarding stable on remote ==="
 git push origin stable --force-with-lease
 
@@ -74,7 +69,7 @@ echo "=== Verify (full, incl. Vercel deploy) ==="
 ./scripts/verify.sh deploy
 
 echo ""
-echo "=== v1.1 AUDIT RELEASED + v1.2 BRIEF LANDED ==="
+echo "=== v1.1 AUDIT RELEASED (rc1 + rc2 + rc3 + v1.1.1 + v1.1.2 x2 + v1.1.3) ==="
 echo "rc3 closed §5.29 (coverage), §5.30 (zod bodies), §5.31"
 echo "(hygiene), §5.32 (OpenAPI parity) + §7.4 (PII denylist bonus)."
 echo "v1.1.1 emptied the §5.32 drift allowlists — full spec coverage,"
@@ -88,9 +83,4 @@ echo "v1.1.3-auth-429-message fixed the register-form 429 UX bug:"
 echo "/api/auth rate-limit responses now use the { message, code } shape"
 echo "better-auth's client reads; regression pinned in"
 echo "auth-rate-limit-policy.test.ts."
-echo "v1.2.0-audit-brief captured the second-ring findings dossier —"
-echo "ONEACE-FULL-STACK-AUDIT-v1.2.md, 12 findings split 3 P1 + 5 P2"
-echo "+ 4 P3, no code changes yet. Next session: v1.2 Phase-3.1 (P1)"
-echo "— §5.33 analytics call-site follow-through, §5.34 rate-limit"
-echo "coverage, §5.35 GDPR delete cascade — target tag"
-echo "v1.2.0-rc1-p1-remediations."
+echo "Next phase: run ./push-v1.2-audit.command to push the v1.2 brief."
