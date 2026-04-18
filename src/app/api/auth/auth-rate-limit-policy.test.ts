@@ -90,4 +90,27 @@ describe("auth route rate-limit policy (§5.15)", () => {
     expect(source).toMatch(/status:\s*429/);
     expect(source).toMatch(/Retry-After/);
   });
+
+  // Regression guard (audit v1.1.3 — sign-up UX bug).
+  //
+  // The rate-limit responses MUST surface a `message` field (not just
+  // `error`) because better-auth's client reads the `message` key to
+  // populate `signUpError.message`. When we shipped 429 responses with
+  // only `{ error: ... }`, the register form fell back to its generic
+  // i18n label ("Sign up failed.") and users had no idea they were
+  // being throttled. Any future refactor of these rate-limit branches
+  // must preserve the `message:` shape.
+  it("surfaces a user-visible message on 429 breach (not just an `error` field)", () => {
+    // Count how many JSON bodies inside a 429 branch carry `message:`.
+    // There are three such branches today: sign-in, sign-up per-IP, and
+    // sign-up per-email. We pin ≥3 to notice accidental regressions.
+    const messageInResponses = source.match(
+      /NextResponse\.json\(\s*\{\s*message:/g,
+    );
+    expect(messageInResponses?.length ?? 0).toBeGreaterThanOrEqual(3);
+    // Belt-and-braces: the old buggy shape `{ error: "Too many ..." }`
+    // must not reappear. (A generic `error:` key elsewhere is fine —
+    // this matches the specific throttle copy only.)
+    expect(source).not.toMatch(/\{\s*error:\s*"Too many/);
+  });
 });
