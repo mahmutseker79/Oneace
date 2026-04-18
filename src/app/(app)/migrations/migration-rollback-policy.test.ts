@@ -20,10 +20,12 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ACTIONS_PATH = resolve(__dirname, "actions.ts");
+const ERRORS_PATH = resolve(__dirname, "rollback-errors.ts");
 const ROUTE_PATH = resolve(__dirname, "../../api/migrations/[id]/rollback/route.ts");
 const NEW_PAGE_PATH = resolve(__dirname, "new/page.tsx");
 
 const ACTIONS_SOURCE = readFileSync(ACTIONS_PATH, "utf8");
+const ERRORS_SOURCE = readFileSync(ERRORS_PATH, "utf8");
 const ROUTE_SOURCE = readFileSync(ROUTE_PATH, "utf8");
 const NEW_PAGE_SOURCE = readFileSync(NEW_PAGE_PATH, "utf8");
 
@@ -41,9 +43,25 @@ describe("P1-2 — rollbackMigrationAction (server action)", () => {
     expect(activeImport, "engine import must not be active").toBeUndefined();
   });
 
-  it("exports a NOT_IMPLEMENTED error class with stable code", () => {
-    expect(ACTIONS_SOURCE).toMatch(/class\s+MigrationRollbackNotImplementedError/);
-    expect(ACTIONS_SOURCE).toMatch(/code\s*=\s*["']NOT_IMPLEMENTED["']/);
+  it("imports the NOT_IMPLEMENTED error class from the sibling module", () => {
+    // Next.js 15's `"use server"` compiler rejects non-async exports,
+    // so the class itself lives in `rollback-errors.ts`. `actions.ts`
+    // must import it rather than re-declaring it here.
+    expect(ACTIONS_SOURCE).toMatch(
+      /import\s*\{\s*MigrationRollbackNotImplementedError\s*\}\s*from\s*["']\.\/rollback-errors["']/,
+    );
+    expect(ACTIONS_SOURCE).not.toMatch(/class\s+MigrationRollbackNotImplementedError/);
+  });
+
+  it("rollback-errors.ts defines the class with a stable NOT_IMPLEMENTED code", () => {
+    expect(ERRORS_SOURCE).toMatch(/class\s+MigrationRollbackNotImplementedError/);
+    expect(ERRORS_SOURCE).toMatch(/code\s*=\s*["']NOT_IMPLEMENTED["']/);
+    // The errors module MUST NOT carry a top-of-file `"use server"`
+    // directive — co-locating the class with the action is exactly
+    // what broke the Vercel build. Anchor to start-of-line via the
+    // multiline flag so a `"use server"` inside a comment (like this
+    // one) doesn't false-trip.
+    expect(ERRORS_SOURCE).not.toMatch(/^\s*["']use server["']\s*;?\s*$/m);
   });
 
   it("rollbackMigrationAction throws the NOT_IMPLEMENTED error", () => {

@@ -31,6 +31,8 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 
+import { MigrationRollbackNotImplementedError } from "./rollback-errors";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // createMigrationJobAction
 // ─────────────────────────────────────────────────────────────────────────────
@@ -323,18 +325,12 @@ export async function startMigrationAction(id: string): Promise<{ success: boole
 //
 // Manual remediation path: support resets the affected org from a
 // pre-migration backup. Document this in the runbook.
+//
+// The `MigrationRollbackNotImplementedError` class itself lives in
+// `./rollback-errors` — Next.js 15's `"use server"` compiler only
+// allows async-function exports from this module, so re-exporting a
+// class here would break the Vercel build.
 // ─────────────────────────────────────────────────────────────────────────────
-
-export class MigrationRollbackNotImplementedError extends Error {
-  readonly code = "NOT_IMPLEMENTED";
-  constructor() {
-    super(
-      "Migration rollback is not available in v1. Migrations are one-way; " +
-        "contact support for manual remediation from a pre-migration backup.",
-    );
-    this.name = "MigrationRollbackNotImplementedError";
-  }
-}
 
 export async function rollbackMigrationAction(
   id: string,

@@ -13,7 +13,11 @@ import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { type PutawayInput, putawayInputSchema } from "@/lib/validation/putaway";
 
-export { putawayInputSchema };
+// Schema re-export removed: Next.js 15's `"use server"` compiler only
+// permits async-function exports. The type-only re-export is kept —
+// `export type { … }` is erased by TS before RSC analysis runs, so
+// it doesn't trip the RSC compiler. Consumers that need the runtime
+// schema must import from `@/lib/validation/putaway` directly.
 export type { PutawayInput };
 
 // ---------------------------------------------------------------------------
