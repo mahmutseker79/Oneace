@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+
 import { OfflineQueueBanner } from "@/components/offline/offline-queue-banner";
 import { OfflineQueueRunner } from "@/components/offline/offline-queue-runner";
 import { InstallAppButton } from "@/components/pwa/install-app-button";
@@ -9,9 +11,30 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
-import { requireActiveMembership } from "@/lib/session";
+import { requireActiveMembership, requireSession } from "@/lib/session";
 
 export default async function AppLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // P0-3 — onboarding loop guard.
+  //
+  // `requireActiveMembership` redirects to /onboarding when the user has
+  // zero memberships. The onboarding page itself lives at (app)/onboarding,
+  // so without this short-circuit a first-run user would hit an infinite
+  // redirect: /dashboard → /onboarding → layout → /onboarding → ... .
+  //
+  // Middleware stamps the request pathname onto `x-pathname` so the layout
+  // can identify the onboarding render and skip the app shell. Session
+  // validity is still enforced — the onboarding page itself calls
+  // `requireSession()`, and middleware already bounced unauthenticated
+  // requests to /login before we got here. We call `requireSession()` here
+  // too as a defense-in-depth check (middleware only looks at cookie
+  // presence, this validates the session against the DB).
+  const heads = await headers();
+  const pathname = heads.get("x-pathname");
+  if (pathname === "/onboarding") {
+    await requireSession();
+    return <>{children}</>;
+  }
+
   const { session, membership, memberships } = await requireActiveMembership();
   const t = await getMessages();
 

@@ -41,6 +41,13 @@ const PUBLIC_PREFIXES = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // P0-3: expose the request pathname to Server Components via a request
+  // header so the app layout can tell whether it is rendering the
+  // onboarding page (which must opt out of the membership gate to avoid
+  // a redirect loop for first-run users). Set on every response.
+  const passthroughHeaders = new Headers(request.headers);
+  passthroughHeaders.set("x-pathname", pathname);
+
   // Public pages and static assets pass through untouched.
   if (
     PUBLIC_PATHS.includes(pathname) ||
@@ -49,7 +56,9 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.includes(".")
   ) {
-    return NextResponse.next();
+    return NextResponse.next({
+      request: { headers: passthroughHeaders },
+    });
   }
 
   // Cheap cookie check — skips DB hit until the request actually needs auth state.
@@ -66,7 +75,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  return NextResponse.next();
+  return NextResponse.next({
+    request: { headers: passthroughHeaders },
+  });
 }
 
 export const config = {
