@@ -108,7 +108,7 @@ export async function withCronIdempotency<T>(
         completedAt: new Date(),
         // `result as unknown` keeps this generic; callers that want
         // structured summaries should pass something JSON-serializable.
-        result: result as unknown as import("@prisma/client").Prisma.InputJsonValue,
+        result: result as unknown as import("@prisma/client/runtime/library").InputJsonValue,
         error: null,
       },
     });
