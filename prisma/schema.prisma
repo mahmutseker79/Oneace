@@ -220,6 +220,25 @@ enum Role {
   COUNTER
 }
 
+/// §5.28 — User deliverability state, fed by the Resend webhook.
+///
+/// Meaning:
+///   ACTIVE      — default; sends are allowed.
+///   BOUNCED     — hard bounce (invalid address); sends blocked.
+///   COMPLAINED  — recipient marked as spam; sends blocked.
+///   UNSUBSCRIBED — recipient opted out; transactional sends blocked
+///                  unless the send is a critical account notice
+///                  (documented case-by-case at the send callsite).
+///
+/// Soft bounces (transient) do NOT transition the user — Resend retries
+/// internally and our webhook handler ignores them.
+enum EmailStatus {
+  ACTIVE
+  BOUNCED
+  COMPLAINED
+  UNSUBSCRIBED
+}
+
 // =========================
 // Better Auth tables
 // https://www.better-auth.com/docs/concepts/database
@@ -230,6 +249,15 @@ model User {
   email               String            @unique
   name                String?
   emailVerified       Boolean           @default(false)
+  /// §5.28 — deliverability state fed by Resend webhook. Defaults to
+  /// ACTIVE; moves to BOUNCED/COMPLAINED/UNSUBSCRIBED on webhook event.
+  /// Read by `guardDeliverableRecipient()` before every send so we
+  /// don't keep emailing addresses Resend has already told us are dead.
+  emailStatus         EmailStatus       @default(ACTIVE)
+  /// §5.28 — timestamp of the last state-changing webhook event, so
+  /// the admin UI can show "bounced N days ago" without joining the
+  /// audit log. Null on accounts Resend has never reported.
+  emailStatusUpdatedAt DateTime?
   image               String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -270,6 +298,8 @@ model User {
   serialHistories     SerialHistory[]
 
   @@index([email])
+  /// §5.28 — admins filter by deliverability (show bouncing accounts).
+  @@index([emailStatus])
 }
 
 model Session {

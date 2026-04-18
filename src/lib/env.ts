@@ -86,6 +86,12 @@ const schema = z.object({
   // enforces that pairing.
   RESEND_API_KEY: z.string().min(1).optional(),
   MAIL_FROM: z.string().email("MAIL_FROM must be a valid email address").optional(),
+  // §5.28 — Resend webhook signing secret (Svix-style). Used by
+  // `/api/webhooks/resend` to verify bounce/complaint deliveries
+  // before mutating `User.emailStatus`. Optional because the webhook
+  // route rejects (503) when it's missing, which is the correct
+  // behavior for environments without a configured webhook.
+  RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
 
   // --- Observability (optional, Sprint 37+) ----------------------------
   // `LOG_LEVEL` controls the structured logger threshold. Default
