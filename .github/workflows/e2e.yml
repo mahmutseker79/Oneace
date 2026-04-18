@@ -1,13 +1,26 @@
 name: E2E Tests
 
+# Audit v1.1 §5.22 — run Playwright on every PR against main/next-port so
+# e2e smoke joins lint/typecheck/vitest as a merge gate. Manual dispatch
+# stays so maintainers can still re-run on demand without pushing.
 on:
-  workflow_dispatch
+  push:
+    branches: [main, next-port]
+  pull_request:
+    branches: [main, next-port]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
     name: Playwright E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Skip on forks (no secrets). Internal PRs and pushes run normally.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
