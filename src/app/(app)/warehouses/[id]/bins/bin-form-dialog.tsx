@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -86,7 +87,10 @@ export function BinFormDialog({ warehouseId, labels, mode, bin }: BinFormDialogP
     >
       <DialogTrigger asChild>
         {mode === "edit" ? (
-          <Button variant="ghost" size="sm">
+          // P3-3 (audit v1.0 §9.4) — icon-only buttons must expose an
+          // accessible name; the pencil has no visible label so we add
+          // aria-label so SR users know what the trigger does.
+          <Button variant="ghost" size="sm" aria-label={labels.label}>
             <Pencil className="h-4 w-4" />
           </Button>
         ) : (
@@ -99,6 +103,15 @@ export function BinFormDialog({ warehouseId, labels, mode, bin }: BinFormDialogP
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{mode === "edit" ? labels.label : labels.newBin}</DialogTitle>
+          {/* P3-3 (audit v1.0 §9.4) — Radix's Dialog warns at runtime
+              when an accessible description is missing. The form
+              labels already describe each field, so a short
+              screen-reader-only summary is the lightest fix. */}
+          <DialogDescription className="sr-only">
+            {mode === "edit"
+              ? "Edit this bin's code, label, and description."
+              : "Create a new storage bin inside this warehouse."}
+          </DialogDescription>
         </DialogHeader>
 
         <form ref={formRef} action={handleSubmit} className="space-y-4">
