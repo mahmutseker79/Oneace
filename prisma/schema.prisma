@@ -1119,6 +1119,37 @@ model StripeWebhookEvent {
 }
 
 // =========================
+// P1-3 (audit v1.0 §5.7) — Shopify webhook idempotency
+// =========================
+//
+// Same shape and rationale as StripeWebhookEvent above, but for Shopify.
+// Shopify sends `X-Shopify-Webhook-Id` on every delivery and retries on
+// any non-2xx response (and sometimes on 2xx, by design); without
+// dedup, a network blip or worker restart can re-process the same
+// inventory/order event and double-apply state changes.
+//
+// Design:
+//   - webhookId is the Shopify `X-Shopify-Webhook-Id` header value,
+//     unique constraint enforced.
+//   - On first delivery: INSERT succeeds → process the event.
+//   - On duplicate:     INSERT fails unique constraint → return 200, skip.
+//   - shopDomain + topic are stored for diagnostics, not used for keying.
+//   - TTL: rows older than 30 days can be purged by a cron job (not
+//     implemented yet; Shopify's retry window is 48 hours, so 30 days
+//     is a 15× safety margin). The createdAt index supports sweeps.
+//
+model ShopifyWebhookEvent {
+  id         String   @id @default(cuid())
+  webhookId  String   @unique // Shopify X-Shopify-Webhook-Id header value
+  topic      String // e.g. "orders/create"
+  shopDomain String
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([shopDomain])
+}
+
+// =========================
 // Sprint 38+: TOTP-based 2FA
 // =========================
 //
