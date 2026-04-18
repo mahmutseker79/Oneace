@@ -610,6 +610,43 @@ paths:
         503:
           description: CRON_SECRET not configured
 
+  /cron/cleanup-cronruns:
+    get:
+      tags:
+        - Cron
+      summary: Apply CronRun ledger retention policy
+      description: |
+        Prunes `CronRun` rows older than 90 days on `startedAt`. Keeps the
+        ledger bounded while preserving a rolling quarter of run history for
+        debugging. Idempotent via the CronRun ledger itself (the current
+        run's row is never in scope, since it is 0 seconds old). Supports
+        `?dryRun=1` for a read-only count. Requires Bearer token authorization.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Retention pass completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agedDeleted:
+                    type: integer
+                  retentionDays:
+                    type: integer
+                  cutoff:
+                    type: string
+                    format: date-time
+                  dryRun:
+                    type: boolean
+                  tookMs:
+                    type: integer
+        401:
+          description: Unauthorized (invalid token)
+        503:
+          description: CRON_SECRET not configured
+
   /cron/process-imports:
     get:
       tags:
