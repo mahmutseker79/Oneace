@@ -647,6 +647,63 @@ paths:
         503:
           description: CRON_SECRET not configured
 
+  /cron/vercel-webhook-health:
+    get:
+      tags:
+        - Cron
+      summary: Detect silent-main-webhook sendromu
+      description: |
+        Every 30 min, compares the GitHub `main` HEAD SHA against the
+        `commit` field of the production `/api/health` endpoint. If the
+        two differ AND the GitHub commit is older than the stale
+        threshold (default 30 min), emits a `webhook-health.silent`
+        structured log for the ops alert rule. A distinct
+        `webhook-health.prod-down` tag is emitted when `/api/health`
+        itself returns 5xx, so alert routing can split the two failure
+        modes. Gracefully degrades (200 `skipped`) when env config is
+        missing or the transport flakes. Requires Bearer token
+        authorization. Audit v1.3 §5.45 F-01.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Check completed (match, silent, prod-down, or skipped)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [match, silent, prod-down, skipped]
+                  alarm:
+                    type: string
+                    enum: [silent, prod-down]
+                  sha:
+                    type: string
+                  commit:
+                    type: string
+                  expectedSha:
+                    type: string
+                  deployedCommit:
+                    type: string
+                  commitAgeMinutes:
+                    type: integer
+                  githubCommitAt:
+                    type: string
+                    format: date-time
+                  reason:
+                    type: string
+                    enum: [config, transport]
+                  healthStatus:
+                    type: integer
+        401:
+          description: Unauthorized (invalid token)
+        500:
+          description: CRON_SECRET not configured
+
   /cron/process-imports:
     get:
       tags:
