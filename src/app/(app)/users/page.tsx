@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { TEAM_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -102,6 +104,7 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs tabs={resolveWrapperTabs(TEAM_TAB_SPECS, t)} ariaLabel="Team sections" />
       <PageHeader
         title={t.users.heading}
         description={t.users.subtitle}

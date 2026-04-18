@@ -7,6 +7,8 @@ import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { TEAM_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
  */
 export default async function DepartmentsPage() {
   const { membership } = await requireActiveMembership();
-  const _t = await getMessages();
+  const t = await getMessages();
 
   const canCreate = hasCapability(membership.role, "departments.create");
 
@@ -38,6 +40,7 @@ export default async function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs tabs={resolveWrapperTabs(TEAM_TAB_SPECS, t)} ariaLabel="Team sections" />
       <PageHeader
         title="Departments"
         description="Organize your team and inventory"
