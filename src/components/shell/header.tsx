@@ -122,7 +122,14 @@ export function Header({
           name="q"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search items, locations..."
+          // God-Mode v2 §4 — Phase 4 — read from i18n labels instead of a
+          // hardcoded string. The HeaderLabels type already declared
+          // `searchPlaceholder` and `src/app/(app)/layout.tsx` already
+          // wired `t.header.searchPlaceholder` into it; this component
+          // just wasn't reading it. Fixing the leak so the message
+          // catalog stays authoritative and the placeholder actually
+          // swaps when a new locale's file is added.
+          placeholder={labels.searchPlaceholder}
           className="border-border/50 bg-muted/50 pl-9 pr-16 rounded-lg"
           aria-label={labels.searchLabel}
         />

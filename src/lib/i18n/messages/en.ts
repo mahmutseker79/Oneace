@@ -210,6 +210,18 @@ export const en = {
       helper: "You can change this later in settings.",
       submit: "Create organization",
       error: "Could not create organization.",
+      // God-Mode v2 §4 — Phase 4 — page-level chrome for the multi-step
+      // wizard (`src/app/(app)/onboarding/page.tsx`). Splitting these
+      // out from the single-step `auth.onboarding` copy above because
+      // the wizard is a different flow (4 steps, visual guidance) even
+      // though it lives under the same auth namespace.
+      wizard: {
+        welcomeTitle: "Welcome to OneAce",
+        welcomeSubtitle: "Let's get your workspace set up in under a minute.",
+        trustEncryption: "256-bit encryption",
+        trustNoCard: "No credit card required",
+        trustFreePlan: "Free forever plan",
+      },
     },
   },
 

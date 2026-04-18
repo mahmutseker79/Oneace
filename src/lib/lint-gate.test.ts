@@ -9,31 +9,46 @@
 // diagnostic fails `pnpm test` before it fails CI lint, which gives
 // reviewers a clearer signal than a raw biome stderr dump.
 //
-// We shell out to `biome check --diagnostic-level=error` via pnpm
-// exec rather than importing Biome's API because:
+// We shell out to `biome check --diagnostic-level=error` rather
+// than importing Biome's API because:
 //   - the CLI is the ground truth — anything else is a simulation.
 //   - Biome's API surface is not considered stable and we don't want
 //     a Biome-SDK-version bump to break tests.
 //
-// The subprocess runs from the repo root (`cwd: process.cwd()`
-// when the test is invoked via `pnpm test` from the repo root; vitest
-// sets cwd to the nearest `package.json`). Timeout is 60s to give
-// biome room on first run in the sandbox.
+// We call the local `node_modules/.bin/biome` binary directly (not
+// through `pnpm exec` / `npx`). Rationale: if vitest is running, the
+// `biome` dependency is already installed next to it, so the local
+// binary is guaranteed to be resolvable. A `pnpm`-based invocation
+// drags in a package-manager dependency that isn't present in every
+// sandbox (e.g. CI runners that pre-install deps and then call
+// vitest directly), which made the test fail for pm-less reasons
+// rather than real lint errors — defeating the purpose of a gate.
+//
+// The subprocess runs from the repo root. Timeout is 60s to give
+// biome room on a cold run.
 
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("lint gate (Biome error-level diagnostics)", () => {
   it("`biome check --diagnostic-level=error .` exits 0", () => {
-    // `spawnSync` is the lowest-friction way to assert a subprocess's
-    // exit code without mocking vitest's runner. `shell: true` is
-    // intentional so the `pnpm` binary resolves via the project's
-    // PATH rather than us hardcoding a path.
-    const result = spawnSync("pnpm", ["exec", "biome", "check", "--diagnostic-level=error", "."], {
+    // Platform-correct local binary path. `.cmd` on Windows, no
+    // extension on POSIX. vitest runs from the nearest `package.json`
+    // (the repo root here), so `node_modules/.bin/biome` is the
+    // canonical location.
+    const binName = process.platform === "win32" ? "biome.cmd" : "biome";
+    const biomeBin = resolve(process.cwd(), "node_modules", ".bin", binName);
+    expect(
+      existsSync(biomeBin),
+      `Biome binary not found at ${biomeBin}. Run \`pnpm install\` before \`pnpm test\`.`,
+    ).toBe(true);
+
+    const result = spawnSync(biomeBin, ["check", "--diagnostic-level=error", "."], {
       stdio: "pipe",
       encoding: "utf8",
       timeout: 60_000,
-      shell: true,
     });
 
     // If Biome itself blew up (spawn error, non-integer status), we
