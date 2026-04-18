@@ -15,8 +15,10 @@
 #   v1.1.0-rc2-p2-remediations — §5.23–§5.28 (session 2)
 #   v1.1.0-rc3-p3-remediations — §5.29–§5.32 + §7.4 PII (session 3)
 #   v1.1.1-openapi-complete   — §5.32 drift backlog empty (session 4)
+#   v1.1.2-typecheck-clean    — residual Prisma 6 InputJsonValue drift
+#                              closed; tsc --noEmit EXIT 0 (session 5)
 #
-# Stable points at v1.1.1 HEAD (commit 87330ad).
+# Stable points at v1.1.2 HEAD (commit cc49f25).
 
 cd ~/Documents/Claude/Projects/OneAce/oneace || exit 1
 exec > ~/Documents/Claude/Projects/OneAce/oneace/push-v1.1-audit.log 2>&1
@@ -40,6 +42,9 @@ git push origin v1.1.0-rc3-p3-remediations
 echo "=== Pushing v1.1.1 tag (openapi drift close) ==="
 git push origin v1.1.1-openapi-complete
 
+echo "=== Pushing v1.1.2 tag (typecheck clean) ==="
+git push origin v1.1.2-typecheck-clean
+
 echo "=== Fast-forwarding stable on remote ==="
 git push origin stable --force-with-lease
 
@@ -47,9 +52,11 @@ echo "=== Verify (full, incl. Vercel deploy) ==="
 ./scripts/verify.sh deploy
 
 echo ""
-echo "=== v1.1 AUDIT RELEASED (rc1 + rc2 + rc3 + v1.1.1) ==="
+echo "=== v1.1 AUDIT RELEASED (rc1 + rc2 + rc3 + v1.1.1 + v1.1.2) ==="
 echo "rc3 closed §5.29 (coverage), §5.30 (zod bodies), §5.31"
 echo "(hygiene), §5.32 (OpenAPI parity) + §7.4 (PII denylist bonus)."
 echo "v1.1.1 emptied the §5.32 drift allowlists — full spec coverage,"
 echo "zero known mismatches."
+echo "v1.1.2 closed residual tsc --noEmit drift (Prisma 6 InputJsonValue);"
+echo "§5.17 pinned test now passes with zero legacy carve-outs."
 echo "Next phase: audit v1.2 scoping — review audit doc §7 outstanding."
