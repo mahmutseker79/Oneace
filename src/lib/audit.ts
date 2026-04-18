@@ -104,6 +104,13 @@ export type AuditAction =
   // --- Account lifecycle (GDPR) -------------------------------------------
   | "account.data_export"
   | "account.deleted"
+  // v1.2 P2 §5.39 — session revocation surfaced to the audit log so a
+  // compromise timeline can reconstruct which devices were killed and
+  // when. `account.session_revoked` carries the revoked session's id
+  // in `entityId`; `account.all_sessions_revoked` uses the caller's
+  // surviving session id so the "what was kept" side is discoverable.
+  | "account.session_revoked"
+  | "account.all_sessions_revoked"
   // --- Phase B: Counting Core Expansion ----------------------------------
   // Department lifecycle
   | "department.created"
@@ -114,6 +121,11 @@ export type AuditAction =
   | "stock_count.approved"
   | "stock_count.rejected"
   | "stock_count.rolled_back"
+  // P0-4 (audit v1.0 §5.4) — refused rollback attempts are audited
+  // for the "why did this user think they rolled back a count"
+  // diagnostic. Distinct from rolled_back: no state change happens
+  // and no inverse movements are written.
+  | "stock_count.rollback_refused"
   // Count assignments
   | "count_assignment.created"
   | "count_assignment.removed"
@@ -272,7 +284,9 @@ export type AuditEntityType =
   | "attachment"
   | "location_level"
   | "scheduled_report"
-  | "count_zone";
+  | "count_zone"
+  // v1.2 P2 §5.39 — session revocation target.
+  | "session";
 
 /**
  * Input shape for `recordAudit`. `organizationId` is always required so

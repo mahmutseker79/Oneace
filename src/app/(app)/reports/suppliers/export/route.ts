@@ -1,5 +1,6 @@
 import { type CsvColumn, csvResponse, serializeCsv, todayIsoDate } from "@/lib/csv";
 import { db } from "@/lib/db";
+import { supplierActiveWhere } from "@/lib/db/soft-delete";
 import { hasPlanCapability } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -52,8 +53,11 @@ export async function GET() {
     );
   }
 
+  // P2-4 (§11.4) — keep the CSV in lockstep with the on-screen
+  // report: archived suppliers are hidden everywhere else, they
+  // should not bleed into an export either.
   const suppliers = await db.supplier.findMany({
-    where: { organizationId: membership.organizationId },
+    where: { organizationId: membership.organizationId, ...supplierActiveWhere },
     select: {
       name: true,
       code: true,

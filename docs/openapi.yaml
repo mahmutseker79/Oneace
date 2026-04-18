@@ -46,6 +46,8 @@ tags:
     description: Third-party integrations (QuickBooks, Shopify)
   - name: Labels
     description: Barcode and bin label generation
+  - name: Migrations
+    description: Data migration jobs for importing from legacy inventory systems
   - name: Onboarding
     description: Initial setup and organization creation
   - name: Reports
@@ -198,6 +200,145 @@ paths:
           description: Rate limit exceeded
         401:
           description: Unauthenticated
+        500:
+          description: Internal server error
+
+  /account/sessions:
+    get:
+      tags:
+        - Account
+      summary: List the caller's active sessions
+      description: |
+        Returns the Better-Auth `Session` rows for the current user.
+        Each row carries metadata only (no session token). The `current`
+        flag marks the session that authenticated this request.
+
+        Rate limited: 30 requests per minute per user.
+      security:
+        - sessionCookie: []
+      responses:
+        200:
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        userAgent:
+                          type: string
+                          nullable: true
+                        ipAddress:
+                          type: string
+                          nullable: true
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                        expiresAt:
+                          type: string
+                          format: date-time
+                        current:
+                          type: boolean
+        401:
+          description: Unauthenticated
+        429:
+          description: Rate limit exceeded
+        500:
+          description: Internal server error
+
+  /account/sessions/{id}/revoke:
+    post:
+      tags:
+        - Account
+      summary: Revoke one specific session
+      description: |
+        Deletes the Better-Auth `Session` row with the given id.
+        The session MUST belong to the caller — a foreign id returns
+        404 so a caller cannot probe session ownership. The current
+        session is refused with a dedicated `CURRENT_SESSION` code.
+
+        Rate limited: 10 revokes per minute per user.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  revokedId:
+                    type: string
+        400:
+          description: Cannot revoke the current session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  code:
+                    type: string
+        401:
+          description: Unauthenticated
+        404:
+          description: Session not found (or not owned by caller)
+        429:
+          description: Rate limit exceeded
+        500:
+          description: Internal server error
+
+  /account/sessions/revoke-all:
+    post:
+      tags:
+        - Account
+      summary: Revoke all sessions except the current one
+      description: |
+        Stolen-device recovery. Deletes every Better-Auth `Session`
+        row for the caller EXCEPT the one that authenticated this
+        request. Returns the count of revoked rows so the UI can
+        confirm "Revoked N sessions.".
+
+        Rate limited: 5 per hour per user.
+      security:
+        - sessionCookie: []
+      responses:
+        200:
+          description: Sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  revokedCount:
+                    type: integer
+                  keptSessionId:
+                    type: string
+        401:
+          description: Unauthenticated
+        429:
+          description: Rate limit exceeded
         500:
           description: Internal server error
 
@@ -415,6 +556,127 @@ paths:
         503:
           description: Billing not configured
 
+  /cron/cleanup-migration-files:
+    get:
+      tags:
+        - Cron
+      summary: Clean up orphaned migration upload files
+      description: |
+        Deletes upload blobs for migration jobs that finished (succeeded, failed,
+        or cancelled) more than 30 days ago. Idempotent via the CronRun ledger.
+        Requires Bearer token authorization.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Cleanup completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: integer
+                  scanned:
+                    type: integer
+        401:
+          description: Unauthorized (invalid token)
+        503:
+          description: CRON_SECRET not configured
+
+  /cron/cleanup-notifications:
+    get:
+      tags:
+        - Cron
+      summary: Apply notification retention policy
+      description: |
+        Removes in-app notifications beyond the retention window configured per
+        type (see `src/lib/notifications/retention.ts`). Idempotent via the
+        CronRun ledger. Requires Bearer token authorization.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Retention pass completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: integer
+        401:
+          description: Unauthorized (invalid token)
+        503:
+          description: CRON_SECRET not configured
+
+  /cron/cleanup-cronruns:
+    get:
+      tags:
+        - Cron
+      summary: Apply CronRun ledger retention policy
+      description: |
+        Prunes `CronRun` rows older than 90 days on `startedAt`. Keeps the
+        ledger bounded while preserving a rolling quarter of run history for
+        debugging. Idempotent via the CronRun ledger itself (the current
+        run's row is never in scope, since it is 0 seconds old). Supports
+        `?dryRun=1` for a read-only count. Requires Bearer token authorization.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Retention pass completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agedDeleted:
+                    type: integer
+                  retentionDays:
+                    type: integer
+                  cutoff:
+                    type: string
+                    format: date-time
+                  dryRun:
+                    type: boolean
+                  tookMs:
+                    type: integer
+        401:
+          description: Unauthorized (invalid token)
+        503:
+          description: CRON_SECRET not configured
+
+  /cron/process-imports:
+    get:
+      tags:
+        - Cron
+      summary: Process queued migration imports
+      description: |
+        Drains the migration processing queue — picks up PENDING or PROCESSING
+        jobs and advances them through parse/map/write stages. Idempotent via
+        the CronRun ledger. Requires Bearer token authorization.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Processing pass completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+        401:
+          description: Unauthorized (invalid token)
+        503:
+          description: CRON_SECRET not configured
+
   /cron/stock-count-triggers:
     get:
       tags:
@@ -541,6 +803,27 @@ paths:
           description: Invalid state signature
 
   /integrations/quickbooks/webhooks:
+    get:
+      tags:
+        - Integrations
+      summary: QuickBooks webhook verification challenge
+      description: |
+        Intuit periodically GETs this endpoint with a verifier challenge to
+        confirm the webhook URL is live. Returns the challenge verbatim.
+        Public endpoint, no signature required.
+      parameters:
+        - name: challenge
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Challenge echoed back
+          content:
+            text/plain:
+              schema:
+                type: string
     post:
       tags:
         - Integrations
@@ -722,6 +1005,375 @@ paths:
         401:
           description: Unauthenticated
 
+  /migrations:
+    get:
+      tags:
+        - Migrations
+      summary: List migrations
+      description: |
+        Returns all migration jobs for the authenticated user's organization,
+        newest first. Requires an active session.
+      security:
+        - sessionCookie: []
+      responses:
+        200:
+          description: Migrations list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  migrations:
+                    type: array
+                    items:
+                      type: object
+        401:
+          description: Unauthenticated
+        500:
+          description: Internal error
+    post:
+      tags:
+        - Migrations
+      summary: Create a migration job
+      description: |
+        Creates a new migration job for one of the supported legacy systems.
+        Requires the `integrations.connect` capability.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  enum:
+                    - SORTLY
+                    - INFLOW
+                    - FISHBOWL
+                    - CIN7
+                    - SOS_INVENTORY
+                    - QUICKBOOKS_ONLINE
+                    - QUICKBOOKS_DESKTOP
+              required:
+                - source
+      responses:
+        201:
+          description: Migration created
+        400:
+          description: Invalid source
+        401:
+          description: Unauthenticated
+        403:
+          description: Forbidden / insufficient permissions
+
+  /migrations/{id}:
+    get:
+      tags:
+        - Migrations
+      summary: Get migration detail
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Migration job with progress + mapping + sample rows
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+    delete:
+      tags:
+        - Migrations
+      summary: Soft-delete a migration job
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Migration archived
+        401:
+          description: Unauthenticated
+        403:
+          description: Forbidden
+        404:
+          description: Migration not found
+
+  /migrations/{id}/cancel:
+    post:
+      tags:
+        - Migrations
+      summary: Cancel a running migration
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Migration cancelled
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+        409:
+          description: Migration not cancellable in current state
+
+  /migrations/{id}/detect:
+    post:
+      tags:
+        - Migrations
+      summary: Detect source schema from uploaded files
+      description: |
+        Parses the uploaded files using the adapter for the migration's source
+        and returns the detected columns + sample rows so the user can confirm
+        mappings before validation.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Schema detected
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+
+  /migrations/{id}/mapping:
+    put:
+      tags:
+        - Migrations
+      summary: Save field mappings
+      description: |
+        Persists the user-confirmed field mappings so validate/start can use
+        them. Body is the mapping set specific to the migration source.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        200:
+          description: Mappings saved
+        400:
+          description: Invalid mapping shape
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+
+  /migrations/{id}/rollback:
+    post:
+      tags:
+        - Migrations
+      summary: Roll back a completed migration
+      description: |
+        Reverses writes made by a previously successful migration. Idempotent.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Rollback completed
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+        409:
+          description: Migration not rollbackable in current state
+
+  /migrations/{id}/start:
+    post:
+      tags:
+        - Migrations
+      summary: Start migration import
+      description: |
+        Runs the adapter with the saved mappings and begins writing data into
+        the target org. Transitions the job to PROCESSING.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Migration started
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+        409:
+          description: Migration not ready to start (no mappings, already running, etc.)
+
+  /migrations/{id}/status:
+    get:
+      tags:
+        - Migrations
+      summary: Poll migration status
+      description: |
+        Lightweight status/progress read for polling from the UI. Returns the
+        current state, counters, and last error (if any).
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Current status
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+
+  /migrations/{id}/upload:
+    post:
+      tags:
+        - Migrations
+      summary: Upload migration source files
+      description: |
+        Accepts multipart form data with one or more files for the adapter to
+        parse. Files are stored as blobs referenced by the migration job.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        200:
+          description: Files uploaded
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+        413:
+          description: File too large
+
+  /migrations/{id}/validate:
+    post:
+      tags:
+        - Migrations
+      summary: Validate migration against mappings
+      description: |
+        Dry-runs the adapter against the uploaded files with the saved mappings
+        and reports blocking errors and warnings without writing anything.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Validation report
+        401:
+          description: Unauthenticated
+        404:
+          description: Migration not found
+
+  /onboarding/migration-start:
+    post:
+      tags:
+        - Onboarding
+      summary: Create organization AND seed a migration job in one call
+      description: |
+        Convenience endpoint used by the onboarding wizard — creates the
+        organization (like `POST /onboarding/organization`) and in the same
+        transaction seeds a migration job for the selected legacy system so the
+        user can jump straight into upload/mapping.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 80
+                source:
+                  type: string
+                  enum:
+                    - SORTLY
+                    - INFLOW
+                    - FISHBOWL
+                    - CIN7
+                    - SOS_INVENTORY
+                    - QUICKBOOKS_ONLINE
+                    - QUICKBOOKS_DESKTOP
+              required:
+                - name
+                - source
+      responses:
+        201:
+          description: Organization + migration created
+        400:
+          description: Invalid request
+        401:
+          description: Unauthenticated
+        429:
+          description: Rate limit exceeded
+
   /onboarding/organization:
     post:
       tags:
@@ -772,6 +1424,37 @@ paths:
           description: Unauthenticated
         429:
           description: Rate limit exceeded
+    patch:
+      tags:
+        - Onboarding
+      summary: Update organization settings during onboarding
+      description: |
+        Partial update of the current organization (name, locale, etc.).
+        Scoped to the onboarding track — post-onboarding updates should use
+        the settings surface instead. Requires an active session and
+        `org.settings` capability.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 80
+      responses:
+        200:
+          description: Organization updated
+        400:
+          description: Invalid request
+        401:
+          description: Unauthenticated
+        403:
+          description: Forbidden / insufficient permissions
 
   /reports/abc-analysis:
     post:
@@ -1303,6 +1986,67 @@ paths:
         - Webhooks
       summary: Webhook health check
       description: Health check endpoint for webhook delivery validation.
+      responses:
+        200:
+          description: Healthy
+
+  /webhooks/resend:
+    post:
+      tags:
+        - Webhooks
+      summary: Receive Resend delivery events
+      description: |
+        Receives email delivery events (`email.delivered`, `email.bounced`,
+        `email.complained`, etc.) from Resend. Public endpoint, but requires
+        the `svix-id` / `svix-timestamp` / `svix-signature` headers for
+        signature verification (Resend uses Svix for webhook signing).
+        Updates the deliverability guard so bounced/complaint recipients are
+        not retried.
+      parameters:
+        - name: svix-id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: svix-timestamp
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: svix-signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  description: Resend event type (e.g., email.bounced)
+                data:
+                  type: object
+              required:
+                - type
+                - data
+      responses:
+        200:
+          description: Event processed
+        400:
+          description: Invalid payload
+        401:
+          description: Invalid signature
+        500:
+          description: Processing error
+    head:
+      tags:
+        - Webhooks
+      summary: Resend webhook health check
+      description: Idempotent health check for the Resend webhook URL.
       responses:
         200:
           description: Healthy

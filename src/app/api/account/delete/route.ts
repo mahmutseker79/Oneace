@@ -1,9 +1,28 @@
+/**
+ * @openapi-tag: /account/delete
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership } from "@/lib/session";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+// P3-3 (audit v1.1 §5.30) — explicit phrase schema. The literal
+// "DELETE MY ACCOUNT" is the dead-man's switch; anything else is
+// a 400. Using zod instead of an inline equality check means a
+// typo in the string is caught at parse time with a clear error,
+// and the whole schema is discoverable for the pinned test.
+const PHRASE = "DELETE MY ACCOUNT";
+const deleteBodySchema = z.object({
+  confirmation: z.literal(PHRASE),
+});
 
 /**
  * POST /api/account/delete
@@ -36,12 +55,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse and validate confirmation phrase
-    const body = await request.json().catch(() => ({}));
-    const { confirmation } = body as { confirmation?: string };
-
-    if (confirmation !== "DELETE MY ACCOUNT") {
-      return NextResponse.json({ error: "Invalid confirmation phrase" }, { status: 400 });
+    // Parse and validate confirmation phrase — §5.30: zod schema
+    // above replaces the inline equality check. `safeParse` returns a
+    // structured result so we can distinguish "missing field" from
+    // "wrong phrase" (both 400, but the error body differs).
+    const raw = await request.json().catch(() => ({}));
+    const parsed = deleteBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid confirmation phrase",
+          details: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
     }
 
     // Check if user is OWNER of any organization

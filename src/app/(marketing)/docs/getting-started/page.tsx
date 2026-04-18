@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Getting started — OneAce Docs",
   description:
     "Set up OneAce in 5 minutes. Add items, create a warehouse, and record your first stock movement.",
-};
+  path: "/docs/getting-started",
+});
 
 export default function GettingStartedPage() {
   return (

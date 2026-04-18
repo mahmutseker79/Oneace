@@ -23,8 +23,26 @@
  *     for the same (org, item, LOW_STOCK) before inserting.
  */
 
+import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+
+// §5.24 — Notifications default to a 90-day retention window; the
+// cleanup-notifications cron prunes anything past `expiresAt`. Keep
+// this in one place so producers that add new notification types
+// don't each pick their own arbitrary TTL.
+const NOTIFICATION_TTL_DAYS = 90;
+
+// §5.24 — dedup window is one calendar day. Two fan-outs for the
+// same (alert, user) within the same UTC day collapse to one row via
+// the `Notification_dedup` unique index + `skipDuplicates: true`.
+// Change cautiously: a shorter window (hours) would let the same
+// alert spam the bell; a longer one would silently drop legitimate
+// re-trips after an auto-resolve/re-open cycle.
+function notificationDedupKey(source: string, userId: string, now: Date): string {
+  const day = now.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+  return createHash("sha256").update(`${source}:${userId}:${day}`).digest("hex").slice(0, 32);
+}
 
 /**
  * Evaluate low-stock alerts for the given items within an organization.
@@ -100,8 +118,19 @@ export async function evaluateAlerts(organizationId: string, itemIds: string[]):
           memberUserIds = members.map((m) => m.userId);
         }
 
-        // Fan out notifications
+        // Fan out notifications.
+        //
+        // §5.24 — `dedupKey` + `skipDuplicates` makes the insert
+        // idempotent across a UTC day. If evaluateAlerts fires twice
+        // for the same alert in the same day (cron retry, double-
+        // trigger race), the second pass collides with the unique
+        // `Notification_dedup` index and silently drops.
+        //
+        // `expiresAt` bounds growth to NOTIFICATION_TTL_DAYS (90d) —
+        // the cleanup-notifications cron prunes past-TTL rows.
         if (memberUserIds.length > 0) {
+          const now = new Date();
+          const expiresAt = new Date(now.getTime() + NOTIFICATION_TTL_DAYS * 24 * 60 * 60 * 1000);
           await db.notification.createMany({
             data: memberUserIds.map((userId) => ({
               organizationId,
@@ -110,7 +139,10 @@ export async function evaluateAlerts(organizationId: string, itemIds: string[]):
               title: `Low stock: ${item.name}`,
               message: `${item.sku} has ${onHand} units (reorder point: ${item.reorderPoint})`,
               href: `/items/${item.id}`,
+              expiresAt,
+              dedupKey: notificationDedupKey(`alert:${alert.id}`, userId, now),
             })),
+            skipDuplicates: true,
           });
         }
       } else if (!isLowStock && hasActiveAlert) {

@@ -12,15 +12,12 @@ import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
 import { cleanFieldErrors } from "@/lib/validation/action-result";
-import {
-  type CreateTransferInput,
-  type TransferLine,
-  createTransferInputSchema,
-  transferLineSchema,
-} from "@/lib/validation/transfer";
+import { type CreateTransferInput, createTransferInputSchema } from "@/lib/validation/transfer";
 
-export { createTransferInputSchema, transferLineSchema };
-export type { CreateTransferInput, TransferLine };
+// Schema + type re-exports removed: Next.js 15's `"use server"`
+// compiler only permits async-function exports. Consumers that need
+// the schema or type should import from `@/lib/validation/transfer`
+// directly (this file only exposes the action itself).
 
 // ---------------------------------------------------------------------------
 // Result types

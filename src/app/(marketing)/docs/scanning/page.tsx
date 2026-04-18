@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Barcode scanning — OneAce Docs",
   description: "Use barcode scanning in OneAce for fast stock lookups, receiving, and transfers.",
-};
+  path: "/docs/scanning",
+});
 
 export default function ScanningPage() {
   return (

@@ -24,10 +24,22 @@
  * and call `resetMailerForTests()` keep working via the re-export
  * (the env module is evaluated once, so mutating `process.env`
  * after import is a no-op — historical notes in tests).
+ *
+ * Audit v1.1 §5.28 update: the cached mailer is wrapped in a
+ * `DeliverabilityGuardMailer` that short-circuits `send()` for
+ * recipients whose `User.emailStatus` is not ACTIVE. This protects
+ * our sending-domain reputation — continuing to send to bounced /
+ * complained / unsubscribed addresses is what gets us throttled
+ * by Resend. Unknown recipients (no User row) fall through to the
+ * underlying mailer, because invite emails are by definition sent
+ * to people who don't have accounts yet.
  */
 
+import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { ConsoleMailer } from "./console-mailer";
+import { DeliverabilityGuardMailer } from "./deliverability-guard";
 import type { Mailer } from "./mailer";
 import { ResendMailer } from "./resend-mailer";
 
@@ -44,12 +56,11 @@ export function getMailer(): Mailer {
   const apiKey = env.RESEND_API_KEY;
   const from = env.MAIL_FROM;
 
-  if (!apiKey || !from) {
-    cached = new ConsoleMailer();
-    return cached;
-  }
+  const inner: Mailer = !apiKey || !from ? new ConsoleMailer() : new ResendMailer(apiKey, from);
 
-  cached = new ResendMailer(apiKey, from);
+  // §5.28 — wrap with the deliverability guard so every call site
+  // picks up suppression for free.
+  cached = new DeliverabilityGuardMailer(inner, db, logger);
   return cached;
 }
 

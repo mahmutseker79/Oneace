@@ -105,13 +105,25 @@ function emit(level: LogLevel, message: string, context?: LogContext): void {
       message,
       ...(normalised ? { context: normalised } : {}),
     };
-    // Use stdout for info/debug, stderr for warn/error — preserves
-    // whatever process-level routing the platform does.
+    // Use console.error for warn/error and console.log for info/debug —
+    // preserves Vercel's stderr/stdout split AND works in the Edge
+    // Runtime, where `process.stdout`/`process.stderr` are undefined.
+    //
+    // Previously this branch called `process.stderr.write(...)` /
+    // `process.stdout.write(...)` directly, which throws
+    // `TypeError: Cannot read properties of undefined (reading 'write')`
+    // in Edge middleware. That crash manifested as
+    // `MIDDLEWARE_INVOCATION_FAILED` on every request in production,
+    // because `src/middleware.ts` → `rate-limit.ts` fires a
+    // `logger.warn(...)` at module load when Upstash Redis is not
+    // configured (Upstash creds are optional; the fallback-warning
+    // path is the common case). Node runtime (API routes, server
+    // actions) was unaffected. See tag v1.5.13-hotfix-edge-logger.
     const line = JSON.stringify(payload);
     if (level === "warn" || level === "error") {
-      process.stderr.write(`${line}\n`);
+      console.error(line);
     } else {
-      process.stdout.write(`${line}\n`);
+      console.log(line);
     }
     return;
   }

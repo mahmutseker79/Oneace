@@ -92,21 +92,30 @@ export const en = {
 
   nav: {
     dashboard: "Dashboard",
+    // v1.5 primary sidebar (6 items)
+    inventory: "Inventory",
+    locations: "Locations",
+    counts: "Counts",
+    orders: "Orders",
+    reports: "Reports",
+    // v1.5 secondary sidebar (4 items)
+    team: "Team",
+    integrations: "Integrations",
+    settings: "Settings",
+    help: "Help",
+    // ── Legacy labels (still referenced by wrapper tab rows, crumbs,
+    //    and callers that pass the full SidebarLabels contract). ──
     items: "Items",
     categories: "Categories",
     warehouses: "Locations",
-    counts: "Stock Counts",
     stockCounts: "Stock Counts",
     scan: "Scan",
     movements: "Movements",
     suppliers: "Suppliers",
     purchaseOrders: "Purchase Orders",
-    reports: "Reports",
     users: "Members",
     audit: "Audit log",
-    settings: "Settings",
     // Section headings
-    inventory: "Inventory",
     operations: "Operations",
     fulfillment: "Fulfillment",
     analytics: "Analytics",
@@ -128,8 +137,6 @@ export const en = {
     import: "Import",
     export: "Export",
     migrations: "Göç / Migrations",
-    // Integrations (standalone top-level)
-    integrations: "Integrations",
     // Legacy aliases
     activity: "Activity",
     warehouse: "Warehouse",
@@ -210,6 +217,18 @@ export const en = {
       helper: "You can change this later in settings.",
       submit: "Create organization",
       error: "Could not create organization.",
+      // God-Mode v2 §4 — Phase 4 — page-level chrome for the multi-step
+      // wizard (`src/app/(app)/onboarding/page.tsx`). Splitting these
+      // out from the single-step `auth.onboarding` copy above because
+      // the wizard is a different flow (4 steps, visual guidance) even
+      // though it lives under the same auth namespace.
+      wizard: {
+        welcomeTitle: "Welcome to OneAce",
+        welcomeSubtitle: "Let's get your workspace set up in under a minute.",
+        trustEncryption: "256-bit encryption",
+        trustNoCard: "No credit card required",
+        trustFreePlan: "Free forever plan",
+      },
     },
   },
 
@@ -368,7 +387,10 @@ export const en = {
   },
 
   items: {
-    metaTitle: "Items",
+    // v1.5 step 11 — browser tab reads "Inventory" to match the sidebar
+    // wrapper label. Page heading stays "Items" because the Inventory
+    // wrapper tab row highlights "Items" as the active sub-page.
+    metaTitle: "Inventory",
     heading: "Items",
     subtitle: "Every SKU you stock, in one searchable place.",
     newItem: "New item",
@@ -955,7 +977,9 @@ export const en = {
   },
 
   stockCounts: {
-    metaTitle: "Stock counts",
+    // v1.5 step 11 — browser tab reads "Counts" to match the sidebar
+    // label. In-page heading stays "Stock counts" for clarity.
+    metaTitle: "Counts",
     heading: "Stock counts",
     subtitle: "Physical counts with variance review and an honest audit trail.",
     newCount: "New count",
@@ -1261,7 +1285,10 @@ export const en = {
   },
 
   purchaseOrders: {
-    metaTitle: "Purchase orders",
+    // v1.5 step 11 — browser tab reads "Orders" to match the sidebar
+    // wrapper label. Page heading stays "Purchase orders" since that's
+    // the specific sub-page inside the Orders wrapper.
+    metaTitle: "Orders",
     heading: "Purchase orders",
     subtitle: "Track stock you've ordered from suppliers until it arrives.",
     newPurchaseOrder: "New purchase order",
@@ -2106,7 +2133,9 @@ export const en = {
   },
 
   users: {
-    metaTitle: "Users",
+    // v1.5 step 11 — browser tab reads "Team" to match the sidebar
+    // wrapper label (Members/Departments live under the Team wrapper).
+    metaTitle: "Team",
     heading: "Team members",
     subtitle: "Invite teammates, manage roles, and remove access.",
     invite: {
@@ -2536,6 +2565,8 @@ export const en = {
       "ui.reorder_config_save": "Saved reorder config",
       "account.data_export": "Exported account data",
       "account.deleted": "Deleted account",
+      "account.session_revoked": "Revoked session",
+      "account.all_sessions_revoked": "Revoked all other sessions",
       // Phase B: Counting Core Expansion
       "department.created": "Created department",
       "department.updated": "Updated department",
@@ -2544,6 +2575,7 @@ export const en = {
       "stock_count.approved": "Approved count",
       "stock_count.rejected": "Rejected count",
       "stock_count.rolled_back": "Rolled back count",
+      "stock_count.rollback_refused": "Refused rollback (inverse-movement step not implemented)",
       "count_assignment.created": "Created count assignment",
       "count_assignment.removed": "Removed count assignment",
       "count_template.created": "Created count template",

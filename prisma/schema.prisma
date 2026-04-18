@@ -220,6 +220,25 @@ enum Role {
   COUNTER
 }
 
+/// §5.28 — User deliverability state, fed by the Resend webhook.
+///
+/// Meaning:
+///   ACTIVE      — default; sends are allowed.
+///   BOUNCED     — hard bounce (invalid address); sends blocked.
+///   COMPLAINED  — recipient marked as spam; sends blocked.
+///   UNSUBSCRIBED — recipient opted out; transactional sends blocked
+///                  unless the send is a critical account notice
+///                  (documented case-by-case at the send callsite).
+///
+/// Soft bounces (transient) do NOT transition the user — Resend retries
+/// internally and our webhook handler ignores them.
+enum EmailStatus {
+  ACTIVE
+  BOUNCED
+  COMPLAINED
+  UNSUBSCRIBED
+}
+
 // =========================
 // Better Auth tables
 // https://www.better-auth.com/docs/concepts/database
@@ -230,6 +249,15 @@ model User {
   email               String            @unique
   name                String?
   emailVerified       Boolean           @default(false)
+  /// §5.28 — deliverability state fed by Resend webhook. Defaults to
+  /// ACTIVE; moves to BOUNCED/COMPLAINED/UNSUBSCRIBED on webhook event.
+  /// Read by `guardDeliverableRecipient()` before every send so we
+  /// don't keep emailing addresses Resend has already told us are dead.
+  emailStatus         EmailStatus       @default(ACTIVE)
+  /// §5.28 — timestamp of the last state-changing webhook event, so
+  /// the admin UI can show "bounced N days ago" without joining the
+  /// audit log. Null on accounts Resend has never reported.
+  emailStatusUpdatedAt DateTime?
   image               String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -270,6 +298,8 @@ model User {
   serialHistories     SerialHistory[]
 
   @@index([email])
+  /// §5.28 — admins filter by deliverability (show bouncing accounts).
+  @@index([emailStatus])
 }
 
 model Session {
@@ -1072,6 +1102,17 @@ model Alert {
   @@index([organizationId, itemId, type])
 }
 
+// Audit v1.1 §5.24 — Notification now has retention + dedup fields.
+//   * `expiresAt` — set by producers (alerts.ts fan-out uses now + 90 days).
+//     The cleanup-notifications cron (`api/cron/cleanup-notifications`)
+//     deletes anything past its `expiresAt`, so growth is bounded even
+//     if nobody ever clicks "mark read".
+//   * `dedupKey` — nullable; producers that want idempotency pass a
+//     hash of (source + day + userId) so repeated fan-outs within the
+//     same dedup window collapse. The compound unique index below lets
+//     Prisma `createMany({ skipDuplicates: true })` do the dedup in a
+//     single round-trip. Null dedupKey means "no dedup" — Postgres
+//     treats NULLs as distinct, so legacy rows never conflict.
 model Notification {
   id             String    @id @default(cuid())
   organizationId String
@@ -1082,15 +1123,19 @@ model Notification {
   href           String? // click-through deep link, e.g. "/items/{id}"
   readAt         DateTime?
   createdAt      DateTime  @default(now())
+  expiresAt      DateTime? // §5.24 — retention; cleanup cron deletes past this
+  dedupKey       String? // §5.24 — hash(source + day + userId), opt-in dedup
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   alert        Alert?       @relation(fields: [alertId], references: [id], onDelete: SetNull)
 
+  @@unique([organizationId, userId, dedupKey], name: "Notification_dedup")
   @@index([userId, readAt])
   @@index([organizationId, userId])
   @@index([alertId])
   @@index([organizationId])
+  @@index([expiresAt]) // §5.24 — supports cleanup cron's `expiresAt < now()` scan
 }
 
 // =========================
@@ -2784,4 +2829,24 @@ model ItemCustomFieldValue {
   @@unique([itemId, definitionId], name: "ux_cfval_item_def")
   @@index([definitionId])
   @@index([itemId])
+}
+
+/// §5.27 — Cron idempotency ledger.
+///
+/// Every scheduled route calls `withCronIdempotency(name, fn)`. The helper
+/// derives a per-day runId (`cron:<name>:<YYYY-MM-DD>`) and uses this
+/// table as the source of truth. Upsert-on-start + completedAt-on-finish
+/// lets a retried invocation short-circuit with `skipped: true` instead
+/// of re-running the job body. Without this, a Vercel Cron 5xx retry
+/// could double-delete, double-trigger, or double-notify.
+model CronRun {
+  runId       String    @id // e.g. "cron:stock-count-triggers:2026-04-18"
+  name        String // the cron name slug, without the date suffix
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  error       String? // truncated message if the run failed
+  result      Json? // small summary payload (counts, etc.) — NOT logs
+
+  @@index([name])
+  @@index([startedAt])
 }

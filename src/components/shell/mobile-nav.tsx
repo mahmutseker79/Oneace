@@ -7,6 +7,11 @@
 // item arrays and silently dropped Dashboard, Migrations,
 // Integrations, Vehicles, and Pallets — items users on phones could
 // not reach. Both surfaces now read from `./nav-config`.
+//
+// v1.5 IA refactor: the primary (top) and secondary (bottom) column
+// split from the desktop sidebar is mirrored here. Secondary items
+// sit below a divider and the footer so the phone user still sees
+// them without having to scroll back up.
 
 import { useState } from "react";
 
@@ -22,9 +27,11 @@ import {
   type NavItem,
   isGroupActive,
   isItemActive,
+  primaryGroups,
   resolveBadge,
   resolveHeading,
   resolveLabel,
+  secondaryGroups,
   visibleGroups,
 } from "./nav-config";
 import type { SidebarLabels } from "./sidebar-labels";
@@ -40,6 +47,8 @@ export function MobileNav({
 }) {
   const pathname = usePathname();
   const groups = visibleGroups(labels.showAdmin !== false);
+  const primary = primaryGroups(groups);
+  const secondary = secondaryGroups(groups);
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -57,7 +66,7 @@ export function MobileNav({
 
   function renderItem(item: NavItem) {
     const href = item.href;
-    const isActive = isItemActive(href, pathname);
+    const isActive = isItemActive(item, pathname);
     const Icon = item.icon;
     const label = resolveLabel(item, labels);
     const badge = resolveBadge(item, labels);
@@ -87,12 +96,8 @@ export function MobileNav({
   function renderGroup(group: NavGroup) {
     if (group.mode === "always") {
       const heading = resolveHeading(group, labels);
-      const isCore = group.id === "core";
       return (
-        <div
-          key={group.id}
-          className={cn(isCore ? "space-y-1" : "mt-4 border-t pt-4")}
-        >
+        <div key={group.id} className="space-y-1">
           {heading ? (
             <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {heading}
@@ -103,7 +108,7 @@ export function MobileNav({
       );
     }
 
-    // Collapsible (and admin).
+    // Collapsible (and admin). Kept for back-compat; v1.5 uses "always".
     const heading = resolveHeading(group, labels);
     const isOpen = openGroups[group.id] ?? false;
     return (
@@ -115,13 +120,9 @@ export function MobileNav({
           className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
         >
           <span>{heading}</span>
-          <ChevronDown
-            className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")}
-          />
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
         </button>
-        {isOpen ? (
-          <div className="mt-1 space-y-1">{group.items.map(renderItem)}</div>
-        ) : null}
+        {isOpen ? <div className="mt-1 space-y-1">{group.items.map(renderItem)}</div> : null}
       </div>
     );
   }
@@ -138,11 +139,21 @@ export function MobileNav({
           </SheetTitle>
         </SheetHeader>
 
-        <nav className="flex-1 overflow-y-auto p-4">{groups.map(renderGroup)}</nav>
+        <nav aria-label="Primary" className="flex flex-1 flex-col overflow-y-auto p-4">
+          <div className="space-y-3">{primary.map(renderGroup)}</div>
+          {secondary.length > 0 ? (
+            <div aria-label="Secondary" className="mt-auto space-y-3 pt-4 border-t">
+              {secondary.map(renderGroup)}
+            </div>
+          ) : null}
+        </nav>
 
+        {/* P1-6 (audit v1.0 §5.12): retire the "Sprint 0 scaffold" status
+            line — only render it when callers deliberately pass a non-empty
+            label (e.g. a real maintenance banner). */}
         <div className="border-t p-4 text-xs text-muted-foreground">
           <p>{labels.versionLine}</p>
-          <p>{labels.statusLine}</p>
+          {labels.statusLine ? <p>{labels.statusLine}</p> : null}
         </div>
       </SheetContent>
     </Sheet>

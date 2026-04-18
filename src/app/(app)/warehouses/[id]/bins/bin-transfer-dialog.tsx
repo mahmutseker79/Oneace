@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -79,6 +80,13 @@ export function BinTransferDialog({ warehouseId, labels, bins, items }: BinTrans
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{labels.title}</DialogTitle>
+          {/* P3-3 (audit v1.0 §9.4) — Radix's Dialog warns at runtime
+              when an accessible description is missing. The form
+              labels already describe each field, so a short
+              screen-reader-only summary is the lightest fix. */}
+          <DialogDescription className="sr-only">
+            Move stock quantity between two bins within the same warehouse.
+          </DialogDescription>
         </DialogHeader>
 
         <form ref={formRef} action={handleSubmit} className="space-y-4">

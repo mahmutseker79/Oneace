@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Stock counts — OneAce Docs",
   description: "Run accurate offline stock counts in OneAce with multiple operators.",
-};
+  path: "/docs/stock-counts",
+});
 
 export default function StockCountsPage() {
   return (

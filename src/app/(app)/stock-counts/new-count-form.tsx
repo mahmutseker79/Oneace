@@ -19,6 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// Audit v1.2 §5.33 — activation analytics; see items/item-form.tsx for
+// the "track() is a server-side no-op" rationale.
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 
 import { createStockCountAction } from "./actions";
 
@@ -135,6 +139,15 @@ export function NewCountForm({ labels, items, warehouses }: NewCountFormProps) {
         setError(result.error);
         return;
       }
+      // v1.2 §5.33 — COUNT_STARTED is steady-state (fires on every
+      // successful create). The "first count completed" activation
+      // moment is a different event that belongs on the reconcile
+      // form, because product measures "did the user get through a
+      // whole count cycle?", not "did they click New Count?".
+      track(AnalyticsEvents.COUNT_STARTED, {
+        id: result.id,
+        methodology,
+      });
       resetUnsaved();
       router.push(`/stock-counts/${result.id}`);
       router.refresh();

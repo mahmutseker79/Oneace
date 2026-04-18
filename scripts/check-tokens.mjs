@@ -41,12 +41,24 @@ const BRIDGE = [
   { token: ["motion", "duration", "slow"], cssVar: "--transition-slow", required: true },
 
   // Shadow — tokens.json: sm/md/lg/xl scale, globals.css: semantic aliases
-  { token: ["shadow", "sm"], cssVar: "--shadow-card", required: true,
-    note: "semantic alias (scale → role)" },
-  { token: ["shadow", "md"], cssVar: "--shadow-elevated", required: true,
-    note: "semantic alias (scale → role)" },
-  { token: ["shadow", "lg"], cssVar: "--shadow-popover", required: true,
-    note: "semantic alias (scale → role)" },
+  {
+    token: ["shadow", "sm"],
+    cssVar: "--shadow-card",
+    required: true,
+    note: "semantic alias (scale → role)",
+  },
+  {
+    token: ["shadow", "md"],
+    cssVar: "--shadow-elevated",
+    required: true,
+    note: "semantic alias (scale → role)",
+  },
+  {
+    token: ["shadow", "lg"],
+    cssVar: "--shadow-popover",
+    required: true,
+    note: "semantic alias (scale → role)",
+  },
 
   // Form control heights — not in tokens.json yet, but should be
   { token: ["control", "height", "sm"], cssVar: "--control-h-sm", required: true },
@@ -105,7 +117,12 @@ for (const entry of BRIDGE) {
   } else if (tokenValue !== undefined && !cssPresent) {
     // Declared in spec but no runtime var
     const bucket = required ? results.fail : results.warn;
-    bucket.push({ tokenKey, cssVar, reason: `tokens.json has ${tokenKey} but globals.css lacks ${cssVar}`, note });
+    bucket.push({
+      tokenKey,
+      cssVar,
+      reason: `tokens.json has ${tokenKey} but globals.css lacks ${cssVar}`,
+      note,
+    });
   } else {
     // CSS var exists but not in tokens.json (orphan)
     results.warn.push({

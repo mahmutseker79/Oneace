@@ -10,6 +10,7 @@
 
 import { createHmac } from "node:crypto";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 interface WebhookRecord {
@@ -53,8 +54,27 @@ export class WebhookDispatcher {
   private baseBackoff: number;
   private maxBackoff: number;
 
+  /**
+   * God-Mode v2 §2.1 — dropped the insecure `"default-secret"` default.
+   *
+   * Rationale: the previous signature (`secret = process.env.WEBHOOK_SECRET
+   * || "default-secret"`) meant any deploy that forgot to set the env var
+   * would silently sign outbound webhooks with a well-known string. A
+   * subscriber that knows OneAce sent the payload can forge any other
+   * payload with the same signature — a complete bypass of the HMAC
+   * guarantee. We now require an explicit non-empty secret at
+   * construction time. The canonical source is `env.WEBHOOK_SECRET`
+   * (Zod-validated to a 32-char minimum); callers that want to use the
+   * platform default should simply omit the `secret` argument.
+   *
+   * Failure mode change: instantiating the dispatcher without a
+   * configured secret now throws synchronously. This matches the
+   * behaviour of every other webhook route in the app, which 503s when
+   * its signing secret is missing rather than silently accepting
+   * unsigned traffic.
+   */
   constructor(
-    secret: string = process.env.WEBHOOK_SECRET || "default-secret",
+    secret: string | undefined = env.WEBHOOK_SECRET,
     config: {
       timeout?: number;
       maxRetries?: number;
@@ -62,6 +82,11 @@ export class WebhookDispatcher {
       maxBackoff?: number;
     } = {},
   ) {
+    if (!secret || secret.trim().length === 0) {
+      throw new Error(
+        "WebhookDispatcher requires a non-empty HMAC secret. Set WEBHOOK_SECRET in the environment (min 32 chars) or pass one explicitly to the constructor. Refusing to sign with an insecure default.",
+      );
+    }
     this.secret = secret;
     this.timeout = config.timeout || 30000;
     this.maxRetries = config.maxRetries || 3;

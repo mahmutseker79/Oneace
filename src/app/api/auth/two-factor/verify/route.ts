@@ -1,7 +1,32 @@
+/**
+ * @openapi-tag: /auth/two-factor/verify
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
 import { db } from "@/lib/db";
 import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { verifyBackupCode, verifyTotpCode } from "@/lib/totp";
 import { headers } from "next/headers";
+import { z } from "zod";
+
+// P3-3 (audit v1.1 §5.30) — explicit body schema. `userId` and `code`
+// were previously validated with hand-rolled regex + length checks;
+// zod centralizes the contract. Constraints preserved exactly:
+//   - userId: 1..64 chars, [a-zA-Z0-9_-] (prevents injection into
+//     rate-limit key derivation)
+//   - code: 1..16 chars (covers 6-digit TOTP and 8-char backup codes)
+const verifyBodySchema = z.object({
+  userId: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-zA-Z0-9_-]+$/, "Invalid userId format"),
+  code: z.string().min(1).max(16),
+  sessionToken: z.string().optional(),
+});
 
 /**
  * POST /api/auth/two-factor/verify
@@ -32,19 +57,21 @@ import { headers } from "next/headers";
  */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { userId, code } = body as { userId?: string; code?: string };
-
-    if (!userId || !code) {
-      return new Response(JSON.stringify({ error: "Missing userId or code" }), {
-        status: 400,
-      });
+    // §5.30: zod-parsed body. `safeParse` collapses the three
+    // previous 400 branches ("Missing", "Invalid format", generic
+    // shape) into a single failure path with structured `details`.
+    const raw = await req.json().catch(() => ({}));
+    const parsed = verifyBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid request body",
+          details: parsed.error.flatten().fieldErrors,
+        }),
+        { status: 400 },
+      );
     }
-
-    // Validate userId format (prevent injection of arbitrary strings into rate-limit keys)
-    if (typeof userId !== "string" || userId.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(userId)) {
-      return new Response(JSON.stringify({ error: "Invalid userId format" }), { status: 400 });
-    }
+    const { userId, code } = parsed.data;
 
     // Verify that the userId corresponds to a real user (prevent enumeration via arbitrary IDs)
     const userExists = await db.user.findUnique({

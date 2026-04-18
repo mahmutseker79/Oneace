@@ -1,3 +1,11 @@
+/**
+ * @openapi-tag: /auth/[...all]
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
 // Phase 7C: registration gate + rate limiting.
 //
 // Better Auth's `toNextJsHandler` produces a { GET, POST } pair that
@@ -46,7 +54,10 @@ async function gatedPost(request: NextRequest) {
         ip,
       });
       return NextResponse.json(
-        { error: "Too many login attempts. Please try again later." },
+        {
+          message: "Too many login attempts. Please try again later.",
+          code: "LOGIN_RATE_LIMIT",
+        },
         { status: 429, headers: { "Retry-After": String(rl.reset) } },
       );
     }
@@ -59,7 +70,10 @@ async function gatedPost(request: NextRequest) {
     if (!ipRl.ok) {
       logger.warn("Registration rate limit exceeded (IP)", { tag: "auth.rate-limit", ip });
       return NextResponse.json(
-        { error: "Too many registration attempts. Please try again later." },
+        {
+          message: "Too many registration attempts. Please try again later.",
+          code: "REGISTER_RATE_LIMIT_IP",
+        },
         { status: 429, headers: { "Retry-After": String(ipRl.reset) } },
       );
     }
@@ -76,7 +90,10 @@ async function gatedPost(request: NextRequest) {
             email: email.replace(/@.*/, "@***"),
           });
           return NextResponse.json(
-            { error: "Too many registration attempts for this email. Please try again later." },
+            {
+              message: "Too many registration attempts for this email. Please try again later.",
+              code: "REGISTER_RATE_LIMIT_EMAIL",
+            },
             { status: 429, headers: { "Retry-After": String(emailRl.reset) } },
           );
         }

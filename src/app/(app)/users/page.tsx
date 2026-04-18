@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { TEAM_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -102,10 +104,15 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs tabs={resolveWrapperTabs(TEAM_TAB_SPECS, t)} ariaLabel="Team sections" />
       <PageHeader
         title={t.users.heading}
         description={t.users.subtitle}
-        breadcrumb={[{ label: "Settings", href: "/settings" }, { label: t.users.heading }]}
+        // v1.5 step 9 — IA reshuffled Members/Departments out of
+        // Settings into their own 'Team' wrapper. /users is now the
+        // Team landing so a single-item crumb matches how /settings
+        // itself renders.
+        breadcrumb={[{ label: t.users.heading }]}
       />
 
       {/* Phase 15.3 — member limit nudge */}

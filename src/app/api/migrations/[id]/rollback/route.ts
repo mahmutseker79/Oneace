@@ -1,4 +1,12 @@
 /**
+ * @openapi-tag: /migrations/[id]/rollback
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
+/**
  * POST /api/migrations/[id]/rollback
  *
  * P1-2 (audit v1.0 §5.7): SUSPENDED for v1.

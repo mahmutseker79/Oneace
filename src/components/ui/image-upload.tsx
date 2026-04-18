@@ -5,7 +5,8 @@ import Image from "next/image";
 import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { trackEvent } from "@/lib/analytics/events";
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 
@@ -55,8 +56,8 @@ export function ImageUpload({ value, onChange, disabled = false }: ImageUploadPr
         onChange(url);
         toast.success("Image uploaded successfully");
 
-        // Track image upload event
-        trackEvent("item_image_uploaded");
+        // Audit v1.1 §5.20 — wired through unified track() facade.
+        track(AnalyticsEvents.ITEM_IMAGE_UPLOADED);
       } catch (err) {
         logger.error("Upload error:", { error: err });
         toast.error("An error occurred during upload");

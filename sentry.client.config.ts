@@ -12,13 +12,15 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+import { getTracesSampleRate } from "@/lib/sentry-sample-rate";
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Trace a fraction of requests for performance monitoring. The
-  // default (0.1 = 10%) keeps us well within Sentry's free quota.
-  // Override via SENTRY_TRACES_SAMPLE_RATE in production env vars.
-  tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? "0.1"),
+  // v1.2 P3 §5.42 — env-aware default. Dev = 1.0 (full tracing for
+  // local repros), test = 0.0 (never upload), prod = 0.1 (quota).
+  // SENTRY_TRACES_SAMPLE_RATE still wins when explicitly set.
+  tracesSampleRate: getTracesSampleRate(),
 
   // Capture 10% of user sessions that contain an error for replay.
   replaysOnErrorSampleRate: 0.1,

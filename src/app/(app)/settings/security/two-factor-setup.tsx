@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { enableTwoFactorAction, verifyAndActivateTwoFactorAction } from "./actions";
@@ -69,6 +71,10 @@ export function TwoFactorSetup({ labels }: TwoFactorSetupProps) {
           setError("Invalid code. Please check your authenticator app and try again.");
           return;
         }
+        // Audit v1.1 §5.20 — two_factor_enabled fires only on successful
+        // TOTP activation (step2 → step3), so the event reflects real
+        // adoption rather than setup starts that were abandoned at step1.
+        track(AnalyticsEvents.TWO_FACTOR_ENABLED);
         setStep("step3");
       } catch (err) {
         setError(err instanceof Error ? err.message : labels.error);

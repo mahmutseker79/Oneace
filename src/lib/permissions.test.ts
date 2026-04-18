@@ -121,18 +121,36 @@ describe("MEMBER (Operator) role", () => {
 
 // ---------------------------------------------------------------------------
 // MANAGER is equivalent to MEMBER
+// P2-3 (audit v1.0 §5.16) — collapsed from "superset of MEMBER" down
+// to a pure alias. The enum value stays for historical memberships,
+// but it no longer carries any bespoke permission.
 // ---------------------------------------------------------------------------
 
-describe("MANAGER role (legacy)", () => {
-  it("is a superset of MEMBER (has extra confirm/assign capabilities)", () => {
+describe("MANAGER role (deprecated alias)", () => {
+  it("has exactly the same capabilities as MEMBER", () => {
     const managerCaps = capabilitiesForRole("MANAGER");
     const memberCaps = capabilitiesForRole("MEMBER");
-    // Every MEMBER capability should exist in MANAGER
+    expect(managerCaps.size).toBe(memberCaps.size);
     for (const cap of memberCaps) {
       expect(managerCaps.has(cap)).toBe(true);
     }
-    // MANAGER has additional capabilities MEMBER doesn't (salesOrders.confirm, picks.assign, etc.)
-    expect(managerCaps.size).toBeGreaterThanOrEqual(memberCaps.size);
+  });
+
+  it("hasCapability treats MANAGER as MEMBER for every capability", () => {
+    for (const cap of ALL_CAPABILITIES) {
+      expect(hasCapability("MANAGER", cap)).toBe(hasCapability("MEMBER", cap));
+    }
+  });
+
+  it("does NOT inherit formerly MANAGER-exclusive privileges", () => {
+    // Pre-audit MANAGER had salesOrders.confirm / picks.assign etc.
+    // Those are now ADMIN+OWNER only; a ghost MANAGER user should
+    // have no more reach than an Operator.
+    expect(hasCapability("MANAGER", "salesOrders.confirm")).toBe(false);
+    expect(hasCapability("MANAGER", "salesOrders.allocate")).toBe(false);
+    expect(hasCapability("MANAGER", "picks.assign")).toBe(false);
+    expect(hasCapability("MANAGER", "picks.verify")).toBe(false);
+    expect(hasCapability("MANAGER", "assets.assign")).toBe(false);
   });
 });
 

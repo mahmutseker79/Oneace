@@ -14,6 +14,14 @@ export type SidebarLabels = {
   statusLine: string;
   nav: {
     dashboard?: string;
+    // v1.5 primary sidebar labels (6 items)
+    inventory?: string; // was section heading; in v1.5 also the Inventory wrapper label (replaces "Items")
+    locations?: string; // v1.5: replaces "Warehouses"
+    orders?: string; // v1.5: replaces "Purchase Orders" at the sidebar level
+    // v1.5 secondary sidebar labels (alt section)
+    team?: string; // v1.5: replaces "Users / Members"
+    help?: string; // v1.5: new stub item
+    // Legacy primary labels — kept for callers still passing them
     items: string;
     warehouses: string;
     counts: string;
@@ -23,7 +31,6 @@ export type SidebarLabels = {
     audit: string;
     settings: string;
     // Section headings
-    inventory?: string;
     operations?: string;
     fulfillment?: string;
     analytics?: string;

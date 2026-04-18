@@ -21,6 +21,61 @@
 - Use `/scripts` for utility scripts
 - Use `/examples` for example code
 
+## OneAce Architecture
+
+<!-- P3-2 (audit v1.1 §5.31) — a non-cosmetic map of the system so that
+     future Claude sessions stop re-discovering the same invariants. -->
+
+**Stack.** Next.js 15 App Router, TypeScript strict, Prisma 6 on Postgres,
+Tailwind 4, better-auth (session cookie + TOTP 2FA). `@` alias → `src/`.
+Deployed to Vercel: `oneace-next-local.vercel.app`.
+
+**Route shells.** Three parallel shells under `src/app/`:
+
+- `(app)/*` — authed operator UI. Sidebar layout; every page wraps in a
+  segment-level error boundary (see §5.21 remediation).
+- `(marketing)/*` — unauthed marketing surface. Has the skip-to-main
+  a11y link (§5.25). No Prisma writes from this tree.
+- `(auth)/*` — login / register / 2FA flows. Owns rate-limiting and
+  reset tokens; never imported from `(app)`.
+
+**Data model (Prisma).** 69 models, 47 enums. Three rules:
+
+1. **Soft delete.** Entities that customers can "delete" use
+   `isArchived: Boolean` (not `deletedAt`). The `src/lib/soft-delete/`
+   helpers wrap every read to default to `isArchived = false`. Never
+   add a `deletedAt` column — it's inconsistent with the existing
+   graph.
+2. **Capabilities.** Permission checks go through `src/lib/auth/*`
+   `requireCapability(user, Capability.X)`. Role strings are a
+   presentation concern; capabilities are the real gate.
+3. **Cron ledger.** Scheduled jobs run through `withCronIdempotency`
+   (§5.27). The job writes a `CronRun` row keyed by `(name, runAt)`
+   so a retry is a no-op. New cron endpoints MUST use the helper.
+
+**Analytics (telemetry).** `src/lib/analytics/` exposes a single
+`track(event, props)` facade (§5.20). Key events that are wired and
+tested: `checkout.success`, `invite.accepted`, `export.generated`,
+`stock.adjustment.committed`. The §7.4 PII denylist prevents email /
+phone / token keys from leaving the process (§5.30 remediation).
+
+**i18n.** `src/lib/i18n/SUPPORTED_LOCALES` is the source of truth.
+Today it is a scaffold with `en` only (§5.23 was honest about this —
+do NOT claim multi-locale support until the message catalogs land).
+
+**Testing harness.** Static-analysis-first. Most pinned tests read the
+source with `fs`/regex rather than spinning up JSDOM or Prisma. See
+`src/lib/*.test.ts` for the pattern. JSDOM / full-render tests are
+reserved for actual behaviour checks (forms, server actions, API
+routes). Coverage scaffold pinned at §5.29 — run `npx vitest run
+--coverage` locally; CI parses `coverage/coverage-summary.json`.
+
+**Build & deploy invariants.** `next.config.ts` sets strict CSP
+headers (including `frame-ancestors 'none'`, pinned in the P0 tier).
+`ignoreBuildErrors: true` is intentional — 212 pre-existing Prisma
+relation-type errors are tracked separately; new errors in non-Prisma
+code MUST still be fixed.
+
 ## Project Architecture
 
 - Follow Domain-Driven Design with bounded contexts

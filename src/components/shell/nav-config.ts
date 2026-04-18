@@ -1,5 +1,6 @@
 /**
  * P1-4 (audit v1.0 §5.9) — Canonical nav config.
+ * v1.5 Navigation IA refactor — zero-regression wrapper-tab model.
  *
  * Background: `sidebar.tsx` (desktop) and `mobile-nav.tsx` (mobile)
  * each used to declare their own NavItem arrays, and they drifted —
@@ -8,32 +9,41 @@
  * reach those pages from the nav. This module is the single source
  * of truth for both surfaces.
  *
+ * v1.5 brief (UX/UI proposal — 2026-04):
+ *   - Main sidebar collapses from 26 → 6 items (Dashboard, Inventory,
+ *     Locations, Counts, Orders, Reports).
+ *   - Secondary section at the bottom has 4 items (Team, Integrations,
+ *     Settings, Help).
+ *   - All previously sidebar-only pages remain reachable; they are
+ *     re-homed as tabs inside the six wrapper pages (and Settings).
+ *   - No routes are renamed or removed — this is a pure IA refactor.
+ *
+ * Mandatory renames:
+ *   Items           → Inventory  (route `/items` kept)
+ *   Warehouses      → Locations  (route `/warehouses` kept)
+ *   Stock Counts    → Counts     (route `/stock-counts` kept)
+ *   Purchase Orders → Orders     (route `/purchase-orders` kept, now hosts
+ *                                 Purchase Orders / Receiving / Vendors /
+ *                                 Sales Orders tabs)
+ *   Members (Users) → Team       (route `/users` kept, hosts Members /
+ *                                 Departments / Roles tabs)
+ *
  * Adding a new nav item: edit this file. Both surfaces pick it up
- * automatically. The render shape (collapsed vs always-open, where
- * the section heading sits, what icon, etc.) is encoded per group
- * so each surface can faithfully reproduce the layout without
- * forking the data.
+ * automatically. `adminOnly` gates an item to admin users;
+ * `activePathPrefixes` on an item lets a top-level entry (e.g.
+ * Inventory) light up when the user is on any of its sub-pages
+ * (/items, /movements, /categories, …).
  */
 
 import {
-  ArrowLeftRight,
   BarChart3,
-  Boxes,
   ClipboardList,
-  Database,
-  FileDown,
-  FileUp,
-  FolderOpen,
-  History,
+  HelpCircle,
   LayoutDashboard,
   Link2,
   Package,
-  ScanLine,
   Settings,
   ShoppingCart,
-  Tag,
-  ToggleRight,
-  Truck,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -51,21 +61,38 @@ export type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   /** Badge slot key, looked up against `labels.badges`. */
   badgeKey?: keyof NonNullable<SidebarLabels["badges"]>;
+  /**
+   * Extra path prefixes that should mark this item as the active
+   * sidebar entry. Used by wrapper pages that own several sub-routes
+   * (e.g. Inventory owns /items, /movements, /categories, …).
+   */
+  activePathPrefixes?: string[];
+  /** Gate this item behind the showAdmin flag. */
+  adminOnly?: boolean;
 };
 
 export type NavGroup = {
   id: string;
-  /** Section heading; omit for the always-visible Core group. */
+  /** Section heading; omit for the always-visible primary group. */
   headingKey?: keyof SidebarLabels["nav"];
   fallbackHeading?: string;
   items: NavItem[];
   /**
    * Render hint:
-   *   - "always" → expanded, no toggle (Core, Analytics, Data Tools)
-   *   - "collapsible" → user can collapse (Inventory, Operations, Fulfillment)
-   *   - "admin" → collapsible AND hidden when `showAdmin === false`
+   *   - "always"      → expanded, no toggle (v1.5 primary + secondary)
+   *   - "collapsible" → user can collapse (legacy IA; kept for the
+   *                     type but unused in v1.5)
+   *   - "admin"       → collapsible AND hidden when `showAdmin === false`
+   *                     (legacy IA; v1.5 gates per-item via `adminOnly`)
    */
   mode: "always" | "collapsible" | "admin";
+  /**
+   * Where the group renders.
+   *   - "primary"   → main sidebar column (top)
+   *   - "secondary" → bottom alt-section, separated by a divider
+   * Defaults to "primary" when omitted.
+   */
+  placement?: "primary" | "secondary";
   /** Path prefixes that mark this group as containing the active page. */
   activePathPrefixes?: string[];
 };
@@ -76,8 +103,9 @@ export type NavGroup = {
 
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
-    id: "core",
+    id: "primary",
     mode: "always",
+    placement: "primary",
     items: [
       {
         id: "dashboard",
@@ -87,173 +115,52 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: LayoutDashboard,
       },
       {
-        id: "items",
-        labelKey: "items",
-        fallbackLabel: "Items",
+        // Inventory wrapper: /items is the list page; Activity /
+        // Low Stock / Categories / Labels / Pallets / Kits live as
+        // in-page tabs inside the wrapper.
+        id: "inventory",
+        labelKey: "inventory",
+        fallbackLabel: "Inventory",
         href: "/items",
         icon: Package,
         badgeKey: "items",
+        activePathPrefixes: [
+          "/items",
+          "/movements",
+          "/categories",
+          "/labels",
+          "/pallets",
+          "/kits",
+          "/inventory",
+        ],
       },
       {
-        id: "warehouses",
-        labelKey: "warehouses",
-        fallbackLabel: "Warehouses",
+        // Locations wrapper: /warehouses hosts Overview / Bins /
+        // Activity / Counts / Transfers / Vehicles tabs.
+        id: "locations",
+        labelKey: "locations",
+        fallbackLabel: "Locations",
         href: "/warehouses",
         icon: Warehouse,
+        activePathPrefixes: ["/warehouses", "/transfers", "/vehicles"],
       },
       {
-        id: "stock-counts",
+        id: "counts",
         labelKey: "counts",
-        fallbackLabel: "Stock Counts",
+        fallbackLabel: "Counts",
         href: "/stock-counts",
         icon: ClipboardList,
       },
-    ],
-  },
-  {
-    id: "inventory",
-    mode: "collapsible",
-    headingKey: "inventory",
-    fallbackHeading: "Inventory",
-    activePathPrefixes: [
-      "/categories",
-      "/suppliers",
-      "/purchase-orders",
-      "/labels",
-      "/pallets",
-      "/scan",
-    ],
-    items: [
       {
-        id: "categories",
-        labelKey: "categories",
-        fallbackLabel: "Categories",
-        href: "/categories",
-        icon: FolderOpen,
-      },
-      {
-        id: "suppliers",
-        labelKey: "suppliers",
-        fallbackLabel: "Suppliers",
-        href: "/suppliers",
-        icon: Truck,
-      },
-      {
-        id: "purchase-orders",
-        labelKey: "purchaseOrders",
-        fallbackLabel: "Purchase Orders",
+        // Orders wrapper: /purchase-orders hosts Purchase Orders /
+        // Receiving / Vendors (Suppliers) / Sales Orders / Picks tabs.
+        id: "orders",
+        labelKey: "orders",
+        fallbackLabel: "Orders",
         href: "/purchase-orders",
         icon: ShoppingCart,
+        activePathPrefixes: ["/purchase-orders", "/suppliers", "/sales-orders", "/picks"],
       },
-      {
-        id: "labels",
-        labelKey: "labels",
-        fallbackLabel: "Labels",
-        href: "/labels",
-        icon: Tag,
-      },
-      {
-        id: "pallets",
-        labelKey: "pallets",
-        fallbackLabel: "Pallets",
-        href: "/pallets",
-        icon: Boxes,
-      },
-      {
-        id: "scan",
-        labelKey: "scan",
-        fallbackLabel: "Scan",
-        href: "/scan",
-        icon: ScanLine,
-      },
-    ],
-  },
-  {
-    id: "operations",
-    mode: "collapsible",
-    headingKey: "operations",
-    fallbackHeading: "Operations",
-    activePathPrefixes: [
-      "/movements",
-      "/transfers",
-      "/departments",
-      "/inventory/status-change",
-      "/vehicles",
-    ],
-    items: [
-      {
-        id: "movements",
-        labelKey: "movements",
-        fallbackLabel: "Movements",
-        href: "/movements",
-        icon: ArrowLeftRight,
-      },
-      {
-        id: "transfers",
-        labelKey: "transfers",
-        fallbackLabel: "Transfers",
-        href: "/transfers",
-        icon: ArrowLeftRight,
-      },
-      {
-        id: "departments",
-        labelKey: "departments",
-        fallbackLabel: "Departments",
-        href: "/departments",
-        icon: Warehouse,
-      },
-      {
-        id: "status-change",
-        labelKey: "statusChange",
-        fallbackLabel: "Status Change",
-        href: "/inventory/status-change",
-        icon: ToggleRight,
-      },
-      {
-        id: "vehicles",
-        labelKey: "vehicles",
-        fallbackLabel: "Vehicles",
-        href: "/vehicles",
-        icon: Truck,
-      },
-    ],
-  },
-  {
-    id: "fulfillment",
-    mode: "collapsible",
-    headingKey: "fulfillment",
-    fallbackHeading: "Fulfillment",
-    activePathPrefixes: ["/sales-orders", "/kits", "/picks"],
-    items: [
-      {
-        id: "sales-orders",
-        labelKey: "salesOrders",
-        fallbackLabel: "Sales Orders",
-        href: "/sales-orders",
-        icon: ShoppingCart,
-      },
-      {
-        id: "kits",
-        labelKey: "kits",
-        fallbackLabel: "Kits & Bundles",
-        href: "/kits",
-        icon: Package,
-      },
-      {
-        id: "picks",
-        labelKey: "picks",
-        fallbackLabel: "Pick Tasks",
-        href: "/picks",
-        icon: ClipboardList,
-      },
-    ],
-  },
-  {
-    id: "analytics",
-    mode: "always",
-    headingKey: "analytics",
-    fallbackHeading: "Analytics",
-    items: [
       {
         id: "reports",
         labelKey: "reports",
@@ -264,54 +171,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     ],
   },
   {
-    id: "data-tools",
+    id: "secondary",
     mode: "always",
-    headingKey: "dataTools",
-    fallbackHeading: "Data Tools",
+    placement: "secondary",
     items: [
       {
-        id: "import",
-        labelKey: "import",
-        fallbackLabel: "Import",
-        href: "/import",
-        icon: FileUp,
-      },
-      {
-        id: "export",
-        labelKey: "export",
-        fallbackLabel: "Export",
-        href: "/export",
-        icon: FileDown,
-      },
-      {
-        id: "migrations",
-        labelKey: "migrations",
-        fallbackLabel: "Göç / Migrations",
-        href: "/migrations",
-        icon: Database,
-      },
-    ],
-  },
-  {
-    id: "admin",
-    mode: "admin",
-    headingKey: "admin",
-    fallbackHeading: "Admin",
-    activePathPrefixes: ["/users", "/audit", "/settings", "/integrations"],
-    items: [
-      {
-        id: "users",
-        labelKey: "users",
-        fallbackLabel: "Users",
+        // Team wrapper: /users hosts Members / Departments / Roles.
+        id: "team",
+        labelKey: "team",
+        fallbackLabel: "Team",
         href: "/users",
         icon: Users,
-      },
-      {
-        id: "audit",
-        labelKey: "audit",
-        fallbackLabel: "Audit",
-        href: "/audit",
-        icon: History,
+        adminOnly: true,
+        activePathPrefixes: ["/users", "/departments"],
       },
       {
         id: "integrations",
@@ -319,13 +191,25 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         fallbackLabel: "Integrations",
         href: "/integrations",
         icon: Link2,
+        adminOnly: true,
       },
       {
+        // Settings hosts General / Audit / Data (Import/Export/
+        // Migrations) / Integrations tabs.
         id: "settings",
         labelKey: "settings",
         fallbackLabel: "Settings",
         href: "/settings",
         icon: Settings,
+        adminOnly: true,
+        activePathPrefixes: ["/settings", "/audit", "/import", "/export", "/migrations"],
+      },
+      {
+        id: "help",
+        labelKey: "help",
+        fallbackLabel: "Help",
+        href: "/help",
+        icon: HelpCircle,
       },
     ],
   },
@@ -335,10 +219,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
 // Render helpers — shared between desktop and mobile.
 // ─────────────────────────────────────────────────────────────────────
 
-export function resolveLabel(
-  item: NavItem,
-  labels: SidebarLabels,
-): string {
+export function resolveLabel(item: NavItem, labels: SidebarLabels): string {
   const value = labels.nav[item.labelKey];
   return typeof value === "string" && value.length > 0 ? value : item.fallbackLabel;
 }
@@ -355,8 +236,18 @@ export function resolveBadge(item: NavItem, labels: SidebarLabels): string | und
   return labels.badges?.[item.badgeKey];
 }
 
-export function isItemActive(href: string, pathname: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
+/**
+ * v1.5: an item is "active" if the current pathname matches its
+ * `href` OR any of its `activePathPrefixes`. Wrapper items (Inventory,
+ * Locations, Orders) use the prefix list to light up whenever the
+ * user is on any re-homed sub-page.
+ */
+export function isItemActive(item: NavItem, pathname: string): boolean {
+  if (pathname === item.href || pathname.startsWith(`${item.href}/`)) return true;
+  if (item.activePathPrefixes) {
+    return item.activePathPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  }
+  return false;
 }
 
 export function isGroupActive(group: NavGroup, pathname: string): boolean {
@@ -365,10 +256,29 @@ export function isGroupActive(group: NavGroup, pathname: string): boolean {
 }
 
 /**
- * Filter out the admin group when the caller doesn't have permission.
- * Both surfaces should pipe NAV_GROUPS through this before rendering.
+ * v1.5: admin gating is now per-item (`adminOnly: true`). `visibleGroups`
+ * strips those items when `showAdmin === false`, and drops any group
+ * left empty as a result. Legacy `mode: "admin"` groups (if any were
+ * re-introduced) are still dropped wholesale.
  */
 export function visibleGroups(showAdmin: boolean): readonly NavGroup[] {
-  if (showAdmin) return NAV_GROUPS;
-  return NAV_GROUPS.filter((g) => g.mode !== "admin");
+  return NAV_GROUPS.filter((g) => showAdmin || g.mode !== "admin")
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) => showAdmin || !item.adminOnly),
+    }))
+    .filter((g) => g.items.length > 0);
+}
+
+/**
+ * Partition groups by their rendered placement (top vs bottom section).
+ * The sidebar uses this to draw a divider between the primary column
+ * and the Team/Integrations/Settings/Help alt section.
+ */
+export function primaryGroups(groups: readonly NavGroup[]): readonly NavGroup[] {
+  return groups.filter((g) => (g.placement ?? "primary") === "primary");
+}
+
+export function secondaryGroups(groups: readonly NavGroup[]): readonly NavGroup[] {
+  return groups.filter((g) => g.placement === "secondary");
 }

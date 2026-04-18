@@ -12,12 +12,14 @@ import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
 
-export const metadata: Metadata = {
-  title: "Documentation — OneAce",
+export const metadata: Metadata = buildMarketingMetadata({
+  title: "Documentation",
   description:
     "Learn how to set up and use OneAce for inventory management, stock counts, barcode scanning, and warehouse operations.",
-};
+  path: "/docs",
+});
 
 // ---------------------------------------------------------------------------
 // Doc section data

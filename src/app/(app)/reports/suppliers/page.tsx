@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
+import { supplierActiveWhere } from "@/lib/db/soft-delete";
 import { format, getMessages, getRegion } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -86,8 +87,10 @@ export default async function SupplierPerformancePage() {
   const t = await getMessages();
   const region = await getRegion();
 
+  // P2-4 (§11.4) — archived suppliers must not appear on the
+  // performance report; the page header promises "active only".
   const suppliers = await db.supplier.findMany({
-    where: { organizationId: membership.organizationId },
+    where: { organizationId: membership.organizationId, ...supplierActiveWhere },
     select: {
       id: true,
       name: true,

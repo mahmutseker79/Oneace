@@ -20,6 +20,8 @@ import Link from "next/link";
 import { ItemsCacheBanner } from "@/components/offline/items-cache-banner";
 import { ItemsCacheSync } from "@/components/offline/items-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { INVENTORY_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -371,6 +373,10 @@ export default async function ItemsPage({
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(INVENTORY_TAB_SPECS, t)}
+        ariaLabel="Inventory sections"
+      />
       <PageHeader
         title={t.items.heading}
         description={t.items.subtitle}

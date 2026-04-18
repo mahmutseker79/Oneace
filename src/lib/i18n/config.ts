@@ -4,31 +4,41 @@
  * OneAce ships as an international SaaS. All end-user strings must flow through
  * the dictionary system below — never hardcode copy in a component.
  *
- * Adding a locale:
- *   1. Add the code to `SUPPORTED_LOCALES`.
- *   2. Create `src/lib/i18n/messages/<code>.ts` exporting the same shape as `en`.
- *   3. Register it in `src/lib/i18n/index.ts`'s `messages` map.
+ * Honest-scaffold note (audit v1.1 §5.23):
+ * We used to declare 8 "scaffolded" locales here (en/es/de/fr/pt/it/nl/ar) but
+ * only `messages/en.ts` actually existed — the other 7 were silently aliased
+ * to `en`, which meant `oneace-locale=de` cookies silently served English
+ * while the README claimed German support. Rather than fake it, we now only
+ * declare the locale we truly ship. The architecture (Record<Locale, Messages>
+ * catalog, cookie + Accept-Language detection, RTL switch) stays ready — a
+ * future locale is one file + one `SUPPORTED_LOCALES` entry away.
+ *
+ * To add a locale:
+ *   1. Create `src/lib/i18n/messages/<code>.ts` exporting the same shape as `en`.
+ *   2. Add the code to `SUPPORTED_LOCALES` below.
+ *   3. Register it in the `catalog` map in `src/lib/i18n/index.ts`.
+ *   4. If it's an RTL script, add the code to `RTL_LOCALES`.
+ *   5. The `locale-parity.test.ts` guard will now pass for the new code.
  *
  * Adding a region:
  *   1. Add an entry to `SUPPORTED_REGIONS` with the correct ISO 3166-1 alpha-2
- *      code, ISO 4217 currency, and preferred BCP-47 number locale.
+ *      code, ISO 4217 currency, and preferred BCP-47 number locale. Regions
+ *      stay decoupled from message catalogs because currency/timezone do not
+ *      imply translated copy (e.g., UAE region + English locale is valid).
  */
 
 export const SUPPORTED_LOCALES = [
-  "en", // English (default)
-  "es", // Spanish
-  "de", // German
-  "fr", // French
-  "pt", // Portuguese
-  "it", // Italian
-  "nl", // Dutch
-  "ar", // Arabic (RTL)
+  "en", // English (default) — the only locale with a real messages file.
 ] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en";
 
-export const RTL_LOCALES: readonly Locale[] = ["ar"];
+// Typed as `readonly string[]` rather than `readonly Locale[]` on purpose —
+// we want to keep `"ar"` (and any other RTL code) listed as a known future
+// RTL locale even while it is not yet in SUPPORTED_LOCALES. `getDirection`
+// narrows by runtime string match, not by the Locale union.
+export const RTL_LOCALES: readonly string[] = ["ar", "he", "fa", "ur"];
 
 export type RegionConfig = {
   code: string; // ISO 3166-1 alpha-2

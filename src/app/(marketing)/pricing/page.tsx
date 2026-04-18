@@ -5,19 +5,22 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
 import { hasAnnualBilling } from "@/lib/stripe";
 import { PricingPlans } from "./pricing-plans";
 
-export const metadata: Metadata = {
+// v1.2 P2 §5.37 — Pricing previously only set a partial `openGraph`
+// (title + description, no siteName/url/type) and no `twitter` block at
+// all. Route through `buildMarketingMetadata` so the unfurl surface
+// matches every other marketing page (summary_large_image card,
+// canonical url, full og:* set). The competitive headline is preserved
+// in the description; social unfurls see the same copy as search.
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Pricing — OneAce",
   description:
-    "Inventory management at a fraction of Sortly's price. Unlimited items and warehouses from $29/month — no per-SKU limits.",
-  openGraph: {
-    title: "Pricing — OneAce",
-    description:
-      "Unlimited items and warehouses from $29/month. Compare: Sortly charges $149/month for only 2,000 items.",
-  },
-};
+    "Unlimited items and warehouses from $29/month. Compare: Sortly charges $149/month for only 2,000 items.",
+  path: "/pricing",
+});
 
 // ---------------------------------------------------------------------------
 // Plan data — aligned with real Plan enum (FREE | PRO | BUSINESS)

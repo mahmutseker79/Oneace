@@ -76,13 +76,17 @@ describe("P1-1 — RBAC and validation are enforced before any DB work", () => {
   });
 
   it("checks the salesOrders.allocate capability", () => {
-    expect(ALLOCATE_BLOCK).toMatch(/hasCapability\(\s*membership\.role,\s*"salesOrders\.allocate"\s*\)/);
+    expect(ALLOCATE_BLOCK).toMatch(
+      /hasCapability\(\s*membership\.role,\s*"salesOrders\.allocate"\s*\)/,
+    );
   });
 
   it("returns the i18n forbidden error when the capability is missing", () => {
     // The early return must use t.permissions.forbidden so error
     // messaging stays consistent with the rest of the app.
-    expect(ALLOCATE_BLOCK).toMatch(/return\s*\{\s*ok:\s*false,\s*error:\s*t\.permissions\.forbidden\s*\}/);
+    expect(ALLOCATE_BLOCK).toMatch(
+      /return\s*\{\s*ok:\s*false,\s*error:\s*t\.permissions\.forbidden\s*\}/,
+    );
   });
 
   it("parses input via allocateSalesOrderSchema (Zod)", () => {
@@ -142,13 +146,13 @@ describe("P1-1 — allocation runs in a single transaction", () => {
   });
 
   it("transitions the sales order to ALLOCATED", () => {
-    expect(ALLOCATE_BLOCK).toMatch(
-      /tx\.salesOrder\.update\([\s\S]*?status:\s*"ALLOCATED"/,
-    );
+    expect(ALLOCATE_BLOCK).toMatch(/tx\.salesOrder\.update\([\s\S]*?status:\s*"ALLOCATED"/);
   });
 
   it("scopes the salesOrder.update by organizationId (tenant safety)", () => {
-    expect(ALLOCATE_BLOCK).toMatch(/where:\s*\{\s*id:\s*existing\.id,\s*organizationId:\s*orgId\s*\}/);
+    expect(ALLOCATE_BLOCK).toMatch(
+      /where:\s*\{\s*id:\s*existing\.id,\s*organizationId:\s*orgId\s*\}/,
+    );
   });
 });
 

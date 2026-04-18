@@ -112,102 +112,102 @@ export function ReasonCodeForm({ open, onOpenChange, reasonCode }: ReasonCodeFor
         </DialogHeader>
 
         <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Code</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., DMG" {...field} disabled={isPending || isEditing} />
-                </FormControl>
-                <FormDescription>1-20 uppercase alphanumeric characters</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Damage" {...field} disabled={isPending} />
-                </FormControl>
-                <FormDescription>Human-readable name for this code</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Code</FormLabel>
                   <FormControl>
-                    <SelectTrigger disabled={isPending}>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <Input placeholder="e.g., DMG" {...field} disabled={isPending || isEditing} />
                   </FormControl>
-                  <SelectContent>
-                    {reasonCategoryEnum.options.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormDescription>1-20 uppercase alphanumeric characters</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Additional details about this reason code"
-                    className="resize-none"
-                    disabled={isPending}
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>Up to 500 characters</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Damage" {...field} disabled={isPending} />
+                  </FormControl>
+                  <FormDescription>Human-readable name for this code</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {state.ok === false && state.error && (
-            <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">
-              {state.error}
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger disabled={isPending}>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {reasonCategoryEnum.options.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Additional details about this reason code"
+                      className="resize-none"
+                      disabled={isPending}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>Up to 500 characters</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {state.ok === false && state.error && (
+              <div className="rounded-md bg-destructive-light p-3 text-sm text-destructive">
+                {state.error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : isEditing ? "Update" : "Create"}
+              </Button>
             </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : isEditing ? "Update" : "Create"}
-            </Button>
-          </div>
-        </form>
+          </form>
         </Form>
       </DialogContent>
     </Dialog>

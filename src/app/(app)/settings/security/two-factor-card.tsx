@@ -61,6 +61,12 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
   // IMPORTANT: Do NOT call startTransition during render — that causes React
   // error #419 ("suspended input") because the async setState fires while
   // React is still committing, creating an infinite re-render loop.
+  //
+  // `labels.error` is derived from static i18n at build time — the
+  // reference is stable across renders so re-running the effect would
+  // be a wasteful refetch. The directives below suppress both Biome
+  // and react-hooks' exhaustive-deps warnings for this one effect.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: i18n label object is stable, effect must run once on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -78,7 +84,6 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
     return () => {
       cancelled = true;
     };
-    // labels.error is stable (derived from static i18n). Running once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

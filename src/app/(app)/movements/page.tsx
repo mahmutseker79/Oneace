@@ -2,6 +2,8 @@ import { ArrowLeftRight, ArrowRightLeft, Download, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { INVENTORY_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -140,6 +142,10 @@ export default async function MovementsPage({ searchParams }: MovementsPageProps
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(INVENTORY_TAB_SPECS, t)}
+        ariaLabel="Inventory sections"
+      />
       <PageHeader
         title={t.movements.heading}
         description={t.movements.subtitle}

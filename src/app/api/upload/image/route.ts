@@ -1,3 +1,11 @@
+/**
+ * @openapi-tag: /upload/image
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
 import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -9,7 +17,27 @@ import { NextResponse } from "next/server";
 /**
  * POST /api/upload/image
  *
- * File upload endpoint for item images. Stores files locally in public/uploads/items/
+ * File upload endpoint for item images.
+ *
+ * P1-8 (audit v1.0 §5.14) — tenant-scoped storage path.
+ *
+ * Before this change, files were stored as
+ *   public/uploads/items/{randomHex}.{ext}
+ * and served publicly by Next.js static middleware. The URL was
+ * unguessable in practice (96-bit random id), but there was no
+ * audit trail from URL → organisation and no way for a serving
+ * layer to enforce tenancy without extra lookups.
+ *
+ * After: files are stored under a per-org directory
+ *   public/uploads/items/{orgId}/{randomHex}.{ext}
+ * and the returned URL preserves that structure. This gives us:
+ *   - reviewable tenant attribution from the URL alone,
+ *   - a server-side validator (see src/lib/validation/attachment.ts)
+ *     that rejects cross-tenant URL substitution in the attachment
+ *     server action,
+ *   - a natural migration path when we move storage out of public/
+ *     and behind an authenticated serving route (P3 follow-up).
+ *
  * - Accepts: image/jpeg, image/png, image/webp only
  * - Max size: 5MB
  * - Validates magic bytes (not just extension)
@@ -18,7 +46,15 @@ import { NextResponse } from "next/server";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "items");
+const UPLOAD_ROOT = join(process.cwd(), "public", "uploads", "items");
+
+/**
+ * Whitelist of characters allowed in the organisation-id path
+ * segment. `cuid()` produces `[a-z0-9]+` with no dashes/dots so we
+ * accept that set verbatim. Any other character would indicate a
+ * malicious id (path traversal, directory escape) and we refuse.
+ */
+const ORG_ID_PATTERN = /^[a-z0-9]{10,40}$/i;
 
 // Magic bytes for file type detection
 const MAGIC_BYTES: Record<string, Uint8Array> = {
@@ -58,7 +94,21 @@ async function verifyMimeType(buffer: ArrayBuffer, declaredMime: string): Promis
 
 export async function POST(request: Request) {
   try {
-    const { session } = await requireActiveMembership();
+    const { session, membership } = await requireActiveMembership();
+
+    // Defense-in-depth: the only caller that reaches here is an
+    // authenticated user with an active membership, and org ids come
+    // from a DB lookup — but the id is about to become a filesystem
+    // path segment so we re-validate its shape anyway. A rogue id with
+    // a `../` in it would let someone write outside of UPLOAD_ROOT.
+    const orgId = membership.organizationId;
+    if (!ORG_ID_PATTERN.test(orgId)) {
+      logger.error("Image upload rejected: organization id failed sanitisation", {
+        orgId,
+        userId: session.user.id,
+      });
+      return NextResponse.json({ error: "Invalid organization" }, { status: 400 });
+    }
 
     // Rate limit: 20 per minute per user
     const result = await rateLimit(`upload:image:${session.user.id}`, {
@@ -116,15 +166,22 @@ export async function POST(request: Request) {
     const uniqueId = randomBytes(12).toString("hex");
     const filename = `${uniqueId}.${ext}`;
 
-    // Ensure directory exists
-    await mkdir(UPLOAD_DIR, { recursive: true });
+    // Ensure the org-scoped directory exists. We intentionally do NOT
+    // leak the orgId outside of UPLOAD_ROOT — `join` normalises path
+    // separators, and the ORG_ID_PATTERN check above guarantees no
+    // traversal characters made it into the segment.
+    const uploadDir = join(UPLOAD_ROOT, orgId);
+    await mkdir(uploadDir, { recursive: true });
 
     // Write file
-    const filePath = join(UPLOAD_DIR, filename);
+    const filePath = join(uploadDir, filename);
     await writeFile(filePath, Buffer.from(buffer));
 
-    // Return public URL
-    return NextResponse.json({ url: `/uploads/items/${filename}` }, { status: 200 });
+    // Return public URL — matches the on-disk layout under public/, so
+    // Next.js static serving finds the file without any custom route.
+    // The orgId segment is what lets `validateAttachmentUrl` reject
+    // cross-tenant substitution when attachments are later recorded.
+    return NextResponse.json({ url: `/uploads/items/${orgId}/${filename}` }, { status: 200 });
   } catch (err) {
     logger.error("Image upload failed:", { error: err });
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });

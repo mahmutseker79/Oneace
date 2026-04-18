@@ -32,6 +32,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { MigrationSource } from "@/generated/prisma";
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 import { MigrationPicker } from "./migration-picker";
 
 // ---------------------------------------------------------------------------
@@ -398,6 +400,14 @@ export function OnboardingForm(_props: { labels: unknown }) {
     } catch (err) {
       console.error("Error marking onboarding completed:", err);
     }
+
+    // Audit v1.1 §5.20 — onboarding_completed fires regardless of PATCH
+    // outcome: the user finished the wizard on the client, which is
+    // what product wants to measure. Server-side drift (failed PATCH)
+    // is tracked via the console.error above + Sentry separately.
+    track(AnalyticsEvents.ONBOARDING_COMPLETED, {
+      hasMigration: Boolean(migrationSource),
+    });
 
     // If a migration was selected, navigate to the migration job.
     // Otherwise go to dashboard.

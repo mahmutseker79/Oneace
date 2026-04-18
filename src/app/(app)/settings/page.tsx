@@ -2,6 +2,8 @@ import { CreditCard, Plug } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { SETTINGS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -91,6 +93,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)} ariaLabel="Settings sections" />
       <PageHeader
         title={t.settings.heading}
         description={t.settings.subtitle}

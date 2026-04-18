@@ -586,7 +586,7 @@ export async function cancelStockCountAction(
  */
 export async function completeStockCountAction(
   input: unknown,
-): Promise<ActionResult<{ id: string; postedMovements: number }>> {
+): Promise<ActionResult<{ id: string; postedMovements: number; isFirstCompleted?: boolean }>> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -620,6 +620,23 @@ export async function completeStockCountAction(
   if (!canReconcile(count.state)) {
     return { ok: false, error: t.stockCounts.errors.notReconcilable };
   }
+
+  // v1.2 §5.33 — determine if this completion is the org's FIRST ever.
+  // We read the prior-completed count BEFORE the transaction so the
+  // answer is independent of this run's success — the boolean only
+  // reaches the caller on the success branch below. A concurrent
+  // sibling tab completing a different count at the exact same moment
+  // is acceptable drift for a one-time activation event; PostHog will
+  // dedup across client rehydrations and product already treats
+  // "first_*" as a lossy signal, not a billing source of truth.
+  const priorCompletedCount = await db.stockCount.count({
+    where: {
+      organizationId: orgId,
+      state: "COMPLETED",
+      id: { not: count.id },
+    },
+  });
+  const isFirstCompleted = priorCompletedCount === 0;
 
   // Load snapshots (usually small, frozen at count creation time)
   const snapshots = await db.countSnapshot.findMany({
@@ -758,7 +775,12 @@ export async function completeStockCountAction(
       void evaluateAlerts(orgId, touchedItemIds);
     }
 
-    return { ok: true, id: count.id, postedMovements: result.posted };
+    return {
+      ok: true,
+      id: count.id,
+      postedMovements: result.posted,
+      isFirstCompleted,
+    };
   } catch {
     return { ok: false, error: t.stockCounts.errors.completeFailed };
   }

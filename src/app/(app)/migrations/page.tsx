@@ -1,9 +1,12 @@
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { SETTINGS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import type { MigrationStatus } from "@/generated/prisma";
 import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 import { History } from "lucide-react";
 import type { Metadata } from "next";
@@ -47,6 +50,7 @@ function formatTimeAgo(date: Date): string {
 
 export default async function MigrationsPage() {
   const { membership } = await requireActiveMembership();
+  const t = await getMessages();
 
   const jobs = await db.migrationJob.findMany({
     where: { organizationId: membership.organizationId },
@@ -57,6 +61,10 @@ export default async function MigrationsPage() {
   if (jobs.length === 0) {
     return (
       <div className="space-y-8">
+        <WrapperTabs
+          tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)}
+          ariaLabel="Settings sections"
+        />
         <PageHeader title="Göç / Migrations" description="Rakipten veri taşıyın ve yönetin" />
         <EmptyState
           icon={History}
@@ -75,6 +83,7 @@ export default async function MigrationsPage() {
 
   return (
     <div className="space-y-8">
+      <WrapperTabs tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)} ariaLabel="Settings sections" />
       <div className="flex items-center justify-between">
         <PageHeader title="Göç / Migrations" description="Rakipten veri taşıyın ve yönetin" />
         <Link href="/migrations/new">

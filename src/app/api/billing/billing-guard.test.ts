@@ -6,9 +6,9 @@
 // the permissions module matches the documented policy, which is what the
 // route handlers consume.
 
-import { describe, expect, it } from "vitest";
 import type { Role } from "@/generated/prisma";
 import { hasCapability } from "@/lib/permissions";
+import { describe, expect, it } from "vitest";
 
 describe("P0-1 — billing capability guard", () => {
   const billingAllowed: Role[] = ["OWNER", "ADMIN"];

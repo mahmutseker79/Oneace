@@ -26,20 +26,22 @@ import { MarketingNav } from "@/components/marketing/nav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
 import { getCurrentSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
+// v1.2 P2 §5.37 — Landing metadata now routes through the shared
+// marketing helper so og:* + twitter:* match every other public page
+// (siteName, absolute canonical url, summary_large_image card). The
+// suffix-deduper in the helper keeps the existing "OneAce — Inventory…"
+// copy intact — the appended " — OneAce" is skipped when the title
+// already ends with the brand.
+export const metadata: Metadata = buildMarketingMetadata({
   title: "OneAce — Inventory Management for Growing Businesses",
   description:
     "Offline-first inventory management with barcode scanning, multi-warehouse support, stock counts, and purchase order receiving. Simpler than inFlow, more powerful than Sortly.",
-  openGraph: {
-    title: "OneAce — Inventory Management for Growing Businesses",
-    description:
-      "Offline-first inventory management with barcode scanning, multi-warehouse support, and real-time stock counts.",
-    type: "website",
-  },
-};
+  path: "/",
+});
 
 // ---------------------------------------------------------------------------
 // Feature data (grounded in real implemented features)

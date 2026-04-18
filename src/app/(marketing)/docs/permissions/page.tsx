@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+import { buildMarketingMetadata } from "@/lib/seo/marketing-metadata";
+
+export const metadata: Metadata = buildMarketingMetadata({
   title: "Team & permissions — OneAce Docs",
   description: "Invite team members and manage role-based permissions in OneAce.",
-};
+  path: "/docs/permissions",
+});
 
 export default function PermissionsPage() {
   return (

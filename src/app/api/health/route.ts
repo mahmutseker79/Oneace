@@ -1,3 +1,11 @@
+/**
+ * @openapi-tag: /health
+ *
+ * P3-4 (audit v1.1 §5.32) — the tag above is the canonical route
+ * path. docs/openapi.yaml MUST declare the same path with every
+ * HTTP method this file exports. `src/lib/openapi-parity.test.ts`
+ * pins the two in lockstep.
+ */
 // Sprint 37: /api/health — liveness + readiness probe.
 // Phase 7A / P5: extended with a schema sentinel.
 // Phase 7B / P2: extended with a migrations sub-check.

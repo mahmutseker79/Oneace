@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { LOCATIONS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
@@ -21,6 +23,10 @@ export default async function VehiclesPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(LOCATIONS_TAB_SPECS, t)}
+        ariaLabel="Locations sections"
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t.vehicles.heading}</h1>

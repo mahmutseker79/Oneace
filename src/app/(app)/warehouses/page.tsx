@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { PicklistCacheSync } from "@/components/offline/picklist-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
+import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { LOCATIONS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,6 +77,10 @@ export default async function WarehousesPage() {
 
   return (
     <div className="space-y-6">
+      <WrapperTabs
+        tabs={resolveWrapperTabs(LOCATIONS_TAB_SPECS, t)}
+        ariaLabel="Locations sections"
+      />
       <PageHeader
         title={t.warehouses.heading}
         description={t.warehouses.subtitle}

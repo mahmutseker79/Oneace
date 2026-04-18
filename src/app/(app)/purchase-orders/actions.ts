@@ -499,16 +499,28 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
   const orgId = membership.organizationId;
   const submissionNonce = input.submissionNonce;
 
-  // Phase 6C — missing nonce is a graceful degradation case: an
-  // older client or a non-form caller that hasn't learned the new
-  // contract. We keep the legacy (unprotected) path alive so
-  // nothing breaks, but log once per request so ops can spot the
-  // drift if it starts happening in production.
+  // P2-6 (audit v1.0 §5.13) — fail closed on a missing nonce.
+  //
+  // Pre-audit this branch only logged and continued, keeping the
+  // legacy unprotected path alive for "older clients". In practice
+  // the only client is our own receive form (which has shipped the
+  // nonce since Phase 6C), and leaving the fallback open means
+  // anyone who strips the field from a replayed request gets
+  // unbounded duplicate receipts. Inventory integrity is the
+  // guarantee this action exists to keep, so we refuse instead.
+  //
+  // Rollout: if a 3rd-party integration shows up that legitimately
+  // cannot mint a nonce, the fix is to add a documented
+  // service-account path with its own idempotency story — not to
+  // reopen this hole.
   if (!submissionNonce) {
-    logger.warn(
-      "po.receive: submission nonce missing — replay protection disabled for this request",
-      { tag: "po.receive.nonce-missing" },
-    );
+    logger.warn("po.receive: submission nonce missing — rejecting to preserve replay protection", {
+      tag: "po.receive.nonce-missing",
+      userId: session.user.id,
+      orgId,
+      purchaseOrderId: input.purchaseOrderId,
+    });
+    return { ok: false, error: t.purchaseOrders.errors.receiveFailed };
   }
 
   // Map of lineId → incoming quantity. Filter out zero rows so the UI can

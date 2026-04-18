@@ -21,6 +21,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Item } from "@/generated/prisma";
+// Audit v1.2 §5.33 — analytics call-sites live on the client because
+// `track()` is a no-op on the server. Firing from inside the server
+// action would silently drop the event.
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
 
 import { createItemAction, updateItemAction } from "./actions";
 
@@ -149,6 +154,18 @@ export function ItemForm({
         setError(result.error);
         setFieldErrors(result.fieldErrors ?? {});
         return;
+      }
+      // v1.2 §5.33 — fire analytics on the client (track() is a
+      // server-side no-op). Steady-state ITEM_CREATED fires on every
+      // successful create; the one-time FIRST_ITEM_CREATED fires only
+      // when the server action reports `isFirst` (organization-scoped
+      // count === 0 at the moment of insert). Update mode does not
+      // fire create-shaped events — it has its own future path.
+      if (mode === "create") {
+        track(AnalyticsEvents.ITEM_CREATED, { id: result.id });
+        if (result.isFirst) {
+          track(AnalyticsEvents.FIRST_ITEM_CREATED, { id: result.id });
+        }
       }
       resetUnsaved();
       router.push("/items");
