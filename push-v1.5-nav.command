@@ -31,10 +31,20 @@ for t in \
   v1.5.10-nav-linkage-sweep \
   v1.5.11-nav-titles \
   v1.5.12-nav-pinned-tests \
-  v1.5.0-nav-ia-complete
+  v1.5.0-nav-ia-complete \
+  v1.5.13-hotfix-edge-logger
 do
   git push origin "$t"
 done
+
+# v1.5.13 is a critical production hotfix — it fixes the
+# MIDDLEWARE_INVOCATION_FAILED 500 that was blocking every request
+# to oneace-next-local.vercel.app. Root cause: src/lib/logger.ts was
+# calling process.stdout.write / process.stderr.write in the
+# production emit branch, which is unavailable in Vercel's Edge
+# Runtime (middleware.ts imports rate-limit.ts → logger.warn fires
+# at module load when Upstash is unset → TypeError). The push here
+# MUST include this hotfix or the redeploy leaves prod broken.
 
 echo "=== 5/6 Updating stable branch ==="
 # stable was FF'd locally to HEAD at v1.5.12; force-with-lease keeps
