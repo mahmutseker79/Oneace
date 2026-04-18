@@ -1,0 +1,120 @@
+# v1.2 P2 §5.38 — monthly DR drill workflow skeleton.
+#
+# Runs a restore-to-disposable-branch drill on a schedule so we always
+# have fresh evidence for the RTO/RPO promises in
+# `docs/backup-strategy.md`. The workflow is *intentionally* a skeleton
+# at this stage — the first invocation runs with DRY_RUN=true by
+# default, which means it only exercises the tooling (Neon API
+# availability, prisma schema validity, Node toolchain) without
+# actually creating a branch or shipping data. Once the operator is
+# comfortable it's deterministic, the monthly schedule flips DRY_RUN
+# off and records real elapsed times to `docs/DR-drill-log.md`.
+#
+# Gated by secrets (not yet required):
+#   - NEON_API_KEY       — personal/project-level API token
+#   - NEON_PROJECT_ID    — the production Neon project id
+#   - BETTER_AUTH_SECRET — reused from CI secret store
+#
+# Until the secrets are configured, the workflow short-circuits with a
+# printed "secrets missing — skipping" message so it never fails CI.
+
+name: DR Drill
+
+on:
+  # Manual invocation — the *only* supported path for live drills.
+  # Flip `dry_run` to `false` when you want a real restore.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Skip Neon branch creation — exercise the tooling only."
+        required: false
+        type: boolean
+        default: true
+  # Monthly on the 1st at 06:00 UTC (~ 09:00 TRT) — runs with DRY_RUN=true
+  # until operator comfort warrants a live monthly cadence.
+  schedule:
+    - cron: "0 6 1 * *"
+
+concurrency:
+  group: dr-drill
+  cancel-in-progress: false
+
+jobs:
+  drill:
+    name: DR Drill (restore-to-branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Gate on required secrets
+        id: gate
+        run: |
+          if [ -z "${{ secrets.NEON_API_KEY }}" ] || [ -z "${{ secrets.NEON_PROJECT_ID }}" ]; then
+            echo "secrets_missing=true" >> "$GITHUB_OUTPUT"
+            echo "::notice ::NEON_API_KEY / NEON_PROJECT_ID not configured — DR drill tooling pass only."
+          else
+            echo "secrets_missing=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup pnpm
+        if: steps.gate.outputs.secrets_missing == 'false'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        if: steps.gate.outputs.secrets_missing == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        if: steps.gate.outputs.secrets_missing == 'false'
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma schema validity (tooling probe)
+        if: steps.gate.outputs.secrets_missing == 'false'
+        run: pnpm prisma validate
+
+      - name: Create ephemeral Neon branch
+        if: steps.gate.outputs.secrets_missing == 'false' && env.DRY_RUN == 'false'
+        id: neon_branch
+        run: |
+          BRANCH_NAME="drill-$(date -u +%Y%m%dT%H%M%SZ)"
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          # TODO: call Neon API to create branch and capture connection string.
+          # curl -sS -X POST \
+          #   -H "Authorization: Bearer ${{ secrets.NEON_API_KEY }}" \
+          #   -H "Content-Type: application/json" \
+          #   "https://console.neon.tech/api/v2/projects/${{ secrets.NEON_PROJECT_ID }}/branches" \
+          #   -d '{"branch":{"name":"'"$BRANCH_NAME"'"}}'
+          echo "::notice ::Branch creation not yet wired — see docs/DR-drill-log.md for runbook."
+          exit 1
+
+      - name: Migrate + smoke against branch
+        if: steps.gate.outputs.secrets_missing == 'false' && env.DRY_RUN == 'false'
+        env:
+          DATABASE_URL: ${{ steps.neon_branch.outputs.database_url }}
+          DIRECT_URL: ${{ steps.neon_branch.outputs.direct_url }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+        run: |
+          pnpm prisma migrate deploy
+          pnpm vitest run
+
+      - name: Destroy ephemeral Neon branch
+        if: always() && steps.neon_branch.outputs.branch_name != ''
+        run: |
+          echo "::notice ::Branch cleanup not yet wired — run `neon branches delete ${{ steps.neon_branch.outputs.branch_name }}` manually."
+
+      - name: Report
+        if: always()
+        run: |
+          echo "DR drill status: DRY_RUN=$DRY_RUN, secrets_missing=${{ steps.gate.outputs.secrets_missing }}"
+          echo "Append a real entry to docs/DR-drill-log.md once a live drill runs."
