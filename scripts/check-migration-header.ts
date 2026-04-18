@@ -29,6 +29,10 @@ import {
   isSubjectToHeaderRequirement,
   parseMigrationHeader,
 } from "../src/lib/prisma-migration/header";
+import {
+  checkMigrationSafety,
+  formatViolation,
+} from "../src/lib/prisma-migration/safety";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const MIGRATIONS_DIR = resolve(REPO_ROOT, "prisma", "migrations");
@@ -102,6 +106,15 @@ function main(): number {
         violations.push(
           `${dirname}: invalid MIGRATION-TYPE "${header.rawValue}" (must be EXPAND, BACKFILL, or CONTRACT)`
         );
+        continue;
+      }
+      // Header valid — run the body safety check.
+      const safety = checkMigrationSafety(sql, header.type);
+      const errors = safety.filter((v) => v.severity === "ERROR");
+      if (errors.length > 0) {
+        for (const v of errors) {
+          violations.push(formatViolation(`${dirname}/migration.sql`, v));
+        }
         continue;
       }
       log("ok", `${dirname} [${header.type}]`);
