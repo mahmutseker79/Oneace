@@ -98,3 +98,28 @@ public/uploads/
 
 # Escaped parenthesis directories (Finder artifacts)
 src/app/\\(app\\)/
+
+# God-Mode v2 §5 — Phase 5 — repo hygiene.
+#
+# FUSE-rename workaround. When the Cowork sandbox can't unlink a
+# file (common for large generated-client dumps under
+# `src/generated/`), the delete falls back to `mv foo foo.gone`.
+# That leaves stale `*.gone` names in the working tree until the
+# next fresh checkout. Never commit them.
+*.gone
+
+# Playwright CLI cache — the Chrome controller MCP writes its
+# per-session page/console snapshots here. Local-only debug output.
+/.playwright-cli/
+
+# npm lockfile — this project is pnpm-only (see `packageManager`
+# field in package.json). An accidental `npm install` generates
+# package-lock.json and it must not land in the repo alongside
+# pnpm-lock.yaml or Vercel will resolve dependencies twice.
+/package-lock.json
+
+# Kickoff prompts — per-phase prompt text files used to kick off a
+# new agent session. They're scratch and change every session.
+# (Note: `push-*.command` / `push-*.log` are deliberately tracked as
+# sprint release artefacts, per the project's release workflow.)
+/*-KICKOFF-PROMPT.md

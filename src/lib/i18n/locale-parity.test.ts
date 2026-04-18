@@ -110,4 +110,21 @@ describe("P2-1 §5.23 — i18n locale parity (honest scaffold)", () => {
     expect(readme).not.toMatch(/8 locales scaffolded/i);
     expect(readme).not.toMatch(/8 languages scaffolded/i);
   });
+
+  it("README does not over-claim 'nothing is hardcoded in components'", () => {
+    // God-Mode v2 §5 — Phase 5 — README drift pin.
+    //
+    // Pre-Phase-4 the README said "nothing is hardcoded in
+    // components", yet `src/components/shell/header.tsx` rendered a
+    // literal English placeholder and `src/app/(app)/onboarding/
+    // page.tsx` rendered "Welcome to OneAce" + trust-signal
+    // literals. Phase 4 fixed those surfaces; the README now says
+    // "user-facing chrome ... sources its copy through the
+    // dictionary" and points at the Phase-4 pinned test for the
+    // surfaces that are actually covered. If anyone reintroduces
+    // the absolute claim, fire here — the claim only becomes honest
+    // again after a full-codebase sweep, not just new chrome fixes.
+    const readme = readFileSync(resolve(__dirname, "..", "..", "..", "README.md"), "utf8");
+    expect(readme).not.toMatch(/nothing is hardcoded in components/i);
+  });
 });

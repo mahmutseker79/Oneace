@@ -88,7 +88,7 @@ Full setup and smoke test → [`SETUP.md`](./SETUP.md).
 
 ## Internationalization & Region Support
 
-OneAce is built for international customers from day one. Every end-user string flows through the `src/lib/i18n/` dictionary system; nothing is hardcoded in components.
+OneAce is built for international customers from day one. User-facing chrome — the app shell, authentication flows, and the onboarding wizard — sources its copy through the `src/lib/i18n/` dictionary so a new locale file changes every visible surface. Deeper-in feature copy is being swept incrementally; the `src/lib/i18n-hardcoded-strings.test.ts` vitest pins the surfaces that have already been converted so a regression would fail CI before it fails a locale swap.
 
 - **Shipped locale:** `en` (English) — the only locale with a real messages file. The catalog architecture, cookie detection, and RTL switch are ready for more; see [`src/lib/i18n/config.ts`](./src/lib/i18n/config.ts) for the steps to add one.
 - **Detection:** `oneace-locale` cookie → org default → `Accept-Language` → fallback to `en`.
