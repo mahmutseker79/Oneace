@@ -3,7 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AnalyticsEvents } from "@/lib/analytics/events";
 import { authClient } from "@/lib/auth-client";
+import { track } from "@/lib/instrumentation";
 import { resolveSafeRedirect } from "@/lib/redirects";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -96,6 +98,13 @@ export function RegisterForm({ labels }: RegisterFormProps) {
         setError(signUpError.message ?? labels.error);
         return;
       }
+
+      // Audit v1.1 §5.20 — signup_completed fires once better-auth hands
+      // back a user; before org creation so invite-flow signups count.
+      track(AnalyticsEvents.SIGNUP_COMPLETED, {
+        flow: isInviteFlow ? "invite" : "organic",
+        hasBillingIntent: Boolean(billingIntent),
+      });
 
       // Sprint 33: only create a new org for the non-invite flow.
       // Invitees hand off to the invite page, which will create the
