@@ -72,6 +72,33 @@
     "zod": "^3.24.1",
     "zustand": "^5.0.2"
   },
+  "size-limit": [
+    {
+      "name": "framework (react + next runtime)",
+      "path": ".next/static/chunks/framework-*.js",
+      "limit": "60 KB",
+      "gzip": true
+    },
+    {
+      "name": "main (app shell)",
+      "path": ".next/static/chunks/main-*.js",
+      "limit": "120 KB",
+      "gzip": true
+    },
+    {
+      "name": "webpack runtime",
+      "path": ".next/static/chunks/webpack-*.js",
+      "limit": "5 KB",
+      "gzip": true
+    },
+    {
+      "name": "first-load js (all shared chunks)",
+      "path": ".next/static/chunks/pages/_app-*.js",
+      "limit": "200 KB",
+      "gzip": true,
+      "ignore": ["next", "react", "react-dom"]
+    }
+  ],
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@eslint/eslintrc": "^3.3.5",
