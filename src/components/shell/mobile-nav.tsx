@@ -140,9 +140,12 @@ export function MobileNav({
 
         <nav className="flex-1 overflow-y-auto p-4">{groups.map(renderGroup)}</nav>
 
+        {/* P1-6 (audit v1.0 §5.12): retire the "Sprint 0 scaffold" status
+            line — only render it when callers deliberately pass a non-empty
+            label (e.g. a real maintenance banner). */}
         <div className="border-t p-4 text-xs text-muted-foreground">
           <p>{labels.versionLine}</p>
-          <p>{labels.statusLine}</p>
+          {labels.statusLine ? <p>{labels.statusLine}</p> : null}
         </div>
       </SheetContent>
     </Sheet>

@@ -1,6 +1,6 @@
 {
   "name": "oneace-web",
-  "version": "0.1.0",
+  "version": "1.0.0-rc13",
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",

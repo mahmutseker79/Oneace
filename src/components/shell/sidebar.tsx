@@ -166,9 +166,15 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       </nav>
 
       {/* Footer */}
+      {/* P1-6 (audit v1.0 §5.12): drop the "Sprint 0 scaffold" status line.
+          We still render `statusLine` when a non-empty value is supplied so
+          callers can surface a real status (e.g. "Maintenance window") but
+          the default case renders version-only. */}
       <div className="border-t border-sidebar-border px-5 py-3">
         <p className="text-[11px] text-muted-foreground">{labels.versionLine}</p>
-        <p className="text-[10px] text-muted-foreground/70">{labels.statusLine}</p>
+        {labels.statusLine ? (
+          <p className="text-[10px] text-muted-foreground/70">{labels.statusLine}</p>
+        ) : null}
       </div>
     </aside>
   );
