@@ -2544,6 +2544,7 @@ export const en = {
       "stock_count.approved": "Approved count",
       "stock_count.rejected": "Rejected count",
       "stock_count.rolled_back": "Rolled back count",
+      "stock_count.rollback_refused": "Refused rollback (inverse-movement step not implemented)",
       "count_assignment.created": "Created count assignment",
       "count_assignment.removed": "Removed count assignment",
       "count_template.created": "Created count template",

@@ -89,7 +89,11 @@ export async function rollbackCountAction(input: unknown): Promise<ActionResult<
             "rolled back."
           : "This count has not posted any stock movements yet — cancel " +
             "or reject it instead of rolling back.";
-    return { ok: false, error: humanMessage, code };
+    // `code` is typed `string | null` coming out of the denial helper
+    // (null means "rollback would have succeeded"), but ActionResult
+    // uses the standard `string | undefined` shape for optional
+    // fields. Normalize at the boundary.
+    return { ok: false, error: humanMessage, code: code ?? undefined };
   }
 
   // Unreachable under current policy. Kept here so the real

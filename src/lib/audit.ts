@@ -114,6 +114,11 @@ export type AuditAction =
   | "stock_count.approved"
   | "stock_count.rejected"
   | "stock_count.rolled_back"
+  // P0-4 (audit v1.0 §5.4) — refused rollback attempts are audited
+  // for the "why did this user think they rolled back a count"
+  // diagnostic. Distinct from rolled_back: no state change happens
+  // and no inverse movements are written.
+  | "stock_count.rollback_refused"
   // Count assignments
   | "count_assignment.created"
   | "count_assignment.removed"
