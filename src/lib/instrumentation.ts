@@ -51,6 +51,77 @@ type TestSink = (event: string, props: Props) => void;
 const testSinks: TestSink[] = [];
 
 /**
+ * P3-3 bonus (audit v1.1 §7.4) — PII denylist.
+ *
+ * Callers occasionally slip personal data into `track()` props by
+ * passing a whole entity (e.g. `track("user.invited", user)`). Once
+ * a key lands in PostHog or Vercel Analytics it's effectively
+ * permanent and flags us under GDPR. The denylist runs before every
+ * sink and strips any key that matches a denied name (case-insensitive,
+ * exact match on normalized key), replacing the value with the string
+ * "[redacted:key-denied]" so the event shape stays intact for
+ * downstream dashboards but the PII leaves.
+ *
+ * The denylist is intentionally conservative — it catches the keys
+ * product code commonly mis-passes. New sensitive keys go here, not
+ * in callers.
+ */
+export const PII_DENYLIST: readonly string[] = [
+  "email",
+  "emailaddress",
+  "phone",
+  "phonenumber",
+  "password",
+  "token",
+  "accesstoken",
+  "refreshtoken",
+  "apikey",
+  "secret",
+  "otp",
+  "totp",
+  "ssn",
+  "creditcard",
+  "cardnumber",
+  "cvv",
+  "address",
+  "streetaddress",
+  "firstname",
+  "lastname",
+  "fullname",
+  "dob",
+  "dateofbirth",
+  "ip",
+  "ipaddress",
+];
+
+const DENIED = new Set(PII_DENYLIST);
+
+/** Normalize a key name: lowercase, strip non-alphanumerics. */
+function normalizeKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Remove denied keys from a props object. Returns a shallow copy —
+ * callers' objects are never mutated. Unknown / non-denied keys pass
+ * through untouched. Nested objects are NOT walked; callers should
+ * flatten before tracking (the audit explicitly called out that
+ * tracking a whole user object is the anti-pattern — do not "fix"
+ * this by deep-walking).
+ */
+export function scrubPII(props: Props): Props {
+  if (!props) return props;
+  let scrubbed: Record<string, unknown> | null = null;
+  for (const key of Object.keys(props)) {
+    if (DENIED.has(normalizeKey(key))) {
+      if (scrubbed === null) scrubbed = { ...props };
+      scrubbed[key] = "[redacted:key-denied]";
+    }
+  }
+  return scrubbed ?? props;
+}
+
+/**
  * Track a product event.
  *
  * - Server / SSR: no-op (returns immediately).
@@ -65,12 +136,18 @@ const testSinks: TestSink[] = [];
  * sink is async, wrap it here, don't leak it to callers.
  */
 export function track(event: string, props?: Record<string, unknown>): void {
+  // §7.4 PII denylist runs once, before fan-out. Every downstream
+  // sink — including test sinks — sees the scrubbed payload so tests
+  // that assert "track() was called with X" also assert the PII
+  // redaction contract. Scrubbing is a no-op on empty props.
+  const scrubbed = scrubPII(props);
+
   // Always dispatch to test sinks first, regardless of environment.
   // This lets `vitest` assert a track() call happened without
   // needing to stub `window.posthog` or mock `@vercel/analytics`.
   for (const sink of testSinks) {
     try {
-      sink(event, props);
+      sink(event, scrubbed);
     } catch {
       // Test sink failures are swallowed to keep the invariant
       // "track() never throws". A test that wants a hard failure
@@ -86,7 +163,7 @@ export function track(event: string, props?: Record<string, unknown>): void {
   // event.
   try {
     const posthog = (window as { posthog?: { capture?: (e: string, p?: Props) => void } }).posthog;
-    posthog?.capture?.(event, props);
+    posthog?.capture?.(event, scrubbed);
   } catch {
     // posthog failures are silent by design. An audit breadcrumb
     // would itself require a sink; don't infinite-loop.
@@ -100,7 +177,7 @@ export function track(event: string, props?: Record<string, unknown>): void {
   // stays a no-op.
   try {
     const va = (window as { va?: (action: "event", payload: { name: string; data?: Props }) => void }).va;
-    va?.("event", { name: event, data: props });
+    va?.("event", { name: event, data: scrubbed });
   } catch {
     // Same rationale as posthog — swallow.
   }

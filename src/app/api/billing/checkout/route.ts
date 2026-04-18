@@ -1,6 +1,7 @@
 "use server";
 
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -12,6 +13,15 @@ import {
   hasStripe,
   stripePriceIdForPlan,
 } from "@/lib/stripe";
+
+// P3-3 (audit v1.1 §5.30) — replace inline body validation with zod.
+// `interval` silently fell back to "month" on unknown values before,
+// which is a user-visible footgun (yearly selection silently downgrades
+// without a 400). We now reject unknown intervals explicitly.
+const checkoutBodySchema = z.object({
+  plan: z.enum(["PRO", "BUSINESS"]),
+  interval: z.enum(["month", "year"]).default("month"),
+});
 
 /**
  * POST /api/billing/checkout
@@ -63,19 +73,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Parse body — Phase 15.1: accepts optional `interval` ("month" | "year")
+  // Parse body — §5.30: zod schema above owns the plan + interval
+  // contract. A malformed JSON or an unknown value is a 400; the old
+  // inline check silently downgraded unknown intervals to "month".
   let plan: "PRO" | "BUSINESS";
-  let interval: BillingInterval = "month";
+  let interval: BillingInterval;
   try {
-    const body = await request.json();
-    if (body.plan !== "PRO" && body.plan !== "BUSINESS") {
-      return NextResponse.json({ error: "Invalid plan." }, { status: 400 });
+    const raw = await request.json();
+    const parsed = checkoutBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request body.",
+          details: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
     }
-    plan = body.plan;
-    // Validate interval; silently fall back to monthly for unknown values
-    if (body.interval === "year") {
-      interval = "year";
-    }
+    plan = parsed.data.plan;
+    interval = parsed.data.interval;
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
