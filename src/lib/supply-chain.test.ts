@@ -35,14 +35,18 @@ describe("P2-4 §5.26 — package.json pins Node + pnpm versions", () => {
     expect(typeof PACKAGE_JSON.engines).toBe("object");
   });
 
-  it("pins `engines.node` at >= 20 (CI uses node 20)", () => {
-    // The CI workflow installs `node-version: "20"`, so local setups
-    // below that are a recipe for "works-on-my-machine" surprises.
+  it("pins `engines.node` at >= 22 (CI uses node 22)", () => {
+    // v1.2.17 — upgraded Node 20 → 22 (Node 20 LTS entered maintenance
+    // April 2026; Node 22 is Active LTS through October 2027). The CI
+    // workflow installs `node-version: "22"`, so local setups below
+    // that are a recipe for "works-on-my-machine" surprises.
+    // See also: src/lib/node-version.test.ts for the cross-file pin
+    // that keeps package.json, .nvmrc, and every CI workflow aligned.
     const node = PACKAGE_JSON.engines?.node;
     expect(node, "engines.node must be set").toBeDefined();
-    // Accept either a range (">=20.0.0") or a caret shorthand. We
-    // only care that 20 is the floor.
-    expect(node).toMatch(/^(>=|\^)?20(\.\d+)*(\.\d+)*/);
+    // Accept either a range (">=22.0.0") or a caret shorthand. We
+    // only care that 22 is the floor.
+    expect(node).toMatch(/^(>=|\^)?22(\.\d+)*(\.\d+)*/);
   });
 
   it("pins `engines.pnpm` at >= 9 (CI uses pnpm 9.12)", () => {
