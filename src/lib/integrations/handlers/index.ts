@@ -17,3 +17,5 @@
 
 // B-1 — audit §5.53 F-09 Shopify pilot.
 import "../shopify/register";
+// B-2 — audit §5.53 F-09 QuickBooks Online (14 ERP entity kinds).
+import "../quickbooks/register";
