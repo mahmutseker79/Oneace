@@ -754,6 +754,52 @@ paths:
         500:
           description: CRON_SECRET not configured
 
+  /cron/integration-tasks:
+    get:
+      tags:
+        - Cron
+      summary: Drain the IntegrationTask durable work queue
+      description: |
+        Every 30 min, atomically claims up to 25 due `pending` rows
+        from the `IntegrationTask` queue (SKIP LOCKED) and dispatches
+        each to its adapter handler. Success → `markDone`. Failure →
+        `markFailure` which classifies the error, reschedules on the
+        backoff curve (1m → 5m → 30m), and flips the row to `dead`
+        (with an owner email) once MAX_RETRIES = 3 is reached.
+        One task's failure does not starve the rest of the batch.
+        Gracefully degrades (200 `skipped`) when config is missing or
+        the claim query flakes. Returns a drain summary with counts of
+        claimed / done / failed. Requires Bearer token authorization.
+        Audit v1.3 §5.53 F-09.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Drain completed (drained, idle, or skipped)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [drained, idle, skipped]
+                  claimed:
+                    type: integer
+                  done:
+                    type: integer
+                  failed:
+                    type: integer
+                  reason:
+                    type: string
+                    enum: [config, transport]
+        401:
+          description: Unauthorized (invalid token)
+        500:
+          description: CRON_SECRET not configured
+
   /cron/process-imports:
     get:
       tags:
