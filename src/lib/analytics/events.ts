@@ -93,6 +93,26 @@ export const AnalyticsEvents = {
   // PII (no item names, no userId — `track()` attaches posthog
   // distinct_id automatically for signed-in users).
   PLAN_LIMIT_HIT: "plan_limit_hit",
+
+  // --- v1.3 §5.54 F-10 — 2FA recovery code rotation signal ---
+  // Fires client-side from the security settings card when the user
+  // successfully rotates their recovery (backup) codes via the
+  // "Regenerate backup codes" flow. The taxonomy gap audited was:
+  // rotation was supported server-side (regenerateBackupCodesAction
+  // gated by TOTP) but the product had no way to see whether anyone
+  // actually uses it — so the compromise-recovery path could be
+  // broken and we'd only learn via a support ticket.
+  //
+  // Payload shape (client-side):
+  //   - codesIssued: number (always 10 today, pinned for future-proof
+  //     slicing if we ever vary the batch size by plan)
+  //   - source: "manual" | "advised" — "advised" when the user acted
+  //     on the 1-year rotation banner, "manual" otherwise. Slice by
+  //     source to see whether the banner is actually effective.
+  //
+  // No PII — no user id (posthog distinct_id handles that for signed-
+  // in users), no codes, no hashes.
+  RECOVERY_CODES_ROTATED: "recovery_codes_rotated",
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
