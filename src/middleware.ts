@@ -150,6 +150,35 @@ export async function middleware(request: NextRequest) {
     if (!rl.ok) {
       const nowSeconds = Math.floor(Date.now() / 1000);
       const retryAfter = Math.max(0, rl.reset - nowSeconds);
+      // --- Audit v1.3 §5.52 F-08 — rate-limit 429 telemetry ---
+      // Before v1.5.26 these 429s were silent in PostHog — the only
+      // signal that a caller was being throttled was a support
+      // ticket. We emit a structured `rate_limit.hit` log line via
+      // `console.warn` so Vercel's log drain can relay it to
+      // PostHog as an event (via the same pipeline that ingests the
+      // client-side `plan_limit_hit` from instrumentation.ts).
+      //
+      // Shape must stay aligned with AnalyticsEvents.RATE_LIMIT_HIT
+      // in `src/lib/analytics/events.ts` — payload keys
+      // `path`, `ip`, `limit`, `retryAfter`, `reset` are pinned
+      // by `src/lib/rate-limit-telemetry.test.ts`.
+      //
+      // `console.warn` over `logger.warn` here: middleware runs on
+      // Edge runtime and we do not want to risk dragging the
+      // `env` schema (used by logger) into the Edge bundle's cold
+      // path. A raw JSON line is what log drains want anyway.
+      console.warn(
+        JSON.stringify({
+          level: "warn",
+          tag: "rate_limit.hit",
+          event: "rate_limit.hit",
+          path: pathname,
+          ip,
+          limit: rl.limit,
+          retryAfter,
+          reset: rl.reset,
+        }),
+      );
       return new NextResponse(
         JSON.stringify({
           error: "Too many requests",

@@ -57,6 +57,28 @@ export const AnalyticsEvents = {
   BARCODE_SCANNED: "barcode_scanned",
   FIRST_SCAN: "first_scan",
 
+  // --- v1.3 §5.52 F-08 — rate-limit 429 signal ---
+  // Fires from middleware.ts whenever a request is rejected with
+  // HTTP 429 by the default 120 req/min per-IP limiter. Before
+  // v1.5.26 these 429s were silent in PostHog — a single abusive
+  // tenant or a caller hot-looping an endpoint hit the limit
+  // without any dashboard signal, so the only way we learned was
+  // via a support ticket from the throttled caller.
+  //
+  // Emitted server-side. `track()` is a no-op on the server, so
+  // middleware emits a structured `logger.warn` with `tag:
+  // "rate_limit.hit"` — the log drain relays it to PostHog.
+  // The constant still lives here so the taxonomy is one file.
+  //
+  // Payload shape (keys on the log line):
+  //   - path (request pathname, e.g. "/api/items")
+  //   - ip (first x-forwarded-for entry, or "unknown")
+  //   - limit (the 120 req/min cap)
+  //   - retryAfter (seconds until the window resets)
+  //   - reset (epoch seconds when the window resets)
+  // No PII; no user id, no auth header, no body.
+  RATE_LIMIT_HIT: "rate_limit.hit",
+
   // --- v1.3 §5.51 F-07 — plan-limit friction signal ---
   // Fires client-side from a create/import form when the server action
   // returns `{ code: "PLAN_LIMIT" }`. The point is to make upgrade
