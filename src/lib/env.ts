@@ -29,6 +29,14 @@
 // mirrors Next's own convention so the schema stays stable whether
 // the file is loaded from `next dev`, `next build`, or `next start`.
 
+// v1.3 §5.47 F-03 — Edge-safety class-generic guard.
+// `PHASE_PRODUCTION_BUILD` used to be loaded via a dynamic
+// `require("next/constants")` inside parseEnv(). Dynamic `require()`
+// inside an Edge-bundled module is exactly the class-of-bug the
+// `edge-safety-class-generic.test.ts` pins against — static import
+// replaces it so the bundler resolves the constant at build time and
+// no runtime require() symbol survives into the Edge bundle.
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { z } from "zod";
 
 // Helper for optional URLs that should either be a valid URL or
@@ -287,7 +295,8 @@ function parseEnv() {
   // only at runtime, not during the build step. Any route or page that
   // transitively imports this module (via db.ts, session.ts, etc.) would
   // crash the build. NEXT_PHASE is set by Next.js itself during build.
-  const { PHASE_PRODUCTION_BUILD } = require("next/constants");
+  // PHASE_PRODUCTION_BUILD is statically imported at module top — see
+  // the import-site comment for the v1.3 §5.47 class-generic rationale.
   if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) {
     return Object.freeze({
       NODE_ENV: process.env.NODE_ENV ?? "production",
