@@ -24,12 +24,14 @@
  *      (SELECT … FOR UPDATE SKIP LOCKED) RETURNING …` so two
  *      concurrent cron invocations cannot double-claim.
  *   2. Dispatch each task to its handler by `integrationKind` →
- *      `taskKind`. The handler registry is currently empty (see
- *      `dispatchTask` below) — this cron ships the queue primitive
- *      first, then per-adapter PRs register handlers one at a time.
- *      Unknown `integrationKind` / `taskKind` pairs are recorded as
- *      an unrecoverable failure so they surface in the dead-letter
- *      email rather than silently looping.
+ *      `taskKind`. Handlers are registered in the dispatch registry
+ *      (`src/lib/integrations/task-dispatch-registry.ts`) via
+ *      adapter-local `register.ts` files; the `handlers` barrel is
+ *      imported here for its side effects. Unknown pairs throw
+ *      `SCHEMA_UNWIRED_ADAPTER` so partially-wired adapters surface
+ *      in the DLQ dashboard rather than silently looping. See
+ *      `docs/ADR-005-integration-handler-registry.md` for the
+ *      per-adapter contract.
  *   3. On success → `markDone(taskId)`. On failure → `markFailure(
  *      taskId, err)` which classifies, reschedules on the backoff
  *      curve, and flips to `dead` (+ owner email) once MAX_RETRIES
@@ -64,6 +66,13 @@ import {
   markDone,
   markFailure,
 } from "@/lib/integrations/task-queue";
+import { dispatch } from "@/lib/integrations/task-dispatch-registry";
+// Side-effect import — each adapter's `register.ts` calls
+// `registerHandler(...)` at module top-level. This barrel MUST
+// be imported before the first `dispatch(task)` call on a cold
+// lambda so the registry is populated. See
+// `docs/ADR-005-integration-handler-registry.md §5` (load order).
+import "@/lib/integrations/handlers";
 import { type NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 60; // Vercel Hobby cron timeout
@@ -94,38 +103,11 @@ type OutcomeBody =
     }
   | { ok: true; status: "skipped"; reason: "config" | "transport"; detail?: string };
 
-/**
- * Per-task dispatch. Returns normally on success; throws on failure
- * so `markFailure` sees the classifier-friendly error object.
- *
- * Handler registry stays empty in this commit — adapter PRs register
- * handlers through `registerHandler(kind, taskKind, fn)` (TODO in
- * the follow-up wiring PR). Until then, every row hits the
- * `UNWIRED_ADAPTER` branch which the classifier routes to `unknown`
- * and the backoff curve fails out to `dead` after MAX_RETRIES.
- *
- * That is INTENTIONAL during the rollout window: if an adapter
- * enqueues a task before its handler PR lands, the failure surfaces
- * as a dead-letter email to the owner rather than a silent no-op.
- */
-async function dispatchTask(task: ClaimedTask): Promise<void> {
-  // Adapter registry hook point. Intentionally left blank until
-  // the per-adapter wiring PRs land.
-  //
-  // Example of what a future adapter will look like:
-  //
-  //   if (task.integrationKind === "shopify") {
-  //     return handleShopifyTask(task);
-  //   }
-
-  const err = new Error(
-    `No handler registered for integrationKind="${task.integrationKind}" taskKind="${task.taskKind}" (audit §5.53 F-09 adapter wiring pending)`,
-  );
-  // Tag the error so `classifyError()` sees a stable bucket across
-  // retries instead of rotating through default "unknown".
-  (err as { code?: string }).code = "SCHEMA_UNWIRED_ADAPTER";
-  throw err;
-}
+// Per-task dispatch is now owned by the dispatch registry. Adapter
+// PRs register handlers through `registerHandler(kind, taskKind,
+// fn)`; unregistered pairs throw `SCHEMA_UNWIRED_ADAPTER` which
+// `classifyError()` routes to `schema-mismatch` so the DLQ surfaces
+// the wiring gap. See `docs/ADR-005-integration-handler-registry.md`.
 
 export async function GET(request: NextRequest): Promise<NextResponse<OutcomeBody>> {
   // ── 1. Auth gate ──────────────────────────────────────────────────
@@ -188,7 +170,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<OutcomeBod
 
   for (const task of claimed) {
     try {
-      await dispatchTask(task);
+      await dispatch(task);
       await markDone(task.id);
       done += 1;
     } catch (handlerErr) {

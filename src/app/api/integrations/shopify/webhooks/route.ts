@@ -26,6 +26,7 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
+import { enqueue } from "@/lib/integrations/task-queue";
 import { logger } from "@/lib/logger";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -123,8 +124,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    // Route by topic
-    const action = routeShopifyTopic(topic, payload, integration.organizationId);
+    // Route by topic. Audit v1.3 §5.53 F-09 B-1: topic -> taskKind
+    // and enqueue into the durable IntegrationTask queue. The
+    // webhook handler no longer absorbs in-process failure; the
+    // cron drain loop is the retry authority. Webhook ACK is
+    // independent of sync success — returning 200 after a
+    // successful enqueue is the correct at-least-once contract.
+    const action = await routeShopifyTopic(topic, payload, integration.organizationId);
 
     logger.info("Shopify webhook processed", {
       organizationId: integration.organizationId,
@@ -155,38 +161,64 @@ function isUniqueConstraintError(err: unknown): boolean {
 }
 
 /**
- * Route a Shopify webhook topic to the appropriate action.
+ * Route a Shopify webhook topic to a durable queue task.
+ *
+ * Audit v1.3 §5.53 F-09 B-1: every topic that used to be logged-
+ * only now enqueues an `IntegrationTask` row. The cron at
+ * `/api/cron/integration-tasks` drains the queue and the Shopify
+ * handler registered in `src/lib/integrations/shopify/register.ts`
+ * actually runs `ShopifySyncEngine`. If the sync fails, the queue's
+ * backoff curve retries; after `MAX_RETRIES` the row flips to
+ * `dead` and the owner is emailed.
+ *
+ * Topic → taskKind mapping uses the canonical Shopify topic
+ * prefixes. The map MUST stay aligned with `SHOPIFY_TASK_KINDS`
+ * exported by `shopify/register.ts` — the pinned test in
+ * `shopify-register.test.ts` asserts that alignment.
  */
-function routeShopifyTopic(
+async function routeShopifyTopic(
   topic: string,
-  _payload: Record<string, unknown>,
+  payload: Record<string, unknown>,
   organizationId: string,
-): string {
-  switch (topic) {
-    case "products/create":
-    case "products/update":
-    case "products/delete":
-      logger.info("Shopify product change", { organizationId, topic });
-      return "sync_queued:products";
-
-    case "inventory_levels/update":
-    case "inventory_levels/connect":
-    case "inventory_levels/disconnect":
-      logger.info("Shopify inventory change", { organizationId, topic });
-      return "sync_queued:inventory";
-
-    case "orders/create":
-    case "orders/updated":
-    case "orders/cancelled":
-      logger.info("Shopify order event", { organizationId, topic });
-      return "sync_queued:orders";
-
-    case "app/uninstalled":
-      logger.info("Shopify app uninstalled", { organizationId });
-      return "app_uninstalled";
-
-    default:
-      logger.info("Unhandled Shopify topic", { organizationId, topic });
-      return `unhandled:${topic}`;
+): Promise<string> {
+  // `app/uninstalled` is a lifecycle event, not a sync trigger.
+  // Handled synchronously because the next best action is to
+  // mark the Integration as disconnected — there's nothing to
+  // retry if that write fails, and enqueueing an "uninstall"
+  // task that loops would spam dead-letter.
+  if (topic === "app/uninstalled") {
+    logger.info("Shopify app uninstalled", { organizationId });
+    return "app_uninstalled";
   }
+
+  const taskKind = shopifyTopicToTaskKind(topic);
+  if (!taskKind) {
+    logger.info("Unhandled Shopify topic", { organizationId, topic });
+    return `unhandled:${topic}`;
+  }
+
+  await enqueue({
+    organizationId,
+    integrationKind: "shopify",
+    taskKind,
+    payload: { topic, payload },
+  });
+
+  logger.info("Shopify webhook enqueued", { organizationId, topic, taskKind });
+  return `sync_queued:${taskKind}`;
+}
+
+/**
+ * Pure mapping — exported implicitly via the source file so the
+ * pinned webhook-parity test can assert every documented topic
+ * has a taskKind. A new Shopify topic subscribed in Shopify admin
+ * without touching this map is the F-09 failure mode we want to
+ * catch in review, not in prod.
+ */
+function shopifyTopicToTaskKind(topic: string): string | null {
+  if (topic.startsWith("products/")) return "sync_products";
+  if (topic.startsWith("inventory_levels/")) return "sync_inventory";
+  if (topic.startsWith("orders/")) return "sync_orders";
+  if (topic.startsWith("customers/")) return "sync_customers";
+  return null;
 }
