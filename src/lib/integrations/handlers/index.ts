@@ -19,3 +19,17 @@
 import "../shopify/register";
 // B-2 — audit §5.53 F-09 QuickBooks Online (14 ERP entity kinds).
 import "../quickbooks/register";
+// Phase-3.2 C wave — audit §5.53 F-09 10-adapter pending-execution wiring.
+// Each register module is a side-effect import; per-adapter rationale
+// in the individual files (see amazon/register.ts for the shared
+// "pending execution" pattern).
+import "../amazon/register";
+import "../bigcommerce/register";
+import "../magento/register";
+import "../odoo/register";
+import "../wix/register";
+import "../woocommerce/register";
+import "../xero/register";
+import "../zoho/register";
+import "../quickbooks-desktop/register";
+import "../custom-webhook/register";
