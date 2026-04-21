@@ -55,7 +55,7 @@
 //   * We intentionally keep the body tiny — this endpoint can
 //     get polled aggressively and any bloat is pure cost.
 
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -157,7 +157,72 @@ const expectedMigrationCount: number | null = (() => {
   return parsed;
 })();
 
-export async function GET(): Promise<NextResponse<HealthPayload>> {
+/**
+ * Audit v1.3 §5.46 F-02 — caller telemetry markers.
+ *
+ * Problem the audit described: `/api/health` is polled by
+ * multiple external infra callers (Vercel uptime, external
+ * monitoring, the push helper's post-push probe, cron-routed
+ * probes…) but the route never logged *who* was calling. When the
+ * 2026-04-18 incident was debugged, we could not answer the
+ * trivial question "is our main webhook actually probing health
+ * right now?" without redeploying with an ad-hoc log line.
+ *
+ * Fix: on every probe we extract a small set of caller markers
+ * from the request headers and emit a single structured log
+ * entry with `tag: "health.probe.caller"`. The field names are
+ * deliberately log-drain-friendly — Vercel log drains / PostHog
+ * relays can filter on the tag without any parsing.
+ *
+ * What we intentionally do NOT log:
+ *   - Request body (there isn't one — GET endpoint).
+ *   - Cookies or auth headers (the route is public; callers don't
+ *     send them, but a belt-and-braces redaction still applies).
+ *   - Full header dump (noisy and liable to leak tokens if a
+ *     caller ever mis-routes an Authorization-bearing request to
+ *     /api/health).
+ *
+ * Sampling: none. /api/health is called by a bounded set of infra
+ * probes (single-digit QPS in production). At that volume a
+ * structured log per hit is cheaper than building a sampler that
+ * future debugging has to reverse-engineer.
+ */
+export type HealthCallerMarkers = {
+  ua: string;
+  ip: string;
+  vercelId: string;
+  referer: string;
+};
+
+export function extractCallerMarkers(request: Request | NextRequest): HealthCallerMarkers {
+  const headers = request.headers;
+  const rawIp = headers.get("x-forwarded-for") ?? headers.get("x-real-ip") ?? "unknown";
+  // First entry in x-forwarded-for is the client; the rest are
+  // proxy hops and are never useful for "who called".
+  const ip = rawIp.split(",")[0]?.trim() || "unknown";
+  return {
+    ua: headers.get("user-agent") ?? "unknown",
+    ip,
+    // Vercel stamps every request with x-vercel-id on ingress; having
+    // this lets us correlate a probe line with the Vercel dashboard
+    // request view if something looks off.
+    vercelId: headers.get("x-vercel-id") ?? "unknown",
+    referer: headers.get("referer") ?? "unknown",
+  };
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse<HealthPayload>> {
+  // §5.46 F-02 — caller telemetry. Log before any DB work so even a
+  // probe that times out during the SELECT 1 leaves a "who" trail.
+  const caller = extractCallerMarkers(request);
+  logger.info("health check: probe received", {
+    tag: "health.probe.caller",
+    ua: caller.ua,
+    ip: caller.ip,
+    vercelId: caller.vercelId,
+    referer: caller.referer,
+  });
+
   const errors: string[] = [];
   let databaseStatus: "ok" | "fail" = "ok";
   let schemaStatus: "ok" | "fail" = "ok";

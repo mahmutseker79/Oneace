@@ -14,6 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// v1.3 §5.51 F-07 — plan-limit friction signal. Fires client-side
+// because `track()` is a no-op on the server (see items/item-form.tsx
+// for the canonical pattern and rationale).
+import { AnalyticsEvents } from "@/lib/analytics/events";
+import { track } from "@/lib/instrumentation";
+
 import { inviteMemberAction } from "./actions";
 
 // Phase 2 UX — role descriptions shown in the invite dropdown so
@@ -79,8 +85,13 @@ export function InviteForm({ labels, defaultRole, locale }: InviteFormProps) {
     startTransition(async () => {
       const result = await inviteMemberAction(formData);
       if (!result.ok) {
+        // v1.3 §5.51 F-07 — fire PLAN_LIMIT_HIT before the error toast so
+        // the event captures even if the UI re-renders away.
+        if ("code" in result && result.code === "PLAN_LIMIT") {
+          track(AnalyticsEvents.PLAN_LIMIT_HIT, result.planLimit);
+        }
         setError(result.error);
-        if (result.fieldErrors) setFieldErrors(result.fieldErrors);
+        if ("fieldErrors" in result && result.fieldErrors) setFieldErrors(result.fieldErrors);
         return;
       }
       setCreated({

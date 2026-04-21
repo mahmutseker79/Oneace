@@ -19,7 +19,7 @@ import { buildInvitationEmail } from "@/lib/mail/templates/invitation-email";
 // `src/lib/rate-limit.ts` for the design note on why this is
 // explicitly fail-open.
 import { hasCapability } from "@/lib/permissions";
-import { checkPlanLimit, planLimitError } from "@/lib/plans";
+import { checkPlanLimit, planLimitHitResponse, type PlanLimitHitResponse } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership, requireSession } from "@/lib/session";
 import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation/membership";
@@ -49,7 +49,10 @@ export type InviteMemberResult =
       expiresAt: Date;
       emailDelivered: boolean;
     }
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
+  // v1.3 §5.51 F-07 — PLAN_LIMIT branch so the invite form can fire
+  // `AnalyticsEvents.PLAN_LIMIT_HIT` when the member seat cap trips.
+  | PlanLimitHitResponse;
 
 export type AcceptInvitationResult =
   | { ok: true; organizationId: string }
@@ -189,7 +192,10 @@ export async function inviteMemberAction(formData: FormData): Promise<InviteMemb
   const effectiveMemberCount = currentMemberCount + pendingInviteCount;
   const memberLimitCheck = checkPlanLimit(memberPlan, "members", effectiveMemberCount);
   if (!memberLimitCheck.allowed) {
-    return { ok: false, error: planLimitError("members", memberLimitCheck) };
+    // v1.3 §5.51 F-07 — structured response so the invite form's
+    // startTransition handler can fire `PLAN_LIMIT_HIT` with the
+    // limitKey/limit/current payload before showing the error.
+    return planLimitHitResponse("members", memberLimitCheck);
   }
 
   const token = generateInvitationToken();

@@ -151,8 +151,17 @@ export function ItemForm({
           : await updateItemAction(initial?.id ?? "", formData);
 
       if (!result.ok) {
+        // v1.3 §5.51 F-07 — plan-limit friction signal. The server
+        // discriminates the limit-hit branch with `code: "PLAN_LIMIT"`
+        // and attaches `{ limitKey, limit, current }`; firing here
+        // (client) is deliberate — `track()` is a no-op on the server,
+        // so emitting from the action would silently drop the event.
+        // See `src/lib/plans.ts` `planLimitHitResponse` for the why.
+        if ("code" in result && result.code === "PLAN_LIMIT") {
+          track(AnalyticsEvents.PLAN_LIMIT_HIT, result.planLimit);
+        }
         setError(result.error);
-        setFieldErrors(result.fieldErrors ?? {});
+        setFieldErrors("fieldErrors" in result ? (result.fieldErrors ?? {}) : {});
         return;
       }
       // v1.2 §5.33 — fire analytics on the client (track() is a

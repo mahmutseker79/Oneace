@@ -75,8 +75,12 @@ export function WarehouseForm({ labels, mode, initial }: WarehouseFormProps) {
           : await updateWarehouseAction(initial?.id ?? "", formData);
 
       if (!result.ok) {
+        // v1.3 §5.51 F-07 — plan-limit friction signal (see items/item-form.tsx).
+        if ("code" in result && result.code === "PLAN_LIMIT") {
+          track(AnalyticsEvents.PLAN_LIMIT_HIT, result.planLimit);
+        }
         setError(result.error);
-        setFieldErrors(result.fieldErrors ?? {});
+        setFieldErrors("fieldErrors" in result ? (result.fieldErrors ?? {}) : {});
         return;
       }
       // v1.2 §5.33 — one-time FIRST_WAREHOUSE_CREATED fires only when

@@ -7,7 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
-import { checkPlanLimit, planLimitError } from "@/lib/plans";
+import { checkPlanLimit, planLimitHitResponse, type PlanLimitHitResponse } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { barcodeValueSchema } from "@/lib/validation/barcode";
 import { warehouseInputSchema } from "@/lib/validation/warehouse";
@@ -16,9 +16,13 @@ import { warehouseInputSchema } from "@/lib/validation/warehouse";
 // on success. Mirrors the items pattern: the companion client form fires
 // FIRST_WAREHOUSE_CREATED when isFirst is true. Update / delete / assign
 // barcode do NOT set it.
+// v1.3 §5.51 F-07 — PLAN_LIMIT branch so the companion client form
+// can fire `AnalyticsEvents.PLAN_LIMIT_HIT` when the warehouse cap
+// trips. See `src/lib/plans.ts` for the rationale.
 export type ActionResult =
   | { ok: true; id: string; isFirst?: boolean }
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
+  | PlanLimitHitResponse;
 
 function formToInput(formData: FormData) {
   const raw = Object.fromEntries(formData);
@@ -43,7 +47,8 @@ export async function createWarehouseAction(formData: FormData): Promise<ActionR
   });
   const whLimitCheck = checkPlanLimit(whPlan, "warehouses", currentWhCount);
   if (!whLimitCheck.allowed) {
-    return { ok: false, error: planLimitError("warehouses", whLimitCheck) };
+    // v1.3 §5.51 F-07 — structured response for client analytics.
+    return planLimitHitResponse("warehouses", whLimitCheck);
   }
 
   const parsed = warehouseInputSchema.safeParse(formToInput(formData));

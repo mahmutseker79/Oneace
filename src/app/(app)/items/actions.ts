@@ -11,7 +11,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
-import { checkPlanLimit, planLimitError } from "@/lib/plans";
+import { checkPlanLimit, planLimitHitResponse, type PlanLimitHitResponse } from "@/lib/plans";
 // Phase 6A / P2 — narrow rate-limit surface for bulk import. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";
@@ -31,9 +31,16 @@ import {
 // (count === 0 → this insert is the first), so there is no extra DB hit.
 // updateItemAction and deleteItemAction do NOT populate isFirst — the
 // field is optional and its absence means "not a first-event signal".
+// v1.3 §5.51 F-07 — `PlanLimitHitResponse` is a discriminated
+// failure branch with `code: "PLAN_LIMIT"` + a `planLimit` payload.
+// The client form reads the discriminator to fire
+// `AnalyticsEvents.PLAN_LIMIT_HIT` — without this branch the failure
+// shape was a bare `{ ok:false; error }`, indistinguishable from any
+// other validation error, and PostHog saw nothing.
 export type ActionResult =
   | { ok: true; id: string; isFirst?: boolean }
-  | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]> }
+  | PlanLimitHitResponse;
 
 export async function createItemAction(formData: FormData): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
@@ -50,7 +57,9 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
   });
   const limitCheck = checkPlanLimit(plan, "items", currentItemCount);
   if (!limitCheck.allowed) {
-    return { ok: false, error: planLimitError("items", limitCheck) };
+    // v1.3 §5.51 F-07 — structured failure so the client form can fire
+    // `AnalyticsEvents.PLAN_LIMIT_HIT` alongside the existing error toast.
+    return planLimitHitResponse("items", limitCheck);
   }
 
   const parsed = itemInputSchema.safeParse(Object.fromEntries(formData));
@@ -203,7 +212,11 @@ export type ImportItemsResult =
       error: string;
       invalid?: ImportValidationIssue[];
       conflictSkus?: string[];
-    };
+    }
+  // v1.3 §5.51 F-07 — bulk-import plan-limit hit carries the same
+  // PLAN_LIMIT shape as the single-create path so one client handler
+  // can fire the analytics event for both surfaces.
+  | PlanLimitHitResponse;
 
 // Hard cap per import to keep the transaction bounded and avoid surprising
 // timeouts on Neon's pgbouncer pool. A Sortly/inFlow "starter" seed rarely
@@ -228,7 +241,8 @@ export async function importItemsAction(input: {
   });
   const importLimitCheck = checkPlanLimit(importPlan, "items", currentForImport);
   if (!importLimitCheck.allowed) {
-    return { ok: false, error: planLimitError("items", importLimitCheck) };
+    // v1.3 §5.51 F-07 — same structured response as createItemAction.
+    return planLimitHitResponse("items", importLimitCheck);
   }
 
   // Phase 6A / P2 — bulk import is cheap per row but expensive at

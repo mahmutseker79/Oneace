@@ -56,6 +56,63 @@ export const AnalyticsEvents = {
   FIRST_COUNT_COMPLETED: "first_count_completed",
   BARCODE_SCANNED: "barcode_scanned",
   FIRST_SCAN: "first_scan",
+
+  // --- v1.3 §5.52 F-08 — rate-limit 429 signal ---
+  // Fires from middleware.ts whenever a request is rejected with
+  // HTTP 429 by the default 120 req/min per-IP limiter. Before
+  // v1.5.26 these 429s were silent in PostHog — a single abusive
+  // tenant or a caller hot-looping an endpoint hit the limit
+  // without any dashboard signal, so the only way we learned was
+  // via a support ticket from the throttled caller.
+  //
+  // Emitted server-side. `track()` is a no-op on the server, so
+  // middleware emits a structured `logger.warn` with `tag:
+  // "rate_limit.hit"` — the log drain relays it to PostHog.
+  // The constant still lives here so the taxonomy is one file.
+  //
+  // Payload shape (keys on the log line):
+  //   - path (request pathname, e.g. "/api/items")
+  //   - ip (first x-forwarded-for entry, or "unknown")
+  //   - limit (the 120 req/min cap)
+  //   - retryAfter (seconds until the window resets)
+  //   - reset (epoch seconds when the window resets)
+  // No PII; no user id, no auth header, no body.
+  RATE_LIMIT_HIT: "rate_limit.hit",
+
+  // --- v1.3 §5.51 F-07 — plan-limit friction signal ---
+  // Fires client-side from a create/import form when the server action
+  // returns `{ code: "PLAN_LIMIT" }`. The point is to make upgrade
+  // friction VISIBLE in PostHog — the dependabot-burn lens of v1.3
+  // also extends to silent limit hits: without this event, the only
+  // signal that a Starter tenant is bouncing off the 100-item ceiling
+  // is that the user stops using the product. With it, the funnel
+  // shows `plan_limit_hit` → `upgrade_clicked` (or its absence) so
+  // pricing can decide whether to adjust limits or nudge UI.
+  // Payload: `{ limitKey, limit, current }` — enough to slice the
+  // dashboard by which limit is hitting which tier, without leaking
+  // PII (no item names, no userId — `track()` attaches posthog
+  // distinct_id automatically for signed-in users).
+  PLAN_LIMIT_HIT: "plan_limit_hit",
+
+  // --- v1.3 §5.54 F-10 — 2FA recovery code rotation signal ---
+  // Fires client-side from the security settings card when the user
+  // successfully rotates their recovery (backup) codes via the
+  // "Regenerate backup codes" flow. The taxonomy gap audited was:
+  // rotation was supported server-side (regenerateBackupCodesAction
+  // gated by TOTP) but the product had no way to see whether anyone
+  // actually uses it — so the compromise-recovery path could be
+  // broken and we'd only learn via a support ticket.
+  //
+  // Payload shape (client-side):
+  //   - codesIssued: number (always 10 today, pinned for future-proof
+  //     slicing if we ever vary the batch size by plan)
+  //   - source: "manual" | "advised" — "advised" when the user acted
+  //     on the 1-year rotation banner, "manual" otherwise. Slice by
+  //     source to see whether the banner is actually effective.
+  //
+  // No PII — no user id (posthog distinct_id handles that for signed-
+  // in users), no codes, no hashes.
+  RECOVERY_CODES_ROTATED: "recovery_codes_rotated",
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

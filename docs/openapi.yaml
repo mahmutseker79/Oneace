@@ -647,6 +647,159 @@ paths:
         503:
           description: CRON_SECRET not configured
 
+  /cron/vercel-webhook-health:
+    get:
+      tags:
+        - Cron
+      summary: Detect silent-main-webhook sendromu
+      description: |
+        Every 30 min, compares the GitHub `main` HEAD SHA against the
+        `commit` field of the production `/api/health` endpoint. If the
+        two differ AND the GitHub commit is older than the stale
+        threshold (default 30 min), emits a `webhook-health.silent`
+        structured log for the ops alert rule. A distinct
+        `webhook-health.prod-down` tag is emitted when `/api/health`
+        itself returns 5xx, so alert routing can split the two failure
+        modes. Gracefully degrades (200 `skipped`) when env config is
+        missing or the transport flakes. Requires Bearer token
+        authorization. Audit v1.3 §5.45 F-01.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Check completed (match, silent, prod-down, or skipped)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [match, silent, prod-down, skipped]
+                  alarm:
+                    type: string
+                    enum: [silent, prod-down]
+                  sha:
+                    type: string
+                  commit:
+                    type: string
+                  expectedSha:
+                    type: string
+                  deployedCommit:
+                    type: string
+                  commitAgeMinutes:
+                    type: integer
+                  githubCommitAt:
+                    type: string
+                    format: date-time
+                  reason:
+                    type: string
+                    enum: [config, transport]
+                  healthStatus:
+                    type: integer
+        401:
+          description: Unauthorized (invalid token)
+        500:
+          description: CRON_SECRET not configured
+
+  /cron/vercel-quota-health:
+    get:
+      tags:
+        - Cron
+      summary: Watch the Vercel daily-deploy quota ceiling
+      description: |
+        Every 30 min, pages Vercel's `/v6/deployments` API since UTC
+        midnight and counts deployments created in the current UTC
+        day. Emits a `vercel-quota.warn` structured log at warn level
+        once the count reaches the 80/100 threshold (20 deploys of
+        headroom left), and `vercel-quota.exceeded` at error level
+        once the 100/day Hobby ceiling is hit. The happy path emits
+        `vercel-quota.ok` at info.
+        Pagination is capped at 10 pages (200 rows) so a misconfigured
+        project cannot wedge the cron. Gracefully degrades (200
+        `skipped`) when env config is missing or the Vercel API
+        flakes. Requires Bearer token authorization. Audit v1.3 §5.48
+        F-04.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Check completed (quota-ok, quota-warn, quota-exceeded, or skipped)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [quota-ok, quota-warn, quota-exceeded, skipped]
+                  alarm:
+                    type: string
+                    enum: [warn, exceeded]
+                  count:
+                    type: integer
+                  quota:
+                    type: integer
+                  warnAt:
+                    type: integer
+                  reason:
+                    type: string
+                    enum: [config, transport]
+        401:
+          description: Unauthorized (invalid token)
+        500:
+          description: CRON_SECRET not configured
+
+  /cron/integration-tasks:
+    get:
+      tags:
+        - Cron
+      summary: Drain the IntegrationTask durable work queue
+      description: |
+        Every 30 min, atomically claims up to 25 due `pending` rows
+        from the `IntegrationTask` queue (SKIP LOCKED) and dispatches
+        each to its adapter handler. Success → `markDone`. Failure →
+        `markFailure` which classifies the error, reschedules on the
+        backoff curve (1m → 5m → 30m), and flips the row to `dead`
+        (with an owner email) once MAX_RETRIES = 3 is reached.
+        One task's failure does not starve the rest of the batch.
+        Gracefully degrades (200 `skipped`) when config is missing or
+        the claim query flakes. Returns a drain summary with counts of
+        claimed / done / failed. Requires Bearer token authorization.
+        Audit v1.3 §5.53 F-09.
+      security:
+        - bearerToken: []
+      responses:
+        200:
+          description: Drain completed (drained, idle, or skipped)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [drained, idle, skipped]
+                  claimed:
+                    type: integer
+                  done:
+                    type: integer
+                  failed:
+                    type: integer
+                  reason:
+                    type: string
+                    enum: [config, transport]
+        401:
+          description: Unauthorized (invalid token)
+        500:
+          description: CRON_SECRET not configured
+
   /cron/process-imports:
     get:
       tags:

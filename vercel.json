@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm install --legacy-peer-deps",
+  "git": {
+    "deploymentEnabled": {
+      "dependabot/*": false
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/stock-count-triggers",
@@ -17,6 +22,18 @@
     {
       "path": "/api/cron/cleanup-cronruns",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/vercel-webhook-health",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/vercel-quota-health",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/integration-tasks",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

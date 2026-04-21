@@ -22,6 +22,16 @@
 
 import { createHmac } from "node:crypto";
 import { db } from "@/lib/db";
+// Audit v1.3 §5.53 F-09 B-2: QBO webhooks now enqueue into the
+// durable IntegrationTask queue. The cron drain loop is the retry
+// authority — the webhook used to only write a SyncLog PENDING
+// breadcrumb that no consumer ever flipped to RUNNING. That
+// breadcrumb is retained for UI compat (dashboards at
+// `integrations/[slug]` read recent SyncLog rows) and runs in
+// parallel with enqueue; the QBOSyncEngine will write its own
+// SyncLog for the actual drain attempt. See
+// `docs/ADR-005-integration-handler-registry.md`.
+import { enqueue } from "@/lib/integrations/task-queue";
 import { logger } from "@/lib/logger";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -229,6 +239,39 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          // Audit v1.3 §5.53 F-09 B-2: enqueue a durable task so the
+          // cron drain actually runs the sync. Entities without a
+          // pilot taskKind (Class, Department, Term, Employee) still
+          // fall through to log-only — they're reference data that
+          // QBOSyncEngine doesn't cover yet. See
+          // `src/lib/integrations/quickbooks/register.ts`.
+          const taskKind = qboEntityToTaskKind(entity.name);
+          if (taskKind) {
+            try {
+              await enqueue({
+                organizationId: integration.organizationId,
+                integrationKind: "quickbooks",
+                taskKind,
+                payload: {
+                  qboEntityName: entity.name,
+                  qboEntityId: entity.id,
+                  operation: entity.operation,
+                  realmId,
+                },
+              });
+            } catch (enqueueErr) {
+              // Queue write failure must not swallow the webhook ACK —
+              // Shopify would retry the delivery on non-2xx and we
+              // already wrote the breadcrumb. Log loudly; DLQ covers
+              // the retry authority once the queue row lands.
+              logger.error("QBO webhook: enqueue failed", {
+                enqueueErr,
+                integrationId: integration.id,
+                taskKind,
+              });
+            }
+          }
+
           processedCount++;
         }
       } catch (error) {
@@ -346,4 +389,51 @@ function timingSafeEqual(a: string, b: string): boolean {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return result === 0;
+}
+
+/**
+ * Audit v1.3 §5.53 F-09 B-2: QBO entity name → IntegrationTask
+ * taskKind. Must stay aligned with `QBO_TASK_KINDS` exported from
+ * `src/lib/integrations/quickbooks/register.ts` — the pinned test
+ * in `task-dispatch-registry.test.ts` asserts every taskKind in
+ * the register loop has a reverse mapping here.
+ *
+ * Returns null for entity names that don't have a pilot handler.
+ * Class, Department, Term, Employee are currently log-only — they
+ * are QBO reference tables without a corresponding sync path in
+ * `QBOSyncEngine.ALL_SYNC_ENTITIES`.
+ */
+function qboEntityToTaskKind(entityName: string): string | null {
+  switch (entityName) {
+    case "Item":
+      return "sync_items";
+    case "Customer":
+      return "sync_customers";
+    case "Vendor":
+      return "sync_suppliers";
+    case "Invoice":
+      return "sync_invoices";
+    case "Bill":
+      return "sync_bills";
+    case "Payment":
+      return "sync_payments";
+    case "PurchaseOrder":
+      return "sync_purchase_orders";
+    case "Account":
+      return "sync_accounts";
+    case "TaxCode":
+      return "sync_tax_codes";
+    case "Estimate":
+      return "sync_estimates";
+    case "SalesReceipt":
+      return "sync_sales_receipts";
+    case "CreditMemo":
+      return "sync_credit_memos";
+    case "JournalEntry":
+      return "sync_journal_entries";
+    case "Deposit":
+      return "sync_deposits";
+    default:
+      return null;
+  }
 }

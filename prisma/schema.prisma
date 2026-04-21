@@ -98,6 +98,8 @@ model Organization {
   importTemplates        ImportTemplate[]
   importJobs             ImportJob[]
   integrations           Integration[]
+  // Audit v1.3 §5.53 F-09 — durable per-task integration work queue.
+  integrationTasks       IntegrationTask[]
   scheduledReports       ScheduledReport[]
   // Phase V4: new organization relations
   reasonCodes            ReasonCode[]
@@ -1973,6 +1975,72 @@ model SyncLog {
   integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
   @@index([integrationId, startedAt])
+}
+
+// =========================
+// Audit v1.3 §5.53 F-09 — Integration task queue + DLQ
+// =========================
+//
+// Durable per-task state for integration work (webhooks received,
+// sync batches to push/pull, etc.). SyncLog above records the
+// aggregate outcome of a sync *run*; IntegrationTask records the
+// lifecycle of each discrete unit of work a sync emits — so we can
+// retry the ones that failed without re-running the whole batch,
+// and surface the ones that are permanently dead to an admin DLQ
+// view.
+//
+// Wire (audit §5.53, sprint Phase-3.1):
+//   enqueue()    → status="pending", nextAttemptAt=now
+//   cron claims  → status="in_progress"
+//   handler ok   → status="done"
+//   handler err  → retryCount++, nextAttemptAt = now + backoff(n),
+//                  lastError/lastErrorKind populated
+//   retryCount >= MAX_RETRIES (3) → status="dead", owner emailed
+//
+// Why status is String instead of an enum: new adapter directories
+// keep landing (amazon, bigcommerce, magento, odoo, …) and a string
+// column lets us add provider-specific statuses without a schema
+// round-trip. An app-level union type in `task-queue.ts` is the
+// compile-time fence.
+//
+// `integrationKind` matches the directory name under
+// `src/lib/integrations/` so follow-up adapter wiring can route
+// purely off the string (no enum remap).
+
+model IntegrationTask {
+  id              String    @id @default(cuid())
+  organizationId  String
+  // "shopify" | "quickbooks" | "amazon" | "bigcommerce" | … —
+  // matches `src/lib/integrations/<dir>` so the dispatcher can
+  // derive the adapter from this column.
+  integrationKind String
+  // "sync_products" | "sync_inventory" | "webhook_received" | …
+  // Adapter-defined; documented in each adapter's README.
+  taskKind        String
+  // Arbitrary task payload (adapter-shaped). Kept as Json so new
+  // task kinds can ship without a migration.
+  payload         Json
+  // "pending" | "in_progress" | "done" | "dead".
+  status          String    @default("pending")
+  retryCount      Int       @default(0)
+  // When the cron is next allowed to claim this row. `null` = claim
+  // now; also `null` for terminal (done / dead) rows.
+  nextAttemptAt   DateTime?
+  lastError       String?
+  // Classifier output: "auth" | "rate-limit" | "5xx" | "4xx" |
+  // "schema-mismatch" | "transport" | "unknown". Drives dashboard
+  // filtering and per-kind alerting; see `classifyError` in
+  // `task-queue.ts`.
+  lastErrorKind   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Primary claim path: `status=pending AND nextAttemptAt <= now()`.
+  @@index([status, nextAttemptAt])
+  // Admin DLQ views filter by org + provider.
+  @@index([organizationId, integrationKind])
 }
 
 // =========================
