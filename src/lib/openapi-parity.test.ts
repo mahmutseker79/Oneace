@@ -152,7 +152,20 @@ function parseOpenApi(text: string): Record<string, Methods> {
 // extra?: methods doc has but route does not }). Remove the entry
 // when the divergence is resolved (the still-diverges test below
 // fails otherwise).
-const DOCUMENTED_GAPS: readonly string[] = [];
+const DOCUMENTED_GAPS: readonly string[] = [
+  // v1.5.32 Faz 2 rename — the two routes below were replaced by
+  // /cron/platform-webhook-health and /cron/platform-quota-health.
+  // Their source files were removed from the git index, but the
+  // Cowork FUSE mount refuses unlink() so the files linger on the
+  // local working tree as 410-gone stubs carrying their legacy
+  // @openapi-tag. On any non-FUSE checkout (CI, Vercel, Netlify,
+  // fresh clones) these entries are dead — the stale-check below
+  // stays green because the paths are also absent from openapi.yaml.
+  // Remove both entries once the FUSE sandbox is gone or the stubs
+  // are manually deleted from a non-sandbox working tree.
+  "/cron/vercel-webhook-health",
+  "/cron/vercel-quota-health",
+];
 
 const KNOWN_METHOD_MISMATCHES: Record<
   string,

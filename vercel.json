@@ -24,11 +24,11 @@
       "schedule": "0 4 * * *"
     },
     {
-      "path": "/api/cron/vercel-webhook-health",
+      "path": "/api/cron/platform-webhook-health",
       "schedule": "*/30 * * * *"
     },
     {
-      "path": "/api/cron/vercel-quota-health",
+      "path": "/api/cron/platform-quota-health",
       "schedule": "*/30 * * * *"
     },
     {

@@ -1,13 +1,10 @@
-// Bridge: mirrors vercel.json cron "/api/cron/vercel-webhook-health" @ "*/30 * * * *"
+// REMOVED — replaced by netlify/functions/cron-platform-webhook-health.mts
+// (Faz 2 rename, v1.5.32-audit-v1.3-platform-agnostic).
 //
-// NOTE: Route name still says "vercel-" — Faz 2 of the Netlify migration
-// will rename this to platform-agnostic (audit v1.3 F-01). For Faz 1 POC we
-// keep the path identical so route handlers ship unchanged.
-import type { Config } from "@netlify/functions";
-import { callCronRoute } from "./_cron-bridge.mts";
-
-export default async () => callCronRoute("/api/cron/vercel-webhook-health");
-
-export const config: Config = {
-  schedule: "*/30 * * * *", // every 30 minutes
-};
+// This file remains on disk only because the Cowork FUSE sandbox
+// refuses unlink(). It is removed from the git index; Netlify's
+// Scheduled Functions runtime will never see it in the real build.
+//
+// Export a no-op with no `config.schedule` so that even if the file
+// somehow ships, Netlify does not register a duplicate cron.
+export default async () => new Response("gone", { status: 410 });

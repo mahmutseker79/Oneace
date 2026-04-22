@@ -1,6 +1,6 @@
 # Netlify Migration Runbook
 
-**Status:** Faz 1 POC scaffold landed 2026-04-22. Vercel remains primary production.
+**Status:** Faz 2 platform-agnostic refactor landed 2026-04-22. Vercel remains primary production.
 **Owner:** Mahmut
 **Related docs:** `docs/runbooks/prod-rollback.md`, audit v1.3 F-01/F-04, auto-memory `oneace_prod_deploy_state.md`.
 
@@ -21,8 +21,8 @@ Other alternatives considered and rejected:
 | Phase | Scope | State | Ref |
 | --- | --- | --- | --- |
 | **Faz 0** | Vercel "Ignored Build Step" — stop dependabot from burning Hobby quota | ✅ DONE 2026-04-22 | auto-memory |
-| **Faz 1** | Netlify POC — parallel deploy to `oneace-next-local.netlify.app`, Vercel untouched | 🟡 scaffold landed | this doc |
-| **Faz 2** | Platform-agnostic refactor — audit v1.3 F-01 `/api/cron/vercel-webhook-health` and F-04 `/api/cron/vercel-quota-health` | ⏳ blocked by Faz 1 | task #36 |
+| **Faz 1** | Netlify POC — parallel deploy to `oneace-next-local.netlify.app`, Vercel untouched | ✅ DONE 2026-04-22 (v1.5.31) | this doc |
+| **Faz 2** | Platform-agnostic refactor — audit v1.3 F-01 `/api/cron/platform-webhook-health` and F-04 `/api/cron/platform-quota-health` + `src/lib/hosting-platform/` module | ✅ DONE 2026-04-22 (v1.5.32) | task #36 |
 | **Faz 3** | Production cutover — Shopify + QuickBooks webhook URL swap, DNS CNAME flip | ⏳ blocked by Faz 2 | task #37 |
 
 ---
@@ -117,11 +117,26 @@ Faz 1 is additive-only; Vercel prod keeps serving unchanged. If the Netlify POC 
 3. **Revert code:** `git checkout main && git branch -D netlify-poc` locally, `git push origin :netlify-poc` remotely.
 4. **File cleanup (optional):** the scaffold files (`netlify.toml`, `netlify/functions/`, `scripts/netlify-env-shim.mjs`, `prisma/schema.prisma` binaryTargets) are inert on Vercel — leaving them in place costs nothing. The shim short-circuits on `VERCEL=1`; the Prisma target is additive; the `netlify/` dir isn't touched by Vercel's build.
 
-## Known gaps (handled in Faz 2)
+## Faz 2 — What was refactored
 
-- `/api/cron/vercel-webhook-health` — currently returns `{ok:false}` on Netlify because it checks Vercel-specific build health. Faz 2 renames to `/api/cron/platform-webhook-health` with `HOSTING_PLATFORM` env dispatch.
-- `/api/cron/vercel-quota-health` — same story; Faz 2 adds a Netlify adapter that hits Netlify's Functions/Minutes API.
-- `@vercel/analytics` imports in `src/app/(app)/settings/billing/billing-client.tsx` and `src/components/analytics.tsx` — they're static imports. On Netlify the script loads but `track()` calls noop (Vercel endpoint is unreachable from our domain). Swap to a platform-agnostic telemetry wrapper in Faz 2.
+1. **`src/lib/hosting-platform/`** — new module with three files:
+   - `index.ts` — `detectPlatform()` (HOSTING_PLATFORM override → VERCEL=1 → NETLIFY=true → "unknown"), `QuotaProvider` interface, `getQuotaProvider()` factory.
+   - `vercel.ts` — `createVercelQuotaProvider()`: paginates `/v6/deployments` since UTC midnight, returns `{count, ceiling: 100, unit: "deploys/day"}`.
+   - `netlify.ts` — `createNetlifyQuotaProvider()`: sums `deploy_time` seconds in the current calendar month, returns `{count: totalMinutes, ceiling: 300, unit: "build-minutes/month"}`.
+2. **`/api/cron/platform-webhook-health`** (rename of `/api/cron/vercel-webhook-health`) — logic unchanged (GitHub main HEAD vs prod `/api/health.commit`, 30-min stale threshold), log tags renamed `vercel-webhook.*` → `platform-webhook.*`, every payload carries `platform: "vercel" | "netlify" | "unknown"`.
+3. **`/api/cron/platform-quota-health`** (rename of `/api/cron/vercel-quota-health`) — becomes a thin threshold decider: dispatches through `getQuotaProvider(detectPlatform())`, applies `WARN_RATIO = 0.80` against the adapter's normalized `{count, ceiling}`, emits `platform-quota.ok|warn|exceeded` tags. On `unknown` platform → `platform-quota.skipped.config` + 200 (local dev friendly).
+4. **`vercel.json`** — cron paths renamed `/api/cron/vercel-*` → `/api/cron/platform-*` (same `*/30 * * * *` cadence).
+5. **`netlify/functions/cron-platform-{webhook,quota}-health.mts`** — bridges renamed to match; each forwards to the new route path.
+6. **`docs/openapi.yaml`** — both path entries renamed; responses extended with the new `platform`, `ceiling`, `unit` fields.
+7. **Pinned tests** —
+   - `src/app/api/cron/platform-webhook-health/route.test.ts` — asserts the new route shape + absence of legacy `/cron/vercel-webhook-health` in `vercel.json` and `openapi.yaml`.
+   - `src/app/api/cron/platform-quota-health/route.test.ts` — asserts dispatch via `detectPlatform` + `getQuotaProvider`, no direct `api.vercel.com` / `api.netlify.com` calls in the route, `WARN_RATIO` between 0.5 and 1.0.
+   - `src/lib/hosting-platform/hosting-platform.test.ts` — lock precedence in `detectPlatform()` with `vi.stubEnv`, lock `getQuotaProvider` dispatch + the `provider.platform` field on each adapter.
+8. **FUSE-related artifacts** — the old `src/app/api/cron/vercel-{webhook,quota}-health/route.{ts,test.ts}` files and `netlify/functions/cron-vercel-{webhook,quota}-health.mts` bridges are removed from the git index but left on disk as 410-Gone stubs because the Cowork FUSE mount refuses `unlink()`. They are absent in every non-FUSE checkout (CI, Vercel, Netlify, contributors) and will vanish on the next fresh clone.
+
+## Known gaps (handled in Faz 3)
+
+- `@vercel/analytics` imports in `src/app/(app)/settings/billing/billing-client.tsx` and `src/components/analytics.tsx` — still static. On Netlify the script loads but `track()` calls noop (Vercel endpoint unreachable from our domain). Swap to a platform-agnostic telemetry wrapper (or drop entirely) at cutover.
 - `@vercel/blob` — already a dynamic import with a graceful fallback, safe to leave.
 
 ## Known gaps (handled in Faz 3)
