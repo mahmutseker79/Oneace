@@ -14,8 +14,15 @@
 //            below are additive and backward-compatible.
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  // Vercel Serverless runtime ships `rhel-openssl-1.0.x` / `rhel-openssl-3.0.x`
+  // by default, but Netlify Functions run on AWS Lambda (Amazon Linux 2 =
+  // `rhel-openssl-3.0.x`). Explicitly listing it here keeps the POC build
+  // working on both platforms. `native` is required so local `pnpm dev` on
+  // macOS / Linux still picks up a matching engine.
+  // Faz 1 Netlify POC — 2026-04-22.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
