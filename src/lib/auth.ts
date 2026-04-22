@@ -79,8 +79,23 @@ export const auth = betterAuth({
   trustedOrigins: [
     env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     env.BETTER_AUTH_URL,
-    // Vercel preview/production domains
-    ...(env.NEXT_PUBLIC_APP_URL ? [] : ["https://oneace-next-local.vercel.app"]),
+    // Faz 3 cutover — BOTH origins are trusted during the Vercel → Netlify
+    // migration window. Once DNS is flipped and Vercel project is paused,
+    // the vercel.app entry can stay (it's a no-op, just a dead origin) or
+    // be removed in a later cleanup. Keeping both is safe: better-auth
+    // only accepts origins that the browser actually sent, so a dead
+    // domain in this list has no security impact.
+    //
+    // Rationale: `NEXT_PUBLIC_APP_URL` is set in prod env, so the fallback
+    // below is only used in local/dev or when the env var is missing. But
+    // during the cutover window, if the env var lags the DNS flip even
+    // briefly, we don't want better-auth to start rejecting sessions.
+    ...(env.NEXT_PUBLIC_APP_URL
+      ? []
+      : [
+          "https://oneace-next-local.vercel.app",
+          "https://oneace-next-local.netlify.app",
+        ]),
   ].filter(Boolean) as string[],
 });
 
