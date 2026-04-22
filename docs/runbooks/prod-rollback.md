@@ -86,7 +86,7 @@ Use this when: Path A is the right call but the Vercel Hobby **daily-deploy quot
 
 **Budget:** ~10 min + waiting until UTC 00:00 if quota is truly gone.
 
-1. Check `/api/cron/vercel-quota-health` (or its last log line tagged `vercel-quota.exceeded`) to confirm the quota is the blocker. If the cron is silent, don't assume — the webhook sentinel (§5.45 F-01) could also be down; check the tag `webhook-health.silent` too.
+1. Check `/api/cron/platform-quota-health` (or its last log line tagged `platform-quota.exceeded`) to confirm the quota is the blocker. If the cron is silent, don't assume — the webhook sentinel (§5.45 F-01) could also be down; check the tag `platform-webhook.silent` too. (Faz 2 rename: the legacy `vercel-quota-health` / `webhook-health.*` tags are gone as of v1.5.32.)
 2. Kill the burn source first — otherwise you'll be back here in an hour:
     - `vercel.json` should have `"git.deploymentEnabled": { "dependabot/*": false }` as of v1.5.17. Verify it's still there: `jq '.git.deploymentEnabled' vercel.json`.
     - Close or stack any other PRs that are firing preview builds.
@@ -173,8 +173,8 @@ Within 48 hours:
 
 ## 8. Related runbooks + monitors
 
-- `/api/cron/vercel-webhook-health` (§5.45 F-01) — fires `webhook-health.silent` when GitHub main HEAD is past the live prod commit by > 30 min.
-- `/api/cron/vercel-quota-health` (§5.48 F-04) — fires `vercel-quota.warn` at 80 deploys / UTC-day, `vercel-quota.exceeded` at 100.
+- `/api/cron/platform-webhook-health` (§5.45 F-01, Faz 2 rename v1.5.32) — fires `platform-webhook.silent` when GitHub main HEAD is past the live prod commit by > 30 min. Log payload carries `platform: "vercel" | "netlify"` so alerts can split by host during the cutover window.
+- `/api/cron/platform-quota-health` (§5.48 F-04, Faz 2 rename v1.5.32) — fires `platform-quota.warn` at ≥ 80% of ceiling, `platform-quota.exceeded` at ≥ 100%. The ceiling is platform-specific: Vercel Hobby is 100 deploys / UTC-day; Netlify Free is 300 build-minutes / month.
 - `docs/DR-drill-log.md` — DR exercise log; add an entry after any rollback-class incident.
 - `docs/MONITORING.md` — catalog of logger tags / alert routes. If a new alarm fires and you don't recognize the tag, it's indexed there.
 - `vercel.json` `git.deploymentEnabled` — the v1.5.17 gate that blocks `dependabot/*` from burning quota.

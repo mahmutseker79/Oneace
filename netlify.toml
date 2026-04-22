@@ -1,0 +1,105 @@
+# Netlify build + runtime config for OneAce
+# Counterpart to vercel.json. Loaded by Netlify at build + deploy time.
+#
+# Migration plan: Faz 1 POC (2026-04-22). Runs in parallel with Vercel
+# until Faz 3 DNS cutover. Changing this file only affects Netlify
+# deploys — Vercel pipeline is untouched.
+#
+# Sections below mirror vercel.json semantics:
+#   - [build]              -> Vercel "Build & Output Settings"
+#   - [functions]          -> Vercel function runtime + bundling
+#   - [[plugins]]          -> Next.js adapter (equivalent of Vercel auto-detect)
+#   - [context.*]          -> Vercel "Production / Preview" env scopes
+#   - Scheduled functions  -> Vercel "crons" block  (see netlify/functions/)
+#   - Branch allow/deny    -> Vercel git.deploymentEnabled.dependabot/*:false
+
+[build]
+  # `prisma generate` is already in the npm script; duplicating it here
+  # would double the generate step. Keep it in package.json so both
+  # Vercel and Netlify use the same source of truth.
+  #
+  # `netlify-env-shim.mjs` maps Netlify's build env vars (COMMIT_REF,
+  # BRANCH, DEPLOY_PRIME_URL, CONTEXT) onto the VERCEL_GIT_COMMIT_SHA /
+  # VERCEL_GIT_COMMIT_REF / VERCEL_URL / VERCEL_ENV names that existing
+  # code already reads. This is a Faz 1 shim — Faz 2 will swap call
+  # sites to a platform-agnostic accessor and drop the shim. The shim
+  # is a no-op on Vercel (detects `VERCEL=1`) so it's safe to ship to
+  # both platforms.
+  command = "node scripts/netlify-env-shim.mjs && pnpm run build"
+  publish = ".next"
+  # OneAce uses pnpm. Netlify's default Node package manager detection
+  # looks at `packageManager` in package.json which we have set to
+  # pnpm@9.12.0, so the tool picks it up. NPM_FLAGS is a belt-and-
+  # suspenders override for edge cases where detection fails.
+  ignore = "bash -c '[[ \"$BRANCH\" =~ ^(main|stable|phase-1-p0-remediations|netlify-poc)$ ]] && exit 1 || exit 0'"
+
+[build.environment]
+  # Pin Node to match `engines.node >=22` in package.json. Netlify
+  # defaults to Node 22 for new sites but older projects are pinned
+  # at whatever was current when the site was created — pin explicitly
+  # so a Netlify default shift cannot break this site silently.
+  NODE_VERSION = "22"
+  # Force pnpm in case auto-detection mis-fires for monorepo-looking
+  # layouts. Matches `packageManager` in package.json.
+  NPM_FLAGS = "--legacy-peer-deps"
+  # Netlify's Next.js Runtime (v5+) reads this to enable the adapter.
+  # Setting it explicitly avoids relying on auto-detect heuristics.
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+  # Prisma binary targets: Netlify Functions run on AWS Lambda
+  # (Amazon Linux 2 = rhel-openssl-3.0.x). Without this the
+  # @prisma/client bundled for Vercel's runtime will fail to load
+  # at function invocation with a missing .so error.
+  PRISMA_CLI_BINARY_TARGETS = "rhel-openssl-3.0.x"
+
+# Official Netlify Next.js Runtime. Required for App Router, RSC,
+# middleware, route handlers, and image optimization. Without this
+# plugin the deploy runs as a static export and every dynamic route
+# 404s.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Preview deploys (non-production branches). Vercel's equivalent is
+# the "Preview" env scope.
+[context.deploy-preview.environment]
+  NEXT_PUBLIC_APP_URL = "$DEPLOY_PRIME_URL"
+
+[context.branch-deploy.environment]
+  NEXT_PUBLIC_APP_URL = "$DEPLOY_PRIME_URL"
+
+# Production-only env: currently empty; production env vars are set
+# via Netlify UI / `netlify env:set` to avoid leaking secrets into
+# git history. Listed here for documentation completeness.
+[context.production.environment]
+  # NEXT_PUBLIC_APP_URL is set via Netlify UI (points at custom
+  # domain once cutover completes in Faz 3).
+
+# Branch allow-list: skip building dependabot preview PRs.
+# vercel.json handles this via `git.deploymentEnabled.dependabot/*:false`.
+# Netlify's equivalent is the `ignore` command in [build] above — it
+# exits 1 (= DO build) when branch matches the allowlist, exits 0
+# (= SKIP build) otherwise.
+
+# Headers: OneAce defines all security headers in next.config.ts
+# (HSTS, CSP, frame-ancestors, etc.) via `async headers()`. Next.js
+# Runtime on Netlify respects those — DO NOT duplicate them here;
+# duplication causes "Multiple X-Frame-Options headers" browser
+# warnings and is redundant.
+
+# Redirects/rewrites: none. App Router route matching + middleware
+# handles every path. Adding redirects here would bypass the auth
+# gate in src/middleware.ts.
+
+# Functions: Next.js route handlers are auto-wrapped by the Next.js
+# plugin into Netlify Functions. For scheduled cron bridges see
+# netlify/functions/cron-*.mts — those are non-Next.js functions
+# that the Next.js plugin does NOT touch.
+[functions]
+  # Node 22 for all functions (cron bridges + Next route handlers).
+  # Must match build.environment.NODE_VERSION to avoid bundler ABI
+  # mismatches for native modules like Prisma's query engine.
+  node_bundler = "esbuild"
+
+# Production alias: `oneace-next-local.netlify.app` during POC. Once
+# Faz 3 cutover happens the CNAME on oneace-next-local.vercel.app's
+# domain will point here instead. The Netlify site name is set via
+# `netlify link` / Netlify UI, not this file.

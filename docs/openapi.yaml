@@ -647,22 +647,24 @@ paths:
         503:
           description: CRON_SECRET not configured
 
-  /cron/vercel-webhook-health:
+  /cron/platform-webhook-health:
     get:
       tags:
         - Cron
-      summary: Detect silent-main-webhook sendromu
+      summary: Detect silent-main-webhook sendromu (platform-agnostic)
       description: |
         Every 30 min, compares the GitHub `main` HEAD SHA against the
         `commit` field of the production `/api/health` endpoint. If the
         two differ AND the GitHub commit is older than the stale
-        threshold (default 30 min), emits a `webhook-health.silent`
+        threshold (default 30 min), emits a `platform-webhook.silent`
         structured log for the ops alert rule. A distinct
-        `webhook-health.prod-down` tag is emitted when `/api/health`
+        `platform-webhook.prod-down` tag is emitted when `/api/health`
         itself returns 5xx, so alert routing can split the two failure
-        modes. Gracefully degrades (200 `skipped`) when env config is
-        missing or the transport flakes. Requires Bearer token
-        authorization. Audit v1.3 §5.45 F-01.
+        modes. Log payloads carry the detected `platform` field so ops
+        can split alerts by host during the Faz 3 cutover window.
+        Gracefully degrades (200 `skipped`) when env config is missing
+        or the transport flakes. Requires Bearer token authorization.
+        Faz 2 rename of `/cron/vercel-webhook-health`. Audit v1.3 §5.45 F-01.
       security:
         - bearerToken: []
       responses:
@@ -694,6 +696,9 @@ paths:
                   githubCommitAt:
                     type: string
                     format: date-time
+                  platform:
+                    type: string
+                    enum: [vercel, netlify, unknown]
                   reason:
                     type: string
                     enum: [config, transport]
@@ -704,24 +709,28 @@ paths:
         500:
           description: CRON_SECRET not configured
 
-  /cron/vercel-quota-health:
+  /cron/platform-quota-health:
     get:
       tags:
         - Cron
-      summary: Watch the Vercel daily-deploy quota ceiling
+      summary: Watch platform build-budget ceiling (platform-agnostic)
       description: |
-        Every 30 min, pages Vercel's `/v6/deployments` API since UTC
-        midnight and counts deployments created in the current UTC
-        day. Emits a `vercel-quota.warn` structured log at warn level
-        once the count reaches the 80/100 threshold (20 deploys of
-        headroom left), and `vercel-quota.exceeded` at error level
-        once the 100/day Hobby ceiling is hit. The happy path emits
-        `vercel-quota.ok` at info.
-        Pagination is capped at 10 pages (200 rows) so a misconfigured
-        project cannot wedge the cron. Gracefully degrades (200
-        `skipped`) when env config is missing or the Vercel API
-        flakes. Requires Bearer token authorization. Audit v1.3 §5.48
-        F-04.
+        Every 30 min, dispatches to the active platform adapter
+        (`detectPlatform()` → Vercel or Netlify) and pulls a
+        `{count, ceiling, unit}` snapshot. On Vercel this is
+        "deploys today / 100"; on Netlify this is
+        "build-minutes this month / 300". The alarm policy is
+        expressed as a fraction of the ceiling (WARN_RATIO = 0.80) so
+        both surfaces share one route + one set of ops rules:
+          - count < 80% of ceiling → `platform-quota.ok` (info)
+          - count ≥ 80% of ceiling → `platform-quota.warn` (warn)
+          - count ≥ ceiling        → `platform-quota.exceeded` (error)
+        When `detectPlatform()` returns `unknown` (local dev, self-host)
+        the route emits `platform-quota.skipped.config` and 200s. Transport
+        flakes emit `platform-quota.skipped.api`. Every log payload carries
+        a `platform` field so alert routing can split by host during the
+        Faz 3 cutover window. Requires Bearer token authorization.
+        Faz 2 rename of `/cron/vercel-quota-health`. Audit v1.3 §5.48 F-04.
       security:
         - bearerToken: []
       responses:
@@ -740,10 +749,16 @@ paths:
                   alarm:
                     type: string
                     enum: [warn, exceeded]
+                  platform:
+                    type: string
+                    enum: [vercel, netlify, unknown]
                   count:
                     type: integer
-                  quota:
+                  ceiling:
                     type: integer
+                  unit:
+                    type: string
+                    description: e.g. "deploys/day" (Vercel), "build-minutes/month" (Netlify)
                   warnAt:
                     type: integer
                   reason:
