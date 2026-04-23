@@ -4,8 +4,26 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { shipSalesOrderAction } from "../../actions";
+
+// GOD MODE roadmap P0-02 rc3 — per-form-mount idempotency key.
+// `useRef` stabilises the UUID across re-renders so a React Strict
+// Mode double-render and the user's own double-click both submit the
+// SAME key. The server's withIdempotency wrapper then returns the
+// cached ActionResult on the second attempt instead of re-running the
+// ship transaction.
+//
+// `crypto.randomUUID` is ambient on modern browsers (HTTPS origins
+// + localhost). The fallback path is guarded so older environments
+// still degrade to pass-through (no caching, pre-rc2 behaviour).
+function mintIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Degraded fallback — sufficient entropy for the 24h TTL window.
+  return `ship-so-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 interface SalesOrderLine {
   id: string;
@@ -28,6 +46,9 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // P0-02 rc3 — one key per form mount. Survives double-submit,
+  // React Strict Mode re-renders, and user double-click.
+  const idempotencyKeyRef = useRef<string>(mintIdempotencyKey());
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +66,8 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
         })) || [],
       ),
     );
+    // P0-02 rc3 — server's shipSalesOrderSchema consumes this field.
+    formData.append("idempotencyKey", idempotencyKeyRef.current);
 
     const result = await shipSalesOrderAction(formData);
 

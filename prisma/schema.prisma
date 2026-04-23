@@ -107,6 +107,16 @@ model Organization {
   integrations           Integration[]
   // Audit v1.3 §5.53 F-09 — durable per-task integration work queue.
   integrationTasks       IntegrationTask[]
+  // GOD MODE roadmap 2026-04-23 P0-02 — request-level idempotency for
+  // critical actions (SO ship, PO receive, transfer ship/receive).
+  idempotencyKeys        IdempotencyKey[]
+  // GOD MODE roadmap 2026-04-23 P0-04 — ADR-002 landed-cost per-line
+  // audit rows. One row per (movement, allocationType) — usually
+  // freight + duty + insurance + other = 4 rows per inbound line.
+  landedCostAllocations  LandedCostAllocation[]
+  // GOD MODE roadmap 2026-04-23 P1-02 — cross-provider webhook
+  // delivery ledger (dedup). See model comment for scope.
+  webhookDeliveryEvents  WebhookDeliveryEvent[]
   scheduledReports       ScheduledReport[]
   // Phase V4: new organization relations
   reasonCodes            ReasonCode[]
@@ -303,6 +313,8 @@ model User {
   createdMigrations   MigrationJob[]    @relation("MigrationCreatedBy")
   assignedPickTasks   PickTask[]
   transfersShipped    StockTransfer[]   @relation("TransferShippedBy")
+  // P0-04 — landed-cost audit rows applied by this user.
+  landedCostAllocations LandedCostAllocation[] @relation("LandedCostAppliedBy")
   transfersReceived   StockTransfer[]   @relation("TransferReceivedBy")
   serialHistories     SerialHistory[]
 
@@ -615,15 +627,24 @@ model StockMovement {
   reference           String?
   note                String?
   // Sprint 26 — PWA Sprint 4 Part B. Client-generated UUID that serves as
-  // the idempotency key for offline replay. Nullable because (a) online
-  // fast-path writes through the legacy FormData action don't need it,
-  // and (b) every movement inserted before Sprint 26 has `null` here. The
-  // compound unique index below guarantees that a replay from a queued
-  // op can never double-apply: the second insert violates the constraint
-  // and the action handler returns the existing row's id. Scoped by
-  // organizationId so a leaked key from one tenant can't collide with
-  // another tenant's key.
-  idempotencyKey      String?
+  // the idempotency key for offline replay. The compound unique index
+  // below guarantees that a replay from a queued op can never double-
+  // apply: the second insert violates the constraint and the action
+  // handler returns the existing row's id. Scoped by organizationId
+  // so a leaked key from one tenant can't collide with another tenant's.
+  //
+  // GOD MODE roadmap 2026-04-23 P0-03 — flipped NOT NULL.
+  //   - Pre-P0-03 this column was nullable. Postgres treats NULL != NULL
+  //     inside a unique index, so two concurrent writes without a key
+  //     both succeeded — defeating the purpose of the index.
+  //   - The postMovement seam (src/lib/movements/post.ts) now defaults
+  //     a runtime UUID when the caller omits one, so every write carries
+  //     a key before it reaches this column.
+  //   - Migration backfill: pre-existing NULL rows got `LEGACY:{id}`
+  //     via `deriveLegacyBackfillKey` (src/lib/movements/idempotency-key.ts).
+  //   - The `LEGACY:` prefix is reserved; the seam throws on any new
+  //     write that starts with it, so the sentinel space stays tidy.
+  idempotencyKey      String
   // Phase 5A — source-document backrefs. Both are additive and
   // nullable. Historical rows (pre-Phase-5A) have `null` for both
   // and are NOT backfilled — any report that filters on one of these
@@ -643,6 +664,22 @@ model StockMovement {
   reasonCodeId        String?
   serialNumberId      String?
   batchId             String?
+  // GOD MODE roadmap 2026-04-23 P0-04 — ADR-002 §5 landed-cost columns.
+  //
+  //   purchaseUnitCost — raw supplier price per unit at receive time.
+  //                      Audit trail: lets a report trace "what did
+  //                      we pay the supplier" separately from the
+  //                      downstream cost-layer unitCost.
+  //   landedUnitCost   — purchaseUnitCost + pro-rata freight/duty/
+  //                      insurance/other share / qty. This is the
+  //                      value the cost-posting hook (ADR-001)
+  //                      consumes when writing a CostLayer.
+  //
+  // Both nullable because pre-P0-04 movements didn't track them, and
+  // outbound movements (ISSUE, TRANSFER -1) consume cost from a
+  // CostLayer rather than stamping it here.
+  purchaseUnitCost    Decimal?           @db.Decimal(18, 6)
+  landedUnitCost      Decimal?           @db.Decimal(18, 6)
   createdAt           DateTime           @default(now())
   createdByUserId     String?
   organization        Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -686,6 +723,74 @@ enum StockMovementType {
   TRANSFER
   COUNT
   BIN_TRANSFER
+}
+
+// =========================
+// GOD MODE roadmap 2026-04-23 — P0-04 Landed Cost (ADR-002)
+// =========================
+//
+// The allocator at `src/lib/costing/landed.ts` splits header-level
+// freight/duty/insurance/other across PO lines on receive. This
+// model is the per-allocation audit log: for every (inbound
+// movement, cost type) pair we persist the share so that reports
+// and external accounting sync (QB, Xero) can break down landed
+// cost by category rather than only seeing a single lumped
+// landedUnitCost on the movement.
+//
+// Why a separate model (vs denormalizing onto StockMovement):
+//   - Four cost types (FREIGHT, DUTY, INSURANCE, OTHER) and a
+//     future "SERVICE_FEE"/"CUSTOMS_BROKER" don't warrant 4 more
+//     nullable Decimal columns on StockMovement.
+//   - Late allocations (ADR-002 §6) add rows with isRevaluation=true;
+//     that history is easier to query on its own table.
+//   - QB / Xero journal entries want one line per allocation type;
+//     reading from this table directly maps to the GL export.
+
+model LandedCostAllocation {
+  id               String         @id @default(cuid())
+  organizationId   String
+  purchaseOrderId  String?
+  // The inbound StockMovement this allocation applies to. Each
+  // PO line produces one movement at receive; each movement has
+  // up to 4 allocation rows (one per cost type). SetNull cascade
+  // so deleting a movement archives the allocation rather than
+  // discarding the audit trail.
+  sourceMovementId String
+  allocationType   AllocationType
+  allocationBasis  AllocationBasis
+  // Decimal(18, 6) matches StockMovement.landedUnitCost precision.
+  // Signed not needed — allocations are non-negative by
+  // construction (the allocator rejects negative inputs).
+  allocatedAmount  Decimal        @db.Decimal(18, 6)
+  // true when this row was written by the late-allocation path
+  // (ADR-002 §6). The initial-receive rows are false.
+  isRevaluation    Boolean        @default(false)
+  appliedAt        DateTime       @default(now())
+  appliedByUserId  String?
+  notes            String?
+
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull)
+  sourceMovement  StockMovement  @relation(fields: [sourceMovementId], references: [id], onDelete: Cascade)
+  appliedBy       User?          @relation("LandedCostAppliedBy", fields: [appliedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, purchaseOrderId])
+  @@index([organizationId, sourceMovementId])
+  @@index([organizationId, allocationType, appliedAt])
+}
+
+enum AllocationType {
+  FREIGHT
+  DUTY
+  INSURANCE
+  OTHER
+}
+
+enum AllocationBasis {
+  BY_VALUE
+  BY_QTY
+  BY_WEIGHT
+  BY_VOLUME
 }
 
 // =========================
@@ -947,11 +1052,38 @@ model PurchaseOrder {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   createdByUserId String?
+
+  // GOD MODE roadmap 2026-04-23 P0-04 — ADR-002 §5 landed-cost columns.
+  // Nullable because:
+  //   (a) pre-P0-04 POs did not capture these, and backfilling to 0
+  //       would be misleading — NULL semantically means "unknown /
+  //       not tracked" whereas 0 means "tracked but nil";
+  //   (b) header-level cost entry is a Pro+ feature (see plans.ts);
+  //       Free-tier POs leave these NULL and skip the allocator.
+  // Precision Decimal(18, 4) matches the ADR. The allocator handles
+  // the extra 2 decimals of internal precision in micro-dollars.
+  freightCost           Decimal?        @db.Decimal(18, 4)
+  dutyCost              Decimal?        @db.Decimal(18, 4)
+  insuranceCost         Decimal?        @db.Decimal(18, 4)
+  otherLandedCost       Decimal?        @db.Decimal(18, 4)
+  // Currency advisory only — the allocator assumes header + lines
+  // share a currency. Actual FX conversion is out of scope for P0-04
+  // and tracked as a separate ADR.
+  landedCostCurrency    String?         @default("USD")
+  // Allocation basis locks on PO approval (ADR-002 §7: basis
+  // change mid-PO is disallowed). Default BY_VALUE matches
+  // ADR-002 §4.
+  landedAllocationBasis AllocationBasis @default(BY_VALUE)
   organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   supplier        Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   warehouse       Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
   createdBy       User?               @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   lines           PurchaseOrderLine[]
+  // P0-04 — per-line audit rows materialized on receive by the
+  // allocator. One row per (lineItem, allocationType) — usually
+  // 4 rows per line (FREIGHT, DUTY, INSURANCE, OTHER) though lines
+  // with a $0 share in a category get a $0 row for auditability.
+  landedAllocations LandedCostAllocation[]
 
   @@unique([organizationId, poNumber])
   @@index([organizationId])
@@ -1201,6 +1333,67 @@ model ShopifyWebhookEvent {
 
   @@index([createdAt])
   @@index([shopDomain])
+}
+
+// =========================
+// GOD MODE roadmap 2026-04-23 — P1-02 WebhookDeliveryEvent
+// =========================
+//
+// Cross-provider delivery-dedup table. Pre-P1-02 only Shopify had
+// such a table (`ShopifyWebhookEvent` above); QuickBooks ingested
+// every incoming delivery without dedup, so an Intuit retry double-
+// applied entity updates. See audit dossier §P1-02 and roadmap.
+//
+// Relationship to `IntegrationWebhookEvent`:
+//   - `IntegrationWebhookEvent` (line 2052) is a SUBSCRIPTION
+//     registry — "which topics does this integration listen to".
+//   - This model is a per-INGRESS delivery ledger — "have we
+//     already processed this specific inbound request".
+// The two are orthogonal and must not be merged.
+//
+// Key derivation by provider:
+//   - Shopify:    externalId = X-Shopify-Webhook-Id header.
+//                 Shopify will continue to use `ShopifyWebhookEvent`
+//                 for back-compat; migrating it to this generic
+//                 table is tracked as a follow-up.
+//   - QuickBooks: externalId = sha256(body). Intuit retries with
+//                 the exact same payload + signature, so the body
+//                 hash is a stable delivery id.
+//   - Other providers (future): use the provider's own idempotency
+//                 header if present; fall back to sha256(body).
+//
+// We keep the table generic (no FK to Integration) because a
+// delivery may arrive before we've resolved it to an integration
+// row — or for a disconnected shop that we still want to ack-and-
+// drop instead of retry-storm back to the provider.
+
+model WebhookDeliveryEvent {
+  id             String   @id @default(cuid())
+  // Adapter slug (matches src/lib/integrations/<dir>).
+  provider       String
+  // Tenant resolved from the body if known at insert time.
+  // Nullable: an unrouted delivery (unknown shop / realm) still
+  // goes in so a retry-storm from the provider short-circuits.
+  organizationId String?
+  // Provider-unique delivery identifier. See provider notes above.
+  externalId     String
+  // Optional extra fingerprint when a provider emits a stable id
+  // AND we want paranoid double-hashing (defence against id
+  // collision). Currently unused; reserved for future.
+  bodyHash       String?
+  // Topic / event type for diagnostic filtering — e.g.
+  // "orders/create" (Shopify), "Item.update" (QuickBooks).
+  eventType      String?
+  receivedAt     DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  // Primary dedup key: the (provider, externalId) combo.
+  @@unique([provider, externalId])
+  // TTL sweep cron scans by receivedAt per-provider.
+  @@index([provider, receivedAt])
+  // Admin queries per-tenant.
+  @@index([organizationId, provider])
 }
 
 // =========================
@@ -2048,6 +2241,69 @@ model IntegrationTask {
   @@index([status, nextAttemptAt])
   // Admin DLQ views filter by org + provider.
   @@index([organizationId, integrationKind])
+}
+
+// =========================
+// GOD MODE roadmap 2026-04-23 — P0-02 Idempotency Key
+// =========================
+//
+// Request-level deduplication for critical write actions. Targets
+// the SO ship + PO receive + transfer ship/receive cluster where a
+// retry (network timeout, double-click, webhook replay) must NOT
+// produce two stock movements.
+//
+// Middleware: src/lib/idempotency/middleware.ts — `withIdempotency(cfg, fn)`.
+// Pattern: cache (keyHash, fingerprint, responseJson) under (orgId, action).
+//
+// State transitions:
+//   new request           → INSERT state='IN_FLIGHT'
+//   handler ok            → UPDATE state='COMPLETED', responseJson, completedAt
+//   handler err           → UPDATE state='FAILED', completedAt (row TTL'd; retry
+//                           on same key re-enters from FAILED)
+//   replay, COMPLETED     → return cached responseJson (if fingerprint matches)
+//   replay, mismatched    → throw IdempotencyConflictError (409 semantics)
+//   replay, IN_FLIGHT     → throw IdempotencyInProgressError (409 semantics)
+//
+// TTL: middleware sets expiresAt = now + 24h by default (overridable
+// per-action). A cron sweep evicts expired rows so the table stays
+// bounded. The sweep is a follow-up roadmap item, not a blocker.
+
+model IdempotencyKey {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  // sha256(`${actionName}:${key}`). Hashing keeps arbitrarily long or
+  // opaque keys small and uniform; the raw key never lives at rest.
+  keyHash            String
+  // Dotted identifier, e.g. "shipSalesOrder" | "receivePurchaseOrder"
+  // | "shipTransfer" | "receiveTransfer". Two actions can therefore
+  // safely reuse the same raw key without colliding.
+  actionName         String
+  // sha256 of the canonicalized request payload. Detects the classic
+  // "same idempotency key, different body" fraud/bug condition — we
+  // return 409 in that case instead of silently serving a stale
+  // cached response.
+  requestFingerprint String
+  // Cached response body. JSON because action results are arbitrary
+  // shapes (ActionResult | { ok, id } | …). Null while state='IN_FLIGHT'
+  // and on FAILED rows.
+  responseJson       Json?
+  // "IN_FLIGHT" | "COMPLETED" | "FAILED". Follows the IntegrationTask
+  // String-as-enum precedent (see line 2031) to avoid a Prisma enum
+  // drift migration every time we add a state.
+  state              String    @default("IN_FLIGHT")
+  createdAt          DateTime  @default(now())
+  completedAt        DateTime?
+  // TTL. A cron sweep evicts expired rows so the table stays bounded.
+  expiresAt          DateTime
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Primary lookup path: (org, keyHash) unique.
+  @@unique([organizationId, keyHash])
+  // TTL sweep cron scans by expiresAt.
+  @@index([expiresAt])
+  // Admin queries group by action within an org, newest first.
+  @@index([organizationId, actionName, createdAt])
 }
 
 // =========================

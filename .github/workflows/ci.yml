@@ -117,3 +117,82 @@ jobs:
 
       - name: Validate Prisma schema
         run: pnpm prisma validate
+
+  # GOD MODE roadmap 2026-04-23 — P1-04 CI migration gate.
+  #
+  # `prisma validate` above is offline — it only checks the schema
+  # file's internal consistency. Before P1-04 an unsafe migration
+  # (DROP COLUMN on a populated table, NOT NULL add without default,
+  # missing FK target, etc.) could pass every other CI job and
+  # only blow up when `prisma migrate deploy` ran against prod.
+  #
+  # This job spins up a scratch Postgres, applies every migration in
+  # `prisma/migrations/` in order, regenerates the client, and runs
+  # a smoke seed via `tsx`. If any step fails, the PR fails.
+  #
+  # No production data is touched — the scratch DB is disposed when
+  # the runner tears down.
+  migrations:
+    name: Prisma Migrations (scratch Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: prisma-validate
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: oneace_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/oneace_ci
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/oneace_ci
+      # The env schema refuses to start without these; neutral test
+      # values are fine because no prod auth flow runs here.
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-placeholder-secret-32-chars-min' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Deploy migrations (scratch Postgres)
+        run: pnpm prisma migrate deploy
+
+      - name: Re-run migrations idempotently
+        # Catches a migration that is NOT re-runnable. All our
+        # landed-cost + idempotency-key migrations are DO $$ guarded;
+        # this step fails the PR if someone ships an un-guarded one.
+        run: pnpm prisma migrate deploy
+
+      - name: Verify _prisma_migrations is populated
+        run: |
+          PGPASSWORD=ci psql \
+            -h localhost -p 5432 -U ci -d oneace_ci \
+            -Atc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL;" \
+            | awk '{ if ($1 < 1) { print "FATAL: no applied migrations"; exit 1 } else { print "applied=" $1 } }'

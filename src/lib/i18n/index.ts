@@ -14,6 +14,8 @@ import {
   getRegionConfig,
 } from "./config";
 import { type Messages, en } from "./messages/en";
+import { tr } from "./messages/tr";
+import { tr } from "./messages/tr";
 
 /**
  * Locale → messages map. Add new imports here when you add a new language file.
@@ -27,6 +29,10 @@ import { type Messages, en } from "./messages/en";
  */
 const catalog: Record<Locale, Messages> = {
   en,
+  // P1-07 — Turkish dictionary. See src/lib/i18n/messages/tr.ts for
+  // coverage scope (app + common + permissions + notifications today;
+  // other surfaces inherit from en).
+  tr,
 };
 
 function isSupportedLocale(value: string | undefined | null): value is Locale {

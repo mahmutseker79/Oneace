@@ -20,7 +20,7 @@
  * @see https://developer.intuit.com/app/developer/qbo/docs/develop/webhooks
  */
 
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { db } from "@/lib/db";
 // Audit v1.3 §5.53 F-09 B-2: QBO webhooks now enqueue into the
 // durable IntegrationTask queue. The cron drain loop is the retry
@@ -104,6 +104,53 @@ export async function POST(request: NextRequest) {
         expectedLength: expected.length,
       });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    // ── 2.5 Delivery dedup — P1-02 ────────────────────────────
+    //
+    // Intuit retries on any non-2xx response AND occasionally on
+    // 2xx; without dedup the same payload was reprocessed N times,
+    // double-applying every entity update. Key derivation: QBO does
+    // not supply a stable per-delivery header, but retries carry the
+    // exact same body + signature — so sha256(body) is a stable,
+    // collision-resistant delivery id. The (provider, externalId)
+    // unique index on WebhookDeliveryEvent turns the retry into a
+    // P2002 we intercept and ack with 200 deduped.
+    //
+    // The insert happens BEFORE we parse or enqueue, so a retry of
+    // a malformed body still deduplicates. The row's organizationId
+    // is left NULL here (we don't know the realm until we parse);
+    // the row is still a useful retry-blocker for that payload.
+    const bodyHash = createHash("sha256").update(body, "utf8").digest("hex");
+    try {
+      await db.webhookDeliveryEvent.create({
+        data: {
+          provider: "quickbooks",
+          externalId: bodyHash,
+          bodyHash,
+          eventType: "qbo.eventNotifications",
+        },
+      });
+    } catch (dedupErr) {
+      // P2002 = duplicate delivery. Ack 200 so Intuit stops
+      // retrying; log at info level because this is a healthy
+      // steady-state signal (retries happen) not an alert.
+      if (
+        typeof dedupErr === "object" &&
+        dedupErr !== null &&
+        (dedupErr as { code?: unknown }).code === "P2002"
+      ) {
+        logger.info("Duplicate QBO webhook ignored (P1-02 dedup)", {
+          bodyHashPrefix: bodyHash.slice(0, 12),
+        });
+        return NextResponse.json({ ok: true, deduped: true });
+      }
+      // Any other DB error: log and keep going — the dedup table
+      // is best-effort; we prefer to process than to bounce a
+      // delivery because of an infrastructure hiccup.
+      logger.warn("QBO webhook dedup insert failed — proceeding without guard", {
+        error: dedupErr,
+      });
     }
 
     // ── 3. Parse payload ──────────────────────────────────────

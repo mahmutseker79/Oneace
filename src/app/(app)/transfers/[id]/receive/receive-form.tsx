@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,15 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ReceiveTransferInput } from "@/lib/validation/stock-transfer";
 
 import { receiveTransferAction } from "../../actions";
+
+// GOD MODE roadmap P0-02 rc3 — per-form-mount idempotency key.
+// See the ship page for the full rationale.
+function mintIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `recv-tx-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 type Item = {
   id: string;
@@ -40,6 +49,8 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  // P0-02 rc3 — stable across re-renders and user double-clicks.
+  const idempotencyKeyRef = useRef<string>(mintIdempotencyKey());
 
   // State for received quantities
   const [receivedByLine, setReceivedByLine] = useState<Record<string, number>>(
@@ -86,6 +97,9 @@ export function ReceiveForm({ transferId, lines }: ReceiveFormProps) {
         transferId,
         lines: receiveLines,
         note: note ?? null,
+        // P0-02 rc3 — server wraps the transaction in
+        // withIdempotency keyed on this UUID.
+        idempotencyKey: idempotencyKeyRef.current,
       };
 
       const result = await receiveTransferAction(input);

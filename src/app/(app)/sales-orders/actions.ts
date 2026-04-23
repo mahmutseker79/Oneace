@@ -6,6 +6,19 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc2): StockMovement inserts must flow through
+// the postMovement seam so that future cost-attribution (ADR-001
+// FIFO/WAC) and idempotency middleware hook in a single place.
+import { postMovement } from "@/lib/movements";
+// GOD MODE roadmap P0-02 (v1.6.1 rc2): shipSalesOrderAction wraps its
+// body in withIdempotency. UI mints a UUID per form mount and posts it
+// as `idempotencyKey`. Legacy callers without a key pass through without
+// caching — no behaviour change for them.
+import {
+  IdempotencyConflictError,
+  IdempotencyInProgressError,
+  withIdempotency,
+} from "@/lib/idempotency/middleware";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import {
@@ -449,6 +462,11 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
   const parsed = shipSalesOrderSchema.safeParse({
     salesOrderId: raw.salesOrderId,
     lines,
+    // P0-02: pulled from the FormData field named `idempotencyKey`.
+    // UI mints a UUID per form mount and emits it as a hidden input;
+    // if missing, schema coerces "" → null and the middleware
+    // passes through without caching (legacy-safe).
+    idempotencyKey: typeof raw.idempotencyKey === "string" ? raw.idempotencyKey : undefined,
   });
   if (!parsed.success) {
     return {
@@ -487,6 +505,21 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
   }
 
   try {
+    // P0-02 idempotency wrapper. The whole ship path — transaction +
+    // audit + revalidate — is inside the fn, so a cached replay
+    // returns the same ActionResult without re-running any of it.
+    // Key sourced from the validated input (UI mints per form mount).
+    return await withIdempotency(
+      {
+        organizationId: orgId,
+        actionName: "shipSalesOrder",
+        key: input.idempotencyKey,
+        payload: {
+          salesOrderId: input.salesOrderId,
+          lines: input.lines,
+        },
+      },
+      async () => {
     await db.$transaction(async (tx) => {
       const lineMap = new Map(existing.lines.map((l: (typeof existing.lines)[0]) => [l.id, l]));
 
@@ -503,19 +536,23 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
         }
 
         if (delta > 0) {
-          // Create ISSUE movement
-          await tx.stockMovement.create({
-            data: {
-              organizationId: orgId,
-              itemId: line.itemId,
-              warehouseId: line.warehouseId,
-              type: "ISSUE",
-              quantity: delta,
-              direction: -1,
-              reference: `SO-${existing.orderNumber}`,
-              note: "Sales order shipment",
-              createdByUserId: session.user.id,
-            },
+          // rc2: migrated from direct `tx.stockMovement.create(...)` to
+          // the seam. The seam drops unknown forward-compat fields and
+          // fires the cost-posting hook (no-op today; ADR-001 FIFO/WAC
+          // attaches here when Phase 1c ships). Note: SO ship still
+          // lacks idempotency — P0-02 addresses that in rc5 via the
+          // `withIdempotency()` middleware, not here. This commit is
+          // pure seam migration; no behaviour change.
+          await postMovement(tx, {
+            organizationId: orgId,
+            itemId: line.itemId,
+            warehouseId: line.warehouseId,
+            type: "ISSUE",
+            quantity: delta,
+            direction: -1,
+            reference: `SO-${existing.orderNumber}`,
+            note: "Sales order shipment",
+            createdByUserId: session.user.id,
           });
 
           // Decrement both quantity and reservedQty
@@ -586,7 +623,28 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
     revalidatePath("/items");
     revalidatePath("/dashboard");
     return { ok: true, id: existing.id };
-  } catch (_error) {
+      },
+    );
+  } catch (error) {
+    // 409 semantics for the two idempotency-error kinds. UI can
+    // surface these differently from a generic ship failure (e.g.
+    // "Your previous attempt is still running" vs "Failed to ship").
+    if (error instanceof IdempotencyConflictError) {
+      return {
+        ok: false,
+        error:
+          t.salesOrders?.errors?.idempotencyConflict ??
+          "This idempotency key was already used with a different payload.",
+      };
+    }
+    if (error instanceof IdempotencyInProgressError) {
+      return {
+        ok: false,
+        error:
+          t.salesOrders?.errors?.idempotencyInProgress ??
+          "A previous attempt with the same key is still running.",
+      };
+    }
     return { ok: false, error: t.salesOrders?.errors?.shipFailed ?? "Failed to ship" };
   }
 }

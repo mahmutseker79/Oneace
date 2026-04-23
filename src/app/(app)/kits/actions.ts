@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc3): StockMovement inserts must flow through
+// the postMovement seam. 4 callsites: assemble (issue components + receipt
+// parent) and disassemble (issue parent + receipt components).
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
@@ -262,18 +266,17 @@ export async function assembleKitAction(formData: FormData): Promise<ActionResul
       for (const comp of kit.components) {
         const delta = Number(comp.quantity) * input.quantity;
 
-        await tx.stockMovement.create({
-          data: {
-            organizationId: orgId,
-            itemId: comp.componentItemId,
-            warehouseId: input.warehouseId,
-            type: "ISSUE",
-            quantity: delta,
-            direction: -1,
-            reference: `KIT-${kit.id}`,
-            note: input.note,
-            createdByUserId: session.user.id,
-          },
+        // rc3 seam — assemble: issue component.
+        await postMovement(tx, {
+          organizationId: orgId,
+          itemId: comp.componentItemId,
+          warehouseId: input.warehouseId,
+          type: "ISSUE",
+          quantity: delta,
+          direction: -1,
+          reference: `KIT-${kit.id}`,
+          note: input.note,
+          createdByUserId: session.user.id,
         });
 
         await upsertStockLevel(tx, {
@@ -284,19 +287,17 @@ export async function assembleKitAction(formData: FormData): Promise<ActionResul
         });
       }
 
-      // Receipt parent item
-      await tx.stockMovement.create({
-        data: {
-          organizationId: orgId,
-          itemId: kit.parentItemId,
-          warehouseId: input.warehouseId,
-          type: "RECEIPT",
-          quantity: input.quantity,
-          direction: 1,
-          reference: `KIT-${kit.id}`,
-          note: input.note,
-          createdByUserId: session.user.id,
-        },
+      // Receipt parent item. rc3 seam — assemble: receive parent.
+      await postMovement(tx, {
+        organizationId: orgId,
+        itemId: kit.parentItemId,
+        warehouseId: input.warehouseId,
+        type: "RECEIPT",
+        quantity: input.quantity,
+        direction: 1,
+        reference: `KIT-${kit.id}`,
+        note: input.note,
+        createdByUserId: session.user.id,
       });
 
       await upsertStockLevel(tx, {
@@ -381,19 +382,17 @@ export async function disassembleKitAction(formData: FormData): Promise<ActionRe
         throw new Error("Insufficient kit stock to disassemble");
       }
 
-      // Issue parent item
-      await tx.stockMovement.create({
-        data: {
-          organizationId: orgId,
-          itemId: kit.parentItemId,
-          warehouseId: input.warehouseId,
-          type: "ISSUE",
-          quantity: input.quantity,
-          direction: -1,
-          reference: `KIT-${kit.id}`,
-          note: input.note,
-          createdByUserId: session.user.id,
-        },
+      // Issue parent item. rc3 seam — disassemble: issue parent.
+      await postMovement(tx, {
+        organizationId: orgId,
+        itemId: kit.parentItemId,
+        warehouseId: input.warehouseId,
+        type: "ISSUE",
+        quantity: input.quantity,
+        direction: -1,
+        reference: `KIT-${kit.id}`,
+        note: input.note,
+        createdByUserId: session.user.id,
       });
 
       await upsertStockLevel(tx, {
@@ -407,18 +406,17 @@ export async function disassembleKitAction(formData: FormData): Promise<ActionRe
       for (const comp of kit.components) {
         const delta = Number(comp.quantity) * input.quantity;
 
-        await tx.stockMovement.create({
-          data: {
-            organizationId: orgId,
-            itemId: comp.componentItemId,
-            warehouseId: input.warehouseId,
-            type: "RECEIPT",
-            quantity: delta,
-            direction: 1,
-            reference: `KIT-${kit.id}`,
-            note: input.note,
-            createdByUserId: session.user.id,
-          },
+        // rc3 seam — disassemble: receipt component.
+        await postMovement(tx, {
+          organizationId: orgId,
+          itemId: comp.componentItemId,
+          warehouseId: input.warehouseId,
+          type: "RECEIPT",
+          quantity: delta,
+          direction: 1,
+          reference: `KIT-${kit.id}`,
+          note: input.note,
+          createdByUserId: session.user.id,
         });
 
         await upsertStockLevel(tx, {

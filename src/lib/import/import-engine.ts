@@ -16,6 +16,15 @@ import type { FieldMapping } from "@/lib/import/field-mapper";
 import { RowProcessor } from "@/lib/import/row-processor";
 import type { ValidatedRow } from "@/lib/import/row-processor";
 import { logger } from "@/lib/logger";
+// GOD MODE roadmap P0-01 (rc6): bulk-import stock movement insertion
+// flows through the seam. NOTE: this loop is pre-existing non-
+// transactional batch — each row is persisted independently. The seam
+// accepts either a `Prisma.TransactionClient` or the base `PrismaClient`
+// (structural typing on `.stockMovement.create`). Migrating here does
+// NOT introduce a transaction wrapper; the atomicity trade-off is a
+// separate question tracked as a day-8-30 hardening item (see
+// roadmap P1-03 / test-coverage-raise).
+import { postMovement } from "@/lib/movements";
 
 export interface ParsedFile {
   headers: string[];
@@ -449,16 +458,20 @@ export class ImportEngine {
         ? (typeStr as "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER" | "COUNT" | "BIN_TRANSFER")
         : ("ADJUSTMENT" as const);
 
-      await db.stockMovement.create({
-        data: {
-          organizationId,
-          itemId: item.id,
-          warehouseId: warehouse.id,
-          type: movementType,
-          quantity: typeof data.quantity === "number" ? data.quantity : 0,
-          direction: 1,
-          note: typeof data.notes === "string" ? data.notes : undefined,
-        },
+      // rc6 seam — passes `db` in place of a tx client (structural
+      // TxClient on `.stockMovement.create`). Bulk-import remains
+      // non-atomic per the pre-existing design; see the import header
+      // comment above. The seam runs the cost-posting hook (no-op today;
+      // FIFO/WAC when ADR-001 Phase 1c ships) uniformly with all other
+      // movement writes.
+      await postMovement(db, {
+        organizationId,
+        itemId: item.id,
+        warehouseId: warehouse.id,
+        type: movementType,
+        quantity: typeof data.quantity === "number" ? data.quantity : 0,
+        direction: 1,
+        note: typeof data.notes === "string" ? data.notes : undefined,
       });
     }
   }

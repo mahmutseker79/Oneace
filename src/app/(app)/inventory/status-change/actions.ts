@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc4): status-change movement routes through the seam.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
@@ -107,21 +109,18 @@ export async function changeStockStatusAction(
 
   try {
     const result = await db.$transaction(async (tx) => {
-      // Create a STATUS_CHANGE movement to track the transition
-      const movement = await tx.stockMovement.create({
-        data: {
-          organizationId: orgId,
-          itemId: data.itemId,
-          warehouseId: data.warehouseId,
-          type: "ADJUSTMENT",
-          quantity: data.quantity,
-          direction: 1, // Direction is always +1 for status change (reference only)
-          reference: `status-${data.fromStatus}-to-${data.toStatus}`,
-          note: data.note ?? `Status change: ${data.fromStatus} → ${data.toStatus}`,
-          createdByUserId: session.user.id,
-          reasonCodeId: data.reasonCodeId,
-        },
-        select: { id: true },
+      // Create a STATUS_CHANGE movement to track the transition. rc4 seam.
+      const movement = await postMovement(tx, {
+        organizationId: orgId,
+        itemId: data.itemId,
+        warehouseId: data.warehouseId,
+        type: "ADJUSTMENT",
+        quantity: data.quantity,
+        direction: 1, // Direction is always +1 for status change (reference only)
+        reference: `status-${data.fromStatus}-to-${data.toStatus}`,
+        note: data.note ?? `Status change: ${data.fromStatus} → ${data.toStatus}`,
+        createdByUserId: session.user.id,
+        reasonCodeId: data.reasonCodeId,
       });
 
       // Decrease from the old status

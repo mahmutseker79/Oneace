@@ -7,6 +7,8 @@ import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc4): new-transfer flow routes through the seam.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
@@ -176,21 +178,19 @@ export async function createTransferAction(
 
     try {
       const movement = await db.$transaction(async (tx) => {
-        const created = await tx.stockMovement.create({
-          data: {
-            organizationId: orgId,
-            itemId: line.itemId,
-            warehouseId: fromWarehouseId,
-            toWarehouseId,
-            type: "TRANSFER",
-            quantity: line.quantity,
-            direction: 1,
-            reference: reference ?? null,
-            note: note ?? null,
-            createdByUserId: userId,
-            idempotencyKey,
-          },
-          select: { id: true },
+        // rc4 seam — downstream uses `.id` only.
+        const created = await postMovement(tx, {
+          organizationId: orgId,
+          itemId: line.itemId,
+          warehouseId: fromWarehouseId,
+          toWarehouseId,
+          type: "TRANSFER",
+          quantity: line.quantity,
+          direction: 1,
+          reference: reference ?? null,
+          note: note ?? null,
+          createdByUserId: userId,
+          idempotencyKey,
         });
 
         // Debit source

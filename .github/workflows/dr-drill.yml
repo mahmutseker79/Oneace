@@ -1,39 +1,51 @@
-# v1.2 P2 §5.38 — monthly DR drill workflow skeleton.
+# GOD MODE roadmap 2026-04-23 — P1-06 DR drill (Neon API wired).
 #
-# Runs a restore-to-disposable-branch drill on a schedule so we always
-# have fresh evidence for the RTO/RPO promises in
-# `docs/backup-strategy.md`. The workflow is *intentionally* a skeleton
-# at this stage — the first invocation runs with DRY_RUN=true by
-# default, which means it only exercises the tooling (Neon API
-# availability, prisma schema validity, Node toolchain) without
-# actually creating a branch or shipping data. Once the operator is
-# comfortable it's deterministic, the monthly schedule flips DRY_RUN
-# off and records real elapsed times to `docs/DR-drill-log.md`.
+# Was: v1.2 P2 §5.38 skeleton with TODO curl calls and DRY_RUN=true
+#      default. Drill claimed RTO ≈ 2-3h without ever having been
+#      measured.
 #
-# Gated by secrets (not yet required):
-#   - NEON_API_KEY       — personal/project-level API token
-#   - NEON_PROJECT_ID    — the production Neon project id
-#   - BETTER_AUTH_SECRET — reused from CI secret store
+# Now: real branch create → migrate-deploy + vitest → branch delete,
+#      with elapsed-time recording to docs/DR-drill-log.md on every
+#      live run. Weekly cadence (was monthly) so the log stays fresh
+#      enough to spot drift.
 #
-# Until the secrets are configured, the workflow short-circuits with a
-# printed "secrets missing — skipping" message so it never fails CI.
+# Secrets required for a LIVE drill:
+#   - NEON_API_KEY       personal or project-scoped API token
+#   - NEON_PROJECT_ID    production Neon project id
+#   - BETTER_AUTH_SECRET reused from CI secret store (the app's
+#                        env schema refuses to start without it)
+#
+# Optional env overrides with sensible defaults:
+#   NEON_ROLE_NAME       default: "neondb_owner"
+#   NEON_DATABASE_NAME   default: "neondb"
+#   NEON_PARENT_BRANCH_ID optional — if set, the drill branches off
+#                        this branch at its HEAD. Otherwise Neon
+#                        picks the project's default (production).
+#
+# Safety:
+#   - Secrets gate short-circuits the whole run when the two required
+#     ones are missing; dry-run still works so the tooling exercise
+#     path stays green on forks.
+#   - `always()` cleanup step deletes the branch whether the drill
+#     passes or fails, so we don't leak Neon storage.
+#   - One-shot concurrency group — a second trigger queues behind
+#     the first instead of racing.
 
 name: DR Drill
 
 on:
-  # Manual invocation — the *only* supported path for live drills.
-  # Flip `dry_run` to `false` when you want a real restore.
   workflow_dispatch:
     inputs:
       dry_run:
         description: "Skip Neon branch creation — exercise the tooling only."
         required: false
         type: boolean
-        default: true
-  # Monthly on the 1st at 06:00 UTC (~ 09:00 TRT) — runs with DRY_RUN=true
-  # until operator comfort warrants a live monthly cadence.
+        default: false
   schedule:
-    - cron: "0 6 1 * *"
+    # Weekly on Monday at 06:00 UTC (~ 09:00 TRT). Was monthly in
+    # the skeleton; moved to weekly in P1-06 so the RTO/RPO numbers
+    # in docs/DR-drill-log.md stay within a week-old window.
+    - cron: "0 6 * * 1"
 
 concurrency:
   group: dr-drill
@@ -44,13 +56,26 @@ jobs:
     name: DR Drill (restore-to-branch)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Needed so the "Append to DR-drill-log.md" step can push the
+    # metric back to main. A dedicated PAT with contents:write is
+    # nicer long-term — tracked as a follow-up hardening item.
+    permissions:
+      contents: write
 
     env:
-      DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+      NEON_ROLE_NAME: ${{ secrets.NEON_ROLE_NAME || 'neondb_owner' }}
+      NEON_DATABASE_NAME: ${{ secrets.NEON_DATABASE_NAME || 'neondb' }}
+      NEON_API_BASE: "https://console.neon.tech/api/v2"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Needed so the log-append step can git push a single commit.
+          fetch-depth: 0
 
       - name: Gate on required secrets
         id: gate
@@ -66,13 +91,13 @@ jobs:
         if: steps.gate.outputs.secrets_missing == 'false'
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.12.0
 
       - name: Setup Node
         if: steps.gate.outputs.secrets_missing == 'false'
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "22"
           cache: pnpm
 
       - name: Install dependencies
@@ -83,20 +108,100 @@ jobs:
         if: steps.gate.outputs.secrets_missing == 'false'
         run: pnpm prisma validate
 
+      - name: Record drill start (UTC)
+        if: steps.gate.outputs.secrets_missing == 'false'
+        id: start
+        run: |
+          START_EPOCH=$(date -u +%s)
+          START_ISO=$(date -u -d "@${START_EPOCH}" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "epoch=$START_EPOCH" >> "$GITHUB_OUTPUT"
+          echo "iso=$START_ISO"     >> "$GITHUB_OUTPUT"
+          echo "Drill starting at $START_ISO"
+
       - name: Create ephemeral Neon branch
         if: steps.gate.outputs.secrets_missing == 'false' && env.DRY_RUN == 'false'
         id: neon_branch
         run: |
-          BRANCH_NAME="drill-$(date -u +%Y%m%dT%H%M%SZ)"
+          set -euo pipefail
+          BRANCH_NAME="drill-$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_RUN_ID}"
           echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
-          # TODO: call Neon API to create branch and capture connection string.
-          # curl -sS -X POST \
-          #   -H "Authorization: Bearer ${{ secrets.NEON_API_KEY }}" \
-          #   -H "Content-Type: application/json" \
-          #   "https://console.neon.tech/api/v2/projects/${{ secrets.NEON_PROJECT_ID }}/branches" \
-          #   -d '{"branch":{"name":"'"$BRANCH_NAME"'"}}'
-          echo "::notice ::Branch creation not yet wired — see docs/DR-drill-log.md for runbook."
-          exit 1
+
+          # Optional parent branch: defaults to project default when
+          # NEON_PARENT_BRANCH_ID is unset. The request body shape
+          # follows https://api-docs.neon.tech/reference/createprojectbranch.
+          PARENT_ARG=""
+          if [ -n "${{ secrets.NEON_PARENT_BRANCH_ID || '' }}" ]; then
+            PARENT_ARG=", \"parent_id\": \"${{ secrets.NEON_PARENT_BRANCH_ID }}\""
+          fi
+          REQUEST_BODY=$(cat <<EOF
+          {
+            "branch": { "name": "$BRANCH_NAME"$PARENT_ARG },
+            "endpoints": [{ "type": "read_write" }]
+          }
+          EOF
+          )
+
+          HTTP_STATUS=$(curl -sS -o neon_create.json -w '%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer $NEON_API_KEY" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            "$NEON_API_BASE/projects/$NEON_PROJECT_ID/branches" \
+            -d "$REQUEST_BODY")
+
+          if [ "$HTTP_STATUS" != "201" ] && [ "$HTTP_STATUS" != "200" ]; then
+            echo "::error ::Neon branch-create failed (HTTP $HTTP_STATUS)"
+            cat neon_create.json
+            exit 1
+          fi
+
+          BRANCH_ID=$(jq -r '.branch.id' neon_create.json)
+          if [ -z "$BRANCH_ID" ] || [ "$BRANCH_ID" = "null" ]; then
+            echo "::error ::Could not parse branch id from Neon response"
+            cat neon_create.json
+            exit 1
+          fi
+          echo "branch_id=$BRANCH_ID" >> "$GITHUB_OUTPUT"
+          echo "::notice ::Created Neon branch $BRANCH_NAME ($BRANCH_ID)"
+
+          # Fetch the connection URI. Neon takes a few seconds to
+          # provision the endpoint; retry up to 6 × 5s.
+          CONN_URI=""
+          for i in 1 2 3 4 5 6; do
+            sleep 5
+            HTTP_STATUS=$(curl -sS -o neon_conn.json -w '%{http_code}' \
+              -H "Authorization: Bearer $NEON_API_KEY" \
+              -H "Accept: application/json" \
+              "$NEON_API_BASE/projects/$NEON_PROJECT_ID/connection_uri?branch_id=$BRANCH_ID&database_name=$NEON_DATABASE_NAME&role_name=$NEON_ROLE_NAME&pooled=true")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              CONN_URI=$(jq -r '.uri' neon_conn.json)
+              if [ -n "$CONN_URI" ] && [ "$CONN_URI" != "null" ]; then
+                break
+              fi
+            fi
+            echo "Waiting for endpoint readiness (attempt $i)…"
+          done
+
+          if [ -z "$CONN_URI" ] || [ "$CONN_URI" = "null" ]; then
+            echo "::error ::Connection URI not available after 30s"
+            cat neon_conn.json
+            exit 1
+          fi
+
+          # Pooled URI is fine for Prisma runtime; unpooled for
+          # migrations (Prisma migrate deploy wants a direct
+          # connection). Ask Neon for the unpooled one too.
+          HTTP_STATUS=$(curl -sS -o neon_conn_direct.json -w '%{http_code}' \
+            -H "Authorization: Bearer $NEON_API_KEY" \
+            -H "Accept: application/json" \
+            "$NEON_API_BASE/projects/$NEON_PROJECT_ID/connection_uri?branch_id=$BRANCH_ID&database_name=$NEON_DATABASE_NAME&role_name=$NEON_ROLE_NAME&pooled=false")
+          DIRECT_URI=$(jq -r '.uri' neon_conn_direct.json)
+
+          # Mask and export via GITHUB_OUTPUT.
+          echo "::add-mask::$CONN_URI"
+          echo "::add-mask::$DIRECT_URI"
+          echo "database_url=$CONN_URI"   >> "$GITHUB_OUTPUT"
+          echo "direct_url=$DIRECT_URI"   >> "$GITHUB_OUTPUT"
 
       - name: Migrate + smoke against branch
         if: steps.gate.outputs.secrets_missing == 'false' && env.DRY_RUN == 'false'
@@ -105,16 +210,86 @@ jobs:
           DIRECT_URL: ${{ steps.neon_branch.outputs.direct_url }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
         run: |
+          set -euo pipefail
+          pnpm db:generate
           pnpm prisma migrate deploy
           pnpm vitest run
 
-      - name: Destroy ephemeral Neon branch
-        if: always() && steps.neon_branch.outputs.branch_name != ''
+      - name: Record drill end + elapsed
+        if: always() && steps.gate.outputs.secrets_missing == 'false' && env.DRY_RUN == 'false' && steps.start.outputs.epoch != ''
+        id: elapsed
         run: |
-          echo "::notice ::Branch cleanup not yet wired — run `neon branches delete ${{ steps.neon_branch.outputs.branch_name }}` manually."
+          END_EPOCH=$(date -u +%s)
+          END_ISO=$(date -u -d "@${END_EPOCH}" +"%Y-%m-%dT%H:%M:%SZ")
+          ELAPSED=$((END_EPOCH - ${{ steps.start.outputs.epoch }}))
+          ELAPSED_MIN=$((ELAPSED / 60))
+          ELAPSED_SEC=$((ELAPSED % 60))
+          OUTCOME="${{ job.status }}"
+          echo "elapsed=${ELAPSED}" >> "$GITHUB_OUTPUT"
+          echo "iso_end=$END_ISO"   >> "$GITHUB_OUTPUT"
+          echo "human=${ELAPSED_MIN}m${ELAPSED_SEC}s" >> "$GITHUB_OUTPUT"
+
+      - name: Append entry to docs/DR-drill-log.md
+        if: always() && steps.gate.outputs.secrets_missing == 'false' && env.DRY_RUN == 'false' && steps.elapsed.outputs.elapsed != ''
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          LOG=docs/DR-drill-log.md
+          RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          OUTCOME="${{ job.status }}"
+          DATE_ONLY=$(echo "${{ steps.start.outputs.iso }}" | cut -c1-10)
+
+          # Existing log format (see top of the file) — level-2
+          # heading per drill, narrative sub-sections. We append a
+          # new entry at the END of the file; the doc's comment
+          # header says "keep newest on top" but an appender can't
+          # safely rewrite the head without a parser, so we append
+          # here and let a human migrator re-order on the next
+          # human edit. The freshness heuristic in any future test
+          # should scan for the most recent ISO date, not the head.
+          {
+            echo ""
+            echo "## ${DATE_ONLY} — Automated drill run ${GITHUB_RUN_ID}"
+            echo ""
+            echo "**Status:** ${OUTCOME}"
+            echo "**Started:** ${{ steps.start.outputs.iso }}"
+            echo "**Ended:** ${{ steps.elapsed.outputs.iso_end }}"
+            echo "**Elapsed:** ${{ steps.elapsed.outputs.human }}"
+            echo "**Operator:** github-actions[bot]"
+            echo "**Run URL:** ${RUN_URL}"
+            echo ""
+            echo "Automated by .github/workflows/dr-drill.yml (P1-06). Real Neon branch"
+            echo "create → \`prisma migrate deploy\` → \`pnpm vitest run\` → branch delete."
+          } >> "$LOG"
+
+          git add "$LOG"
+          git commit -m "chore(dr-drill): log ${OUTCOME} @ ${{ steps.elapsed.outputs.human }} — run ${GITHUB_RUN_ID} [skip ci]"
+          git push
+
+      - name: Destroy ephemeral Neon branch
+        if: always() && steps.neon_branch.outputs.branch_id != ''
+        run: |
+          set -euo pipefail
+          BRANCH_ID="${{ steps.neon_branch.outputs.branch_id }}"
+          HTTP_STATUS=$(curl -sS -o neon_delete.json -w '%{http_code}' \
+            -X DELETE \
+            -H "Authorization: Bearer $NEON_API_KEY" \
+            -H "Accept: application/json" \
+            "$NEON_API_BASE/projects/$NEON_PROJECT_ID/branches/$BRANCH_ID")
+          # 200 or 202 both indicate a successful delete/accepted-for-delete.
+          case "$HTTP_STATUS" in
+            200|202)
+              echo "::notice ::Deleted Neon branch $BRANCH_ID"
+              ;;
+            *)
+              echo "::warning ::Branch delete returned HTTP $HTTP_STATUS — inspect Neon console manually."
+              cat neon_delete.json || true
+              ;;
+          esac
 
       - name: Report
         if: always()
         run: |
-          echo "DR drill status: DRY_RUN=$DRY_RUN, secrets_missing=${{ steps.gate.outputs.secrets_missing }}"
-          echo "Append a real entry to docs/DR-drill-log.md once a live drill runs."
+          echo "DR drill status: DRY_RUN=$DRY_RUN, secrets_missing=${{ steps.gate.outputs.secrets_missing }}, job=${{ job.status }}"

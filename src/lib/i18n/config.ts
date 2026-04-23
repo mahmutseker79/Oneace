@@ -28,7 +28,14 @@
  */
 
 export const SUPPORTED_LOCALES = [
-  "en", // English (default) — the only locale with a real messages file.
+  "en", // English (default) — canonical dictionary source.
+  // P1-07 — Turkish: first real non-English locale. High-traffic
+  // chrome is translated (app / common / permissions / notifications);
+  // deeper surfaces inherit from `en` until a TR proofread pass lands
+  // per-surface. The locale-parity test only asks that a matching
+  // messages file exists; `messages/tr.ts` imports `en` and overrides
+  // surfaces it has authoritative translations for.
+  "tr",
 ] as const;
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
@@ -97,6 +104,16 @@ export const SUPPORTED_REGIONS: readonly RegionConfig[] = [
     currency: "SGD",
     numberLocale: "en-SG",
     defaultTimeZone: "Asia/Singapore",
+  },
+  {
+    // P1-07 — Türkiye region. Number locale is tr-TR (comma decimal,
+    // space thousands separator). Europe/Istanbul is UTC+03:00 with
+    // no DST since 2016.
+    code: "TR",
+    label: "Türkiye",
+    currency: "TRY",
+    numberLocale: "tr-TR",
+    defaultTimeZone: "Europe/Istanbul",
   },
 ];
 

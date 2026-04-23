@@ -7,6 +7,19 @@ import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc3): StockMovement inserts must flow through
+// the postMovement seam. This file has 5 callsites — 1 on ship, 1 on
+// receive, 1 on discrepancy adjustment, 2 on cancel reversal.
+import { postMovement } from "@/lib/movements";
+// GOD MODE roadmap P0-02 (v1.6.1 rc2): shipTransferAction and
+// receiveTransferAction both wrap their bodies in withIdempotency.
+// Ship takes an optional second-arg options.idempotencyKey; receive
+// pulls it from the validated input.
+import {
+  IdempotencyConflictError,
+  IdempotencyInProgressError,
+  withIdempotency,
+} from "@/lib/idempotency/middleware";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
@@ -294,7 +307,13 @@ export async function removeTransferLineAction(lineId: string): Promise<ActionRe
  * Ship a transfer: validate DRAFT status, deduct from source warehouse,
  * transition to IN_TRANSIT, record shipment timestamp.
  */
-export async function shipTransferAction(transferId: string): Promise<ActionResult> {
+export async function shipTransferAction(
+  transferId: string,
+  // P0-02: optional per-form-mount idempotency key. UI mints a UUID
+  // and passes it through. Legacy callers (no second arg) pass
+  // through the middleware without caching — no behaviour change.
+  options?: { idempotencyKey?: string | null },
+): Promise<ActionResult> {
   const { session, membership } = await requireActiveMembership();
   const t = await getMessages();
 
@@ -341,23 +360,29 @@ export async function shipTransferAction(transferId: string): Promise<ActionResu
   }
 
   try {
+    return await withIdempotency(
+      {
+        organizationId: orgId,
+        actionName: "shipTransfer",
+        key: options?.idempotencyKey ?? null,
+        payload: { transferId },
+      },
+      async () => {
     const affectedItemIds: string[] = [];
 
     await db.$transaction(async (tx) => {
       // For each line, deduct from source warehouse
       for (const line of transfer.lines) {
-        // Create TRANSFER movement (direction -1 = debit)
-        await tx.stockMovement.create({
-          data: {
-            organizationId: orgId,
-            itemId: line.itemId,
-            warehouseId: transfer.fromWarehouseId,
-            type: "TRANSFER",
-            quantity: line.shippedQty,
-            direction: -1,
-            reference: transfer.transferNumber,
-            createdByUserId: session.user.id,
-          },
+        // Create TRANSFER movement (direction -1 = debit). rc3 seam.
+        await postMovement(tx, {
+          organizationId: orgId,
+          itemId: line.itemId,
+          warehouseId: transfer.fromWarehouseId,
+          type: "TRANSFER",
+          quantity: line.shippedQty,
+          direction: -1,
+          reference: transfer.transferNumber,
+          createdByUserId: session.user.id,
         });
 
         // Deduct from source
@@ -407,7 +432,15 @@ export async function shipTransferAction(transferId: string): Promise<ActionResu
     revalidatePath("/items");
     revalidatePath("/dashboard");
     return { ok: true, id: transferId };
-  } catch (_error) {
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof IdempotencyConflictError ||
+      error instanceof IdempotencyInProgressError
+    ) {
+      return { ok: false, error: t.movements.errors.createFailed };
+    }
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }
@@ -478,6 +511,22 @@ export async function receiveTransferAction(input: ReceiveTransferInput): Promis
   }
 
   try {
+    // P0-02 idempotency — key from validated input, payload is the
+    // sorted line list (stable under UI re-order).
+    return await withIdempotency(
+      {
+        organizationId: orgId,
+        actionName: "receiveTransfer",
+        key: parsed.data.idempotencyKey ?? null,
+        payload: {
+          transferId,
+          note: parsed.data.note,
+          lines: [...parsed.data.lines].sort((a, b) =>
+            a.lineId.localeCompare(b.lineId),
+          ),
+        },
+      },
+      async () => {
     const affectedItemIds: string[] = [];
 
     await db.$transaction(async (tx) => {
@@ -487,19 +536,17 @@ export async function receiveTransferAction(input: ReceiveTransferInput): Promis
 
         const discrepancy = receivedQty - origLine.shippedQty;
 
-        // Create TRANSFER movement (direction +1 = credit to destination)
-        await tx.stockMovement.create({
-          data: {
-            organizationId: orgId,
-            itemId: origLine.itemId,
-            warehouseId: transfer.toWarehouseId,
-            type: "TRANSFER",
-            quantity: receivedQty,
-            direction: 1,
-            reference: transfer.transferNumber,
-            note: note ?? null,
-            createdByUserId: session.user.id,
-          },
+        // Create TRANSFER movement (direction +1 = credit to destination). rc3 seam.
+        await postMovement(tx, {
+          organizationId: orgId,
+          itemId: origLine.itemId,
+          warehouseId: transfer.toWarehouseId,
+          type: "TRANSFER",
+          quantity: receivedQty,
+          direction: 1,
+          reference: transfer.transferNumber,
+          note: note ?? null,
+          createdByUserId: session.user.id,
         });
 
         // Add to destination warehouse
@@ -513,18 +560,17 @@ export async function receiveTransferAction(input: ReceiveTransferInput): Promis
         // If there's a discrepancy, create an ADJUSTMENT movement
         if (discrepancy !== 0) {
           const adjustmentDirection = discrepancy > 0 ? 1 : -1;
-          await tx.stockMovement.create({
-            data: {
-              organizationId: orgId,
-              itemId: origLine.itemId,
-              warehouseId: transfer.toWarehouseId,
-              type: "ADJUSTMENT",
-              quantity: Math.abs(discrepancy),
-              direction: adjustmentDirection,
-              reference: `${transfer.transferNumber}-DISC`,
-              note: `Discrepancy from transfer receive: shipped ${origLine.shippedQty}, received ${receivedQty}`,
-              createdByUserId: session.user.id,
-            },
+          // rc3 seam — discrepancy ADJUSTMENT movement.
+          await postMovement(tx, {
+            organizationId: orgId,
+            itemId: origLine.itemId,
+            warehouseId: transfer.toWarehouseId,
+            type: "ADJUSTMENT",
+            quantity: Math.abs(discrepancy),
+            direction: adjustmentDirection,
+            reference: `${transfer.transferNumber}-DISC`,
+            note: `Discrepancy from transfer receive: shipped ${origLine.shippedQty}, received ${receivedQty}`,
+            createdByUserId: session.user.id,
           });
 
           // Adjust stock for the discrepancy
@@ -584,7 +630,15 @@ export async function receiveTransferAction(input: ReceiveTransferInput): Promis
     revalidatePath("/items");
     revalidatePath("/dashboard");
     return { ok: true, id: transferId };
-  } catch (_error) {
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof IdempotencyConflictError ||
+      error instanceof IdempotencyInProgressError
+    ) {
+      return { ok: false, error: t.movements.errors.createFailed };
+    }
     return { ok: false, error: t.movements.errors.createFailed };
   }
 }
@@ -639,18 +693,16 @@ export async function cancelTransferAction(transferId: string): Promise<ActionRe
       // If IN_TRANSIT, reverse the source deductions
       if (transfer.status === "IN_TRANSIT" || transfer.status === "SHIPPED") {
         for (const line of transfer.lines) {
-          // Create reverse TRANSFER movement to restore source
-          await tx.stockMovement.create({
-            data: {
-              organizationId: orgId,
-              itemId: line.itemId,
-              warehouseId: transfer.fromWarehouseId,
-              type: "TRANSFER",
-              quantity: line.shippedQty,
-              direction: 1, // reverse the -1 from shipping
-              reference: `${transfer.transferNumber}-CANCEL`,
-              createdByUserId: session.user.id,
-            },
+          // Create reverse TRANSFER movement to restore source. rc3 seam.
+          await postMovement(tx, {
+            organizationId: orgId,
+            itemId: line.itemId,
+            warehouseId: transfer.fromWarehouseId,
+            type: "TRANSFER",
+            quantity: line.shippedQty,
+            direction: 1, // reverse the -1 from shipping
+            reference: `${transfer.transferNumber}-CANCEL`,
+            createdByUserId: session.user.id,
           });
 
           // Restore to source warehouse
@@ -663,17 +715,16 @@ export async function cancelTransferAction(transferId: string): Promise<ActionRe
 
           // If already received, reverse those too
           if (line.receivedQty > 0 && transfer.status === "IN_TRANSIT") {
-            await tx.stockMovement.create({
-              data: {
-                organizationId: orgId,
-                itemId: line.itemId,
-                warehouseId: transfer.toWarehouseId,
-                type: "TRANSFER",
-                quantity: line.receivedQty,
-                direction: -1, // reverse the +1 from receiving
-                reference: `${transfer.transferNumber}-CANCEL`,
-                createdByUserId: session.user.id,
-              },
+            // rc3 seam — reverse the +1 from receiving.
+            await postMovement(tx, {
+              organizationId: orgId,
+              itemId: line.itemId,
+              warehouseId: transfer.toWarehouseId,
+              type: "TRANSFER",
+              quantity: line.receivedQty,
+              direction: -1, // reverse the +1 from receiving
+              reference: `${transfer.transferNumber}-CANCEL`,
+              createdByUserId: session.user.id,
             });
 
             // Deduct from destination

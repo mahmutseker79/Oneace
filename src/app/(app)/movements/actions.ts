@@ -7,6 +7,10 @@ import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc4): generic movement action routes through
+// the seam. This file is the low-level create-any-movement endpoint —
+// it already honours idempotencyKey so the seam change is zero-delta.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
@@ -163,23 +167,21 @@ async function writeMovement(args: WriteMovementArgs): Promise<WriteMovementOutc
 
   try {
     const movement = await db.$transaction(async (tx) => {
-      const created = await tx.stockMovement.create({
-        data: {
-          organizationId: orgId,
-          itemId: input.itemId,
-          warehouseId: input.warehouseId,
-          toWarehouseId,
-          binId,
-          toBinId,
-          type: input.type,
-          quantity: input.quantity,
-          direction,
-          reference: input.reference,
-          note: input.note,
-          createdByUserId: userId,
-          idempotencyKey: idempotencyKey ?? null,
-        },
-        select: { id: true },
+      // rc4 seam — downstream uses `.id` only.
+      const created = await postMovement(tx, {
+        organizationId: orgId,
+        itemId: input.itemId,
+        warehouseId: input.warehouseId,
+        toWarehouseId,
+        binId,
+        toBinId,
+        type: input.type,
+        quantity: input.quantity,
+        direction,
+        reference: input.reference,
+        note: input.note,
+        createdByUserId: userId,
+        idempotencyKey: idempotencyKey ?? null,
       });
 
       // BIN_TRANSFER: move stock between bins in the same warehouse
