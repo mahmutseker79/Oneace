@@ -8,6 +8,32 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
+// GOD MODE roadmap P0-04 rc3 — landed-cost allocation on receive.
+// The allocator is a pure function (see src/lib/costing/landed.ts);
+// PO header + line unit costs feed in, per-line allocations come out,
+// the landedUnitCost value lands on StockMovement and the breakdown
+// is persisted to LandedCostAllocation in the same transaction.
+import {
+  type AllocationBasis,
+  type LandedPOLine,
+  allocateLanded,
+} from "@/lib/costing/landed";
+// GOD MODE roadmap P0-01 (rc2): StockMovement inserts must flow through
+// the postMovement seam so that future cost-attribution (ADR-001
+// FIFO/WAC) and idempotency middleware hook in a single place.
+import { postMovement } from "@/lib/movements";
+// GOD MODE roadmap P0-02 (v1.6.1 rc2): receivePurchaseOrderAction wraps
+// its body in withIdempotency keyed on submissionNonce. This is
+// complementary to the existing Phase 6C line-level key derivation
+// (see deriveReceiveIdempotencyKey): the line-level key protects the
+// ledger from double rows even if the transaction retries; this
+// wrapper caches the ActionResult so a client replay gets the exact
+// same response without re-entering the transaction at all.
+import {
+  IdempotencyConflictError,
+  IdempotencyInProgressError,
+  withIdempotency,
+} from "@/lib/idempotency/middleware";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { deriveReceiveIdempotencyKey } from "@/lib/purchase-orders/idempotency";
@@ -540,12 +566,28 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
       status: true,
       warehouseId: true,
       poNumber: true,
+      // GOD MODE roadmap P0-04 rc3 — pull the landed-cost header so
+      // the allocator can distribute freight/duty/insurance/other
+      // across lines on this receive cycle. All six fields are
+      // nullable (pre-P0-04 POs didn't capture them); the allocator
+      // short-circuits to zero-allocations when every component is
+      // null / zero, so legacy POs receive exactly as before.
+      freightCost: true,
+      dutyCost: true,
+      insuranceCost: true,
+      otherLandedCost: true,
+      landedAllocationBasis: true,
       lines: {
         select: {
           id: true,
           itemId: true,
           orderedQty: true,
           receivedQty: true,
+          // P0-04 rc3 — unitCost is the BY_VALUE denominator seed
+          // (extended value = unitCost × qty) and also the
+          // purchaseUnitCost audit column on the resulting
+          // StockMovement.
+          unitCost: true,
         },
       },
     },
@@ -617,7 +659,60 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
   }
 
   try {
+    // P0-02 idempotency wrapper. Keyed on submissionNonce (already
+    // required above). Complements the existing Phase 6C line-level
+    // key — this wrapper caches the full ActionResult so a client
+    // replay avoids the transaction entirely.
+    return await withIdempotency(
+      {
+        organizationId: orgId,
+        actionName: "receivePurchaseOrder",
+        key: submissionNonce,
+        payload: {
+          purchaseOrderId: input.purchaseOrderId,
+          // Sort deltaByLine by lineId for a stable fingerprint even
+          // if the UI orders receipts differently between attempts.
+          receipts: Array.from(deltaByLine.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([lineId, quantity]) => ({ lineId, quantity })),
+          notes: input.notes,
+        },
+      },
+      async () => {
     const receivedLineCount = deltaByLine.size;
+    // GOD MODE roadmap P0-04 rc3 — compute landed-cost allocation
+    // against the FULL PO line structure (ordered qty × unit cost),
+    // NOT this receive's deltas. Rationale: landedUnitCost is a
+    // per-unit figure that must stay stable across successive
+    // partial receives, and the allocator's rounding invariant
+    // (sum === header total) only holds once per call. Per-partial
+    // scaling happens below when we write the LandedCostAllocation
+    // rows — each row carries the share that this receive cycle
+    // materialized.
+    const toNum = (d: unknown): number => (d == null ? 0 : Number(d));
+    const hasLanded =
+      toNum(existing.freightCost) > 0 ||
+      toNum(existing.dutyCost) > 0 ||
+      toNum(existing.insuranceCost) > 0 ||
+      toNum(existing.otherLandedCost) > 0;
+    const allocations = hasLanded
+      ? allocateLanded(
+          {
+            freight: toNum(existing.freightCost),
+            duty: toNum(existing.dutyCost),
+            insurance: toNum(existing.insuranceCost),
+            other: toNum(existing.otherLandedCost),
+            basis: existing.landedAllocationBasis as AllocationBasis,
+          },
+          existing.lines.map(
+            (l): LandedPOLine => ({
+              id: l.id,
+              unitCost: toNum(l.unitCost),
+              qty: l.orderedQty,
+            }),
+          ),
+        )
+      : null;
     const fullyReceived = await db.$transaction(async (tx) => {
       // Sprint 4: Lock PO lines with SELECT FOR UPDATE to prevent
       // double-receive from concurrent tabs. Two tabs would each get
@@ -651,33 +746,85 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
         const line = freshLineMap.get(lineId);
         if (!line) continue;
 
-        await tx.stockMovement.create({
-          data: {
-            organizationId: orgId,
-            itemId: line.itemId,
-            warehouseId: existing.warehouseId,
-            type: "RECEIPT",
-            quantity: delta,
-            direction: 1,
-            reference: existing.poNumber,
-            note: input.notes,
-            createdByUserId: session.user.id,
-            // Phase 5A — source-document backref. Lets the ledger join
-            // back to the originating PO line without parsing
-            // `reference`. Historical rows (pre-Phase-5A) remain null.
-            purchaseOrderLineId: lineId,
-            // Phase 6C — replay protection. Derived from the
-            // client-minted per-form-mount nonce and the line id so
-            // the compound unique index
-            // `@@unique([organizationId, idempotencyKey])` rejects
-            // duplicate rows from a retry of the same form mount.
-            // Legacy callers without a nonce get `null`, which the
-            // partial-unique semantics intentionally allow.
-            idempotencyKey: submissionNonce
-              ? deriveReceiveIdempotencyKey(submissionNonce, lineId)
-              : null,
-          },
+        // P0-04 rc3 — per-line cost figures.
+        // purchaseUnitCost is the original supplier price (audit).
+        // landedUnitCost is the allocator's per-unit output; falls
+        // back to purchaseUnitCost when the PO has no landed-cost
+        // header.
+        const poLine = existing.lines.find((l) => l.id === lineId);
+        const purchaseUnitCost = toNum(poLine?.unitCost);
+        const allocation = allocations?.get(lineId);
+        const landedUnitCost = allocation?.landedUnitCost ?? purchaseUnitCost;
+
+        // rc2: migrated from direct `tx.stockMovement.create(...)` to
+        // the seam. Shape is identical; the seam drops unknown forward-
+        // compat fields and fires the cost-posting hook (no-op today,
+        // ADR-001 FIFO/WAC when Phase 1c ships).
+        // rc3: populates P0-04 cost-audit columns on the movement.
+        const created = await postMovement(tx, {
+          organizationId: orgId,
+          itemId: line.itemId,
+          warehouseId: existing.warehouseId,
+          type: "RECEIPT",
+          quantity: delta,
+          direction: 1,
+          reference: existing.poNumber,
+          note: input.notes,
+          createdByUserId: session.user.id,
+          // Phase 5A — source-document backref. Lets the ledger join
+          // back to the originating PO line without parsing
+          // `reference`. Historical rows (pre-Phase-5A) remain null.
+          purchaseOrderLineId: lineId,
+          // Phase 6C — replay protection. Derived from the
+          // client-minted per-form-mount nonce and the line id so
+          // the compound unique index
+          // `@@unique([organizationId, idempotencyKey])` rejects
+          // duplicate rows from a retry of the same form mount.
+          // Legacy callers without a nonce get `null`, which the
+          // partial-unique semantics intentionally allow. P0-03 in
+          // the roadmap will make this NOT NULL and move key
+          // derivation into a middleware at the action boundary.
+          idempotencyKey: submissionNonce
+            ? deriveReceiveIdempotencyKey(submissionNonce, lineId)
+            : null,
+          // P0-04 rc3 — cost audit columns.
+          purchaseUnitCost,
+          landedUnitCost,
         });
+
+        // P0-04 rc3 — per-category audit rows. Scaled by
+        // (delta / orderedQty) so a partial receive carries its
+        // proportional share; across all receives of a given line
+        // the sum lands on the header's freight/duty/etc for that
+        // line. Zero-amount rows are filtered out; non-landed-cost
+        // POs skip this block entirely.
+        if (allocation && hasLanded && poLine && poLine.orderedQty > 0) {
+          const proration = delta / poLine.orderedQty;
+          const scaled = {
+            FREIGHT: allocation.freight * proration,
+            DUTY: allocation.duty * proration,
+            INSURANCE: allocation.insurance * proration,
+            OTHER: allocation.other * proration,
+          } as const;
+          const rows = (Object.keys(scaled) as Array<keyof typeof scaled>)
+            .filter((k) => scaled[k] > 0)
+            .map((k) => ({
+              organizationId: orgId,
+              purchaseOrderId: existing.id,
+              sourceMovementId: created.id,
+              allocationType: k,
+              allocationBasis: allocation.basisUsed,
+              // Round to 6 decimals to match the Decimal(18, 6)
+              // column precision. Prisma would round anyway; we do
+              // it explicitly so tests observing the number match
+              // persisted value bit-for-bit.
+              allocatedAmount: Number(scaled[k].toFixed(6)),
+              appliedByUserId: session.user.id,
+            }));
+          if (rows.length > 0) {
+            await tx.landedCostAllocation.createMany({ data: rows });
+          }
+        }
 
         await upsertStockLevel(tx, {
           organizationId: orgId,
@@ -751,7 +898,22 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
     }
 
     return { ok: true, id: existing.id, receivedLineCount, fullyReceived };
+      },
+    );
   } catch (error) {
+    // P0-02 — surface idempotency-error kinds distinctly.
+    if (error instanceof IdempotencyConflictError) {
+      return {
+        ok: false,
+        error: t.purchaseOrders.errors.receiveFailed,
+      };
+    }
+    if (error instanceof IdempotencyInProgressError) {
+      return {
+        ok: false,
+        error: t.purchaseOrders.errors.receiveFailed,
+      };
+    }
     // Phase 6C — P2002 on the compound idempotency index means a
     // concurrent in-flight request with the SAME nonce won the race
     // and already persisted its batch (atomic: either all N rows

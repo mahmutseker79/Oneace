@@ -7,6 +7,12 @@ import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc5): stock-count reconcile ADJUSTMENT flows
+// through the seam. `stockCountId` backref + count-* reference are
+// preserved exactly — the seam does NOT discard them, they are part of
+// the persistable-fields allowlist. The (CountSnapshot, CountApproval,
+// StockLevel.upsert) triple remains wired inside the same tx.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
@@ -706,24 +712,24 @@ export async function completeStockCountAction(
         // variance delta applies to the warehouse-level StockLevel.
         // Bin-level stock tracking is handled by RECEIPT, ISSUE, and
         // BIN_TRANSFER movements — not by count adjustments.
-        await tx.stockMovement.create({
-          data: {
-            organizationId: orgId,
-            itemId: row.itemId,
-            warehouseId: row.warehouseId,
-            type: "ADJUSTMENT",
-            quantity,
-            direction,
-            reference: `count-${count.id}`,
-            note: `Stock count reconcile: ${count.name}`,
-            createdByUserId: session.user.id,
-            // Phase 5A — source-document backref. Count-generated
-            // movements keep `type = ADJUSTMENT` for backwards compat;
-            // this column is the discriminator a reader uses to tell
-            // a manual adjustment from a reconcile-generated one.
-            // Historical rows (pre-Phase-5A) remain null.
-            stockCountId: count.id,
-          },
+        // rc5 seam — `stockCountId` backref preserved by the seam's
+        // persistable-fields allowlist; count reconcile semantics unchanged.
+        await postMovement(tx, {
+          organizationId: orgId,
+          itemId: row.itemId,
+          warehouseId: row.warehouseId,
+          type: "ADJUSTMENT",
+          quantity,
+          direction,
+          reference: `count-${count.id}`,
+          note: `Stock count reconcile: ${count.name}`,
+          createdByUserId: session.user.id,
+          // Phase 5A — source-document backref. Count-generated
+          // movements keep `type = ADJUSTMENT` for backwards compat;
+          // this column is the discriminator a reader uses to tell
+          // a manual adjustment from a reconcile-generated one.
+          // Historical rows (pre-Phase-5A) remain null.
+          stockCountId: count.id,
         });
         await upsertStockLevel(tx, {
           organizationId: orgId,

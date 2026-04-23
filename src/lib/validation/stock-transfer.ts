@@ -90,6 +90,14 @@ export const receiveTransferSchema = z.object({
     .max(1000)
     .optional()
     .transform((v) => (v === "" || v === undefined ? null : v)),
+  // GOD MODE roadmap P0-02 — optional request-level idempotency key.
+  idempotencyKey: z
+    .string()
+    .trim()
+    .max(128)
+    .optional()
+    .nullable()
+    .transform((v) => (v === "" || v === undefined || v === null ? null : v)),
 });
 
 export type ReceiveTransferInput = z.infer<typeof receiveTransferSchema>;

@@ -262,6 +262,38 @@ const schemaWithRefinements = schema.superRefine((values, ctx) => {
         "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set together. Set both to enable distributed rate limiting, or leave both unset to fall back to in-process limits (dev only — NOT safe for multi-instance deployments).",
     });
   }
+
+  // GOD MODE roadmap 2026-04-23 — P2-02 hard-require Redis in prod.
+  //
+  // Pre-P2-02 the app happily booted in production with both keys
+  // unset: `src/lib/rate-limit.ts` detected the missing config and
+  // silently fell back to a per-instance in-memory Map with a
+  // console.warn. That warning was easy to miss, and on a multi-
+  // instance deploy (Vercel autoscale, K8s replica set) each
+  // instance ran its own counter — a coordinated brute-force
+  // attacker could spread attempts across N instances and cleanly
+  // bypass the rate limit N-fold.
+  //
+  // In production we now refuse to start without a real distributed
+  // limiter. Dev and test continue to accept the in-memory fallback
+  // so local work and CI don't need an Upstash dependency.
+  const isProduction = values.NODE_ENV === "production";
+  if (isProduction && !hasRedisUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["UPSTASH_REDIS_REST_URL"],
+      message:
+        "UPSTASH_REDIS_REST_URL is required in production. The in-memory rate-limit fallback is single-instance only and a multi-instance deploy would silently bypass brute-force protection. Provision Upstash Redis and set both UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN before running with NODE_ENV=production.",
+    });
+  }
+  if (isProduction && !hasRedisToken) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["UPSTASH_REDIS_REST_TOKEN"],
+      message:
+        "UPSTASH_REDIS_REST_TOKEN is required in production. See UPSTASH_REDIS_REST_URL for rationale.",
+    });
+  }
 });
 
 /**

@@ -1,7 +1,7 @@
 "use client";
 
 import { Truck } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTransition } from "react";
 
 import {
@@ -17,6 +17,17 @@ import { Button } from "@/components/ui/button";
 
 import { shipTransferAction } from "../actions";
 
+// GOD MODE roadmap P0-02 rc3 — per-button-mount idempotency key.
+// Double-click or network retry → same key → server returns the
+// cached ActionResult on the second call instead of re-running the
+// ship transaction.
+function mintIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `ship-tx-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 interface ShipTransferButtonProps {
   transferId: string;
 }
@@ -24,11 +35,15 @@ interface ShipTransferButtonProps {
 export function ShipTransferButton({ transferId }: ShipTransferButtonProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // P0-02 rc3 — stable across double-clicks and useTransition retries.
+  const idempotencyKeyRef = useRef<string>(mintIdempotencyKey());
 
   const handleShip = () => {
     setError(null);
     startTransition(async () => {
-      const result = await shipTransferAction(transferId);
+      const result = await shipTransferAction(transferId, {
+        idempotencyKey: idempotencyKeyRef.current,
+      });
       if (!result.ok) {
         setError(result.error);
       }

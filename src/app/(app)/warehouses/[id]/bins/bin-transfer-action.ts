@@ -6,6 +6,8 @@ import { z } from "zod";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+// GOD MODE roadmap P0-01 (rc4): bin-transfer flows through the seam.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
@@ -71,19 +73,19 @@ export async function binTransferAction(
 
   try {
     const movement = await db.$transaction(async (tx) => {
-      const created = await tx.stockMovement.create({
-        data: {
-          organizationId: membership.organizationId,
-          itemId,
-          warehouseId,
-          binId: fromBinId,
-          toBinId,
-          type: "BIN_TRANSFER",
-          quantity,
-          direction: 1,
-          createdByUserId: session.user.id,
-        },
-        select: { id: true },
+      // rc4 seam — the previous `select: { id: true }` trimmed
+      // the returned row; the seam always returns the full row.
+      // Downstream uses `.id` only, so no behavioural change.
+      const created = await postMovement(tx, {
+        organizationId: membership.organizationId,
+        itemId,
+        warehouseId,
+        binId: fromBinId,
+        toBinId,
+        type: "BIN_TRANSFER",
+        quantity,
+        direction: 1,
+        createdByUserId: session.user.id,
       });
 
       // Debit source bin

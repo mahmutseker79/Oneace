@@ -1,0 +1,46 @@
+# GOD MODE roadmap 2026-04-23 — P2-10 .netlifyignore.
+#
+# Mirrors .vercelignore so the Netlify build context (now live
+# under the Faz 1 POC → Faz 3 cutover plan) receives the same
+# deliberately-excluded-from-deploy files. Without this, Netlify
+# uploaded every `.bundle` + port-workflow doc + sandbox shim on
+# every build — ~40 MB of dead weight per deploy and unnecessary
+# cold-read cost.
+#
+# Parity contract: every entry in .vercelignore must exist here
+# (and vice versa). A pinned test enforces this so the two files
+# cannot drift while both hosting targets are live during the
+# cutover window.
+
+# ---- port-workflow git bundles ----------------------------------
+# The Flutter→Next port workflow tags every sprint and writes a
+# `.bundle` file at repo root as an offline checkpoint. These are
+# tracked in history but have zero runtime purpose; excluding them
+# trims ~40 MB from every deploy.
+*.bundle
+
+# ---- historical tsconfig buildinfo backups ----------------------
+# `tsconfig.tsbuildinfo.old*` are point-in-time backups of TypeScript's
+# incremental build cache taken during the port. Not read by `tsc`,
+# not referenced anywhere in the build.
+tsconfig.tsbuildinfo.old*
+
+# ---- sandbox tsconfig -------------------------------------------
+# Local FUSE-mount workaround that remaps `@/generated/prisma` to a
+# sandbox-generated Prisma client. Netlify runs `prisma generate` on
+# its own during install, so this file is irrelevant to the build.
+tsconfig.sandbox.json
+
+# ---- internal port documentation --------------------------------
+# Operator-facing, port-workflow specific docs. README.md, SETUP.md,
+# DEPLOY.md, and MIGRATION_BASELINE.md are NOT excluded — they are
+# the operator runbooks a fresh clone needs.
+PORT_CHECKLIST.md
+GIT_WORKFLOW.md
+
+# ---- local .env files -------------------------------------------
+# Defense in depth: `.env*` is already in `.gitignore`, but if a
+# `.env.local` slips into the workspace it must never be uploaded.
+.env
+.env.local
+.env.*.local

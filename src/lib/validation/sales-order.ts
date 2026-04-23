@@ -115,6 +115,17 @@ export const shipSalesOrderLineSchema = z.object({
 export const shipSalesOrderSchema = z.object({
   salesOrderId: z.string().trim().min(1, { message: "Sales order ID is required" }),
   lines: z.array(shipSalesOrderLineSchema).min(1, { message: "At least one line must be shipped" }),
+  // GOD MODE roadmap P0-02 — optional request-level idempotency key.
+  // UI supplies a UUID minted per form mount; webhook callers supply
+  // a deterministic derivation (wh:{provider}:{deliveryId}). Absent
+  // (legacy path) → the middleware passes through without caching.
+  idempotencyKey: z
+    .string()
+    .trim()
+    .max(128)
+    .optional()
+    .nullable()
+    .transform((v) => (v === "" || v === undefined || v === null ? null : v)),
 });
 
 export type ShipSalesOrderInput = z.input<typeof shipSalesOrderSchema>;
