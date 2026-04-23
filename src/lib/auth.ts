@@ -3,6 +3,12 @@ import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { getMailer } from "@/lib/mail";
 import { buildResetPasswordEmail } from "@/lib/mail/templates/reset-password-email";
+// GOD MODE roadmap 2026-04-23 — P2-03 per-email forgot-password
+// rate limit. Uses the existing rate-limit helper so a single email
+// address cannot be flooded with reset-link requests (anti-
+// enumeration + anti-spam). Keyed on the lowercased email so case
+// variations don't sidestep the bucket.
+import { RATE_LIMITS, rateLimit } from "@/lib/rate-limit";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
@@ -38,6 +44,28 @@ export const auth = betterAuth({
     // the email existed or delivery succeeded.
     sendResetPassword: async ({ user, url }) => {
       try {
+        // P2-03: per-email throttle. The middleware default IP limit
+        // already guards the endpoint, but IP alone is not enough —
+        // a single attacker can flood ONE email from many IPs, and
+        // a shared-NAT victim can also hit the default limit
+        // benignly. Email-keyed throttle is the right dimension for
+        // the "please stop spamming my inbox" concern.
+        //
+        // We DO NOT branch the user-facing UX on this — the form
+        // still shows the same "check your inbox" message whether
+        // the send succeeded, failed, or was throttled (anti-
+        // enumeration posture intact). We just skip the actual
+        // send.
+        const emailKey = `forgot-password:${user.email.trim().toLowerCase()}`;
+        const gate = await rateLimit(emailKey, RATE_LIMITS.forgotPassword);
+        if (!gate.ok) {
+          logger.warn("forgot-password throttled (P2-03 per-email gate)", {
+            email: user.email,
+            retryAfterSeconds: gate.retryAfterSeconds,
+          });
+          return;
+        }
+
         const appOrigin =
           env.NEXT_PUBLIC_APP_URL?.trim() || env.BETTER_AUTH_URL?.trim() || "http://localhost:3000";
         const message = buildResetPasswordEmail({
@@ -79,8 +107,23 @@ export const auth = betterAuth({
   trustedOrigins: [
     env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     env.BETTER_AUTH_URL,
-    // Vercel preview/production domains
-    ...(env.NEXT_PUBLIC_APP_URL ? [] : ["https://oneace-next-local.vercel.app"]),
+    // Faz 3 cutover — BOTH origins are trusted during the Vercel → Netlify
+    // migration window. Once DNS is flipped and Vercel project is paused,
+    // the vercel.app entry can stay (it's a no-op, just a dead origin) or
+    // be removed in a later cleanup. Keeping both is safe: better-auth
+    // only accepts origins that the browser actually sent, so a dead
+    // domain in this list has no security impact.
+    //
+    // Rationale: `NEXT_PUBLIC_APP_URL` is set in prod env, so the fallback
+    // below is only used in local/dev or when the env var is missing. But
+    // during the cutover window, if the env var lags the DNS flip even
+    // briefly, we don't want better-auth to start rejecting sessions.
+    ...(env.NEXT_PUBLIC_APP_URL
+      ? []
+      : [
+          "https://oneace-next-local.vercel.app",
+          "https://oneace-next-local.netlify.app",
+        ]),
   ].filter(Boolean) as string[],
 });
 

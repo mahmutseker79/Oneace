@@ -182,6 +182,58 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
       }
     });
 
+    // GOD MODE roadmap 2026-04-23 — P2-09 symmetric drift guard.
+    //
+    // The pre-P2-09 check only caught "test has prefix, middleware
+    // doesn't". The reverse — middleware gains a new exempt prefix
+    // without the test catalog being updated — was the silent
+    // regression we worried about: the new prefix would skip rate
+    // limiting in prod but the coverage matrix would never assert
+    // on it. This test plucks the literal string array out of
+    // middleware.ts and enforces it is a subset of the test's
+    // EXEMPT_PATH_PREFIXES.
+    it("exempt list drift guard — every middleware prefix appears in the test catalog (P2-09)", () => {
+      const source = readFileSync(MIDDLEWARE_PATH, "utf8");
+      const blockMatch = source.match(
+        /API_RATE_LIMIT_EXEMPT_PREFIXES\s*=\s*\[([\s\S]*?)\]\s*as\s+const/,
+      );
+      expect(
+        blockMatch,
+        "middleware.ts must declare API_RATE_LIMIT_EXEMPT_PREFIXES as a `[...] as const` literal",
+      ).not.toBeNull();
+      const body = blockMatch?.[1] ?? "";
+      // Match ONLY double-quote pairs. The middleware source has
+      // narrative comments with apostrophes ("doesn't", "user's")
+      // that a mixed ["'] character class would treat as quote
+      // toggles and break the pairing.
+      const middlewarePrefixes = Array.from(body.matchAll(/"([^"]+)"/g)).map(
+        (m) => m[1] as string,
+      );
+      expect(
+        middlewarePrefixes.length,
+        "failed to parse any prefixes from the middleware literal — regex drift",
+      ).toBeGreaterThan(0);
+
+      const testSet = new Set(EXEMPT_PATH_PREFIXES);
+      const missingFromTest = middlewarePrefixes.filter((p) => !testSet.has(p));
+      expect(
+        missingFromTest,
+        [
+          "",
+          "middleware.ts has exempt prefixes that EXEMPT_PREFIX_AUTH_MARKERS",
+          "in this test does NOT cover. Either:",
+          "  (a) add them to EXEMPT_PREFIX_AUTH_MARKERS with the correct",
+          "      justification tag, OR",
+          "  (b) remove them from API_RATE_LIMIT_EXEMPT_PREFIXES in",
+          "      middleware.ts if they shouldn't be exempt.",
+          "",
+          "Missing prefixes:",
+          ...missingFromTest.map((p) => `  - ${p}`),
+          "",
+        ].join("\n"),
+      ).toEqual([]);
+    });
+
     it("middleware.ts matcher covers /api/ paths", () => {
       const source = readFileSync(MIDDLEWARE_PATH, "utf8");
       // The matcher is a negative-lookahead regex literal living
