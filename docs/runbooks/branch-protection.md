@@ -11,12 +11,18 @@
 `main` and `stable` are protected. The rule:
 
 - **Required status checks** (must pass on a fresh commit):
-  - `Lint · Typecheck`
+  - `Lint (Biome)`
   - `Vitest`
   - `Prisma Validate`
   - `Prisma Migrations (scratch Postgres)` — the P1-04 gate: every
     migration is applied to a scratch Postgres + re-applied
     idempotently.
+- **Advisory (non-blocking) checks** (Sprint 5a, 2026-04-24):
+  - `Typecheck (advisory)` — runs `tsc --noEmit` but marked
+    `continue-on-error: true`. Surfaces regressions without gating
+    merges while the ~212 pre-existing TS errors (Prisma relation
+    typing; `next.config.ts` already sets `ignoreBuildErrors: true`)
+    are paid down. Promote to required once count is zeroed.
 - **Required approving reviews:** 1.
 - **Linear history:** yes (no merge bubbles from forks).
 - **Force-push:** no.

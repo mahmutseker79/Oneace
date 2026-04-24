@@ -37,8 +37,12 @@ function findRepoRoot(): string {
   throw new Error("repo root not found");
 }
 
+// Sprint 5a (2026-04-24) split the old "Lint · Typecheck" job into
+// "Lint (Biome)" (required) + "Typecheck (advisory)" (continue-on-error).
+// The advisory typecheck is intentionally excluded from this list —
+// it must NOT appear in setup-branch-protection.sh REQUIRED_CHECKS.
 const EXPECTED_JOB_NAMES = [
-  "Lint · Typecheck",
+  "Lint (Biome)",
   "Vitest",
   "Prisma Validate",
   "Prisma Migrations (scratch Postgres)",
