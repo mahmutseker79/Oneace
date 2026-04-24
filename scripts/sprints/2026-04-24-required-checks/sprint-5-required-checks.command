@@ -71,16 +71,18 @@ git update-index --refresh >/dev/null 2>&1 || true
 
 # ─── Phase 2 — CI status probe ────────────────────────────────────────────────
 echo "== Phase 2 — CI status probe =="
-echo "  Fetching last 10 runs on branch=main from $REPO_OWNER/$REPO_NAME..."
+WORKFLOW_NAME="CI"  # must match `name:` at the top of .github/workflows/ci.yml
+echo "  Fetching last 20 runs (filter workflow='$WORKFLOW_NAME') on branch=main..."
 gh run list \
   --repo "$REPO_OWNER/$REPO_NAME" \
   --branch main \
-  --limit 10 \
-  --json databaseId,displayTitle,conclusion,status,headSha,event,createdAt \
+  --limit 20 \
+  --json databaseId,displayTitle,conclusion,status,headSha,event,createdAt,name,workflowName \
   > "$CI_PROBE_LOG"
 
 LATEST_COMPLETED_RUN="$(
-  jq -r '[.[] | select(.status == "completed")] | .[0].databaseId' \
+  jq -r --arg wf "$WORKFLOW_NAME" \
+    '[.[] | select(.status == "completed") | select((.name // .workflowName) == $wf)] | .[0].databaseId // empty' \
     "$CI_PROBE_LOG"
 )"
 if [ -z "$LATEST_COMPLETED_RUN" ] || [ "$LATEST_COMPLETED_RUN" = "null" ]; then

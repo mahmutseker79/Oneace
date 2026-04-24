@@ -106,9 +106,7 @@ describe("Sprint 3 — migration chain integrity (MigrationJob bootstrap)", () =
     const sql = fs.readFileSync(bootstrapSql, "utf8");
     // Only scan the CREATE TABLE block — comments are allowed to
     // mention scopeOptions when they explain WHY it's omitted.
-    const createBlock = sql.match(
-      /CREATE TABLE IF NOT EXISTS\s+"MigrationJob"[\s\S]*?\);/,
-    );
+    const createBlock = sql.match(/CREATE TABLE IF NOT EXISTS\s+"MigrationJob"[\s\S]*?\);/);
     expect(createBlock).toBeTruthy();
     expect(/"scopeOptions"/.test(createBlock?.[0] ?? "")).toBe(false);
   });

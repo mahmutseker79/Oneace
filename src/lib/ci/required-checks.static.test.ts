@@ -50,14 +50,8 @@ const ADVISORY_CONTEXT = "Typecheck (advisory)";
 
 describe("Sprint 5 — required status checks drift guard", () => {
   const root = findRepoRoot();
-  const script = fs.readFileSync(
-    path.join(root, "scripts", "setup-branch-protection.sh"),
-    "utf8",
-  );
-  const workflow = fs.readFileSync(
-    path.join(root, ".github", "workflows", "ci.yml"),
-    "utf8",
-  );
+  const script = fs.readFileSync(path.join(root, "scripts", "setup-branch-protection.sh"), "utf8");
+  const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
 
   describe("scripts/setup-branch-protection.sh", () => {
     it("declares required_status_checks with strict=true", () => {
@@ -74,15 +68,11 @@ describe("Sprint 5 — required status checks drift guard", () => {
     });
 
     it("enforces the full protection shape (reviewer + linear + no force + resolution)", () => {
-      expect(/"required_approving_review_count"\s*:\s*1/.test(script)).toBe(
-        true,
-      );
+      expect(/"required_approving_review_count"\s*:\s*1/.test(script)).toBe(true);
       expect(/"required_linear_history"\s*:\s*true/.test(script)).toBe(true);
       expect(/"allow_force_pushes"\s*:\s*false/.test(script)).toBe(true);
       expect(/"allow_deletions"\s*:\s*false/.test(script)).toBe(true);
-      expect(
-        /"required_conversation_resolution"\s*:\s*true/.test(script),
-      ).toBe(true);
+      expect(/"required_conversation_resolution"\s*:\s*true/.test(script)).toBe(true);
     });
 
     it("applies to both main and stable by default", () => {
@@ -117,9 +107,8 @@ describe("Sprint 5 — required status checks drift guard", () => {
     it("advisory typecheck job carries continue-on-error: true", () => {
       // Grab the block from `name: Typecheck (advisory)` up to the
       // next top-level job (two-space indent key) or EOF.
-      const block = workflow.match(
-        /^\s{4}name:\s*Typecheck \(advisory\)[\s\S]*?(?=^\s{2}[a-z-]+:$|\Z)/m,
-      );
+      const re = /^\s{4}name:\s*Typecheck \(advisory\)[\s\S]*?(?=^\s{2}[a-z-]+:$|\Z)/m;
+      const block = workflow.match(re);
       expect(block).toBeTruthy();
       expect(/continue-on-error:\s*true/.test(block?.[0] ?? "")).toBe(true);
     });
@@ -128,9 +117,7 @@ describe("Sprint 5 — required status checks drift guard", () => {
       // Only scan the REQUIRED_CHECKS heredoc, not the comment
       // section (which is allowed to reference the advisory job
       // when explaining WHY it's excluded).
-      const checksBlock = script.match(
-        /REQUIRED_CHECKS\s*<<'JSON'[\s\S]*?\nJSON/,
-      );
+      const checksBlock = script.match(/REQUIRED_CHECKS\s*<<'JSON'[\s\S]*?\nJSON/);
       expect(checksBlock).toBeTruthy();
       expect(checksBlock?.[0].includes(`"${ADVISORY_CONTEXT}"`)).toBe(false);
     });

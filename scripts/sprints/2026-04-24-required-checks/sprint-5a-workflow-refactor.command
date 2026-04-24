@@ -110,34 +110,40 @@ git push origin stable --force-with-lease
 # ─── Phase 5 — Poll for the new CI run ───────────────────────────────────────
 echo "== Phase 5 — poll for new CI run =="
 HEAD_SHA="$(git rev-parse HEAD)"
-echo "  polling for run on sha $HEAD_SHA..."
+WORKFLOW_NAME="CI"  # must match `name:` at the top of .github/workflows/ci.yml
+echo "  polling for workflow='$WORKFLOW_NAME' on sha $HEAD_SHA..."
 RUN_ID=""
 for i in $(seq 1 30); do
+  # Pull the latest 20 runs on main (multiple workflows may fire on
+  # the same sha — Dependabot, deploy hooks, etc.). Filter to the CI
+  # workflow specifically via .name, fall back to .workflowName for
+  # older gh versions.
   RUN_ID="$(
     gh run list \
       --repo "$REPO_OWNER/$REPO_NAME" \
       --branch main \
-      --limit 5 \
-      --json databaseId,headSha,status \
-      | jq -r --arg sha "$HEAD_SHA" \
-          '[.[] | select(.headSha == $sha)] | .[0].databaseId // empty'
+      --limit 20 \
+      --json databaseId,headSha,status,name,workflowName \
+      | jq -r --arg sha "$HEAD_SHA" --arg wf "$WORKFLOW_NAME" \
+          '[.[] | select(.headSha == $sha) | select((.name // .workflowName) == $wf)] | .[0].databaseId // empty'
   )"
   if [ -n "$RUN_ID" ]; then
     echo "  found run #$RUN_ID (attempt $i)"
     break
   fi
-  echo "  waiting for run to register... (attempt $i/30)"
+  echo "  waiting for '$WORKFLOW_NAME' run to register... (attempt $i/30)"
   sleep 5
 done
 
 if [ -z "$RUN_ID" ]; then
-  echo "FATAL: no run found for sha $HEAD_SHA after 150s. Check Actions tab."
+  echo "FATAL: no '$WORKFLOW_NAME' run found for sha $HEAD_SHA after 150s."
+  echo "       Inspect: gh run list --repo $REPO_OWNER/$REPO_NAME --branch main"
   exit 1
 fi
 
 echo "  watching run #$RUN_ID (this may take a few minutes)..."
 gh run watch "$RUN_ID" --repo "$REPO_OWNER/$REPO_NAME" --exit-status --interval 15 \
-  || echo "  run completed with non-zero status — inspect job breakdown below"
+  || echo "  run completed with non-zero status (expected — Typecheck advisory may fail; job-level check below is authoritative)"
 
 # ─── Phase 6 — Assert required jobs green ────────────────────────────────────
 echo "== Phase 6 — assert required jobs green =="
