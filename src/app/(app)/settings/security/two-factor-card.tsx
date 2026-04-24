@@ -294,9 +294,7 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
         <CardContent className="space-y-4">
           {newRecoveryCodes ? (
             <>
-              <output
-                className="block rounded-md border border-success/50 bg-success/10 px-3 py-2 text-sm text-success"
-              >
+              <output className="block rounded-md border border-success/50 bg-success/10 px-3 py-2 text-sm text-success">
                 {labels.regenerateSuccess}
               </output>
               <div
