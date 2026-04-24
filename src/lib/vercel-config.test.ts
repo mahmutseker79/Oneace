@@ -74,14 +74,20 @@ describe("Phase-1 P0 §vercel-quota — vercel.json keeps cron + install intact"
     expect(VERCEL_JSON.installCommand).toBe("npm install --legacy-peer-deps");
   });
 
-  it("preserves all 4 cron schedules", () => {
+  it("preserves all cron schedules", () => {
     expect(Array.isArray(VERCEL_JSON.crons), "crons[] must remain an array").toBe(true);
     const paths = VERCEL_JSON.crons.map((c: { path: string }) => c.path) as string[];
+    // The cron catalog grew from 4 → 7 over audit v1.3 (platform health
+    // probes) and v1.6 sprint (integration task queue processor). Test
+    // pins the full list so a stray merge can't silently drop a cron.
     expect(paths).toEqual([
       "/api/cron/stock-count-triggers",
       "/api/cron/cleanup-migration-files",
       "/api/cron/cleanup-notifications",
       "/api/cron/cleanup-cronruns",
+      "/api/cron/platform-webhook-health",
+      "/api/cron/platform-quota-health",
+      "/api/cron/integration-tasks",
     ]);
   });
 });

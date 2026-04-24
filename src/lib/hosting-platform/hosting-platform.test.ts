@@ -164,8 +164,12 @@ describe("§5.48 — Vercel adapter fetchSnapshot() contract (shape only, no net
   });
 
   it("returns {ok:false, reason:'config'} when VERCEL_TOKEN is missing", async () => {
-    process.env.VERCEL_TOKEN = undefined;
-    process.env.VERCEL_PROJECT_ID = undefined;
+    // `= undefined` sets the env var to the STRING "undefined",
+    // not a missing value. The adapter checks `!VERCEL_TOKEN` which
+    // would then be truthy and fall through to the fetch path
+    // (reason='transport' on fail). `delete` is the correct unset.
+    delete process.env.VERCEL_TOKEN;
+    delete process.env.VERCEL_PROJECT_ID;
     const provider = await getQuotaProvider("vercel");
     const result = await provider?.fetchSnapshot();
     expect(result?.ok).toBe(false);
@@ -185,8 +189,8 @@ describe("§5.48 — Netlify adapter fetchSnapshot() contract (shape only, no ne
   });
 
   it("returns {ok:false, reason:'config'} when NETLIFY_TOKEN is missing", async () => {
-    process.env.NETLIFY_TOKEN = undefined;
-    process.env.NETLIFY_SITE_ID = undefined;
+    delete process.env.NETLIFY_TOKEN;
+    delete process.env.NETLIFY_SITE_ID;
     const provider = await getQuotaProvider("netlify");
     const result = await provider?.fetchSnapshot();
     expect(result?.ok).toBe(false);

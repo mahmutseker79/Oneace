@@ -26,11 +26,13 @@ import { tr } from "./messages/tr";
  * `SUPPORTED_LOCALES` entry in the same change — the `locale-parity` test
  * will fail loudly otherwise.
  */
+// P1-07 — Turkish dictionary. See src/lib/i18n/messages/tr.ts for the
+// coverage scope (app + common + permissions + notifications today; other
+// surfaces inherit from en). Comment lives OUTSIDE the catalog literal so
+// the locale-parity regex scanner doesn't pick up the word "for" as a
+// locale key.
 const catalog: Record<Locale, Messages> = {
   en,
-  // P1-07 — Turkish dictionary. See src/lib/i18n/messages/tr.ts for
-  // coverage scope (app + common + permissions + notifications today;
-  // other surfaces inherit from en).
   tr,
 };
 
