@@ -23,6 +23,25 @@
 -- 1. MigrationSource: SOS_INVENTORY ------------------------------------------
 -- `IF NOT EXISTS` so re-running the migration (e.g. in shadow DB rebuild)
 -- does not fail.
+--
+-- Hotfix 2026-04-24 — bootstrap CREATE TYPE for scratch Postgres.
+-- The MigrationSource enum exists on prod (added via an earlier
+-- `prisma db push` before this migration chain started tracking it)
+-- but has no explicit CREATE TYPE in the migration history. The
+-- P1-04 CI gate (scratch Postgres migrate) exposes the gap. This
+-- DO $$ block creates the enum with its pre-SOS_INVENTORY member
+-- set if missing; the subsequent ALTER TYPE ADD VALUE is idempotent
+-- for both scratch (fresh create, then add) and prod (already full).
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'MigrationSource') THEN
+    CREATE TYPE "MigrationSource" AS ENUM (
+      'SORTLY', 'INFLOW', 'ODOO', 'ZOHO_INVENTORY', 'FISHBOWL', 'CIN7',
+      'KATANA', 'LIGHTSPEED', 'QUICKBOOKS_COMMERCE', 'DEAR_SYSTEMS',
+      'GENERIC_CSV'
+    );
+  END IF;
+END $$;
 ALTER TYPE "MigrationSource" ADD VALUE IF NOT EXISTS 'SOS_INVENTORY';
 
 -- 2. CustomFieldEntity / CustomFieldType enums -------------------------------
