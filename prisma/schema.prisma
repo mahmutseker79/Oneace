@@ -698,6 +698,10 @@ model StockMovement {
   reasonCode          ReasonCode?        @relation("MovementReasonCode", fields: [reasonCodeId], references: [id], onDelete: SetNull)
   serialNumber        SerialNumber?      @relation("MovementSerial", fields: [serialNumberId], references: [id], onDelete: SetNull)
   batch               ItemBatch?         @relation("MovementBatch", fields: [batchId], references: [id], onDelete: SetNull)
+  // P0-04 — back-reference for the landed-cost audit rows
+  // materialized on receive by the allocator. One StockMovement
+  // typically has 4 allocations (FREIGHT, DUTY, INSURANCE, OTHER).
+  landedCostAllocations LandedCostAllocation[]
 
   @@unique([organizationId, idempotencyKey])
   @@index([organizationId, createdAt])
