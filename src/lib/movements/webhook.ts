@@ -29,7 +29,7 @@
 //   - Not a rate-limiter. Each provider's limits live in their
 //     adapter's base-client.
 
-import type { Prisma, StockMovement } from "@prisma/client";
+import type { Prisma, StockMovement } from "@/generated/prisma";
 
 import { deriveWebhookIdempotencyKey } from "./idempotency-key";
 import { postMovement, type StockMovementInput, type TxClient } from "./post";

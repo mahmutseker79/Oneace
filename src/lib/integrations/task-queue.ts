@@ -152,9 +152,14 @@ export const BACKOFF_MS: readonly number[] = [
  * instead of returning `undefined`.
  */
 export function backoffMsFor(retryCount: number): number {
-  if (retryCount < 0) return BACKOFF_MS[0];
+  // `BACKOFF_MS` is a non-empty `readonly number[]` literal declared
+  // above with 6 entries. Under `noUncheckedIndexedAccess` TS widens
+  // indexed access to `number | undefined`, but the index math below
+  // always lands in-bounds: negative → 0, positive → clamped to
+  // `length - 1`. Cast once at the boundary.
+  if (retryCount < 0) return BACKOFF_MS[0] as number;
   const idx = Math.min(retryCount, BACKOFF_MS.length - 1);
-  return BACKOFF_MS[idx];
+  return BACKOFF_MS[idx] as number;
 }
 
 /**

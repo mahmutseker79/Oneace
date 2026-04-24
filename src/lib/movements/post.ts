@@ -60,7 +60,7 @@
 //     `src/lib/idempotency/middleware.ts` (roadmap task #8).
 //   - Not a queue. Integration adapters use `src/lib/integrations/task-queue.ts`.
 
-import type { Prisma, StockMovement } from "@prisma/client";
+import type { Prisma, StockMovement } from "@/generated/prisma";
 
 import {
   generateMovementIdempotencyKey,
@@ -250,7 +250,7 @@ function projectPersistable(
 ): Prisma.StockMovementUncheckedCreateInput {
   const out: Record<string, unknown> = {};
   for (const k of persistableFields) {
-    const v = (input as Record<string, unknown>)[k];
+    const v = (input as unknown as Record<string, unknown>)[k];
     if (v !== undefined) out[k] = v;
   }
   return out as Prisma.StockMovementUncheckedCreateInput;

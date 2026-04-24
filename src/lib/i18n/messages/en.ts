@@ -2842,4 +2842,15 @@ export const en = {
   },
 } as const;
 
-export type Messages = typeof en;
+/**
+ * Recursively widens `string` literal types to `string` so that
+ * locale dictionaries (tr.ts, etc.) can provide their own
+ * translations without every value colliding with the English
+ * literal type. The structural shape is preserved, so locale
+ * parity (every key present) still type-checks.
+ */
+type WidenStringLeaves<T> = T extends string
+  ? string
+  : { [K in keyof T]: WidenStringLeaves<T[K]> };
+
+export type Messages = WidenStringLeaves<typeof en>;
