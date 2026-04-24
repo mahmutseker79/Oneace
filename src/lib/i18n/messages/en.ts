@@ -1846,6 +1846,7 @@ export const en = {
       saved: "Language updated.",
       names: {
         en: "English",
+        tr: "Türkçe",
         es: "Español",
         de: "Deutsch",
         fr: "Français",
@@ -2025,6 +2026,12 @@ export const en = {
       notFound: "Sales order not found.",
       addLineFailed: "Could not add line to sales order.",
       removeLineFailed: "Could not remove line from sales order.",
+      // P0-02 idempotency middleware surfaces — see
+      // src/app/(app)/sales-orders/actions.ts error mapping.
+      idempotencyConflict:
+        "This idempotency key was already used with a different payload.",
+      idempotencyInProgress:
+        "A previous attempt with the same key is still running.",
       deleteLineFailed: "Could not remove line from sales order.",
       confirmFailed: "Could not confirm sales order.",
       allocateFailed: "Could not allocate sales order.",
@@ -2849,8 +2856,12 @@ export const en = {
  * literal type. The structural shape is preserved, so locale
  * parity (every key present) still type-checks.
  */
+// deno-lint-ignore no-explicit-any
+type AnyFunction = (...args: any[]) => any;
 type WidenStringLeaves<T> = T extends string
   ? string
-  : { [K in keyof T]: WidenStringLeaves<T[K]> };
+  : T extends AnyFunction
+    ? T
+    : { [K in keyof T]: WidenStringLeaves<T[K]> };
 
 export type Messages = WidenStringLeaves<typeof en>;

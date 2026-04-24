@@ -59,9 +59,11 @@ export const auth = betterAuth({
         const emailKey = `forgot-password:${user.email.trim().toLowerCase()}`;
         const gate = await rateLimit(emailKey, RATE_LIMITS.forgotPassword);
         if (!gate.ok) {
+          // `reset` is the UTC unix-seconds window-rollover timestamp;
+          // operators can compute retry-after from it if needed.
           logger.warn("forgot-password throttled (P2-03 per-email gate)", {
             email: user.email,
-            retryAfterSeconds: gate.retryAfterSeconds,
+            reset: gate.reset,
           });
           return;
         }

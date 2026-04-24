@@ -15,7 +15,6 @@ import {
 } from "./config";
 import { type Messages, en } from "./messages/en";
 import { tr } from "./messages/tr";
-import { tr } from "./messages/tr";
 
 /**
  * Locale → messages map. Add new imports here when you add a new language file.
