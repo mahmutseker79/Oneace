@@ -87,8 +87,11 @@ describe("§5.50 F-06 — runbook covers all three rollback paths", () => {
     const runbook = readRunbook();
     expect(runbook).toMatch(/##\s*3\.\s*Path B/);
     // The quota alarm tag is our only machine-readable pointer back
-    // from the F-04 cron into this path.
-    expect(runbook).toContain("vercel-quota.exceeded");
+    // from the F-04 cron into this path. The legacy `vercel-quota.*`
+    // naming was renamed to `platform-quota.*` in Faz 2 (v1.5.32
+    // platform-agnostic rename); accept either so the pin survives
+    // the rename without blocking Path B docs changes.
+    expect(runbook).toMatch(/vercel-quota\.exceeded|platform-quota\.exceeded/);
   });
 
   it("declares Path C (manual deployment)", () => {

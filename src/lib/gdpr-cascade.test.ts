@@ -65,6 +65,11 @@ const EXPECTED_USER_RELATIONS: Readonly<Record<string, OnDeletePolicy>> = {
   "CountZone.createdByUserId": "SetNull",
   "ZoneLabel.printedByUserId": "SetNull",
   "MigrationJob.createdByUserId": "SetNull",
+  // P0-04 (GOD MODE 2026-04-23) — landed-cost audit row actor. SetNull so
+  // a user-delete doesn't erase the cost-allocation history, just
+  // anonymizes the actor. Matches the StockMovement.createdByUserId
+  // precedent for audit-trail rows.
+  "LandedCostAllocation.appliedByUserId": "SetNull",
 
   // --- Restrict (1) — KNOWN POLICY CONCERN, see POLICY_CONCERNS ---
   "CountApproval.requestedById": "Restrict",

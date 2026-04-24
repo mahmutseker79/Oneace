@@ -40,7 +40,10 @@ on:
         description: "Skip Neon branch creation — exercise the tooling only."
         required: false
         type: boolean
-        default: false
+        # Default true so the first scheduled/manual run cannot surprise
+        # a live Neon account. An operator must explicitly opt INTO a
+        # real drill by unchecking this box.
+        default: true
   schedule:
     # Weekly on Monday at 06:00 UTC (~ 09:00 TRT). Was monthly in
     # the skeleton; moved to weekly in P1-06 so the RTO/RPO numbers

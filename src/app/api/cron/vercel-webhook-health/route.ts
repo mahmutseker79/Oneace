@@ -1,7 +1,7 @@
 /**
  * @openapi-tag: /cron/vercel-webhook-health
  *
- * REMOVED — replaced by src/app/api/cron/platform-webhook-health/route.ts
+ * REMOVED (was CRON_SECRET-protected; superseded by platform-*) — replaced by src/app/api/cron/platform-webhook-health/route.ts
  * (Faz 2 rename, v1.5.32-audit-v1.3-platform-agnostic).
  *
  * The `@openapi-tag` above is retained purely so the openapi-parity
