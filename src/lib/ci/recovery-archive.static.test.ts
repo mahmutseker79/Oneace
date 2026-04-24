@@ -32,12 +32,7 @@ function findRepoRoot(): string {
 
 describe("Sprint 1 — GOD MODE recovery archive integrity", () => {
   const root = findRepoRoot();
-  const archiveDir = path.join(
-    root,
-    "scripts",
-    "recovery",
-    "2026-04-23-god-mode",
-  );
+  const archiveDir = path.join(root, "scripts", "recovery", "2026-04-23-god-mode");
 
   it("archive directory exists", () => {
     expect(fs.existsSync(archiveDir)).toBe(true);
@@ -54,9 +49,7 @@ describe("Sprint 1 — GOD MODE recovery archive integrity", () => {
   });
 
   it("carries all 16 archived .command scripts", () => {
-    const entries = fs
-      .readdirSync(archiveDir)
-      .filter((f) => f.endsWith(".command"));
+    const entries = fs.readdirSync(archiveDir).filter((f) => f.endsWith(".command"));
     // 14 hotfix + apply-recovery + finish-recovery +
     // merge-god-mode-recovery-to-main + merge-v1.7.6-auth-hardening-to-main
     // = 16 unique .command files at archive-time.
@@ -67,10 +60,7 @@ describe("Sprint 1 — GOD MODE recovery archive integrity", () => {
     // We don't load the memory file from the repo (it lives outside
     // working tree), but we pin the path shape so a rename here
     // breaks the dossier link loudly.
-    const relative = path
-      .relative(root, archiveDir)
-      .split(path.sep)
-      .join("/");
+    const relative = path.relative(root, archiveDir).split(path.sep).join("/");
     expect(relative).toBe("scripts/recovery/2026-04-23-god-mode");
   });
 });
