@@ -294,12 +294,11 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
         <CardContent className="space-y-4">
           {newRecoveryCodes ? (
             <>
-              <div
-                role="status"
-                className="rounded-md border border-success/50 bg-success/10 px-3 py-2 text-sm text-success"
+              <output
+                className="block rounded-md border border-success/50 bg-success/10 px-3 py-2 text-sm text-success"
               >
                 {labels.regenerateSuccess}
-              </div>
+              </output>
               <div
                 data-testid="new-recovery-codes"
                 className="rounded-md border bg-muted/50 px-3 py-3 font-mono text-sm"
@@ -437,13 +436,12 @@ export function TwoFactorCard({ userId: _userId, labels }: TwoFactorCardProps) {
           inherits the attention.
          */}
         {isEnabled && isRotationAdvised() ? (
-          <div
-            role="status"
+          <output
             data-testid="rotation-advised-banner"
-            className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground"
+            className="block rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning-foreground"
           >
             Your recovery codes are over a year old. Rotate them to keep account recovery safe.
-          </div>
+          </output>
         ) : null}
 
         <div className="flex gap-2 flex-wrap">

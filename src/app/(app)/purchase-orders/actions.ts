@@ -5,23 +5,14 @@ import { revalidatePath } from "next/cache";
 
 import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
-import { db } from "@/lib/db";
-import { getMessages } from "@/lib/i18n";
-import { logger } from "@/lib/logger";
 // GOD MODE roadmap P0-04 rc3 — landed-cost allocation on receive.
 // The allocator is a pure function (see src/lib/costing/landed.ts);
 // PO header + line unit costs feed in, per-line allocations come out,
 // the landedUnitCost value lands on StockMovement and the breakdown
 // is persisted to LandedCostAllocation in the same transaction.
-import {
-  type AllocationBasis,
-  type LandedPOLine,
-  allocateLanded,
-} from "@/lib/costing/landed";
-// GOD MODE roadmap P0-01 (rc2): StockMovement inserts must flow through
-// the postMovement seam so that future cost-attribution (ADR-001
-// FIFO/WAC) and idempotency middleware hook in a single place.
-import { postMovement } from "@/lib/movements";
+import { type AllocationBasis, type LandedPOLine, allocateLanded } from "@/lib/costing/landed";
+import { db } from "@/lib/db";
+import { getMessages } from "@/lib/i18n";
 // GOD MODE roadmap P0-02 (v1.6.1 rc2): receivePurchaseOrderAction wraps
 // its body in withIdempotency keyed on submissionNonce. This is
 // complementary to the existing Phase 6C line-level key derivation
@@ -34,6 +25,11 @@ import {
   IdempotencyInProgressError,
   withIdempotency,
 } from "@/lib/idempotency/middleware";
+import { logger } from "@/lib/logger";
+// GOD MODE roadmap P0-01 (rc2): StockMovement inserts must flow through
+// the postMovement seam so that future cost-attribution (ADR-001
+// FIFO/WAC) and idempotency middleware hook in a single place.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import { deriveReceiveIdempotencyKey } from "@/lib/purchase-orders/idempotency";
@@ -679,225 +675,225 @@ export async function receivePurchaseOrderAction(formData: FormData): Promise<Re
         },
       },
       async () => {
-    const receivedLineCount = deltaByLine.size;
-    // GOD MODE roadmap P0-04 rc3 — compute landed-cost allocation
-    // against the FULL PO line structure (ordered qty × unit cost),
-    // NOT this receive's deltas. Rationale: landedUnitCost is a
-    // per-unit figure that must stay stable across successive
-    // partial receives, and the allocator's rounding invariant
-    // (sum === header total) only holds once per call. Per-partial
-    // scaling happens below when we write the LandedCostAllocation
-    // rows — each row carries the share that this receive cycle
-    // materialized.
-    const toNum = (d: unknown): number => (d == null ? 0 : Number(d));
-    const hasLanded =
-      toNum(existing.freightCost) > 0 ||
-      toNum(existing.dutyCost) > 0 ||
-      toNum(existing.insuranceCost) > 0 ||
-      toNum(existing.otherLandedCost) > 0;
-    const allocations = hasLanded
-      ? allocateLanded(
-          {
-            freight: toNum(existing.freightCost),
-            duty: toNum(existing.dutyCost),
-            insurance: toNum(existing.insuranceCost),
-            other: toNum(existing.otherLandedCost),
-            basis: existing.landedAllocationBasis as AllocationBasis,
-          },
-          existing.lines.map(
-            (l): LandedPOLine => ({
-              id: l.id,
-              unitCost: toNum(l.unitCost),
-              qty: l.orderedQty,
-            }),
-          ),
-        )
-      : null;
-    const fullyReceived = await db.$transaction(async (tx) => {
-      // Sprint 4: Lock PO lines with SELECT FOR UPDATE to prevent
-      // double-receive from concurrent tabs. Two tabs would each get
-      // a different submissionNonce, bypassing idempotency, and both
-      // increment receivedQty. The lock ensures serialized access.
-      const lockedLines = await tx.$queryRaw<
-        Array<{
-          id: string;
-          itemId: string;
-          orderedQty: number;
-          receivedQty: number;
-        }>
-      >`
+        const receivedLineCount = deltaByLine.size;
+        // GOD MODE roadmap P0-04 rc3 — compute landed-cost allocation
+        // against the FULL PO line structure (ordered qty × unit cost),
+        // NOT this receive's deltas. Rationale: landedUnitCost is a
+        // per-unit figure that must stay stable across successive
+        // partial receives, and the allocator's rounding invariant
+        // (sum === header total) only holds once per call. Per-partial
+        // scaling happens below when we write the LandedCostAllocation
+        // rows — each row carries the share that this receive cycle
+        // materialized.
+        const toNum = (d: unknown): number => (d == null ? 0 : Number(d));
+        const hasLanded =
+          toNum(existing.freightCost) > 0 ||
+          toNum(existing.dutyCost) > 0 ||
+          toNum(existing.insuranceCost) > 0 ||
+          toNum(existing.otherLandedCost) > 0;
+        const allocations = hasLanded
+          ? allocateLanded(
+              {
+                freight: toNum(existing.freightCost),
+                duty: toNum(existing.dutyCost),
+                insurance: toNum(existing.insuranceCost),
+                other: toNum(existing.otherLandedCost),
+                basis: existing.landedAllocationBasis as AllocationBasis,
+              },
+              existing.lines.map(
+                (l): LandedPOLine => ({
+                  id: l.id,
+                  unitCost: toNum(l.unitCost),
+                  qty: l.orderedQty,
+                }),
+              ),
+            )
+          : null;
+        const fullyReceived = await db.$transaction(async (tx) => {
+          // Sprint 4: Lock PO lines with SELECT FOR UPDATE to prevent
+          // double-receive from concurrent tabs. Two tabs would each get
+          // a different submissionNonce, bypassing idempotency, and both
+          // increment receivedQty. The lock ensures serialized access.
+          const lockedLines = await tx.$queryRaw<
+            Array<{
+              id: string;
+              itemId: string;
+              orderedQty: number;
+              receivedQty: number;
+            }>
+          >`
         SELECT id, "itemId", "orderedQty", "receivedQty"
         FROM "PurchaseOrderLine"
         WHERE "purchaseOrderId" = ${existing.id}
         FOR UPDATE
       `;
-      const freshLineMap = new Map(lockedLines.map((l) => [l.id, l]));
+          const freshLineMap = new Map(lockedLines.map((l) => [l.id, l]));
 
-      // Re-validate with locked (fresh) data — catches concurrent overwrites
-      for (const [lineId, delta] of deltaByLine) {
-        const freshLine = freshLineMap.get(lineId);
-        if (!freshLine) throw new Error("Line not found after lock");
-        const open = freshLine.orderedQty - freshLine.receivedQty;
-        if (delta > open)
-          throw new Error("Receive overflow after lock (concurrent receive detected)");
-      }
+          // Re-validate with locked (fresh) data — catches concurrent overwrites
+          for (const [lineId, delta] of deltaByLine) {
+            const freshLine = freshLineMap.get(lineId);
+            if (!freshLine) throw new Error("Line not found after lock");
+            const open = freshLine.orderedQty - freshLine.receivedQty;
+            if (delta > open)
+              throw new Error("Receive overflow after lock (concurrent receive detected)");
+          }
 
-      for (const [lineId, delta] of deltaByLine) {
-        const line = freshLineMap.get(lineId);
-        if (!line) continue;
+          for (const [lineId, delta] of deltaByLine) {
+            const line = freshLineMap.get(lineId);
+            if (!line) continue;
 
-        // P0-04 rc3 — per-line cost figures.
-        // purchaseUnitCost is the original supplier price (audit).
-        // landedUnitCost is the allocator's per-unit output; falls
-        // back to purchaseUnitCost when the PO has no landed-cost
-        // header.
-        const poLine = existing.lines.find((l) => l.id === lineId);
-        const purchaseUnitCost = toNum(poLine?.unitCost);
-        const allocation = allocations?.get(lineId);
-        const landedUnitCost = allocation?.landedUnitCost ?? purchaseUnitCost;
+            // P0-04 rc3 — per-line cost figures.
+            // purchaseUnitCost is the original supplier price (audit).
+            // landedUnitCost is the allocator's per-unit output; falls
+            // back to purchaseUnitCost when the PO has no landed-cost
+            // header.
+            const poLine = existing.lines.find((l) => l.id === lineId);
+            const purchaseUnitCost = toNum(poLine?.unitCost);
+            const allocation = allocations?.get(lineId);
+            const landedUnitCost = allocation?.landedUnitCost ?? purchaseUnitCost;
 
-        // rc2: migrated from direct `tx.stockMovement.create(...)` to
-        // the seam. Shape is identical; the seam drops unknown forward-
-        // compat fields and fires the cost-posting hook (no-op today,
-        // ADR-001 FIFO/WAC when Phase 1c ships).
-        // rc3: populates P0-04 cost-audit columns on the movement.
-        const created = await postMovement(tx, {
-          organizationId: orgId,
-          itemId: line.itemId,
-          warehouseId: existing.warehouseId,
-          type: "RECEIPT",
-          quantity: delta,
-          direction: 1,
-          reference: existing.poNumber,
-          note: input.notes,
-          createdByUserId: session.user.id,
-          // Phase 5A — source-document backref. Lets the ledger join
-          // back to the originating PO line without parsing
-          // `reference`. Historical rows (pre-Phase-5A) remain null.
-          purchaseOrderLineId: lineId,
-          // Phase 6C — replay protection. Derived from the
-          // client-minted per-form-mount nonce and the line id so
-          // the compound unique index
-          // `@@unique([organizationId, idempotencyKey])` rejects
-          // duplicate rows from a retry of the same form mount.
-          // Legacy callers without a nonce get `null`, which the
-          // partial-unique semantics intentionally allow. P0-03 in
-          // the roadmap will make this NOT NULL and move key
-          // derivation into a middleware at the action boundary.
-          idempotencyKey: submissionNonce
-            ? deriveReceiveIdempotencyKey(submissionNonce, lineId)
-            : null,
-          // P0-04 rc3 — cost audit columns.
-          purchaseUnitCost,
-          landedUnitCost,
+            // rc2: migrated from direct `tx.stockMovement.create(...)` to
+            // the seam. Shape is identical; the seam drops unknown forward-
+            // compat fields and fires the cost-posting hook (no-op today,
+            // ADR-001 FIFO/WAC when Phase 1c ships).
+            // rc3: populates P0-04 cost-audit columns on the movement.
+            const created = await postMovement(tx, {
+              organizationId: orgId,
+              itemId: line.itemId,
+              warehouseId: existing.warehouseId,
+              type: "RECEIPT",
+              quantity: delta,
+              direction: 1,
+              reference: existing.poNumber,
+              note: input.notes,
+              createdByUserId: session.user.id,
+              // Phase 5A — source-document backref. Lets the ledger join
+              // back to the originating PO line without parsing
+              // `reference`. Historical rows (pre-Phase-5A) remain null.
+              purchaseOrderLineId: lineId,
+              // Phase 6C — replay protection. Derived from the
+              // client-minted per-form-mount nonce and the line id so
+              // the compound unique index
+              // `@@unique([organizationId, idempotencyKey])` rejects
+              // duplicate rows from a retry of the same form mount.
+              // Legacy callers without a nonce get `null`, which the
+              // partial-unique semantics intentionally allow. P0-03 in
+              // the roadmap will make this NOT NULL and move key
+              // derivation into a middleware at the action boundary.
+              idempotencyKey: submissionNonce
+                ? deriveReceiveIdempotencyKey(submissionNonce, lineId)
+                : null,
+              // P0-04 rc3 — cost audit columns.
+              purchaseUnitCost,
+              landedUnitCost,
+            });
+
+            // P0-04 rc3 — per-category audit rows. Scaled by
+            // (delta / orderedQty) so a partial receive carries its
+            // proportional share; across all receives of a given line
+            // the sum lands on the header's freight/duty/etc for that
+            // line. Zero-amount rows are filtered out; non-landed-cost
+            // POs skip this block entirely.
+            if (allocation && hasLanded && poLine && poLine.orderedQty > 0) {
+              const proration = delta / poLine.orderedQty;
+              const scaled = {
+                FREIGHT: allocation.freight * proration,
+                DUTY: allocation.duty * proration,
+                INSURANCE: allocation.insurance * proration,
+                OTHER: allocation.other * proration,
+              } as const;
+              const rows = (Object.keys(scaled) as Array<keyof typeof scaled>)
+                .filter((k) => scaled[k] > 0)
+                .map((k) => ({
+                  organizationId: orgId,
+                  purchaseOrderId: existing.id,
+                  sourceMovementId: created.id,
+                  allocationType: k,
+                  allocationBasis: allocation.basisUsed,
+                  // Round to 6 decimals to match the Decimal(18, 6)
+                  // column precision. Prisma would round anyway; we do
+                  // it explicitly so tests observing the number match
+                  // persisted value bit-for-bit.
+                  allocatedAmount: Number(scaled[k].toFixed(6)),
+                  appliedByUserId: session.user.id,
+                }));
+              if (rows.length > 0) {
+                await tx.landedCostAllocation.createMany({ data: rows });
+              }
+            }
+
+            await upsertStockLevel(tx, {
+              organizationId: orgId,
+              itemId: line.itemId,
+              warehouseId: existing.warehouseId,
+              quantityDelta: delta,
+            });
+
+            await tx.purchaseOrderLine.update({
+              where: { id: lineId },
+              data: { receivedQty: { increment: delta } },
+            });
+          }
+
+          // Recompute PO status from fresh totals
+          const refreshed = await tx.purchaseOrder.findUnique({
+            where: { id: existing.id },
+            select: { lines: { select: { orderedQty: true, receivedQty: true } } },
+          });
+          const lines = refreshed?.lines ?? [];
+          const allReceived = lines.length > 0 && lines.every((l) => l.receivedQty >= l.orderedQty);
+          const anyReceived = lines.some((l) => l.receivedQty > 0);
+
+          const nextStatus = allReceived
+            ? "RECEIVED"
+            : anyReceived
+              ? "PARTIALLY_RECEIVED"
+              : existing.status;
+
+          await tx.purchaseOrder.update({
+            where: { id: existing.id, organizationId: orgId },
+            data: {
+              status: nextStatus,
+              receivedAt: allReceived ? new Date() : null,
+            },
+          });
+
+          return allReceived;
         });
 
-        // P0-04 rc3 — per-category audit rows. Scaled by
-        // (delta / orderedQty) so a partial receive carries its
-        // proportional share; across all receives of a given line
-        // the sum lands on the header's freight/duty/etc for that
-        // line. Zero-amount rows are filtered out; non-landed-cost
-        // POs skip this block entirely.
-        if (allocation && hasLanded && poLine && poLine.orderedQty > 0) {
-          const proration = delta / poLine.orderedQty;
-          const scaled = {
-            FREIGHT: allocation.freight * proration,
-            DUTY: allocation.duty * proration,
-            INSURANCE: allocation.insurance * proration,
-            OTHER: allocation.other * proration,
-          } as const;
-          const rows = (Object.keys(scaled) as Array<keyof typeof scaled>)
-            .filter((k) => scaled[k] > 0)
-            .map((k) => ({
-              organizationId: orgId,
-              purchaseOrderId: existing.id,
-              sourceMovementId: created.id,
-              allocationType: k,
-              allocationBasis: allocation.basisUsed,
-              // Round to 6 decimals to match the Decimal(18, 6)
-              // column precision. Prisma would round anyway; we do
-              // it explicitly so tests observing the number match
-              // persisted value bit-for-bit.
-              allocatedAmount: Number(scaled[k].toFixed(6)),
-              appliedByUserId: session.user.id,
-            }));
-          if (rows.length > 0) {
-            await tx.landedCostAllocation.createMany({ data: rows });
-          }
+        await recordAudit({
+          organizationId: orgId,
+          actorId: session.user.id,
+          action: "purchase_order.received",
+          entityType: "purchase_order",
+          entityId: existing.id,
+          metadata: {
+            poNumber: existing.poNumber,
+            receivedLineCount,
+            fullyReceived,
+            totalQty: Array.from(deltaByLine.values()).reduce((a, b) => a + b, 0),
+          },
+        });
+
+        revalidatePath("/purchase-orders");
+        revalidatePath(`/purchase-orders/${existing.id}`);
+        revalidatePath("/movements");
+        revalidatePath("/items");
+        revalidatePath("/dashboard");
+
+        // P10.2 — fire-and-forget low-stock alert evaluation for received items
+        const receivedItemIds = [
+          ...new Set(
+            Array.from(deltaByLine.keys())
+              .map((lineId) => lineMap.get(lineId)?.itemId)
+              .filter((id): id is string => !!id),
+          ),
+        ];
+        if (receivedItemIds.length > 0) {
+          void evaluateAlerts(orgId, receivedItemIds);
         }
 
-        await upsertStockLevel(tx, {
-          organizationId: orgId,
-          itemId: line.itemId,
-          warehouseId: existing.warehouseId,
-          quantityDelta: delta,
-        });
-
-        await tx.purchaseOrderLine.update({
-          where: { id: lineId },
-          data: { receivedQty: { increment: delta } },
-        });
-      }
-
-      // Recompute PO status from fresh totals
-      const refreshed = await tx.purchaseOrder.findUnique({
-        where: { id: existing.id },
-        select: { lines: { select: { orderedQty: true, receivedQty: true } } },
-      });
-      const lines = refreshed?.lines ?? [];
-      const allReceived = lines.length > 0 && lines.every((l) => l.receivedQty >= l.orderedQty);
-      const anyReceived = lines.some((l) => l.receivedQty > 0);
-
-      const nextStatus = allReceived
-        ? "RECEIVED"
-        : anyReceived
-          ? "PARTIALLY_RECEIVED"
-          : existing.status;
-
-      await tx.purchaseOrder.update({
-        where: { id: existing.id, organizationId: orgId },
-        data: {
-          status: nextStatus,
-          receivedAt: allReceived ? new Date() : null,
-        },
-      });
-
-      return allReceived;
-    });
-
-    await recordAudit({
-      organizationId: orgId,
-      actorId: session.user.id,
-      action: "purchase_order.received",
-      entityType: "purchase_order",
-      entityId: existing.id,
-      metadata: {
-        poNumber: existing.poNumber,
-        receivedLineCount,
-        fullyReceived,
-        totalQty: Array.from(deltaByLine.values()).reduce((a, b) => a + b, 0),
-      },
-    });
-
-    revalidatePath("/purchase-orders");
-    revalidatePath(`/purchase-orders/${existing.id}`);
-    revalidatePath("/movements");
-    revalidatePath("/items");
-    revalidatePath("/dashboard");
-
-    // P10.2 — fire-and-forget low-stock alert evaluation for received items
-    const receivedItemIds = [
-      ...new Set(
-        Array.from(deltaByLine.keys())
-          .map((lineId) => lineMap.get(lineId)?.itemId)
-          .filter((id): id is string => !!id),
-      ),
-    ];
-    if (receivedItemIds.length > 0) {
-      void evaluateAlerts(orgId, receivedItemIds);
-    }
-
-    return { ok: true, id: existing.id, receivedLineCount, fullyReceived };
+        return { ok: true, id: existing.id, receivedLineCount, fullyReceived };
       },
     );
   } catch (error) {

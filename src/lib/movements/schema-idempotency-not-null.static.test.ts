@@ -41,10 +41,7 @@ function findRepoRoot(): string {
  * closing `}`. A naive scan is sufficient — Prisma schemas don't
  * have nested braces in field definitions.
  */
-function extractModelBody(
-  schemaSrc: string,
-  modelName: string,
-): string | null {
+function extractModelBody(schemaSrc: string, modelName: string): string | null {
   const header = new RegExp(`^model\\s+${modelName}\\s*\\{`, "m");
   const match = header.exec(schemaSrc);
   if (!match) return null;
@@ -57,10 +54,7 @@ function extractModelBody(
 describe("StockMovement.idempotencyKey — pinned NOT NULL (P0-03 rc2)", () => {
   it("schema.prisma declares idempotencyKey as String (not String?)", () => {
     const root = findRepoRoot();
-    const src = fs.readFileSync(
-      path.join(root, "prisma", "schema.prisma"),
-      "utf8",
-    );
+    const src = fs.readFileSync(path.join(root, "prisma", "schema.prisma"), "utf8");
     const body = extractModelBody(src, "StockMovement");
     expect(body, "StockMovement model must exist in schema").not.toBeNull();
 
@@ -92,18 +86,16 @@ describe("StockMovement.idempotencyKey — pinned NOT NULL (P0-03 rc2)", () => {
     // Backfill step: UPDATE … SET "idempotencyKey" = 'LEGACY:' || "id" WHERE … IS NULL.
     // We check for the two substrings rather than a full regex because
     // the migration may wrap them in a DO $$ block.
-    expect(
-      sql,
-      "migration must backfill NULL rows with 'LEGACY:' prefix",
-    ).toMatch(/UPDATE\s+"StockMovement"/i);
+    expect(sql, "migration must backfill NULL rows with 'LEGACY:' prefix").toMatch(
+      /UPDATE\s+"StockMovement"/i,
+    );
     expect(sql).toMatch(/'LEGACY:'/);
     expect(sql).toMatch(/IS NULL/i);
 
     // ALTER step: must flip to NOT NULL.
-    expect(
-      sql,
-      "migration must ALTER idempotencyKey to SET NOT NULL",
-    ).toMatch(/ALTER\s+TABLE\s+"StockMovement"/i);
+    expect(sql, "migration must ALTER idempotencyKey to SET NOT NULL").toMatch(
+      /ALTER\s+TABLE\s+"StockMovement"/i,
+    );
     expect(sql).toMatch(/SET NOT NULL/i);
 
     // Ordering guard: backfill should appear before ALTER in the file.

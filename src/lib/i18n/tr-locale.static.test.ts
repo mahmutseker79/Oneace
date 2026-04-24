@@ -40,22 +40,9 @@ function findRepoRoot(): string {
 
 describe("Turkish locale — P1-07 foundation", () => {
   const root = findRepoRoot();
-  const config = fs.readFileSync(
-    path.join(root, "src", "lib", "i18n", "config.ts"),
-    "utf8",
-  );
-  const index = fs.readFileSync(
-    path.join(root, "src", "lib", "i18n", "index.ts"),
-    "utf8",
-  );
-  const trPath = path.join(
-    root,
-    "src",
-    "lib",
-    "i18n",
-    "messages",
-    "tr.ts",
-  );
+  const config = fs.readFileSync(path.join(root, "src", "lib", "i18n", "config.ts"), "utf8");
+  const index = fs.readFileSync(path.join(root, "src", "lib", "i18n", "index.ts"), "utf8");
+  const trPath = path.join(root, "src", "lib", "i18n", "messages", "tr.ts");
 
   it("messages/tr.ts exists", () => {
     expect(fs.existsSync(trPath)).toBe(true);
@@ -89,7 +76,9 @@ describe("Turkish locale — P1-07 foundation", () => {
     expect(/import\s*\{\s*tr\s*\}\s*from\s*["']\.\/messages\/tr["']/.test(index)).toBe(true);
     // The catalog object literal must reference tr (as shorthand or
     // explicit `tr: tr`).
-    const catalog = index.match(/const\s+catalog\s*:\s*Record<Locale,\s*Messages>\s*=\s*\{([\s\S]*?)\};/);
+    const catalog = index.match(
+      /const\s+catalog\s*:\s*Record<Locale,\s*Messages>\s*=\s*\{([\s\S]*?)\};/,
+    );
     expect(catalog).not.toBeNull();
     expect(/\btr\b/.test(catalog?.[1] ?? "")).toBe(true);
   });
@@ -97,15 +86,7 @@ describe("Turkish locale — P1-07 foundation", () => {
 
 describe("KVKK legal page — P1-07", () => {
   const root = findRepoRoot();
-  const kvkkPath = path.join(
-    root,
-    "src",
-    "app",
-    "(marketing)",
-    "legal",
-    "kvkk",
-    "page.tsx",
-  );
+  const kvkkPath = path.join(root, "src", "app", "(marketing)", "legal", "kvkk", "page.tsx");
 
   it("page exists at the expected route", () => {
     expect(fs.existsSync(kvkkPath)).toBe(true);

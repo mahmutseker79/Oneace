@@ -73,10 +73,7 @@ export function generateMovementIdempotencyKey(): string {
  * Throws on invalid input — webhook handlers should validate before
  * calling this, not catch downstream.
  */
-export function deriveWebhookIdempotencyKey(
-  provider: string,
-  deliveryId: string,
-): string {
+export function deriveWebhookIdempotencyKey(provider: string, deliveryId: string): string {
   if (!provider || !/^[a-z][a-z0-9_-]*$/.test(provider)) {
     throw new Error(
       `deriveWebhookIdempotencyKey: invalid provider "${provider}" — expected lowercase kebab/snake`,
@@ -84,18 +81,14 @@ export function deriveWebhookIdempotencyKey(
   }
   const trimmed = (deliveryId ?? "").trim();
   if (!trimmed) {
-    throw new Error(
-      `deriveWebhookIdempotencyKey: deliveryId required (provider="${provider}")`,
-    );
+    throw new Error(`deriveWebhookIdempotencyKey: deliveryId required (provider="${provider}")`);
   }
   // Guard against deliveryIds that are themselves huge (some
   // providers send base64-encoded blobs). Truncate so the full key
   // stays under the 128-char schema ceiling — the prefix + provider
   // claim at most 32 chars; leave the rest for the deliveryId.
   const maxDeliveryLen = 128 - (WEBHOOK_KEY_PREFIX.length + provider.length + 1);
-  const safeDelivery = trimmed.length > maxDeliveryLen
-    ? trimmed.slice(0, maxDeliveryLen)
-    : trimmed;
+  const safeDelivery = trimmed.length > maxDeliveryLen ? trimmed.slice(0, maxDeliveryLen) : trimmed;
   return `${WEBHOOK_KEY_PREFIX}${provider}:${safeDelivery}`;
 }
 

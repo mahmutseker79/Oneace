@@ -22,10 +22,7 @@ export const ODOO_TASK_KINDS = [
 
 export type OdooTaskKind = (typeof ODOO_TASK_KINDS)[number];
 
-async function runOdooSync(
-  task: ClaimedTask,
-  kind: OdooTaskKind,
-): Promise<void> {
+async function runOdooSync(task: ClaimedTask, kind: OdooTaskKind): Promise<void> {
   const integration = await db.integration.findFirst({
     where: {
       organizationId: task.organizationId,

@@ -106,7 +106,11 @@ const ENTITY_TYPE_BY_TASK: Record<QboTaskKind, QBOSyncEntityType> = {
  * today. When the typed class lands (follow-up), delete this
  * heuristic and `instanceof` it.
  */
-const QBO_REFRESH_EXPIRED_MARKERS = ["invalid_grant", "refresh_token_expired", "Refresh token has expired"];
+const QBO_REFRESH_EXPIRED_MARKERS = [
+  "invalid_grant",
+  "refresh_token_expired",
+  "Refresh token has expired",
+];
 
 function looksLikeRefreshExpired(err: unknown): boolean {
   if (!(err instanceof Error)) return false;

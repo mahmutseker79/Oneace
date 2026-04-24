@@ -19,10 +19,7 @@ export const BIGCOMMERCE_TASK_KINDS = [
 
 export type BigCommerceTaskKind = (typeof BIGCOMMERCE_TASK_KINDS)[number];
 
-async function runBigCommerceSync(
-  task: ClaimedTask,
-  kind: BigCommerceTaskKind,
-): Promise<void> {
+async function runBigCommerceSync(task: ClaimedTask, kind: BigCommerceTaskKind): Promise<void> {
   const integration = await db.integration.findFirst({
     where: {
       organizationId: task.organizationId,

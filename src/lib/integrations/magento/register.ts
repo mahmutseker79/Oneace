@@ -10,18 +10,11 @@ import { db } from "@/lib/db";
 import { registerHandler } from "../task-dispatch-registry";
 import type { ClaimedTask } from "../task-queue";
 
-export const MAGENTO_TASK_KINDS = [
-  "sync_items",
-  "sync_sales_orders",
-  "sync_stock_levels",
-] as const;
+export const MAGENTO_TASK_KINDS = ["sync_items", "sync_sales_orders", "sync_stock_levels"] as const;
 
 export type MagentoTaskKind = (typeof MAGENTO_TASK_KINDS)[number];
 
-async function runMagentoSync(
-  task: ClaimedTask,
-  kind: MagentoTaskKind,
-): Promise<void> {
+async function runMagentoSync(task: ClaimedTask, kind: MagentoTaskKind): Promise<void> {
   const integration = await db.integration.findFirst({
     where: {
       organizationId: task.organizationId,

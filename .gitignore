@@ -126,3 +126,6 @@ src/app/\\(app\\)/
 # (Note: `push-*.command` / `push-*.log` are deliberately tracked as
 # sprint release artefacts, per the project's release workflow.)
 /*-KICKOFF-PROMPT.md
+
+# Recovery staging dir (2026-04-24 GOD MODE transcript recovery)
+.recovery-stage/

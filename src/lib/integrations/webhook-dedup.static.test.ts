@@ -67,12 +67,7 @@ describe("WebhookDeliveryEvent schema — P1-02", () => {
 
 describe("Migration — 20260426_webhook_delivery_event", () => {
   const root = findRepoRoot();
-  const migDir = path.join(
-    root,
-    "prisma",
-    "migrations",
-    "20260426000000_webhook_delivery_event",
-  );
+  const migDir = path.join(root, "prisma", "migrations", "20260426000000_webhook_delivery_event");
 
   it("migration dir + sql exist", () => {
     expect(fs.existsSync(migDir)).toBe(true);

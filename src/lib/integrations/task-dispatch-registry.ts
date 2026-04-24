@@ -120,10 +120,7 @@ export async function dispatch(task: ClaimedTask): Promise<void> {
  * it should call `dispatch()` and let the `SCHEMA_UNWIRED_ADAPTER`
  * throw surface the wiring gap in the DLQ.
  */
-export function hasHandler(
-  integrationKind: IntegrationKind,
-  taskKind: TaskKind,
-): boolean {
+export function hasHandler(integrationKind: IntegrationKind, taskKind: TaskKind): boolean {
   return registry.has(keyOf(integrationKind, taskKind));
 }
 

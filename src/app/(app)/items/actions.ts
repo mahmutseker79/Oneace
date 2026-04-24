@@ -11,7 +11,7 @@ import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { hasCapability } from "@/lib/permissions";
-import { checkPlanLimit, planLimitHitResponse, type PlanLimitHitResponse } from "@/lib/plans";
+import { type PlanLimitHitResponse, checkPlanLimit, planLimitHitResponse } from "@/lib/plans";
 // Phase 6A / P2 — narrow rate-limit surface for bulk import. See
 // `src/lib/rate-limit.ts` for the design note on fail-open behavior.
 import { rateLimit } from "@/lib/rate-limit";

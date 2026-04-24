@@ -2028,10 +2028,8 @@ export const en = {
       removeLineFailed: "Could not remove line from sales order.",
       // P0-02 idempotency middleware surfaces — see
       // src/app/(app)/sales-orders/actions.ts error mapping.
-      idempotencyConflict:
-        "This idempotency key was already used with a different payload.",
-      idempotencyInProgress:
-        "A previous attempt with the same key is still running.",
+      idempotencyConflict: "This idempotency key was already used with a different payload.",
+      idempotencyInProgress: "A previous attempt with the same key is still running.",
       deleteLineFailed: "Could not remove line from sales order.",
       confirmFailed: "Could not confirm sales order.",
       allocateFailed: "Could not allocate sales order.",

@@ -19,9 +19,7 @@
 //   - CRON_SECRET    : shared secret with /api/cron/* routes
 
 const SELF_URL =
-  process.env.URL ||
-  process.env.DEPLOY_PRIME_URL ||
-  "https://oneace-next-local.netlify.app";
+  process.env.URL || process.env.DEPLOY_PRIME_URL || "https://oneace-next-local.netlify.app";
 
 export async function callCronRoute(
   path: string,
@@ -59,8 +57,7 @@ export async function callCronRoute(
     return new Response(body, {
       status: res.status,
       headers: {
-        "content-type":
-          res.headers.get("content-type") ?? "application/json",
+        "content-type": res.headers.get("content-type") ?? "application/json",
       },
     });
   } catch (err) {

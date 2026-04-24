@@ -134,9 +134,7 @@ describe("§5.45 F-01 — vercel.json registers the platform-webhook-health cron
   });
 
   it("runs sub-hourly (every N minutes, not daily/hourly top-of-hour)", () => {
-    const entry = (VERCEL.crons ?? []).find(
-      (c) => c.path === "/api/cron/platform-webhook-health",
-    );
+    const entry = (VERCEL.crons ?? []).find((c) => c.path === "/api/cron/platform-webhook-health");
     expect(entry, "platform-webhook-health cron entry must exist").toBeDefined();
     expect(entry?.schedule).toMatch(/^\*\/(\d+)\s+\*\s+\*\s+\*\s+\*$/);
     const m = entry?.schedule?.match(/^\*\/(\d+)\s/);

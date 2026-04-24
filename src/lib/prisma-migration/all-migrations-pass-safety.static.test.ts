@@ -15,13 +15,10 @@
 //     print to stdout but pass. This lets us tighten rules without
 //     breaking the suite.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  isSubjectToHeaderRequirement,
-  parseMigrationHeader,
-} from "./header";
+import { isSubjectToHeaderRequirement, parseMigrationHeader } from "./header";
 import { checkMigrationSafety, formatViolation } from "./safety";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
@@ -73,17 +70,15 @@ describe("ADR-004 — every post-cutoff migration passes the safety validator", 
     if (warnings.length > 0) {
       // Surface warnings in the test output without failing.
       console.warn(
-        `\nADR-004 safety warnings (not fatal, ${warnings.length}):\n${warnings.join(
-          "\n"
-        )}\n`
+        `\nADR-004 safety warnings (not fatal, ${warnings.length}):\n${warnings.join("\n")}\n`,
       );
     }
 
     if (errors.length > 0) {
       throw new Error(
         `ADR-004 safety check failed for ${errors.length} violation(s) across ${enforcedCount} enforced migration(s):\n${errors.join(
-          "\n"
-        )}\n\nSee src/lib/prisma-migration/safety.ts for the rule set.`
+          "\n",
+        )}\n\nSee src/lib/prisma-migration/safety.ts for the rule set.`,
       );
     }
   });

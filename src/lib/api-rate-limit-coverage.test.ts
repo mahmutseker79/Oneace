@@ -206,9 +206,7 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
       // narrative comments with apostrophes ("doesn't", "user's")
       // that a mixed ["'] character class would treat as quote
       // toggles and break the pairing.
-      const middlewarePrefixes = Array.from(body.matchAll(/"([^"]+)"/g)).map(
-        (m) => m[1] as string,
-      );
+      const middlewarePrefixes = Array.from(body.matchAll(/"([^"]+)"/g)).map((m) => m[1] as string);
       expect(
         middlewarePrefixes.length,
         "failed to parse any prefixes from the middleware literal — regex drift",
@@ -258,9 +256,7 @@ describe("API rate-limit coverage (audit v1.2 §5.34)", () => {
       // narrative comments with apostrophes ("doesn't", "user's")
       // that a mixed ["'] character class would treat as quote
       // toggles and break the pairing.
-      const middlewarePrefixes = Array.from(body.matchAll(/"([^"]+)"/g)).map(
-        (m) => m[1] as string,
-      );
+      const middlewarePrefixes = Array.from(body.matchAll(/"([^"]+)"/g)).map((m) => m[1] as string);
       expect(
         middlewarePrefixes.length,
         "failed to parse any prefixes from the middleware literal — regex drift",

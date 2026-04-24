@@ -292,14 +292,10 @@ export function allocateLanded(
   // refactor that breaks the invariant fails at the seam rather
   // than silently corrupting a customer's books.
   if (running.freight !== totals.freight) {
-    throw new LandedCostInputError(
-      `internal: freight drift ${running.freight}/${totals.freight}`,
-    );
+    throw new LandedCostInputError(`internal: freight drift ${running.freight}/${totals.freight}`);
   }
   if (running.duty !== totals.duty) {
-    throw new LandedCostInputError(
-      `internal: duty drift ${running.duty}/${totals.duty}`,
-    );
+    throw new LandedCostInputError(`internal: duty drift ${running.duty}/${totals.duty}`);
   }
   if (running.insurance !== totals.insurance) {
     throw new LandedCostInputError(
@@ -307,9 +303,7 @@ export function allocateLanded(
     );
   }
   if (running.other !== totals.other) {
-    throw new LandedCostInputError(
-      `internal: other drift ${running.other}/${totals.other}`,
-    );
+    throw new LandedCostInputError(`internal: other drift ${running.other}/${totals.other}`);
   }
 
   return out;
@@ -321,10 +315,7 @@ export function allocateLanded(
  * BY_QTY has a non-zero denominator by construction (qty > 0 is
  * validated above), so the recursion always terminates.
  */
-function resolveBasis(
-  requested: AllocationBasis,
-  lines: readonly LandedPOLine[],
-): AllocationBasis {
+function resolveBasis(requested: AllocationBasis, lines: readonly LandedPOLine[]): AllocationBasis {
   if (sumBasis(lines, requested) !== 0n) return requested;
   if (requested !== "BY_VALUE" && sumBasis(lines, "BY_VALUE") !== 0n) {
     return "BY_VALUE";

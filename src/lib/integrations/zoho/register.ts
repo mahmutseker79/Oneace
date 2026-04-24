@@ -23,10 +23,7 @@ export const ZOHO_TASK_KINDS = [
 
 export type ZohoTaskKind = (typeof ZOHO_TASK_KINDS)[number];
 
-async function runZohoSync(
-  task: ClaimedTask,
-  kind: ZohoTaskKind,
-): Promise<void> {
+async function runZohoSync(task: ClaimedTask, kind: ZohoTaskKind): Promise<void> {
   const integration = await db.integration.findFirst({
     where: {
       organizationId: task.organizationId,

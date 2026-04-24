@@ -40,13 +40,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  BACKOFF_MS,
-  MAX_RETRIES,
-  backoffMsFor,
-  classifyError,
-  errorMessage,
-} from "./task-queue";
+import { BACKOFF_MS, MAX_RETRIES, backoffMsFor, classifyError, errorMessage } from "./task-queue";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
 const SCHEMA_PATH = resolve(REPO_ROOT, "prisma/schema.prisma");
@@ -221,9 +215,7 @@ describe("§5.53 F-09 — migration SQL creates the table idempotently", () => {
   });
 
   it("creates both indexes idempotently", () => {
-    expect(sql).toMatch(
-      /CREATE INDEX IF NOT EXISTS "IntegrationTask_status_nextAttemptAt_idx"/,
-    );
+    expect(sql).toMatch(/CREATE INDEX IF NOT EXISTS "IntegrationTask_status_nextAttemptAt_idx"/);
     expect(sql).toMatch(
       /CREATE INDEX IF NOT EXISTS "IntegrationTask_organizationId_integrationKind_idx"/,
     );

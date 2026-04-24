@@ -91,11 +91,9 @@ const ALLOWED_CALLSITES: ReadonlySet<string> = new Set(
  * output contains `prisma.stockMovement.create(...)` in doc comments
  * that would otherwise trip the scan.
  */
-const SKIP_PREFIXES = [
-  "src/generated",
-  "src/generated/prisma",
-  "src/generated/prisma.old",
-].map(toPosix);
+const SKIP_PREFIXES = ["src/generated", "src/generated/prisma", "src/generated/prisma.old"].map(
+  toPosix,
+);
 
 function toPosix(p: string): string {
   return p.split(path.sep).join("/");
@@ -119,9 +117,7 @@ function repoRelative(absPath: string, repoRoot: string): string {
 }
 
 function isSkipped(rel: string): boolean {
-  return SKIP_PREFIXES.some(
-    (prefix) => rel === prefix || rel.startsWith(prefix + "/"),
-  );
+  return SKIP_PREFIXES.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`));
 }
 
 /**
@@ -198,15 +194,15 @@ function stripComments(src: string): string {
 
 describe("stripComments — comment-aware scan (guards against false positives)", () => {
   it("strips a line comment mentioning stockMovement.create", () => {
-    const src = `const x = 1; // migrated from tx.stockMovement.create`;
+    const src = "const x = 1; // migrated from tx.stockMovement.create";
     expect(stripComments(src)).toBe("const x = 1; ");
   });
   it("strips a block comment mentioning stockMovement.create", () => {
-    const src = `/* was: tx.stockMovement.create(...) */ foo();`;
+    const src = "/* was: tx.stockMovement.create(...) */ foo();";
     expect(stripComments(src)).toBe(" foo();");
   });
   it("preserves stockMovement.create inside a real expression", () => {
-    const src = `await tx.stockMovement.create({ data });`;
+    const src = "await tx.stockMovement.create({ data });";
     expect(stripComments(src)).toContain("tx.stockMovement.create");
   });
   it("preserves stockMovement.create inside a string literal (we don't try to parse into strings)", () => {
@@ -228,10 +224,7 @@ describe("postMovement seam — no direct stockMovement.create outside allowlist
       repoRoot = path.dirname(repoRoot);
     }
     const srcDir = path.join(repoRoot, "src");
-    expect(
-      fs.existsSync(srcDir),
-      `expected ${srcDir} to exist`,
-    ).toBe(true);
+    expect(fs.existsSync(srcDir), `expected ${srcDir} to exist`).toBe(true);
 
     const files = walk(srcDir);
     const offenders: string[] = [];

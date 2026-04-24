@@ -93,8 +93,7 @@ const EXPAND_VIOLATION_PATTERNS: Array<{
 }> = [
   {
     rule: "add-column-not-null-no-default",
-    pattern:
-      /^\s*ALTER\s+TABLE\s+[^;]+?\s+ADD\s+COLUMN\s+[^;]+?\s+NOT\s+NULL(?![^;]*\bDEFAULT\b)/i,
+    pattern: /^\s*ALTER\s+TABLE\s+[^;]+?\s+ADD\s+COLUMN\s+[^;]+?\s+NOT\s+NULL(?![^;]*\bDEFAULT\b)/i,
     suggestion:
       "ADD COLUMN ... NOT NULL without DEFAULT rewrites every row. Split into EXPAND (NULLABLE + DEFAULT) → BACKFILL → CONTRACT (SET NOT NULL).",
   },
@@ -137,10 +136,7 @@ function splitLines(sql: string): StatementLine[] {
  * context of the declared `type`. Returns an array of violations. An
  * empty array means the migration passed.
  */
-export function checkMigrationSafety(
-  sql: string,
-  type: MigrationType | null
-): SafetyViolation[] {
+export function checkMigrationSafety(sql: string, type: MigrationType | null): SafetyViolation[] {
   const violations: SafetyViolation[] = [];
   const lines = splitLines(sql);
 
@@ -200,9 +196,6 @@ export function checkMigrationSafety(
  * Convenience helper for tests and the CLI — formats a violation into a
  * single human-readable line with file context.
  */
-export function formatViolation(
-  filename: string,
-  v: SafetyViolation
-): string {
+export function formatViolation(filename: string, v: SafetyViolation): string {
   return `  [${v.severity}] ${filename}:${v.line} (${v.rule}) — ${v.statement}\n    ↳ ${v.suggestion}`;
 }

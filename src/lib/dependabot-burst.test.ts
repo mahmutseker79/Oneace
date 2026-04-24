@@ -97,9 +97,13 @@ describe("§5.49 F-05 — dependabot.yml burst guard", () => {
       .filter((line) => !/^\s*#/.test(line))
       .join("\n");
     const matches = [...activeLines.matchAll(/open-pull-requests-limit:\s*(\d+)/g)];
-    expect(matches.length, "at least one ecosystem with an explicit limit").toBeGreaterThanOrEqual(2);
+    expect(matches.length, "at least one ecosystem with an explicit limit").toBeGreaterThanOrEqual(
+      2,
+    );
     const total = matches.reduce((sum, m) => sum + Number.parseInt(m[1] ?? "0", 10), 0);
-    expect(total, `BURST_BUDGET=${BURST_BUDGET}, actual=${total}`).toBeLessThanOrEqual(BURST_BUDGET);
+    expect(total, `BURST_BUDGET=${BURST_BUDGET}, actual=${total}`).toBeLessThanOrEqual(
+      BURST_BUDGET,
+    );
   });
 
   it("npm groups prod-minor-patch + dev-minor-patch are declared", () => {
@@ -120,10 +124,10 @@ describe("§5.49 F-05 — dependabot.yml burst guard", () => {
     // bump" to "a bundled mega-PR with N changelogs to reconcile".
     const text = readDependabotYml();
     const prodGroupMatch = text.match(
-      /prod-minor-patch:\s*\n\s*dependency-type:\s*"production"\s*\n\s*update-types:\s*\n([\s\S]*?)(?:\n\s{4}[a-z]|\n  -|\Z)/,
+      /prod-minor-patch:\s*\n\s*dependency-type:\s*"production"\s*\n\s*update-types:\s*\n([\s\S]*?)(?:\n\s{4}[a-z]|\n {2}-|\Z)/,
     );
     const devGroupMatch = text.match(
-      /dev-minor-patch:\s*\n\s*dependency-type:\s*"development"\s*\n\s*update-types:\s*\n([\s\S]*?)(?:\n\s{4}[a-z]|\n  -|\Z)/,
+      /dev-minor-patch:\s*\n\s*dependency-type:\s*"development"\s*\n\s*update-types:\s*\n([\s\S]*?)(?:\n\s{4}[a-z]|\n {2}-|\Z)/,
     );
     const prodBody = prodGroupMatch?.[1] ?? "";
     const devBody = devGroupMatch?.[1] ?? "";

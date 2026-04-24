@@ -59,14 +59,14 @@
  * routes). Schedule: `*\/30 * * * *` in vercel.json.
  */
 
-import { logger } from "@/lib/logger";
+import { dispatch } from "@/lib/integrations/task-dispatch-registry";
 import {
   type ClaimedTask,
   claimDueTasks,
   markDone,
   markFailure,
 } from "@/lib/integrations/task-queue";
-import { dispatch } from "@/lib/integrations/task-dispatch-registry";
+import { logger } from "@/lib/logger";
 // Side-effect import — each adapter's `register.ts` calls
 // `registerHandler(...)` at module top-level. This barrel MUST
 // be imported before the first `dispatch(task)` call on a cold

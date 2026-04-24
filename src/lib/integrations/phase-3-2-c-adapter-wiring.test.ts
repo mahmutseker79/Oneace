@@ -45,14 +45,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ClaimedTask } from "./task-queue";
 
@@ -73,10 +66,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
-const HANDLERS_BARREL_PATH = resolve(
-  REPO_ROOT,
-  "src/lib/integrations/handlers/index.ts",
-);
+const HANDLERS_BARREL_PATH = resolve(REPO_ROOT, "src/lib/integrations/handlers/index.ts");
 
 function fakeTask(integrationKind: string, taskKind: string): ClaimedTask {
   return {
@@ -158,12 +148,7 @@ const ADAPTERS: readonly AdapterContract[] = [
     exportName: "WIX_TASK_KINDS",
     schemaCode: "SCHEMA_WIX_INTEGRATION_NOT_FOUND",
     transportCode: "TRANSPORT_WIX_EXECUTION_PENDING",
-    taskKinds: [
-      "sync_products",
-      "sync_orders",
-      "sync_inventory",
-      "sync_contacts",
-    ],
+    taskKinds: ["sync_products", "sync_orders", "sync_inventory", "sync_contacts"],
   },
   {
     name: "woocommerce",
@@ -172,12 +157,7 @@ const ADAPTERS: readonly AdapterContract[] = [
     exportName: "WOOCOMMERCE_TASK_KINDS",
     schemaCode: "SCHEMA_WOOCOMMERCE_INTEGRATION_NOT_FOUND",
     transportCode: "TRANSPORT_WOOCOMMERCE_EXECUTION_PENDING",
-    taskKinds: [
-      "sync_products",
-      "sync_orders",
-      "sync_customers",
-      "sync_stock_levels",
-    ],
+    taskKinds: ["sync_products", "sync_orders", "sync_customers", "sync_stock_levels"],
   },
   {
     name: "xero",
@@ -280,17 +260,12 @@ describe("§5.53 F-09 Phase-3.2 C — per-adapter wiring contract", () => {
       it(`importing ${adapter.name}/register registers exactly the documented kinds`, async () => {
         await import(adapter.modulePath);
         const { __registeredKeysForTests } = await freshRegistry();
-        const expected = adapter.taskKinds
-          .map((k) => `${adapter.integrationKind}:${k}`)
-          .sort();
+        const expected = adapter.taskKinds.map((k) => `${adapter.integrationKind}:${k}`).sort();
         expect(__registeredKeysForTests()).toEqual(expected);
       });
 
       it(`${adapter.exportName} export matches the documented tuple`, async () => {
-        const mod = (await import(adapter.modulePath)) as Record<
-          string,
-          readonly string[]
-        >;
+        const mod = (await import(adapter.modulePath)) as Record<string, readonly string[]>;
         const tuple = mod[adapter.exportName];
         expect(tuple).toBeDefined();
         expect([...tuple]).toEqual([...adapter.taskKinds]);
@@ -367,9 +342,7 @@ describe("§5.53 F-09 Phase-3.2 C — aggregate registry snapshot", () => {
   });
 
   it("no two C-wave adapters share an (integrationKind, taskKind) pair", () => {
-    const keys = ADAPTERS.flatMap((a) =>
-      a.taskKinds.map((k) => `${a.integrationKind}:${k}`),
-    );
+    const keys = ADAPTERS.flatMap((a) => a.taskKinds.map((k) => `${a.integrationKind}:${k}`));
     const unique = new Set(keys);
     expect(unique.size).toBe(keys.length);
   });

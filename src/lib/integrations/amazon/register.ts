@@ -26,11 +26,7 @@ import { db } from "@/lib/db";
 import { registerHandler } from "../task-dispatch-registry";
 import type { ClaimedTask } from "../task-queue";
 
-export const AMAZON_TASK_KINDS = [
-  "sync_products",
-  "sync_orders",
-  "sync_inventory",
-] as const;
+export const AMAZON_TASK_KINDS = ["sync_products", "sync_orders", "sync_inventory"] as const;
 
 export type AmazonTaskKind = (typeof AMAZON_TASK_KINDS)[number];
 

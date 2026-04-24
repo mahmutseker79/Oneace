@@ -8,10 +8,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   IdempotencyConflictError,
-  IdempotencyInProgressError,
   type IdempotencyDbClient,
-  derivePayloadFingerprint,
+  IdempotencyInProgressError,
   deriveKeyHash,
+  derivePayloadFingerprint,
   withIdempotency,
 } from "./middleware";
 
@@ -131,8 +131,8 @@ describe("withIdempotency — happy path + replay", () => {
     expect(fn).toHaveBeenCalledTimes(1);
     expect(store.size).toBe(1);
     const [row] = [...store.values()];
-    expect(row!.state).toBe("COMPLETED");
-    expect(row!.responseJson).toEqual({ ok: true, id: "so_1" });
+    expect(row?.state).toBe("COMPLETED");
+    expect(row?.responseJson).toEqual({ ok: true, id: "so_1" });
   });
 
   it("replay with identical payload returns cached response without re-running", async () => {
@@ -184,9 +184,9 @@ describe("withIdempotency — in-flight + failure states", () => {
       completedAt: null,
       expiresAt: new Date(Date.now() + 10_000),
     });
-    await expect(
-      withIdempotency(baseCfg, async () => "x", db),
-    ).rejects.toBeInstanceOf(IdempotencyInProgressError);
+    await expect(withIdempotency(baseCfg, async () => "x", db)).rejects.toBeInstanceOf(
+      IdempotencyInProgressError,
+    );
   });
 
   it("previous FAILED state lets a new attempt re-run", async () => {
@@ -209,19 +209,23 @@ describe("withIdempotency — in-flight + failure states", () => {
     expect(result).toEqual({ ok: true });
     expect(fn).toHaveBeenCalledTimes(1);
     const row = store.get(`${baseCfg.organizationId}::${keyHash}`);
-    expect(row!.state).toBe("COMPLETED");
+    expect(row?.state).toBe("COMPLETED");
   });
 
   it("handler throw marks state=FAILED and rethrows the error", async () => {
     const { db, store } = makeFakeDb();
     const boom = new Error("boom");
     await expect(
-      withIdempotency(baseCfg, async () => {
-        throw boom;
-      }, db),
+      withIdempotency(
+        baseCfg,
+        async () => {
+          throw boom;
+        },
+        db,
+      ),
     ).rejects.toBe(boom);
     const [row] = [...store.values()];
-    expect(row!.state).toBe("FAILED");
+    expect(row?.state).toBe("FAILED");
   });
 
   it("expired row is treated as absent — fn runs, row is refreshed to IN_FLIGHT then COMPLETED", async () => {
@@ -245,7 +249,7 @@ describe("withIdempotency — in-flight + failure states", () => {
     expect(result).toEqual({ fresh: true });
     expect(fn).toHaveBeenCalledTimes(1);
     const row = store.get(`${baseCfg.organizationId}::${keyHash}`);
-    expect(row!.responseJson).toEqual({ fresh: true });
+    expect(row?.responseJson).toEqual({ fresh: true });
   });
 });
 

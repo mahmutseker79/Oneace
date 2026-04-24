@@ -469,13 +469,13 @@ async function notifyOwnerOfDeadLetter(n: DeadLetterNotification): Promise<void>
   const subject = `[OneAce] ${n.integrationKind} sync failed permanently`;
   const text = [
     `A ${n.integrationKind} ${n.taskKind} task failed after ${MAX_RETRIES} retries.`,
-    ``,
+    "",
     `Task ID:       ${n.taskId}`,
     `Error kind:    ${n.lastErrorKind}`,
     `Last message:  ${n.lastError}`,
-    ``,
-    `The task is now in the dead-letter queue and will not retry on its own.`,
-    `Open the Integrations admin → Dead-letter view to replay or discard.`,
+    "",
+    "The task is now in the dead-letter queue and will not retry on its own.",
+    "Open the Integrations admin → Dead-letter view to replay or discard.",
   ].join("\n");
   const html = `<div style="font-family:system-ui,sans-serif;color:#111;">
     <p>A <strong>${n.integrationKind}</strong> <code>${n.taskKind}</code> task failed after ${MAX_RETRIES} retries.</p>

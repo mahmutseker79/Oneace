@@ -25,8 +25,8 @@
 
 import { db } from "@/lib/db";
 import type { OAuthToken } from "../base-client";
-import type { ClaimedTask } from "../task-queue";
 import { registerHandler } from "../task-dispatch-registry";
+import type { ClaimedTask } from "../task-queue";
 import { ShopifyClient } from "./shopify-client";
 import { ShopifySyncEngine } from "./shopify-sync";
 
@@ -46,12 +46,13 @@ export const SHOPIFY_TASK_KINDS = [
 export type ShopifyTaskKind = (typeof SHOPIFY_TASK_KINDS)[number];
 
 /** Maps `taskKind` → `SyncContext.entityType`. */
-const ENTITY_TYPE_BY_TASK: Record<ShopifyTaskKind, "PRODUCT" | "ORDER" | "INVENTORY" | "CUSTOMER"> = {
-  sync_products: "PRODUCT",
-  sync_orders: "ORDER",
-  sync_inventory: "INVENTORY",
-  sync_customers: "CUSTOMER",
-};
+const ENTITY_TYPE_BY_TASK: Record<ShopifyTaskKind, "PRODUCT" | "ORDER" | "INVENTORY" | "CUSTOMER"> =
+  {
+    sync_products: "PRODUCT",
+    sync_orders: "ORDER",
+    sync_inventory: "INVENTORY",
+    sync_customers: "CUSTOMER",
+  };
 
 /**
  * Execute one Shopify sync invocation for `task`. Throws with a

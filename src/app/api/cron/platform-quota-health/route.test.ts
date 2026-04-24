@@ -151,9 +151,7 @@ describe("§5.48 F-04 — vercel.json registers platform-quota-health cron", () 
   });
 
   it("runs sub-hourly so the warn alarm has headroom", () => {
-    const entry = (VERCEL.crons ?? []).find(
-      (c) => c.path === "/api/cron/platform-quota-health",
-    );
+    const entry = (VERCEL.crons ?? []).find((c) => c.path === "/api/cron/platform-quota-health");
     expect(entry, "platform-quota-health cron entry must exist").toBeDefined();
     expect(entry?.schedule).toMatch(/^\*\/(\d+)\s+\*\s+\*\s+\*\s+\*$/);
     const m = entry?.schedule?.match(/^\*\/(\d+)\s/);

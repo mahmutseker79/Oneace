@@ -18,15 +18,11 @@
 // and hit the real factory path. No network, no MSW, no mocks of
 // the module under test.
 
-import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { detectPlatform, getQuotaProvider } from "./index";
 
-const PLATFORM_ENV_KEYS = [
-  "HOSTING_PLATFORM",
-  "VERCEL",
-  "NETLIFY",
-] as const;
+const PLATFORM_ENV_KEYS = ["HOSTING_PLATFORM", "VERCEL", "NETLIFY"] as const;
 
 /** Clear all platform hint env vars so each case starts from a known base. */
 function clearPlatformEnv(): void {
@@ -168,8 +164,8 @@ describe("§5.48 — Vercel adapter fetchSnapshot() contract (shape only, no net
   });
 
   it("returns {ok:false, reason:'config'} when VERCEL_TOKEN is missing", async () => {
-    delete process.env.VERCEL_TOKEN;
-    delete process.env.VERCEL_PROJECT_ID;
+    process.env.VERCEL_TOKEN = undefined;
+    process.env.VERCEL_PROJECT_ID = undefined;
     const provider = await getQuotaProvider("vercel");
     const result = await provider?.fetchSnapshot();
     expect(result?.ok).toBe(false);
@@ -189,8 +185,8 @@ describe("§5.48 — Netlify adapter fetchSnapshot() contract (shape only, no ne
   });
 
   it("returns {ok:false, reason:'config'} when NETLIFY_TOKEN is missing", async () => {
-    delete process.env.NETLIFY_TOKEN;
-    delete process.env.NETLIFY_SITE_ID;
+    process.env.NETLIFY_TOKEN = undefined;
+    process.env.NETLIFY_SITE_ID = undefined;
     const provider = await getQuotaProvider("netlify");
     const result = await provider?.fetchSnapshot();
     expect(result?.ok).toBe(false);

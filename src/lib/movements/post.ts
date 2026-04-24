@@ -62,10 +62,7 @@
 
 import type { Prisma, StockMovement } from "@/generated/prisma";
 
-import {
-  generateMovementIdempotencyKey,
-  isReservedLegacyKey,
-} from "./idempotency-key";
+import { generateMovementIdempotencyKey, isReservedLegacyKey } from "./idempotency-key";
 
 /**
  * Minimal typed transaction client. We depend only on the fragment of
@@ -202,10 +199,7 @@ export function registerCostPostingHook(hook: CostPostingHook): void {
 /**
  * Test helper — run `fn` with a scoped hook, restore after.
  */
-export async function withHook<T>(
-  hook: CostPostingHook,
-  fn: () => Promise<T>,
-): Promise<T> {
+export async function withHook<T>(hook: CostPostingHook, fn: () => Promise<T>): Promise<T> {
   const prev = activeHook;
   activeHook = hook;
   try {
@@ -245,9 +239,7 @@ const persistableFields = [
   "landedUnitCost",
 ] as const;
 
-function projectPersistable(
-  input: StockMovementInput,
-): Prisma.StockMovementUncheckedCreateInput {
+function projectPersistable(input: StockMovementInput): Prisma.StockMovementUncheckedCreateInput {
   const out: Record<string, unknown> = {};
   for (const k of persistableFields) {
     const v = (input as unknown as Record<string, unknown>)[k];
@@ -267,26 +259,20 @@ function assertInvariants(input: StockMovementInput): void {
     typeof input.organizationId !== "string" ||
     input.organizationId.trim() === ""
   ) {
-    throw new Error(
-      "postMovement: organizationId is required and must be a non-empty string",
-    );
+    throw new Error("postMovement: organizationId is required and must be a non-empty string");
   }
   if (!Number.isFinite(input.quantity)) {
     throw new Error("postMovement: quantity must be a finite number");
   }
   if (input.quantity < 0) {
-    throw new Error(
-      "postMovement: quantity must be >= 0 (direction carries sign)",
-    );
+    throw new Error("postMovement: quantity must be >= 0 (direction carries sign)");
   }
   // P0-03: the `LEGACY:` prefix is reserved for the backfill sentinel.
   // New writes that collide would corrupt the column's meaning (you
   // could no longer tell "untouched pre-migration row" from "wrote
   // this yesterday"). Fail loud.
   if (isReservedLegacyKey(input.idempotencyKey ?? null)) {
-    throw new Error(
-      "postMovement: idempotencyKey cannot start with the reserved LEGACY: prefix",
-    );
+    throw new Error("postMovement: idempotencyKey cannot start with the reserved LEGACY: prefix");
   }
 }
 

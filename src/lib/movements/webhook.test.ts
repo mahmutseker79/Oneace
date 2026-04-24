@@ -51,7 +51,7 @@ describe("postWebhookMovement", () => {
       deliveryId: "abc-123",
     });
     expect(calls).toHaveLength(1);
-    expect((calls[0]!.data as { idempotencyKey: string }).idempotencyKey).toBe(
+    expect((calls[0]?.data as { idempotencyKey: string }).idempotencyKey).toBe(
       "wh:shopify:abc-123",
     );
   });
@@ -68,8 +68,8 @@ describe("postWebhookMovement", () => {
       provider: "shopify",
       deliveryId: "abc",
     });
-    const k1 = (calls[0]!.data as { idempotencyKey: string }).idempotencyKey;
-    const k2 = (calls[1]!.data as { idempotencyKey: string }).idempotencyKey;
+    const k1 = (calls[0]?.data as { idempotencyKey: string }).idempotencyKey;
+    const k2 = (calls[1]?.data as { idempotencyKey: string }).idempotencyKey;
     expect(k1).toBe(k2);
   });
 
@@ -85,8 +85,8 @@ describe("postWebhookMovement", () => {
       provider: "quickbooks",
       deliveryId: "abc",
     });
-    const k1 = (calls[0]!.data as { idempotencyKey: string }).idempotencyKey;
-    const k2 = (calls[1]!.data as { idempotencyKey: string }).idempotencyKey;
+    const k1 = (calls[0]?.data as { idempotencyKey: string }).idempotencyKey;
+    const k2 = (calls[1]?.data as { idempotencyKey: string }).idempotencyKey;
     expect(k1).not.toBe(k2);
   });
 
@@ -125,7 +125,7 @@ describe("postWebhookMovement", () => {
       direction: 1,
       createdByUserId: null,
     });
-    const persisted = calls[0]!.data;
+    const persisted = calls[0]?.data;
     expect(persisted.reference).toBe("shopify:order:1001");
     expect(persisted.note).toBe("via inventory_levels/update");
     expect(persisted.direction).toBe(1);

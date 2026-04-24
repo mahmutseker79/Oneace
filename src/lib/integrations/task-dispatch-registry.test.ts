@@ -38,7 +38,6 @@ import { resolve } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import type { ClaimedTask } from "./task-queue";
 import {
   __registeredKeysForTests,
   __resetRegistryForTests,
@@ -46,24 +45,13 @@ import {
   hasHandler,
   registerHandler,
 } from "./task-dispatch-registry";
+import type { ClaimedTask } from "./task-queue";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
-const CRON_ROUTE_PATH = resolve(
-  REPO_ROOT,
-  "src/app/api/cron/integration-tasks/route.ts",
-);
-const SHOPIFY_REGISTER_PATH = resolve(
-  REPO_ROOT,
-  "src/lib/integrations/shopify/register.ts",
-);
-const QBO_REGISTER_PATH = resolve(
-  REPO_ROOT,
-  "src/lib/integrations/quickbooks/register.ts",
-);
-const HANDLERS_BARREL_PATH = resolve(
-  REPO_ROOT,
-  "src/lib/integrations/handlers/index.ts",
-);
+const CRON_ROUTE_PATH = resolve(REPO_ROOT, "src/app/api/cron/integration-tasks/route.ts");
+const SHOPIFY_REGISTER_PATH = resolve(REPO_ROOT, "src/lib/integrations/shopify/register.ts");
+const QBO_REGISTER_PATH = resolve(REPO_ROOT, "src/lib/integrations/quickbooks/register.ts");
+const HANDLERS_BARREL_PATH = resolve(REPO_ROOT, "src/lib/integrations/handlers/index.ts");
 const SHOPIFY_WEBHOOK_ROUTE_PATH = resolve(
   REPO_ROOT,
   "src/app/api/integrations/shopify/webhooks/route.ts",
@@ -244,7 +232,7 @@ describe("§5.53 F-09 B-1 — shopify webhook route enqueues instead of logging"
     );
   });
 
-  it("calls enqueue with integrationKind: \"shopify\"", () => {
+  it('calls enqueue with integrationKind: "shopify"', () => {
     expect(route).toMatch(/integrationKind:\s*["']shopify["']/);
   });
 
@@ -403,7 +391,7 @@ describe("§5.53 F-09 B-2 — QuickBooks webhook route enqueues per entity chang
     );
   });
 
-  it("calls enqueue with integrationKind: \"quickbooks\"", () => {
+  it('calls enqueue with integrationKind: "quickbooks"', () => {
     expect(route).toMatch(/integrationKind:\s*["']quickbooks["']/);
   });
 

@@ -67,9 +67,7 @@ function main() {
   // Sanity: if no Netlify hint present, just warn and continue without
   // failing the build. Local runs of `pnpm run build` will land here.
   const onNetlify =
-    process.env.NETLIFY === "true" ||
-    !!process.env.DEPLOY_PRIME_URL ||
-    !!process.env.COMMIT_REF;
+    process.env.NETLIFY === "true" || !!process.env.DEPLOY_PRIME_URL || !!process.env.COMMIT_REF;
 
   if (!onNetlify) {
     log("no Netlify hints (NETLIFY/DEPLOY_PRIME_URL/COMMIT_REF) — skipping");
@@ -98,9 +96,7 @@ function main() {
   // VERCEL_URL convention is no protocol, no trailing slash.
   const deployUrl = process.env.DEPLOY_PRIME_URL || process.env.URL;
   if (deployUrl && !process.env.VERCEL_URL) {
-    process.env.VERCEL_URL = deployUrl
-      .replace(/^https?:\/\//, "")
-      .replace(/\/$/, "");
+    process.env.VERCEL_URL = deployUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
     mapped.push("VERCEL_URL");
   }
 

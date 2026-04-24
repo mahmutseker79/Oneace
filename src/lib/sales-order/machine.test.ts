@@ -43,10 +43,7 @@ const ALL_STATUSES: SalesOrderStatus[] = [
   "CANCELLED",
 ];
 
-function assertOnly(
-  fn: (s: SalesOrderStatus) => boolean,
-  allowed: SalesOrderStatus[],
-) {
+function assertOnly(fn: (s: SalesOrderStatus) => boolean, allowed: SalesOrderStatus[]) {
   for (const s of ALL_STATUSES) {
     const expected = allowed.includes(s);
     expect(fn(s), `${fn.name}(${s}) expected=${expected}`).toBe(expected);
@@ -98,14 +95,7 @@ describe("SalesOrder machine — line mutation guards", () => {
 
 describe("SalesOrder machine — invariants across the matrix", () => {
   it("SHIPPED is truly terminal (no guard returns true)", () => {
-    const guards = [
-      canConfirm,
-      canAllocate,
-      canShip,
-      canCancel,
-      canAddLines,
-      canRemoveLines,
-    ];
+    const guards = [canConfirm, canAllocate, canShip, canCancel, canAddLines, canRemoveLines];
     for (const g of guards) {
       expect(g("SHIPPED"), `${g.name}(SHIPPED) must be false`).toBe(false);
     }

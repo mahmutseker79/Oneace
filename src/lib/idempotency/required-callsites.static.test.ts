@@ -49,7 +49,8 @@ const REQUIRED_CALLSITES: Array<{
   {
     file: "src/app/(app)/purchase-orders/actions.ts",
     actionName: "receivePurchaseOrderAction",
-    label: "PO receive — withIdempotency wrapper required (in addition to Phase 6C line-level keys)",
+    label:
+      "PO receive — withIdempotency wrapper required (in addition to Phase 6C line-level keys)",
   },
   {
     file: "src/app/(app)/transfers/actions.ts",
@@ -86,14 +87,9 @@ describe("withIdempotency — required callsites", () => {
       const src = fs.readFileSync(abs, "utf8");
 
       // The action function MUST still exist (rename guard).
-      const actionRegex = new RegExp(
-        `function\\s+${actionName}\\s*\\(`,
-        "m",
-      );
+      const actionRegex = new RegExp(`function\\s+${actionName}\\s*\\(`, "m");
       if (!actionRegex.test(src)) {
-        violations.push(
-          `${file} :: function ${actionName} not found — renamed? (${label})`,
-        );
+        violations.push(`${file} :: function ${actionName} not found — renamed? (${label})`);
         continue;
       }
 
@@ -103,9 +99,7 @@ describe("withIdempotency — required callsites", () => {
       // either have ≤2 exported actions or clearly separate surfaces,
       // and a file-level check is sufficient here.
       if (!/\bwithIdempotency\s*\(/.test(src)) {
-        violations.push(
-          `${file} :: no withIdempotency() call — ${label}`,
-        );
+        violations.push(`${file} :: no withIdempotency() call — ${label}`);
         continue;
       }
 
@@ -159,9 +153,7 @@ describe("withIdempotency — required callsites", () => {
         continue;
       }
       if (!/idempotencyKey\s*:/.test(src)) {
-        violations.push(
-          `${file} :: ${schemaVar} does not include an idempotencyKey field`,
-        );
+        violations.push(`${file} :: ${schemaVar} does not include an idempotencyKey field`);
       }
     }
 

@@ -28,10 +28,7 @@ export const XERO_TASK_KINDS = [
 
 export type XeroTaskKind = (typeof XERO_TASK_KINDS)[number];
 
-async function runXeroSync(
-  task: ClaimedTask,
-  kind: XeroTaskKind,
-): Promise<void> {
+async function runXeroSync(task: ClaimedTask, kind: XeroTaskKind): Promise<void> {
   const integration = await db.integration.findFirst({
     where: {
       organizationId: task.organizationId,

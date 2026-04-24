@@ -26,8 +26,7 @@ export const QUICKBOOKS_DESKTOP_TASK_KINDS = [
   "sync_payments",
 ] as const;
 
-export type QuickBooksDesktopTaskKind =
-  (typeof QUICKBOOKS_DESKTOP_TASK_KINDS)[number];
+export type QuickBooksDesktopTaskKind = (typeof QUICKBOOKS_DESKTOP_TASK_KINDS)[number];
 
 async function runQuickBooksDesktopSync(
   task: ClaimedTask,
@@ -46,21 +45,17 @@ async function runQuickBooksDesktopSync(
     const err = new Error(
       `QuickBooks Desktop integration not found for organizationId="${task.organizationId}" — task will dead-letter after MAX_RETRIES`,
     );
-    (err as { code?: string }).code =
-      "SCHEMA_QUICKBOOKS_DESKTOP_INTEGRATION_NOT_FOUND";
+    (err as { code?: string }).code = "SCHEMA_QUICKBOOKS_DESKTOP_INTEGRATION_NOT_FOUND";
     throw err;
   }
 
   const err = new Error(
     `QuickBooks Desktop adapter registered but execution pending (taskKind="${kind}", audit §5.53 F-09 Phase-3.2 C) — follow-up PR will plumb Web Connector / QBXML session bridge`,
   );
-  (err as { code?: string }).code =
-    "TRANSPORT_QUICKBOOKS_DESKTOP_EXECUTION_PENDING";
+  (err as { code?: string }).code = "TRANSPORT_QUICKBOOKS_DESKTOP_EXECUTION_PENDING";
   throw err;
 }
 
 for (const kind of QUICKBOOKS_DESKTOP_TASK_KINDS) {
-  registerHandler("quickbooks-desktop", kind, (task) =>
-    runQuickBooksDesktopSync(task, kind),
-  );
+  registerHandler("quickbooks-desktop", kind, (task) => runQuickBooksDesktopSync(task, kind));
 }

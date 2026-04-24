@@ -20,10 +20,7 @@ export const WOOCOMMERCE_TASK_KINDS = [
 
 export type WooCommerceTaskKind = (typeof WOOCOMMERCE_TASK_KINDS)[number];
 
-async function runWooCommerceSync(
-  task: ClaimedTask,
-  kind: WooCommerceTaskKind,
-): Promise<void> {
+async function runWooCommerceSync(task: ClaimedTask, kind: WooCommerceTaskKind): Promise<void> {
   const integration = await db.integration.findFirst({
     where: {
       organizationId: task.organizationId,

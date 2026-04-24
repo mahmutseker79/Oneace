@@ -7,7 +7,7 @@ import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
-import { checkPlanLimit, planLimitHitResponse, type PlanLimitHitResponse } from "@/lib/plans";
+import { type PlanLimitHitResponse, checkPlanLimit, planLimitHitResponse } from "@/lib/plans";
 import { requireActiveMembership } from "@/lib/session";
 import { barcodeValueSchema } from "@/lib/validation/barcode";
 import { warehouseInputSchema } from "@/lib/validation/warehouse";

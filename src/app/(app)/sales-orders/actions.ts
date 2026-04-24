@@ -6,10 +6,6 @@ import { revalidatePath } from "next/cache";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
-// GOD MODE roadmap P0-01 (rc2): StockMovement inserts must flow through
-// the postMovement seam so that future cost-attribution (ADR-001
-// FIFO/WAC) and idempotency middleware hook in a single place.
-import { postMovement } from "@/lib/movements";
 // GOD MODE roadmap P0-02 (v1.6.1 rc2): shipSalesOrderAction wraps its
 // body in withIdempotency. UI mints a UUID per form mount and posts it
 // as `idempotencyKey`. Legacy callers without a key pass through without
@@ -19,6 +15,10 @@ import {
   IdempotencyInProgressError,
   withIdempotency,
 } from "@/lib/idempotency/middleware";
+// GOD MODE roadmap P0-01 (rc2): StockMovement inserts must flow through
+// the postMovement seam so that future cost-attribution (ADR-001
+// FIFO/WAC) and idempotency middleware hook in a single place.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { hasPlanCapability, planCapabilityError } from "@/lib/plans";
 import {
@@ -520,109 +520,110 @@ export async function shipSalesOrderAction(formData: FormData): Promise<ActionRe
         },
       },
       async () => {
-    await db.$transaction(async (tx) => {
-      const lineMap = new Map(existing.lines.map((l: (typeof existing.lines)[0]) => [l.id, l]));
+        await db.$transaction(async (tx) => {
+          const lineMap = new Map(existing.lines.map((l: (typeof existing.lines)[0]) => [l.id, l]));
 
-      for (const shipLine of input.lines) {
-        const line = lineMap.get(shipLine.lineId);
-        if (!line) continue;
+          for (const shipLine of input.lines) {
+            const line = lineMap.get(shipLine.lineId);
+            if (!line) continue;
 
-        const shipped = line.shippedQty;
-        const allocated = line.allocatedQty;
-        const delta = shipLine.shippedQty - shipped;
+            const shipped = line.shippedQty;
+            const allocated = line.allocatedQty;
+            const delta = shipLine.shippedQty - shipped;
 
-        if (delta < 0 || shipLine.shippedQty > allocated) {
-          throw new Error(`Invalid shipment quantity for line ${shipLine.lineId}`);
-        }
+            if (delta < 0 || shipLine.shippedQty > allocated) {
+              throw new Error(`Invalid shipment quantity for line ${shipLine.lineId}`);
+            }
 
-        if (delta > 0) {
-          // rc2: migrated from direct `tx.stockMovement.create(...)` to
-          // the seam. The seam drops unknown forward-compat fields and
-          // fires the cost-posting hook (no-op today; ADR-001 FIFO/WAC
-          // attaches here when Phase 1c ships). Note: SO ship still
-          // lacks idempotency — P0-02 addresses that in rc5 via the
-          // `withIdempotency()` middleware, not here. This commit is
-          // pure seam migration; no behaviour change.
-          await postMovement(tx, {
-            organizationId: orgId,
-            itemId: line.itemId,
-            warehouseId: line.warehouseId,
-            type: "ISSUE",
-            quantity: delta,
-            direction: -1,
-            reference: `SO-${existing.orderNumber}`,
-            note: "Sales order shipment",
-            createdByUserId: session.user.id,
-          });
+            if (delta > 0) {
+              // rc2: migrated from direct `tx.stockMovement.create(...)` to
+              // the seam. The seam drops unknown forward-compat fields and
+              // fires the cost-posting hook (no-op today; ADR-001 FIFO/WAC
+              // attaches here when Phase 1c ships). Note: SO ship still
+              // lacks idempotency — P0-02 addresses that in rc5 via the
+              // `withIdempotency()` middleware, not here. This commit is
+              // pure seam migration; no behaviour change.
+              await postMovement(tx, {
+                organizationId: orgId,
+                itemId: line.itemId,
+                warehouseId: line.warehouseId,
+                type: "ISSUE",
+                quantity: delta,
+                direction: -1,
+                reference: `SO-${existing.orderNumber}`,
+                note: "Sales order shipment",
+                createdByUserId: session.user.id,
+              });
 
-          // Decrement both quantity and reservedQty
-          const stock = await tx.stockLevel.findFirst({
-            where: { itemId: line.itemId, warehouseId: line.warehouseId },
-            select: { id: true, quantity: true, reservedQty: true },
-          });
+              // Decrement both quantity and reservedQty
+              const stock = await tx.stockLevel.findFirst({
+                where: { itemId: line.itemId, warehouseId: line.warehouseId },
+                select: { id: true, quantity: true, reservedQty: true },
+              });
 
-          if (stock) {
-            await tx.stockLevel.update({
-              where: { id: stock.id },
-              data: {
-                quantity: Math.max(0, stock.quantity - delta),
-                reservedQty: Math.max(0, (stock.reservedQty ?? 0) - delta),
-              },
-            });
+              if (stock) {
+                await tx.stockLevel.update({
+                  where: { id: stock.id },
+                  data: {
+                    quantity: Math.max(0, stock.quantity - delta),
+                    reservedQty: Math.max(0, (stock.reservedQty ?? 0) - delta),
+                  },
+                });
+              }
+
+              // Update line
+              await tx.salesOrderLine.update({
+                where: { id: shipLine.lineId },
+                data: { shippedQty: shipLine.shippedQty },
+              });
+            }
           }
 
-          // Update line
-          await tx.salesOrderLine.update({
-            where: { id: shipLine.lineId },
-            data: { shippedQty: shipLine.shippedQty },
+          // Recompute status
+          const refreshed = await tx.salesOrder.findUnique({
+            where: { id: existing.id },
+            select: { lines: { select: { orderedQty: true, shippedQty: true } } },
           });
-        }
-      }
 
-      // Recompute status
-      const refreshed = await tx.salesOrder.findUnique({
-        where: { id: existing.id },
-        select: { lines: { select: { orderedQty: true, shippedQty: true } } },
-      });
+          const allLines = refreshed?.lines ?? [];
+          const allShipped =
+            allLines.length > 0 && allLines.every((l) => l.shippedQty >= l.orderedQty);
+          const anyShipped = allLines.some((l) => l.shippedQty > 0);
 
-      const allLines = refreshed?.lines ?? [];
-      const allShipped = allLines.length > 0 && allLines.every((l) => l.shippedQty >= l.orderedQty);
-      const anyShipped = allLines.some((l) => l.shippedQty > 0);
+          const nextStatus = allShipped
+            ? "SHIPPED"
+            : anyShipped
+              ? "PARTIALLY_SHIPPED"
+              : existing.status;
 
-      const nextStatus = allShipped
-        ? "SHIPPED"
-        : anyShipped
-          ? "PARTIALLY_SHIPPED"
-          : existing.status;
+          await tx.salesOrder.update({
+            where: { id: existing.id, organizationId: orgId },
+            data: {
+              status: nextStatus,
+              shippedAt: allShipped ? new Date() : null,
+            },
+          });
+        });
 
-      await tx.salesOrder.update({
-        where: { id: existing.id, organizationId: orgId },
-        data: {
-          status: nextStatus,
-          shippedAt: allShipped ? new Date() : null,
-        },
-      });
-    });
+        await recordAudit({
+          organizationId: orgId,
+          actorId: session.user.id,
+          action: "sales_order.shipped",
+          entityType: "sales_order",
+          entityId: existing.id,
+          metadata: {
+            orderNumber: existing.orderNumber,
+            lineCount: input.lines.length,
+          },
+        });
 
-    await recordAudit({
-      organizationId: orgId,
-      actorId: session.user.id,
-      action: "sales_order.shipped",
-      entityType: "sales_order",
-      entityId: existing.id,
-      metadata: {
-        orderNumber: existing.orderNumber,
-        lineCount: input.lines.length,
-      },
-    });
-
-    revalidatePath("/sales-orders");
-    revalidatePath(`/sales-orders/${existing.id}`);
-    // Ship creates ISSUE movements and updates stock levels — bust caches
-    revalidatePath("/movements");
-    revalidatePath("/items");
-    revalidatePath("/dashboard");
-    return { ok: true, id: existing.id };
+        revalidatePath("/sales-orders");
+        revalidatePath(`/sales-orders/${existing.id}`);
+        // Ship creates ISSUE movements and updates stock levels — bust caches
+        revalidatePath("/movements");
+        revalidatePath("/items");
+        revalidatePath("/dashboard");
+        return { ok: true, id: existing.id };
       },
     );
   } catch (error) {

@@ -38,10 +38,7 @@ interface NetlifyDeploy {
   deploy_time?: number | null; // seconds
 }
 
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit = {},
-): Promise<Response> {
+async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -53,9 +50,7 @@ async function fetchWithTimeout(
 
 /** ISO string for the first instant of the current UTC month. */
 function utcMonthStartIso(now: Date): string {
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-  ).toISOString();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
 export function createNetlifyQuotaProvider(): QuotaProvider {
@@ -98,9 +93,7 @@ export function createNetlifyQuotaProvider(): QuotaProvider {
 
           let reachedBoundary = false;
           for (const row of rows) {
-            const createdAt = row.created_at
-              ? new Date(row.created_at).getTime()
-              : NaN;
+            const createdAt = row.created_at ? new Date(row.created_at).getTime() : Number.NaN;
             if (!Number.isFinite(createdAt) || createdAt < monthStartMs) {
               // Deploys are ordered newest-first; hitting one older than
               // the month boundary means the rest are too. Stop paging.
@@ -109,9 +102,7 @@ export function createNetlifyQuotaProvider(): QuotaProvider {
             }
             // deploy_time is in seconds; treat null/undefined as 0
             // (build still pending / skipped).
-            totalSeconds += typeof row.deploy_time === "number"
-              ? Math.max(0, row.deploy_time)
-              : 0;
+            totalSeconds += typeof row.deploy_time === "number" ? Math.max(0, row.deploy_time) : 0;
           }
           if (reachedBoundary || rows.length < PAGE_SIZE) break;
         }

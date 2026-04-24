@@ -122,10 +122,7 @@ export const auth = betterAuth({
     // briefly, we don't want better-auth to start rejecting sessions.
     ...(env.NEXT_PUBLIC_APP_URL
       ? []
-      : [
-          "https://oneace-next-local.vercel.app",
-          "https://oneace-next-local.netlify.app",
-        ]),
+      : ["https://oneace-next-local.vercel.app", "https://oneace-next-local.netlify.app"]),
   ].filter(Boolean) as string[],
 });
 

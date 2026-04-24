@@ -23,11 +23,8 @@ describe("checkMigrationSafety — destructive statements require CONTRACT", () 
   });
 
   it("flags DROP COLUMN in EXPAND and allows it in CONTRACT", () => {
-    const dropCol =
-      'ALTER TABLE "User" DROP COLUMN "oldField";\n';
-    expect(checkMigrationSafety(dropCol, "EXPAND")[0].rule).toBe(
-      "drop-column"
-    );
+    const dropCol = 'ALTER TABLE "User" DROP COLUMN "oldField";\n';
+    expect(checkMigrationSafety(dropCol, "EXPAND")[0].rule).toBe("drop-column");
     expect(checkMigrationSafety(dropCol, "CONTRACT")).toHaveLength(0);
   });
 
@@ -38,8 +35,7 @@ describe("checkMigrationSafety — destructive statements require CONTRACT", () 
   });
 
   it("flags RENAME COLUMN regardless of type (suggests split)", () => {
-    const sql =
-      'ALTER TABLE "User" RENAME COLUMN "email" TO "emailAddress";\n';
+    const sql = 'ALTER TABLE "User" RENAME COLUMN "email" TO "emailAddress";\n';
     // RENAME is destructive even in CONTRACT (see suggestion text) — but
     // we allow it in CONTRACT because there is a documented escape hatch.
     expect(checkMigrationSafety(sql, "EXPAND")[0].rule).toBe("rename-column");
@@ -59,15 +55,13 @@ describe("checkMigrationSafety — destructive statements require CONTRACT", () 
 
 describe("checkMigrationSafety — ADD COLUMN NOT NULL without DEFAULT", () => {
   it("flags the canonical multi-tenant lock trap", () => {
-    const sql =
-      'ALTER TABLE "Product" ADD COLUMN "lotTracked" BOOLEAN NOT NULL;\n';
+    const sql = 'ALTER TABLE "Product" ADD COLUMN "lotTracked" BOOLEAN NOT NULL;\n';
     const violations = checkMigrationSafety(sql, "EXPAND");
     expect(violations[0].rule).toBe("add-column-not-null-no-default");
   });
 
   it("allows ADD COLUMN NOT NULL when a DEFAULT is supplied", () => {
-    const sql =
-      'ALTER TABLE "Product" ADD COLUMN "lotTracked" BOOLEAN NOT NULL DEFAULT false;\n';
+    const sql = 'ALTER TABLE "Product" ADD COLUMN "lotTracked" BOOLEAN NOT NULL DEFAULT false;\n';
     expect(checkMigrationSafety(sql, "EXPAND")).toHaveLength(0);
   });
 
@@ -78,8 +72,7 @@ describe("checkMigrationSafety — ADD COLUMN NOT NULL without DEFAULT", () => {
 
   it("flags ADD COLUMN NOT NULL without DEFAULT regardless of type", () => {
     // Even CONTRACT shouldn't do the row rewrite trap directly.
-    const sql =
-      'ALTER TABLE "Product" ADD COLUMN "sku" TEXT NOT NULL;';
+    const sql = 'ALTER TABLE "Product" ADD COLUMN "sku" TEXT NOT NULL;';
     expect(checkMigrationSafety(sql, "CONTRACT")).toHaveLength(1);
   });
 });
@@ -97,16 +90,14 @@ describe("checkMigrationSafety — BACKFILL shape", () => {
   });
 
   it("accepts a pure UPDATE BACKFILL", () => {
-    const sql =
-      'UPDATE "Product" SET "lotTracked" = false WHERE "lotTracked" IS NULL;';
+    const sql = 'UPDATE "Product" SET "lotTracked" = false WHERE "lotTracked" IS NULL;';
     expect(checkMigrationSafety(sql, "BACKFILL")).toHaveLength(0);
   });
 });
 
 describe("checkMigrationSafety — escape hatch", () => {
   it("respects `-- adr-004-safety: ignore` on a single line", () => {
-    const sql =
-      'DROP TABLE "scratch_legacy"; -- adr-004-safety: ignore\n';
+    const sql = 'DROP TABLE "scratch_legacy"; -- adr-004-safety: ignore\n';
     expect(checkMigrationSafety(sql, "EXPAND")).toHaveLength(0);
   });
 

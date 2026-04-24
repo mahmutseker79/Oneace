@@ -156,10 +156,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<OutcomeBod
     const ghToken = process.env.GITHUB_TOKEN;
     if (ghToken) ghHeaders.Authorization = `Bearer ${ghToken}`;
 
-    const ghRes = await fetchWithTimeout(
-      `https://api.github.com/repos/${mainRepo}/commits/main`,
-      { headers: ghHeaders },
-    );
+    const ghRes = await fetchWithTimeout(`https://api.github.com/repos/${mainRepo}/commits/main`, {
+      headers: ghHeaders,
+    });
     if (!ghRes.ok) {
       logger.warn("platform-webhook-health: github api non-2xx — transient skip", {
         tag: "platform-webhook.skipped.github",

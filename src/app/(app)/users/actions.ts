@@ -19,7 +19,7 @@ import { buildInvitationEmail } from "@/lib/mail/templates/invitation-email";
 // `src/lib/rate-limit.ts` for the design note on why this is
 // explicitly fail-open.
 import { hasCapability } from "@/lib/permissions";
-import { checkPlanLimit, planLimitHitResponse, type PlanLimitHitResponse } from "@/lib/plans";
+import { type PlanLimitHitResponse, checkPlanLimit, planLimitHitResponse } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { requireActiveMembership, requireSession } from "@/lib/session";
 import { inviteMemberSchema, updateMemberRoleSchema } from "@/lib/validation/membership";

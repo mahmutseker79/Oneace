@@ -105,12 +105,7 @@ describe("Schema — P0-04 landed-cost surface (ADR-002 §5)", () => {
 
 describe("Migration — 20260425_landed_cost", () => {
   const root = findRepoRoot();
-  const migDir = path.join(
-    root,
-    "prisma",
-    "migrations",
-    "20260425000000_landed_cost",
-  );
+  const migDir = path.join(root, "prisma", "migrations", "20260425000000_landed_cost");
 
   it("migration directory + sql exist", () => {
     expect(fs.existsSync(migDir)).toBe(true);

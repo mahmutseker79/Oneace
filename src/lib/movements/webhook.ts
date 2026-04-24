@@ -32,10 +32,9 @@
 import type { Prisma, StockMovement } from "@/generated/prisma";
 
 import { deriveWebhookIdempotencyKey } from "./idempotency-key";
-import { postMovement, type StockMovementInput, type TxClient } from "./post";
+import { type StockMovementInput, type TxClient, postMovement } from "./post";
 
-export interface WebhookMovementInput
-  extends Omit<StockMovementInput, "idempotencyKey"> {
+export interface WebhookMovementInput extends Omit<StockMovementInput, "idempotencyKey"> {
   /**
    * Provider slug — matches the adapter directory under
    * `src/lib/integrations/<provider>` (lowercase kebab/snake).

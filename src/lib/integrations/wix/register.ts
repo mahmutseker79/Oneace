@@ -20,10 +20,7 @@ export const WIX_TASK_KINDS = [
 
 export type WixTaskKind = (typeof WIX_TASK_KINDS)[number];
 
-async function runWixSync(
-  task: ClaimedTask,
-  kind: WixTaskKind,
-): Promise<void> {
+async function runWixSync(task: ClaimedTask, kind: WixTaskKind): Promise<void> {
   const integration = await db.integration.findFirst({
     where: {
       organizationId: task.organizationId,

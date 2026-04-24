@@ -35,9 +35,7 @@ describe("env.ts — P2-02 Redis hard-required in production", () => {
   });
 
   it("issues a schema error when URL is missing in prod", () => {
-    expect(
-      /isProduction\s*&&\s*!hasRedisUrl/.test(src),
-    ).toBe(true);
+    expect(/isProduction\s*&&\s*!hasRedisUrl/.test(src)).toBe(true);
     expect(/UPSTASH_REDIS_REST_URL is required in production/.test(src)).toBe(true);
   });
 
@@ -56,9 +54,7 @@ describe("env.ts — P2-02 Redis hard-required in production", () => {
 
   it("retains the pre-existing pair-mismatch check (both or neither)", () => {
     // The legacy refinement — if only one of the pair is set, fail.
-    expect(
-      /hasRedisUrl\s*!==\s*hasRedisToken/.test(src),
-    ).toBe(true);
+    expect(/hasRedisUrl\s*!==\s*hasRedisToken/.test(src)).toBe(true);
   });
 });
 
@@ -79,7 +75,7 @@ describe(".netlifyignore — P2-10 parity with .vercelignore", () => {
     const entries = (src: string) =>
       src
         .split("\n")
-        .map((line) => line.split("#")[0]!.trim())
+        .map((line) => line.split("#")[0]?.trim())
         .filter((line) => line.length > 0);
 
     const vercel = entries(fs.readFileSync(vercelPath, "utf8"));
@@ -104,7 +100,7 @@ describe(".netlifyignore — P2-10 parity with .vercelignore", () => {
     const entries = (src: string) =>
       src
         .split("\n")
-        .map((line) => line.split("#")[0]!.trim())
+        .map((line) => line.split("#")[0]?.trim())
         .filter((line) => line.length > 0);
 
     const vercel = entries(fs.readFileSync(vercelPath, "utf8"));

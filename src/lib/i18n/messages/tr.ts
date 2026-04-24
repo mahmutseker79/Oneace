@@ -31,7 +31,7 @@
  * proofread before claiming "Türkçe destekleniyor" in marketing.
  */
 
-import { en, type Messages } from "./en";
+import { type Messages, en } from "./en";
 
 export const tr: Messages = {
   ...en,
@@ -97,13 +97,11 @@ export const tr: Messages = {
     },
     roleDescriptions: {
       ...en.permissions.roleDescriptions,
-      OWNER:
-        "Organizasyon üzerinde tam kontrol — silme ve sahiplik devri dahil.",
+      OWNER: "Organizasyon üzerinde tam kontrol — silme ve sahiplik devri dahil.",
       ADMIN: "Ekip, lokasyon ve operasyonel yapılandırmayı yönetir.",
       MEMBER:
         "Günlük envanter operasyonları: ürünler, hareketler, sayımlar ve satın alma siparişleri.",
-      VIEWER:
-        "Yalnızca okuma erişimi. Oluşturma, düzenleme veya silme yapılamaz.",
+      VIEWER: "Yalnızca okuma erişimi. Oluşturma, düzenleme veya silme yapılamaz.",
       APPROVER: "Stok sayımlarını ve envanter düzeltmelerini onaylar.",
       COUNTER: "Stok sayımı ve envanter sayımlarını yapar.",
     },

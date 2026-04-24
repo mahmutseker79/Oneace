@@ -50,11 +50,7 @@ const UI_SURFACES: UiSurface[] = [
   {
     file: "src/app/(app)/sales-orders/[id]/ship/page.tsx",
     label: "SO ship page — must mint + send idempotencyKey via FormData",
-    markers: [
-      "mintIdempotencyKey",
-      "idempotencyKeyRef",
-      'formData.append("idempotencyKey"',
-    ],
+    markers: ["mintIdempotencyKey", "idempotencyKeyRef", 'formData.append("idempotencyKey"'],
   },
   {
     file: "src/app/(app)/transfers/[id]/receive/receive-form.tsx",

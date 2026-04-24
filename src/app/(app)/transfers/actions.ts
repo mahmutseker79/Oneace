@@ -7,10 +7,6 @@ import { evaluateAlerts } from "@/lib/alerts";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
-// GOD MODE roadmap P0-01 (rc3): StockMovement inserts must flow through
-// the postMovement seam. This file has 5 callsites — 1 on ship, 1 on
-// receive, 1 on discrepancy adjustment, 2 on cancel reversal.
-import { postMovement } from "@/lib/movements";
 // GOD MODE roadmap P0-02 (v1.6.1 rc2): shipTransferAction and
 // receiveTransferAction both wrap their bodies in withIdempotency.
 // Ship takes an optional second-arg options.idempotencyKey; receive
@@ -20,6 +16,10 @@ import {
   IdempotencyInProgressError,
   withIdempotency,
 } from "@/lib/idempotency/middleware";
+// GOD MODE roadmap P0-01 (rc3): StockMovement inserts must flow through
+// the postMovement seam. This file has 5 callsites — 1 on ship, 1 on
+// receive, 1 on discrepancy adjustment, 2 on cancel reversal.
+import { postMovement } from "@/lib/movements";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { upsertStockLevel } from "@/lib/stock-level-upsert";
@@ -368,77 +368,74 @@ export async function shipTransferAction(
         payload: { transferId },
       },
       async () => {
-    const affectedItemIds: string[] = [];
+        const affectedItemIds: string[] = [];
 
-    await db.$transaction(async (tx) => {
-      // For each line, deduct from source warehouse
-      for (const line of transfer.lines) {
-        // Create TRANSFER movement (direction -1 = debit). rc3 seam.
-        await postMovement(tx, {
-          organizationId: orgId,
-          itemId: line.itemId,
-          warehouseId: transfer.fromWarehouseId,
-          type: "TRANSFER",
-          quantity: line.shippedQty,
-          direction: -1,
-          reference: transfer.transferNumber,
-          createdByUserId: session.user.id,
+        await db.$transaction(async (tx) => {
+          // For each line, deduct from source warehouse
+          for (const line of transfer.lines) {
+            // Create TRANSFER movement (direction -1 = debit). rc3 seam.
+            await postMovement(tx, {
+              organizationId: orgId,
+              itemId: line.itemId,
+              warehouseId: transfer.fromWarehouseId,
+              type: "TRANSFER",
+              quantity: line.shippedQty,
+              direction: -1,
+              reference: transfer.transferNumber,
+              createdByUserId: session.user.id,
+            });
+
+            // Deduct from source
+            await upsertStockLevel(tx, {
+              organizationId: orgId,
+              itemId: line.itemId,
+              warehouseId: transfer.fromWarehouseId,
+              quantityDelta: -line.shippedQty,
+            });
+
+            affectedItemIds.push(line.itemId);
+          }
+
+          // Transition to IN_TRANSIT
+          await tx.stockTransfer.update({
+            where: { id: transferId },
+            data: {
+              status: "IN_TRANSIT",
+              shippedAt: new Date(),
+              shippedByUserId: session.user.id,
+            },
+          });
         });
 
-        // Deduct from source
-        await upsertStockLevel(tx, {
+        await recordAudit({
           organizationId: orgId,
-          itemId: line.itemId,
-          warehouseId: transfer.fromWarehouseId,
-          quantityDelta: -line.shippedQty,
+          actorId: session.user.id,
+          action: "stock_movement.created",
+          entityType: "stock_movement",
+          entityId: transferId,
+          metadata: {
+            type: "TRANSFER_SHIPPED",
+            transferNumber: transfer.transferNumber,
+            lineCount: transfer.lines.length,
+            totalQty: transfer.lines.reduce((sum, l) => sum + l.shippedQty, 0),
+          },
         });
 
-        affectedItemIds.push(line.itemId);
-      }
+        // Fire-and-forget alert evaluation
+        if (affectedItemIds.length > 0) {
+          void evaluateAlerts(orgId, affectedItemIds);
+        }
 
-      // Transition to IN_TRANSIT
-      await tx.stockTransfer.update({
-        where: { id: transferId },
-        data: {
-          status: "IN_TRANSIT",
-          shippedAt: new Date(),
-          shippedByUserId: session.user.id,
-        },
-      });
-    });
-
-    await recordAudit({
-      organizationId: orgId,
-      actorId: session.user.id,
-      action: "stock_movement.created",
-      entityType: "stock_movement",
-      entityId: transferId,
-      metadata: {
-        type: "TRANSFER_SHIPPED",
-        transferNumber: transfer.transferNumber,
-        lineCount: transfer.lines.length,
-        totalQty: transfer.lines.reduce((sum, l) => sum + l.shippedQty, 0),
-      },
-    });
-
-    // Fire-and-forget alert evaluation
-    if (affectedItemIds.length > 0) {
-      void evaluateAlerts(orgId, affectedItemIds);
-    }
-
-    revalidatePath("/transfers");
-    revalidatePath(`/transfers/${transferId}`);
-    revalidatePath("/movements");
-    revalidatePath("/items");
-    revalidatePath("/dashboard");
-    return { ok: true, id: transferId };
+        revalidatePath("/transfers");
+        revalidatePath(`/transfers/${transferId}`);
+        revalidatePath("/movements");
+        revalidatePath("/items");
+        revalidatePath("/dashboard");
+        return { ok: true, id: transferId };
       },
     );
   } catch (error) {
-    if (
-      error instanceof IdempotencyConflictError ||
-      error instanceof IdempotencyInProgressError
-    ) {
+    if (error instanceof IdempotencyConflictError || error instanceof IdempotencyInProgressError) {
       return { ok: false, error: t.movements.errors.createFailed };
     }
     return { ok: false, error: t.movements.errors.createFailed };
@@ -521,122 +518,117 @@ export async function receiveTransferAction(input: ReceiveTransferInput): Promis
         payload: {
           transferId,
           note: parsed.data.note,
-          lines: [...parsed.data.lines].sort((a, b) =>
-            a.lineId.localeCompare(b.lineId),
-          ),
+          lines: [...parsed.data.lines].sort((a, b) => a.lineId.localeCompare(b.lineId)),
         },
       },
       async () => {
-    const affectedItemIds: string[] = [];
+        const affectedItemIds: string[] = [];
 
-    await db.$transaction(async (tx) => {
-      for (const [lineId, receivedQty] of receiveByLineId) {
-        const origLine = lineMap.get(lineId);
-        if (!origLine) continue;
+        await db.$transaction(async (tx) => {
+          for (const [lineId, receivedQty] of receiveByLineId) {
+            const origLine = lineMap.get(lineId);
+            if (!origLine) continue;
 
-        const discrepancy = receivedQty - origLine.shippedQty;
+            const discrepancy = receivedQty - origLine.shippedQty;
 
-        // Create TRANSFER movement (direction +1 = credit to destination). rc3 seam.
-        await postMovement(tx, {
-          organizationId: orgId,
-          itemId: origLine.itemId,
-          warehouseId: transfer.toWarehouseId,
-          type: "TRANSFER",
-          quantity: receivedQty,
-          direction: 1,
-          reference: transfer.transferNumber,
-          note: note ?? null,
-          createdByUserId: session.user.id,
+            // Create TRANSFER movement (direction +1 = credit to destination). rc3 seam.
+            await postMovement(tx, {
+              organizationId: orgId,
+              itemId: origLine.itemId,
+              warehouseId: transfer.toWarehouseId,
+              type: "TRANSFER",
+              quantity: receivedQty,
+              direction: 1,
+              reference: transfer.transferNumber,
+              note: note ?? null,
+              createdByUserId: session.user.id,
+            });
+
+            // Add to destination warehouse
+            await upsertStockLevel(tx, {
+              organizationId: orgId,
+              itemId: origLine.itemId,
+              warehouseId: transfer.toWarehouseId,
+              quantityDelta: receivedQty,
+            });
+
+            // If there's a discrepancy, create an ADJUSTMENT movement
+            if (discrepancy !== 0) {
+              const adjustmentDirection = discrepancy > 0 ? 1 : -1;
+              // rc3 seam — discrepancy ADJUSTMENT movement.
+              await postMovement(tx, {
+                organizationId: orgId,
+                itemId: origLine.itemId,
+                warehouseId: transfer.toWarehouseId,
+                type: "ADJUSTMENT",
+                quantity: Math.abs(discrepancy),
+                direction: adjustmentDirection,
+                reference: `${transfer.transferNumber}-DISC`,
+                note: `Discrepancy from transfer receive: shipped ${origLine.shippedQty}, received ${receivedQty}`,
+                createdByUserId: session.user.id,
+              });
+
+              // Adjust stock for the discrepancy
+              await upsertStockLevel(tx, {
+                organizationId: orgId,
+                itemId: origLine.itemId,
+                warehouseId: transfer.toWarehouseId,
+                quantityDelta: discrepancy,
+              });
+            }
+
+            // Update line with received quantity and discrepancy
+            await tx.stockTransferLine.update({
+              where: { id: lineId },
+              data: {
+                receivedQty,
+                discrepancy,
+              },
+            });
+
+            affectedItemIds.push(origLine.itemId);
+          }
+
+          // Transition to RECEIVED
+          await tx.stockTransfer.update({
+            where: { id: transferId },
+            data: {
+              status: "RECEIVED",
+              receivedAt: new Date(),
+              receivedByUserId: session.user.id,
+            },
+          });
         });
 
-        // Add to destination warehouse
-        await upsertStockLevel(tx, {
+        await recordAudit({
           organizationId: orgId,
-          itemId: origLine.itemId,
-          warehouseId: transfer.toWarehouseId,
-          quantityDelta: receivedQty,
-        });
-
-        // If there's a discrepancy, create an ADJUSTMENT movement
-        if (discrepancy !== 0) {
-          const adjustmentDirection = discrepancy > 0 ? 1 : -1;
-          // rc3 seam — discrepancy ADJUSTMENT movement.
-          await postMovement(tx, {
-            organizationId: orgId,
-            itemId: origLine.itemId,
-            warehouseId: transfer.toWarehouseId,
-            type: "ADJUSTMENT",
-            quantity: Math.abs(discrepancy),
-            direction: adjustmentDirection,
-            reference: `${transfer.transferNumber}-DISC`,
-            note: `Discrepancy from transfer receive: shipped ${origLine.shippedQty}, received ${receivedQty}`,
-            createdByUserId: session.user.id,
-          });
-
-          // Adjust stock for the discrepancy
-          await upsertStockLevel(tx, {
-            organizationId: orgId,
-            itemId: origLine.itemId,
-            warehouseId: transfer.toWarehouseId,
-            quantityDelta: discrepancy,
-          });
-        }
-
-        // Update line with received quantity and discrepancy
-        await tx.stockTransferLine.update({
-          where: { id: lineId },
-          data: {
-            receivedQty,
-            discrepancy,
+          actorId: session.user.id,
+          action: "stock_movement.created",
+          entityType: "stock_movement",
+          entityId: transferId,
+          metadata: {
+            type: "TRANSFER_RECEIVED",
+            transferNumber: transfer.transferNumber,
+            lineCount: lines.length,
+            totalQty: lines.reduce((sum, l) => sum + l.receivedQty, 0),
           },
         });
 
-        affectedItemIds.push(origLine.itemId);
-      }
+        // Fire-and-forget alert evaluation
+        if (affectedItemIds.length > 0) {
+          void evaluateAlerts(orgId, affectedItemIds);
+        }
 
-      // Transition to RECEIVED
-      await tx.stockTransfer.update({
-        where: { id: transferId },
-        data: {
-          status: "RECEIVED",
-          receivedAt: new Date(),
-          receivedByUserId: session.user.id,
-        },
-      });
-    });
-
-    await recordAudit({
-      organizationId: orgId,
-      actorId: session.user.id,
-      action: "stock_movement.created",
-      entityType: "stock_movement",
-      entityId: transferId,
-      metadata: {
-        type: "TRANSFER_RECEIVED",
-        transferNumber: transfer.transferNumber,
-        lineCount: lines.length,
-        totalQty: lines.reduce((sum, l) => sum + l.receivedQty, 0),
-      },
-    });
-
-    // Fire-and-forget alert evaluation
-    if (affectedItemIds.length > 0) {
-      void evaluateAlerts(orgId, affectedItemIds);
-    }
-
-    revalidatePath("/transfers");
-    revalidatePath(`/transfers/${transferId}`);
-    revalidatePath("/movements");
-    revalidatePath("/items");
-    revalidatePath("/dashboard");
-    return { ok: true, id: transferId };
+        revalidatePath("/transfers");
+        revalidatePath(`/transfers/${transferId}`);
+        revalidatePath("/movements");
+        revalidatePath("/items");
+        revalidatePath("/dashboard");
+        return { ok: true, id: transferId };
       },
     );
   } catch (error) {
-    if (
-      error instanceof IdempotencyConflictError ||
-      error instanceof IdempotencyInProgressError
-    ) {
+    if (error instanceof IdempotencyConflictError || error instanceof IdempotencyInProgressError) {
       return { ok: false, error: t.movements.errors.createFailed };
     }
     return { ok: false, error: t.movements.errors.createFailed };

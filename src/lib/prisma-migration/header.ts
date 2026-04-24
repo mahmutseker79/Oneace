@@ -25,11 +25,7 @@
 
 export type MigrationType = "EXPAND" | "BACKFILL" | "CONTRACT";
 
-export const MIGRATION_TYPES: readonly MigrationType[] = [
-  "EXPAND",
-  "BACKFILL",
-  "CONTRACT",
-];
+export const MIGRATION_TYPES: readonly MigrationType[] = ["EXPAND", "BACKFILL", "CONTRACT"];
 
 /**
  * Migrations authored on or after this date (UTC) must carry a valid

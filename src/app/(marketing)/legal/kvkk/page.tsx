@@ -42,27 +42,25 @@ export default function KvkkPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16 text-base leading-relaxed">
       <div className="mb-8 rounded-md border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-900">
-        <strong>Taslak.</strong> Bu metin canlı bir hukuki belge
-        değildir. Avukat incelemesi ve şirket tüzel kişilik bilgileri
-        eklenmeden paid launch yapılmayacaktır.
+        <strong>Taslak.</strong> Bu metin canlı bir hukuki belge değildir. Avukat incelemesi ve
+        şirket tüzel kişilik bilgileri eklenmeden paid launch yapılmayacaktır.
       </div>
 
-      <h1 className="text-3xl font-bold tracking-tight">
-        KVKK Aydınlatma Metni
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Son güncelleme: {LAST_UPDATED}
-      </p>
+      <h1 className="text-3xl font-bold tracking-tight">KVKK Aydınlatma Metni</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Son güncelleme: {LAST_UPDATED}</p>
 
       <section className="mt-8 space-y-4">
         <h2 className="text-xl font-semibold">1. Veri sorumlusu</h2>
         <p>
-          OneAce hizmetini sunan ticari tüzel kişilik, 6698 sayılı
-          Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında
-          <em> veri sorumlusu</em> sıfatıyla hareket eder. Tüzel
-          kişilik unvanı, Mersis numarası ve VERBIS sicil bilgileri
-          ticari kuruluşun tamamlanmasının ardından bu bölüme
-          eklenecektir. İletişim için: <a href="mailto:kvkk@oneace.app" className="underline">kvkk@oneace.app</a>.
+          OneAce hizmetini sunan ticari tüzel kişilik, 6698 sayılı Kişisel Verilerin Korunması
+          Kanunu ("KVKK") kapsamında
+          <em> veri sorumlusu</em> sıfatıyla hareket eder. Tüzel kişilik unvanı, Mersis numarası ve
+          VERBIS sicil bilgileri ticari kuruluşun tamamlanmasının ardından bu bölüme eklenecektir.
+          İletişim için:{" "}
+          <a href="mailto:kvkk@oneace.app" className="underline">
+            kvkk@oneace.app
+          </a>
+          .
         </p>
       </section>
 
@@ -71,29 +69,24 @@ export default function KvkkPage() {
         <p>OneAce'i kullanırken aşağıdaki kişisel veri kategorileri işlenebilir:</p>
         <ul className="ml-6 list-disc space-y-2">
           <li>
-            <strong>Kimlik bilgileri.</strong> Ad, soyad — üyelik
-            sırasında verilen.
+            <strong>Kimlik bilgileri.</strong> Ad, soyad — üyelik sırasında verilen.
           </li>
           <li>
-            <strong>İletişim bilgileri.</strong> E-posta adresi.
-            Hesap doğrulama, parola sıfırlama ve ürün bildirimleri
-            için kullanılır.
+            <strong>İletişim bilgileri.</strong> E-posta adresi. Hesap doğrulama, parola sıfırlama
+            ve ürün bildirimleri için kullanılır.
           </li>
           <li>
-            <strong>Organizasyon bilgileri.</strong> Davet edildiğiniz
-            veya kurduğunuz organizasyonun adı, rolünüz, ekip
-            üyelikleri.
+            <strong>Organizasyon bilgileri.</strong> Davet edildiğiniz veya kurduğunuz
+            organizasyonun adı, rolünüz, ekip üyelikleri.
           </li>
           <li>
-            <strong>Oturum ve güvenlik log'ları.</strong> Giriş zamanı,
-            IP adresi, tarayıcı-ajan bilgisi, iki faktörlü doğrulama
-            (2FA) etkinlik kayıtları. Bu veriler yalnızca hesap
+            <strong>Oturum ve güvenlik log'ları.</strong> Giriş zamanı, IP adresi, tarayıcı-ajan
+            bilgisi, iki faktörlü doğrulama (2FA) etkinlik kayıtları. Bu veriler yalnızca hesap
             güvenliği ve kötüye kullanım tespiti amacıyla tutulur.
           </li>
           <li>
-            <strong>Envanter operasyon verisi.</strong> Sayım, transfer,
-            satın alma-satış siparişi gibi işlem kayıtları. Bu veriler
-            organizasyonunuza aittir; OneAce bunları yalnızca
+            <strong>Envanter operasyon verisi.</strong> Sayım, transfer, satın alma-satış siparişi
+            gibi işlem kayıtları. Bu veriler organizasyonunuza aittir; OneAce bunları yalnızca
             hizmetin çalışması için işler.
           </li>
         </ul>
@@ -103,21 +96,15 @@ export default function KvkkPage() {
         <h2 className="text-xl font-semibold">3. İşleme amaçları</h2>
         <ul className="ml-6 list-disc space-y-2">
           <li>Hesap oluşturma, kimlik doğrulama ve erişim kontrolü.</li>
+          <li>Hizmet sunumu — envanter yönetim özelliklerinin çalıştırılması.</li>
+          <li>Güvenlik — saldırı tespiti, hız sınırlaması, 2FA, olay yanıtı.</li>
           <li>
-            Hizmet sunumu — envanter yönetim özelliklerinin
-            çalıştırılması.
+            Yasal yükümlülüklerin yerine getirilmesi — talep halinde yetkili mercilere bilgi
+            sağlanması.
           </li>
           <li>
-            Güvenlik — saldırı tespiti, hız sınırlaması, 2FA,
-            olay yanıtı.
-          </li>
-          <li>
-            Yasal yükümlülüklerin yerine getirilmesi — talep halinde
-            yetkili mercilere bilgi sağlanması.
-          </li>
-          <li>
-            Faturalama — Stripe aracılığıyla abonelik yönetimi
-            (Stripe kendi aydınlatma metnine tabidir).
+            Faturalama — Stripe aracılığıyla abonelik yönetimi (Stripe kendi aydınlatma metnine
+            tabidir).
           </li>
         </ul>
       </section>
@@ -125,33 +112,27 @@ export default function KvkkPage() {
       <section className="mt-8 space-y-4">
         <h2 className="text-xl font-semibold">4. Aktarım</h2>
         <p>
-          Kişisel verileriniz yalnızca hizmetin işlemesi için gerekli
-          üçüncü taraf hizmet sağlayıcılara aktarılabilir: barındırma
-          (Netlify / Vercel), veritabanı (Neon, AB bölgesi), e-posta
-          gönderimi (Resend), faturalama (Stripe), hata izleme
-          (Sentry), opsiyonel ürün analitiği (PostHog). Bu
-          sağlayıcıların her biri kendi gizlilik politikasına tabidir
-          ve OneAce, makul düzeyde standart sözleşmeleri olan
-          sağlayıcıları seçer.
+          Kişisel verileriniz yalnızca hizmetin işlemesi için gerekli üçüncü taraf hizmet
+          sağlayıcılara aktarılabilir: barındırma (Netlify / Vercel), veritabanı (Neon, AB bölgesi),
+          e-posta gönderimi (Resend), faturalama (Stripe), hata izleme (Sentry), opsiyonel ürün
+          analitiği (PostHog). Bu sağlayıcıların her biri kendi gizlilik politikasına tabidir ve
+          OneAce, makul düzeyde standart sözleşmeleri olan sağlayıcıları seçer.
         </p>
         <p>
           QuickBooks, Shopify ve benzeri entegrasyonlar
-          <em> kullanıcı inisiyatifiyle</em> bağlanır. Bu
-          entegrasyonlar üzerinden alınan verilerin sorumluluğu ilgili
-          hizmetin kendisindedir; OneAce sadece senkronizasyon
-          kanalıdır.
+          <em> kullanıcı inisiyatifiyle</em> bağlanır. Bu entegrasyonlar üzerinden alınan verilerin
+          sorumluluğu ilgili hizmetin kendisindedir; OneAce sadece senkronizasyon kanalıdır.
         </p>
       </section>
 
       <section className="mt-8 space-y-4">
         <h2 className="text-xl font-semibold">5. Saklama süresi</h2>
         <p>
-          Hesap silme talebinden sonra kişisel verileriniz cascade
-          kuralı ile silinir (OneAce'in ürün kodunda
+          Hesap silme talebinden sonra kişisel verileriniz cascade kuralı ile silinir (OneAce'in
+          ürün kodunda
           <code className="mx-1 rounded bg-muted px-1 text-xs">onDelete: Cascade</code>
-          FK'leri); log kayıtları 30 günü aşmamak üzere kısa vadede
-          tutulur. Yasal saklama yükümlülüğü bulunan kayıtlar (ör.
-          fatura verisi) ilgili mevzuat süresince saklanır.
+          FK'leri); log kayıtları 30 günü aşmamak üzere kısa vadede tutulur. Yasal saklama
+          yükümlülüğü bulunan kayıtlar (ör. fatura verisi) ilgili mevzuat süresince saklanır.
         </p>
       </section>
 
@@ -163,24 +144,18 @@ export default function KvkkPage() {
           <li>İşlenmişse buna ilişkin bilgi talep etme.</li>
           <li>İşleme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme.</li>
           <li>
-            Yurt içinde veya yurt dışında kişisel verilerinizin
-            aktarıldığı üçüncü tarafları bilme.
+            Yurt içinde veya yurt dışında kişisel verilerinizin aktarıldığı üçüncü tarafları bilme.
           </li>
-          <li>
-            Eksik veya yanlış işlenmişse düzeltilmesini isteme.
-          </li>
+          <li>Eksik veya yanlış işlenmişse düzeltilmesini isteme.</li>
           <li>KVKK'da öngörülen şartlar çerçevesinde silinmesini / yok edilmesini isteme.</li>
+          <li>Yapılan işlemlerin, aktarıldığı üçüncü kişilere bildirilmesini isteme.</li>
           <li>
-            Yapılan işlemlerin, aktarıldığı üçüncü kişilere
-            bildirilmesini isteme.
+            Otomatik sistemler vasıtasıyla analiz edilmesi sonucunda aleyhinize bir sonuç çıkmasına
+            itiraz etme.
           </li>
           <li>
-            Otomatik sistemler vasıtasıyla analiz edilmesi sonucunda
-            aleyhinize bir sonuç çıkmasına itiraz etme.
-          </li>
-          <li>
-            Kanuna aykırı işlenmesi sebebiyle zarara uğramanız halinde
-            zararın giderilmesini talep etme.
+            Kanuna aykırı işlenmesi sebebiyle zarara uğramanız halinde zararın giderilmesini talep
+            etme.
           </li>
         </ul>
         <p>
@@ -188,28 +163,27 @@ export default function KvkkPage() {
           <a href="mailto:kvkk@oneace.app" className="underline">
             kvkk@oneace.app
           </a>{" "}
-          adresine yazılı başvurunuzu iletebilirsiniz. 30 gün içinde
-          ücretsiz olarak dönüş yapılacaktır.
+          adresine yazılı başvurunuzu iletebilirsiniz. 30 gün içinde ücretsiz olarak dönüş
+          yapılacaktır.
         </p>
       </section>
 
       <section className="mt-8 space-y-4">
         <h2 className="text-xl font-semibold">7. Çerezler</h2>
         <p>
-          OneAce yalnızca zorunlu çerezleri kullanır: oturum çerezi
-          (<code className="rounded bg-muted px-1 text-xs">oneace-session</code>),
-          dil tercihi (<code className="rounded bg-muted px-1 text-xs">oneace-locale</code>),
-          bölge tercihi (<code className="rounded bg-muted px-1 text-xs">oneace-region</code>).
-          Pazarlama veya üçüncü taraf izleme çerezi kullanılmaz.
+          OneAce yalnızca zorunlu çerezleri kullanır: oturum çerezi (
+          <code className="rounded bg-muted px-1 text-xs">oneace-session</code>), dil tercihi (
+          <code className="rounded bg-muted px-1 text-xs">oneace-locale</code>), bölge tercihi (
+          <code className="rounded bg-muted px-1 text-xs">oneace-region</code>). Pazarlama veya
+          üçüncü taraf izleme çerezi kullanılmaz.
         </p>
       </section>
 
       <section className="mt-8 space-y-4">
         <h2 className="text-xl font-semibold">8. Değişiklikler</h2>
         <p>
-          Bu metinde yapılan değişiklikler sürüm tarihi güncellenerek
-          bu sayfada yayınlanır. Büyük değişiklikler ek olarak
-          e-posta veya uygulama içi bildirim ile iletilir.
+          Bu metinde yapılan değişiklikler sürüm tarihi güncellenerek bu sayfada yayınlanır. Büyük
+          değişiklikler ek olarak e-posta veya uygulama içi bildirim ile iletilir.
         </p>
       </section>
     </main>

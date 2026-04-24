@@ -39,7 +39,7 @@
 // runbook" — that's a filename/substring check, not a behavioral
 // one.
 
-import { accessSync, constants, readFileSync, statSync } from "node:fs";
+import { constants, accessSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -195,7 +195,9 @@ describe("§5.50 F-06 — updater script is safe to run", () => {
     // `verified deploy`. If someone "simplifies" the script into a
     // blind pre-commit later, this pin catches the regression.
     const script = readScript();
-    expect(script.toLowerCase()).toMatch(/not a pre-commit|opt-in after promote|after.{0,40}verified prod promote/);
+    expect(script.toLowerCase()).toMatch(
+      /not a pre-commit|opt-in after promote|after.{0,40}verified prod promote/,
+    );
   });
 
   it("writes atomically via a temp file + mv", () => {

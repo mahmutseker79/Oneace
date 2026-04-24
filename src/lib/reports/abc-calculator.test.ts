@@ -40,7 +40,7 @@ describe("calculateABC — empty + edge cases", () => {
   it("handles single-item PO (single result, always class A-ish)", () => {
     const out = calculateABC([make("1", 10, 5)]);
     expect(out).toHaveLength(1);
-    expect(out[0]!.totalValue).toBe(50);
+    expect(out[0]?.totalValue).toBe(50);
   });
 
   it("sorts by total value descending", () => {
@@ -58,9 +58,7 @@ describe("calculateABC — empty + edge cases", () => {
 describe("calculateABC — Pareto thresholds (defaults)", () => {
   it("top 20% of SKUs → class A", () => {
     // 10 items: top 2 (20%) should be A.
-    const items = Array.from({ length: 10 }, (_, i) =>
-      make(`${i}`, (10 - i) * 10, 1),
-    );
+    const items = Array.from({ length: 10 }, (_, i) => make(`${i}`, (10 - i) * 10, 1));
     const out = calculateABC(items);
     const aCount = out.filter((r) => r.classification === "A").length;
     // 20% of 10 = 2
@@ -76,7 +74,7 @@ describe("calculateABC — Pareto thresholds (defaults)", () => {
       prev = r.cumulativePercentage;
     }
     // Final cumulative ≈ 100.
-    expect(out[out.length - 1]!.cumulativePercentage).toBeGreaterThan(99.9);
+    expect(out[out.length - 1]?.cumulativePercentage).toBeGreaterThan(99.9);
   });
 
   it("assigns every item a class in {A, B, C}", () => {
@@ -101,14 +99,14 @@ describe("calculateABC — custom value thresholds override Pareto", () => {
   it("bMinValue: items between b and a thresholds land in B", () => {
     const items = [make("x", 200, 1)];
     const out = calculateABC(items, { aMinValue: 1000, bMinValue: 100 });
-    expect(out[0]!.classification).toBe("B");
+    expect(out[0]?.classification).toBe("B");
   });
 });
 
 describe("calculateABC — total value math", () => {
   it("totalValue = quantity × costPrice exactly", () => {
     const out = calculateABC([make("x", 2.5, 4)]);
-    expect(out[0]!.totalValue).toBe(10);
+    expect(out[0]?.totalValue).toBe(10);
   });
 
   it("percentageOfTotalValue sums to 100 (±1e-6)", () => {

@@ -31,10 +31,7 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const CARD_PATH = resolve(
-  process.cwd(),
-  "src/app/(app)/settings/security/two-factor-card.tsx",
-);
+const CARD_PATH = resolve(process.cwd(), "src/app/(app)/settings/security/two-factor-card.tsx");
 const EVENTS_PATH = resolve(process.cwd(), "src/lib/analytics/events.ts");
 
 function readCard(): string {
@@ -51,10 +48,7 @@ describe("§5.54 F-10 — RECOVERY_CODES_ROTATED taxonomy placement", () => {
     // dashboards / retention queries filter on. String drift silently
     // breaks every saved funnel that references it.
     const mod = await import("@/lib/analytics/events");
-    expect(mod.AnalyticsEvents).toHaveProperty(
-      "RECOVERY_CODES_ROTATED",
-      "recovery_codes_rotated",
-    );
+    expect(mod.AnalyticsEvents).toHaveProperty("RECOVERY_CODES_ROTATED", "recovery_codes_rotated");
   });
 
   it("RECOVERY_CODES_ROTATED lives in the wired (not planned) block", () => {
@@ -69,12 +63,8 @@ describe("§5.54 F-10 — RECOVERY_CODES_ROTATED taxonomy placement", () => {
     expect(wiredIdx, "AnalyticsEvents block exists").toBeGreaterThan(-1);
     expect(plannedIdx, "PlannedAnalyticsEvents block exists").toBeGreaterThan(-1);
     expect(constIdx, "RECOVERY_CODES_ROTATED constant exists").toBeGreaterThan(-1);
-    expect(constIdx, "RECOVERY_CODES_ROTATED is in the wired block").toBeGreaterThan(
-      wiredIdx,
-    );
-    expect(constIdx, "RECOVERY_CODES_ROTATED is NOT in the planned block").toBeLessThan(
-      plannedIdx,
-    );
+    expect(constIdx, "RECOVERY_CODES_ROTATED is in the wired block").toBeGreaterThan(wiredIdx);
+    expect(constIdx, "RECOVERY_CODES_ROTATED is NOT in the planned block").toBeLessThan(plannedIdx);
   });
 });
 
@@ -147,22 +137,15 @@ describe("§5.54 F-10 — handleRegenerate wiring + telemetry", () => {
     const text = readCard();
     const handlerStart = text.indexOf("async function handleRegenerate");
     expect(handlerStart, "handler exists").toBeGreaterThan(-1);
-    const handlerEnd = text.indexOf(
-      "async function handleDisable",
-      handlerStart,
-    );
+    const handlerEnd = text.indexOf("async function handleDisable", handlerStart);
     expect(handlerEnd, "handler body bounded").toBeGreaterThan(handlerStart);
     const body = text.slice(handlerStart, handlerEnd);
 
-    const sourceIdx = body.indexOf(
-      'const source: "advised" | "manual" = isRotationAdvised()',
-    );
+    const sourceIdx = body.indexOf('const source: "advised" | "manual" = isRotationAdvised()');
     const startTransitionIdx = body.indexOf("startTransition");
     expect(sourceIdx, "source captured").toBeGreaterThan(-1);
     expect(startTransitionIdx, "startTransition called").toBeGreaterThan(-1);
-    expect(sourceIdx, "source captured BEFORE startTransition").toBeLessThan(
-      startTransitionIdx,
-    );
+    expect(sourceIdx, "source captured BEFORE startTransition").toBeLessThan(startTransitionIdx);
   });
 
   it("fires RECOVERY_CODES_ROTATED with codesIssued + source payload", () => {
@@ -170,9 +153,7 @@ describe("§5.54 F-10 — handleRegenerate wiring + telemetry", () => {
     // Full payload pin — missing `source` silently collapses the
     // advised-vs-manual slice; missing `codesIssued` collapses the
     // "are we rolling 10 codes or something else?" breakdown.
-    expect(text).toMatch(
-      /track\s*\(\s*AnalyticsEvents\.RECOVERY_CODES_ROTATED\s*,\s*\{/,
-    );
+    expect(text).toMatch(/track\s*\(\s*AnalyticsEvents\.RECOVERY_CODES_ROTATED\s*,\s*\{/);
     const trackIdx = text.indexOf("AnalyticsEvents.RECOVERY_CODES_ROTATED");
     expect(trackIdx).toBeGreaterThan(-1);
     const payloadSlice = text.slice(trackIdx, trackIdx + 300);

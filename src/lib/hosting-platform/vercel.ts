@@ -22,10 +22,7 @@ const PAGE_SIZE = 20;
 /** Vercel Hobby plan daily ceiling — raw count only; threshold policy lives on the route. */
 const VERCEL_DAILY_QUOTA = 100;
 
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit = {},
-): Promise<Response> {
+async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -65,10 +62,9 @@ export function createVercelQuotaProvider(): QuotaProvider {
           if (nextCursor !== null) params.set("until", String(nextCursor));
           if (vercelTeamId) params.set("teamId", vercelTeamId);
 
-          const res = await fetchWithTimeout(
-            `https://api.vercel.com/v6/deployments?${params}`,
-            { headers: { Authorization: `Bearer ${vercelToken}` } },
-          );
+          const res = await fetchWithTimeout(`https://api.vercel.com/v6/deployments?${params}`, {
+            headers: { Authorization: `Bearer ${vercelToken}` },
+          });
           if (!res.ok) {
             return {
               ok: false,

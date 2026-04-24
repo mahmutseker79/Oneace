@@ -37,10 +37,7 @@ function findRepoRoot(): string {
 
 describe("DR drill workflow — P1-06 wiring", () => {
   const root = findRepoRoot();
-  const yml = fs.readFileSync(
-    path.join(root, ".github", "workflows", "dr-drill.yml"),
-    "utf8",
-  );
+  const yml = fs.readFileSync(path.join(root, ".github", "workflows", "dr-drill.yml"), "utf8");
 
   it("runs on a weekly schedule (Monday 06:00 UTC)", () => {
     // `0 6 * * 1` = weekly Monday 06:00 UTC. The skeleton used
@@ -71,9 +68,7 @@ describe("DR drill workflow — P1-06 wiring", () => {
   it("cleanup runs on always() (survives failures)", () => {
     // The delete-branch step's `if:` must include `always()` so a
     // failed drill doesn't leak a branch.
-    expect(
-      /name:\s*Destroy ephemeral Neon branch[\s\S]*?if:\s*always\(\)/.test(yml),
-    ).toBe(true);
+    expect(/name:\s*Destroy ephemeral Neon branch[\s\S]*?if:\s*always\(\)/.test(yml)).toBe(true);
   });
 
   it("appends to docs/DR-drill-log.md on every live drill", () => {

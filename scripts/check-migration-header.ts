@@ -22,17 +22,14 @@
 // Run with: `npx tsx scripts/check-migration-header.ts` (or the bare
 // shebang above under Node 22+ with `--experimental-strip-types`).
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   findDuplicateHeaders,
   isSubjectToHeaderRequirement,
   parseMigrationHeader,
 } from "../src/lib/prisma-migration/header";
-import {
-  checkMigrationSafety,
-  formatViolation,
-} from "../src/lib/prisma-migration/safety";
+import { checkMigrationSafety, formatViolation } from "../src/lib/prisma-migration/safety";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const MIGRATIONS_DIR = resolve(REPO_ROOT, "prisma", "migrations");
@@ -61,9 +58,7 @@ function main(): number {
     }
   });
 
-  console.log(
-    `\nADR-004 migration header check — scanning ${migrations.length} migration(s)\n`
-  );
+  console.log(`\nADR-004 migration header check — scanning ${migrations.length} migration(s)\n`);
 
   const violations: string[] = [];
   let enforcedCount = 0;
@@ -90,7 +85,7 @@ function main(): number {
       violations.push(
         `${dirname}: ${dupes.length} MIGRATION-TYPE declarations (lines ${dupes
           .map((i) => i + 1)
-          .join(", ")})`
+          .join(", ")})`,
       );
       continue;
     }
@@ -98,13 +93,13 @@ function main(): number {
     if (enforced) {
       if (!header.present) {
         violations.push(
-          `${dirname}: missing \`-- MIGRATION-TYPE: EXPAND|BACKFILL|CONTRACT\` header`
+          `${dirname}: missing \`-- MIGRATION-TYPE: EXPAND|BACKFILL|CONTRACT\` header`,
         );
         continue;
       }
       if (header.type === null) {
         violations.push(
-          `${dirname}: invalid MIGRATION-TYPE "${header.rawValue}" (must be EXPAND, BACKFILL, or CONTRACT)`
+          `${dirname}: invalid MIGRATION-TYPE "${header.rawValue}" (must be EXPAND, BACKFILL, or CONTRACT)`,
         );
         continue;
       }
@@ -125,31 +120,23 @@ function main(): number {
     // "missing" case.
     if (header.present && header.type === null) {
       violations.push(
-        `${dirname}: grandfathered, but has invalid MIGRATION-TYPE "${header.rawValue}"`
+        `${dirname}: grandfathered, but has invalid MIGRATION-TYPE "${header.rawValue}"`,
       );
-      continue;
     }
   }
 
   console.log("");
-  log(
-    "info",
-    `${enforcedCount} enforced, ${grandfatheredCount} grandfathered`
-  );
+  log("info", `${enforcedCount} enforced, ${grandfatheredCount} grandfathered`);
 
   if (violations.length > 0) {
     console.log("");
     for (const v of violations) log("fail", v);
-    console.error(
-      `\nADR-004 policy violation: ${violations.length} migration(s) non-compliant.`
-    );
-    console.error(
-      `See src/lib/prisma-migration/header.ts for the contract.\n`
-    );
+    console.error(`\nADR-004 policy violation: ${violations.length} migration(s) non-compliant.`);
+    console.error("See src/lib/prisma-migration/header.ts for the contract.\n");
     return 1;
   }
 
-  console.log(`\nADR-004 policy: OK\n`);
+  console.log("\nADR-004 policy: OK\n");
   return 0;
 }
 

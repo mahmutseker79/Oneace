@@ -44,7 +44,9 @@ describe("PO-receive wiring — P0-04 rc3", () => {
 
   it("imports allocateLanded from the costing module", () => {
     expect(
-      /import\s*\{[^}]*\ballocateLanded\b[^}]*\}\s*from\s*["']@\/lib\/costing\/landed["']/.test(src),
+      /import\s*\{[^}]*\ballocateLanded\b[^}]*\}\s*from\s*["']@\/lib\/costing\/landed["']/.test(
+        src,
+      ),
     ).toBe(true);
   });
 
@@ -62,10 +64,9 @@ describe("PO-receive wiring — P0-04 rc3", () => {
       "otherLandedCost",
       "landedAllocationBasis",
     ]) {
-      expect(
-        new RegExp(`\\b${col}\\s*:\\s*true`).test(src),
-        `PO select missing ${col}: true`,
-      ).toBe(true);
+      expect(new RegExp(`\\b${col}\\s*:\\s*true`).test(src), `PO select missing ${col}: true`).toBe(
+        true,
+      );
     }
   });
 

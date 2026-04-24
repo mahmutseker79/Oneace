@@ -16,14 +16,10 @@
 // way a code regression does, with a precise line reference. That keeps
 // ADR-004 compliance enforced in the same loop as every other pinned test.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  findDuplicateHeaders,
-  isSubjectToHeaderRequirement,
-  parseMigrationHeader,
-} from "./header";
+import { findDuplicateHeaders, isSubjectToHeaderRequirement, parseMigrationHeader } from "./header";
 
 const REPO_ROOT = resolve(__dirname, "..", "..", "..");
 const MIGRATIONS_DIR = resolve(REPO_ROOT, "prisma", "migrations");
@@ -61,21 +57,21 @@ describe("ADR-004 — every new Prisma migration declares a MIGRATION-TYPE", () 
       const result = parseMigrationHeader(m.sql);
       if (!result.present) {
         failures.push(
-          `  ✗ ${m.dirname}: missing \`-- MIGRATION-TYPE: EXPAND|BACKFILL|CONTRACT\` header`
+          `  ✗ ${m.dirname}: missing \`-- MIGRATION-TYPE: EXPAND|BACKFILL|CONTRACT\` header`,
         );
         continue;
       }
       if (result.type === null) {
         failures.push(
-          `  ✗ ${m.dirname}: invalid MIGRATION-TYPE value "${result.rawValue}" (must be EXPAND, BACKFILL, or CONTRACT)`
+          `  ✗ ${m.dirname}: invalid MIGRATION-TYPE value "${result.rawValue}" (must be EXPAND, BACKFILL, or CONTRACT)`,
         );
       }
     }
     if (failures.length > 0) {
       throw new Error(
         `ADR-004 header policy violated for ${failures.length} migration(s):\n${failures.join(
-          "\n"
-        )}\n\nSee src/lib/prisma-migration/header.ts for the contract.`
+          "\n",
+        )}\n\nSee src/lib/prisma-migration/header.ts for the contract.`,
       );
     }
   });
@@ -90,15 +86,13 @@ describe("ADR-004 — every new Prisma migration declares a MIGRATION-TYPE", () 
       const result = parseMigrationHeader(m.sql);
       if (result.present && result.type === null) {
         failures.push(
-          `  ✗ ${m.dirname}: has MIGRATION-TYPE comment with invalid value "${result.rawValue}"`
+          `  ✗ ${m.dirname}: has MIGRATION-TYPE comment with invalid value "${result.rawValue}"`,
         );
       }
     }
     if (failures.length > 0) {
       throw new Error(
-        `ADR-004 grandfathered migration declared an invalid header:\n${failures.join(
-          "\n"
-        )}`
+        `ADR-004 grandfathered migration declared an invalid header:\n${failures.join("\n")}`,
       );
     }
   });
@@ -111,15 +105,13 @@ describe("ADR-004 — every new Prisma migration declares a MIGRATION-TYPE", () 
         failures.push(
           `  ✗ ${m.dirname}: ${dupes.length} MIGRATION-TYPE declarations at lines ${dupes
             .map((i) => i + 1)
-            .join(", ")}`
+            .join(", ")}`,
         );
       }
     }
     if (failures.length > 0) {
       throw new Error(
-        `ADR-004 header policy violated — duplicate headers:\n${failures.join(
-          "\n"
-        )}`
+        `ADR-004 header policy violated — duplicate headers:\n${failures.join("\n")}`,
       );
     }
   });

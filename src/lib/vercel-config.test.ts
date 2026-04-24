@@ -24,9 +24,7 @@ import { describe, expect, it } from "vitest";
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const VERCEL_JSON_PATH = resolve(REPO_ROOT, "vercel.json");
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const VERCEL_JSON: Record<string, any> = JSON.parse(
-  readFileSync(VERCEL_JSON_PATH, "utf8"),
-);
+const VERCEL_JSON: Record<string, any> = JSON.parse(readFileSync(VERCEL_JSON_PATH, "utf8"));
 
 describe("Phase-1 P0 §vercel-quota — vercel.json has Dependabot build gate", () => {
   it("has a `git.deploymentEnabled` object", () => {
@@ -78,9 +76,7 @@ describe("Phase-1 P0 §vercel-quota — vercel.json keeps cron + install intact"
 
   it("preserves all 4 cron schedules", () => {
     expect(Array.isArray(VERCEL_JSON.crons), "crons[] must remain an array").toBe(true);
-    const paths = VERCEL_JSON.crons.map(
-      (c: { path: string }) => c.path,
-    ) as string[];
+    const paths = VERCEL_JSON.crons.map((c: { path: string }) => c.path) as string[];
     expect(paths).toEqual([
       "/api/cron/stock-count-triggers",
       "/api/cron/cleanup-migration-files",

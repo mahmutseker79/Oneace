@@ -11,7 +11,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { postMovement, withHook, type TxClient } from "./post";
+import { type TxClient, postMovement, withHook } from "./post";
 
 /**
  * Build a fake TxClient whose `stockMovement.create` resolves to a
@@ -64,33 +64,33 @@ const validInput = {
 describe("postMovement — invariants", () => {
   it("rejects empty organizationId", async () => {
     const { tx, calls } = makeFakeTx();
-    await expect(
-      postMovement(tx, { ...validInput, organizationId: "" }),
-    ).rejects.toThrow(/organizationId is required/);
+    await expect(postMovement(tx, { ...validInput, organizationId: "" })).rejects.toThrow(
+      /organizationId is required/,
+    );
     expect(calls).toHaveLength(0);
   });
 
   it("rejects whitespace-only organizationId", async () => {
     const { tx, calls } = makeFakeTx();
-    await expect(
-      postMovement(tx, { ...validInput, organizationId: "   " }),
-    ).rejects.toThrow(/organizationId is required/);
+    await expect(postMovement(tx, { ...validInput, organizationId: "   " })).rejects.toThrow(
+      /organizationId is required/,
+    );
     expect(calls).toHaveLength(0);
   });
 
   it("rejects non-finite quantity", async () => {
     const { tx, calls } = makeFakeTx();
-    await expect(
-      postMovement(tx, { ...validInput, quantity: Number.NaN }),
-    ).rejects.toThrow(/quantity must be a finite number/);
+    await expect(postMovement(tx, { ...validInput, quantity: Number.NaN })).rejects.toThrow(
+      /quantity must be a finite number/,
+    );
     expect(calls).toHaveLength(0);
   });
 
   it("rejects negative quantity", async () => {
     const { tx, calls } = makeFakeTx();
-    await expect(
-      postMovement(tx, { ...validInput, quantity: -1 }),
-    ).rejects.toThrow(/quantity must be >= 0/);
+    await expect(postMovement(tx, { ...validInput, quantity: -1 })).rejects.toThrow(
+      /quantity must be >= 0/,
+    );
     expect(calls).toHaveLength(0);
   });
 
@@ -115,7 +115,7 @@ describe("postMovement — persistence", () => {
       ...({ unitCostUsed: 42.5 } as Record<string, unknown>),
     });
     expect(calls).toHaveLength(1);
-    const persisted = calls[0]!.data;
+    const persisted = calls[0]?.data;
     expect(persisted.organizationId).toBe("org_1");
     expect(persisted.reference).toBe("PO:1001");
     expect(persisted.purchaseOrderLineId).toBe("pol_1");
@@ -126,7 +126,7 @@ describe("postMovement — persistence", () => {
   it("omits undefined fields entirely (does not send null for unset optionals)", async () => {
     const { tx, calls } = makeFakeTx();
     await postMovement(tx, validInput);
-    const persisted = calls[0]!.data;
+    const persisted = calls[0]?.data;
     expect("binId" in persisted).toBe(false);
     expect("note" in persisted).toBe(false);
     expect("reference" in persisted).toBe(false);
@@ -135,7 +135,7 @@ describe("postMovement — persistence", () => {
   it("preserves explicit nulls (caller intent to clear)", async () => {
     const { tx, calls } = makeFakeTx();
     await postMovement(tx, { ...validInput, reference: null });
-    const persisted = calls[0]!.data;
+    const persisted = calls[0]?.data;
     expect(persisted.reference).toBeNull();
   });
 });
@@ -144,7 +144,7 @@ describe("postMovement — P0-03 idempotencyKey defaulting", () => {
   it("auto-generates an idempotencyKey when caller omits it", async () => {
     const { tx, calls } = makeFakeTx();
     await postMovement(tx, validInput);
-    const persisted = calls[0]!.data as { idempotencyKey?: unknown };
+    const persisted = calls[0]?.data as { idempotencyKey?: unknown };
     expect(typeof persisted.idempotencyKey).toBe("string");
     expect((persisted.idempotencyKey as string).length).toBeGreaterThan(0);
   });
@@ -152,7 +152,7 @@ describe("postMovement — P0-03 idempotencyKey defaulting", () => {
   it("auto-generates when caller passes null explicitly", async () => {
     const { tx, calls } = makeFakeTx();
     await postMovement(tx, { ...validInput, idempotencyKey: null });
-    const persisted = calls[0]!.data as { idempotencyKey?: unknown };
+    const persisted = calls[0]?.data as { idempotencyKey?: unknown };
     expect(typeof persisted.idempotencyKey).toBe("string");
     expect((persisted.idempotencyKey as string).length).toBeGreaterThan(0);
   });
@@ -160,7 +160,7 @@ describe("postMovement — P0-03 idempotencyKey defaulting", () => {
   it("auto-generates when caller passes empty string", async () => {
     const { tx, calls } = makeFakeTx();
     await postMovement(tx, { ...validInput, idempotencyKey: "" });
-    const persisted = calls[0]!.data as { idempotencyKey?: unknown };
+    const persisted = calls[0]?.data as { idempotencyKey?: unknown };
     expect(typeof persisted.idempotencyKey).toBe("string");
     expect((persisted.idempotencyKey as string).length).toBeGreaterThan(0);
   });
@@ -171,7 +171,7 @@ describe("postMovement — P0-03 idempotencyKey defaulting", () => {
       ...validInput,
       idempotencyKey: "wh:shopify:abc-123",
     });
-    const persisted = calls[0]!.data as { idempotencyKey?: unknown };
+    const persisted = calls[0]?.data as { idempotencyKey?: unknown };
     expect(persisted.idempotencyKey).toBe("wh:shopify:abc-123");
   });
 
@@ -179,8 +179,8 @@ describe("postMovement — P0-03 idempotencyKey defaulting", () => {
     const { tx, calls } = makeFakeTx();
     await postMovement(tx, validInput);
     await postMovement(tx, validInput);
-    const k1 = (calls[0]!.data as { idempotencyKey: string }).idempotencyKey;
-    const k2 = (calls[1]!.data as { idempotencyKey: string }).idempotencyKey;
+    const k1 = (calls[0]?.data as { idempotencyKey: string }).idempotencyKey;
+    const k2 = (calls[1]?.data as { idempotencyKey: string }).idempotencyKey;
     expect(k1).not.toBe(k2);
   });
 });
@@ -193,7 +193,7 @@ describe("postMovement — P0-04 landed-cost field pass-through", () => {
       purchaseUnitCost: 12.5,
       landedUnitCost: 14.375,
     });
-    const persisted = calls[0]!.data as {
+    const persisted = calls[0]?.data as {
       purchaseUnitCost?: unknown;
       landedUnitCost?: unknown;
     };
@@ -208,7 +208,7 @@ describe("postMovement — P0-04 landed-cost field pass-through", () => {
       purchaseUnitCost: "10.123456",
       landedUnitCost: "11.000000",
     });
-    const persisted = calls[0]!.data as {
+    const persisted = calls[0]?.data as {
       purchaseUnitCost?: unknown;
       landedUnitCost?: unknown;
     };
@@ -219,7 +219,7 @@ describe("postMovement — P0-04 landed-cost field pass-through", () => {
   it("omits cost fields when not supplied", async () => {
     const { tx, calls } = makeFakeTx();
     await postMovement(tx, validInput);
-    const persisted = calls[0]!.data;
+    const persisted = calls[0]?.data;
     expect("purchaseUnitCost" in persisted).toBe(false);
     expect("landedUnitCost" in persisted).toBe(false);
   });
@@ -231,7 +231,7 @@ describe("postMovement — P0-04 landed-cost field pass-through", () => {
       purchaseUnitCost: null,
       landedUnitCost: null,
     });
-    const persisted = calls[0]!.data as {
+    const persisted = calls[0]?.data as {
       purchaseUnitCost?: unknown;
       landedUnitCost?: unknown;
     };
@@ -251,9 +251,7 @@ describe("postMovement — cost-posting hook", () => {
   it("runs a scoped hook via withHook()", async () => {
     const { tx } = makeFakeTx();
     const spy = vi.fn(async (_tx, mv) => mv);
-    const result = await withHook({ onAfterInsert: spy }, () =>
-      postMovement(tx, validInput),
-    );
+    const result = await withHook({ onAfterInsert: spy }, () => postMovement(tx, validInput));
     expect(spy).toHaveBeenCalledTimes(1);
     expect(result.id).toBe("mvmt_fake_1");
   });

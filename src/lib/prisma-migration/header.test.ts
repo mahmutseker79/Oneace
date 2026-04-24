@@ -26,21 +26,13 @@ describe("parseMigrationHeader", () => {
   });
 
   it("parses BACKFILL and CONTRACT too", () => {
-    expect(parseMigrationHeader("-- MIGRATION-TYPE: BACKFILL\n").type).toBe(
-      "BACKFILL"
-    );
-    expect(parseMigrationHeader("-- MIGRATION-TYPE: CONTRACT\n").type).toBe(
-      "CONTRACT"
-    );
+    expect(parseMigrationHeader("-- MIGRATION-TYPE: BACKFILL\n").type).toBe("BACKFILL");
+    expect(parseMigrationHeader("-- MIGRATION-TYPE: CONTRACT\n").type).toBe("CONTRACT");
   });
 
   it("is case-insensitive on the label and normalizes the value", () => {
-    expect(parseMigrationHeader("-- migration-type: expand\n").type).toBe(
-      "EXPAND"
-    );
-    expect(parseMigrationHeader("-- Migration-Type: Contract\n").type).toBe(
-      "CONTRACT"
-    );
+    expect(parseMigrationHeader("-- migration-type: expand\n").type).toBe("EXPAND");
+    expect(parseMigrationHeader("-- Migration-Type: Contract\n").type).toBe("CONTRACT");
   });
 
   it("tolerates leading whitespace and extra spaces around the colon", () => {
@@ -67,17 +59,13 @@ describe("parseMigrationHeader", () => {
   it("ignores blank lines when counting the 20-line scan window", () => {
     // 19 real non-blank lines, then the header on line 20 of non-blank
     // content (with blanks sprinkled in). Should still be detected.
-    const padding = Array.from({ length: 19 }, (_, i) => `-- note ${i}`).join(
-      "\n\n"
-    );
+    const padding = Array.from({ length: 19 }, (_, i) => `-- note ${i}`).join("\n\n");
     const sql = `${padding}\n\n-- MIGRATION-TYPE: BACKFILL\n`;
     expect(parseMigrationHeader(sql).type).toBe("BACKFILL");
   });
 
   it("does not scan past 20 non-blank lines", () => {
-    const padding = Array.from({ length: 25 }, (_, i) => `-- note ${i}`).join(
-      "\n"
-    );
+    const padding = Array.from({ length: 25 }, (_, i) => `-- note ${i}`).join("\n");
     const sql = `${padding}\n-- MIGRATION-TYPE: EXPAND\n`;
     expect(parseMigrationHeader(sql).present).toBe(false);
   });
@@ -106,12 +94,8 @@ describe("findDuplicateHeaders", () => {
 
 describe("extractMigrationDate", () => {
   it("extracts YYYYMMDD from a canonical Prisma migration directory name", () => {
-    expect(extractMigrationDate("20260418100000_cron_idempotency")).toBe(
-      "20260418"
-    );
-    expect(extractMigrationDate("20260418_audit_critical_fixes")).toBe(
-      "20260418"
-    );
+    expect(extractMigrationDate("20260418100000_cron_idempotency")).toBe("20260418");
+    expect(extractMigrationDate("20260418_audit_critical_fixes")).toBe("20260418");
   });
 
   it("returns null for non-dated directories (slug-only migrations)", () => {
@@ -122,28 +106,18 @@ describe("extractMigrationDate", () => {
 
 describe("isSubjectToHeaderRequirement", () => {
   it("grandfathers migrations authored strictly before the cutoff", () => {
-    expect(isSubjectToHeaderRequirement("20260413053718_p7_ui_state")).toBe(
-      false
-    );
-    expect(
-      isSubjectToHeaderRequirement("20260418100000_cron_idempotency")
-    ).toBe(false);
+    expect(isSubjectToHeaderRequirement("20260413053718_p7_ui_state")).toBe(false);
+    expect(isSubjectToHeaderRequirement("20260418100000_cron_idempotency")).toBe(false);
   });
 
   it("requires a header on migrations at or after the cutoff", () => {
     // The cutoff itself is 2026-04-19 per ADR-004 §BASELINE_CUTOFF_DATE.
-    expect(
-      isSubjectToHeaderRequirement("20260419000000_next_migration")
-    ).toBe(true);
-    expect(
-      isSubjectToHeaderRequirement("20260501100000_landed_cost_expand")
-    ).toBe(true);
+    expect(isSubjectToHeaderRequirement("20260419000000_next_migration")).toBe(true);
+    expect(isSubjectToHeaderRequirement("20260501100000_landed_cost_expand")).toBe(true);
   });
 
   it("ignores non-dated directories (slug-only migrations)", () => {
-    expect(
-      isSubjectToHeaderRequirement("phase5a_additive_domain_model")
-    ).toBe(false);
+    expect(isSubjectToHeaderRequirement("phase5a_additive_domain_model")).toBe(false);
   });
 
   it("pins the cutoff so an accidental edit fails a review", () => {

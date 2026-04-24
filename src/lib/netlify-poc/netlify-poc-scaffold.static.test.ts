@@ -20,7 +20,7 @@
 //   - Refactoring away the env shim (Faz 2) → delete this test or flip
 //     the shim check to "must NOT exist".
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -67,9 +67,7 @@ describe("netlify.toml scaffold", () => {
   });
 
   it("declares Prisma AWS Lambda binary target", () => {
-    expect(toml).toMatch(
-      /PRISMA_CLI_BINARY_TARGETS\s*=\s*"rhel-openssl-3\.0\.x"/,
-    );
+    expect(toml).toMatch(/PRISMA_CLI_BINARY_TARGETS\s*=\s*"rhel-openssl-3\.0\.x"/);
   });
 
   it("loads @netlify/plugin-nextjs", () => {
@@ -85,9 +83,7 @@ describe("netlify.toml scaffold", () => {
 describe("netlify/functions cron bridges", () => {
   const bridgesDir = resolve(REPO_ROOT, "netlify", "functions");
   const bridges = exists("netlify/functions")
-    ? readdirSync(bridgesDir).filter(
-        (f) => f.startsWith("cron-") && f.endsWith(".mts"),
-      )
+    ? readdirSync(bridgesDir).filter((f) => f.startsWith("cron-") && f.endsWith(".mts"))
     : [];
 
   it("directory exists", () => {
@@ -121,10 +117,7 @@ describe("netlify/functions cron bridges", () => {
       if (!exists(`netlify/functions/cron-${slug}.mts`)) continue;
       const src = readFileSync(file, "utf8");
       const scheduleMatch = src.match(/schedule:\s*"([^"]+)"/);
-      expect(
-        scheduleMatch?.[1],
-        `schedule mismatch in cron-${slug}.mts`,
-      ).toBe(cron.schedule);
+      expect(scheduleMatch?.[1], `schedule mismatch in cron-${slug}.mts`).toBe(cron.schedule);
     }
   });
 
@@ -135,10 +128,9 @@ describe("netlify/functions cron bridges", () => {
       const rel = `netlify/functions/cron-${slug}.mts`;
       if (!exists(rel)) continue;
       const src = readText(rel);
-      expect(
-        src,
-        `bridge ${rel} must pass the exact route path to callCronRoute`,
-      ).toMatch(new RegExp(`callCronRoute\\("${cron.path}"\\)`));
+      expect(src, `bridge ${rel} must pass the exact route path to callCronRoute`).toMatch(
+        new RegExp(`callCronRoute\\("${cron.path}"\\)`),
+      );
     }
   });
 });
@@ -155,9 +147,7 @@ describe("prisma schema — Netlify Lambda binary target", () => {
       .map((s) => s.trim().replace(/["']/g, ""))
       .filter(Boolean);
     for (const required of EXPECTED_BINARY_TARGETS) {
-      expect(targets, `binaryTargets must include ${required}`).toContain(
-        required,
-      );
+      expect(targets, `binaryTargets must include ${required}`).toContain(required);
     }
   });
 });

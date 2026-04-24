@@ -52,7 +52,7 @@ export const runtime = "nodejs";
 // Alarm thresholds. Expressed as fractions of the ceiling so the same
 // route works for Vercel's "100 deploys/day" and Netlify's "300
 // minutes/month" without platform-specific tuning.
-const WARN_RATIO = 0.80;
+const WARN_RATIO = 0.8;
 
 type OutcomeBody =
   | {
@@ -129,9 +129,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<OutcomeBod
   const result = await provider.fetchSnapshot();
   if (!result.ok) {
     const tag =
-      result.reason === "config"
-        ? "platform-quota.skipped.config"
-        : "platform-quota.skipped.api";
+      result.reason === "config" ? "platform-quota.skipped.config" : "platform-quota.skipped.api";
     logger.warn(`platform-quota-health: ${result.reason} skip`, {
       tag,
       platform: provider.platform,

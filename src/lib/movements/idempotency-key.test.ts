@@ -60,9 +60,7 @@ describe("deriveWebhookIdempotencyKey", () => {
   });
 
   it("rejects provider with spaces or other non-kebab characters", () => {
-    expect(() => deriveWebhookIdempotencyKey("quick books", "abc")).toThrow(
-      /invalid provider/,
-    );
+    expect(() => deriveWebhookIdempotencyKey("quick books", "abc")).toThrow(/invalid provider/);
   });
 
   it("rejects empty deliveryId", () => {
