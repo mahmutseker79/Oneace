@@ -27,9 +27,12 @@ const PLATFORM_ENV_KEYS = ["HOSTING_PLATFORM", "VERCEL", "NETLIFY"] as const;
 /** Clear all platform hint env vars so each case starts from a known base. */
 function clearPlatformEnv(): void {
   for (const k of PLATFORM_ENV_KEYS) {
-    // vi.stubEnv with undefined removes the override; delete covers real env.
+    // vi.stubEnv with "" removes the override; we also empty the real
+    // env var (falsy) so the adapter's `!TOKEN` check catches it. We
+    // can't use `delete` because Biome's lint/performance/noDelete
+    // forbids it.
     vi.stubEnv(k, "");
-    delete process.env[k];
+    process.env[k] = "";
   }
 }
 
@@ -164,12 +167,13 @@ describe("§5.48 — Vercel adapter fetchSnapshot() contract (shape only, no net
   });
 
   it("returns {ok:false, reason:'config'} when VERCEL_TOKEN is missing", async () => {
-    // `= undefined` sets the env var to the STRING "undefined",
-    // not a missing value. The adapter checks `!VERCEL_TOKEN` which
-    // would then be truthy and fall through to the fetch path
-    // (reason='transport' on fail). `delete` is the correct unset.
-    delete process.env.VERCEL_TOKEN;
-    delete process.env.VERCEL_PROJECT_ID;
+    // Empty string is falsy — the adapter's `!VERCEL_TOKEN` check
+    // catches it and returns `reason: 'config'`. Note: `= undefined`
+    // would set the var to the STRING "undefined" (truthy); `delete`
+    // works but Biome's lint/performance/noDelete forbids it. Empty
+    // string threads the needle.
+    process.env.VERCEL_TOKEN = "";
+    process.env.VERCEL_PROJECT_ID = "";
     const provider = await getQuotaProvider("vercel");
     const result = await provider?.fetchSnapshot();
     expect(result?.ok).toBe(false);
@@ -189,8 +193,8 @@ describe("§5.48 — Netlify adapter fetchSnapshot() contract (shape only, no ne
   });
 
   it("returns {ok:false, reason:'config'} when NETLIFY_TOKEN is missing", async () => {
-    delete process.env.NETLIFY_TOKEN;
-    delete process.env.NETLIFY_SITE_ID;
+    process.env.NETLIFY_TOKEN = "";
+    process.env.NETLIFY_SITE_ID = "";
     const provider = await getQuotaProvider("netlify");
     const result = await provider?.fetchSnapshot();
     expect(result?.ok).toBe(false);
