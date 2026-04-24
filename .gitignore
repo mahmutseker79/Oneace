@@ -129,3 +129,16 @@ src/app/\\(app\\)/
 
 # Recovery staging dir (2026-04-24 GOD MODE transcript recovery)
 .recovery-stage/
+
+# Repo-root-only ephemeral .command helpers. Hotfix / apply / merge /
+# finish scripts are generated at the root during a sprint and should
+# be archived under scripts/recovery/<date>-<name>/ once the sprint
+# lands. This block prevents them from accumulating at the root.
+# `push-*.command` remains DELIBERATELY tracked (release artefact — see
+# the comment above `/*-KICKOFF-PROMPT.md`).
+/hotfix-*.command
+/apply-*.command
+/apply-*.sh
+/merge-*.command
+/finish-*.command
+/sprint-*.command
