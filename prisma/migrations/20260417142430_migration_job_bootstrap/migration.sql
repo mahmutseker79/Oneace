@@ -5,10 +5,8 @@
 -- bootstrap landed in 20260417142431 (c834241). Both objects below
 -- were introduced on prod via an early `prisma db push` (pre-MIG-S1)
 -- before the migration chain began tracking them. The subsequent
--- migration 20260417142431_migration_foundation:
---
---     ALTER TABLE "MigrationJob" ADD COLUMN "scopeOptions" JSONB;
---
+-- migration 20260417142431_migration_foundation adds the
+-- `scopeOptions` JSONB column via ALTER TABLE and
 -- presumes MigrationJob already exists with every other column in
 -- place — which is true on prod, but false on a fresh scratch
 -- Postgres. The P1-04 CI gate (authoritative track) exposes the

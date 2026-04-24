@@ -104,8 +104,13 @@ describe("Sprint 3 — migration chain integrity (MigrationJob bootstrap)", () =
 
   it("bootstrap intentionally OMITS scopeOptions (added by the next migration)", () => {
     const sql = fs.readFileSync(bootstrapSql, "utf8");
-    // The CREATE TABLE block should not reference scopeOptions at all.
-    expect(/"scopeOptions"/.test(sql)).toBe(false);
+    // Only scan the CREATE TABLE block — comments are allowed to
+    // mention scopeOptions when they explain WHY it's omitted.
+    const createBlock = sql.match(
+      /CREATE TABLE IF NOT EXISTS\s+"MigrationJob"[\s\S]*?\);/,
+    );
+    expect(createBlock).toBeTruthy();
+    expect(/"scopeOptions"/.test(createBlock?.[0] ?? "")).toBe(false);
   });
 
   it("20260417142431_migration_foundation still ADDs scopeOptions (not folded into bootstrap)", () => {
