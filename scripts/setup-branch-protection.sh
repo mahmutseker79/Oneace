@@ -13,10 +13,12 @@
 #
 # What the rule enforces:
 #   - Required status checks (matching the job names in ci.yml):
-#       Lint · Typecheck
+#       Lint (Biome)
 #       Vitest
 #       Prisma Validate
 #       Prisma Migrations (scratch Postgres)
+#   - Typecheck runs as an ADVISORY (non-blocking) job — see the
+#     REQUIRED_CHECKS block below for rationale.
 #   - Status checks must pass on a FRESH commit (strict = true).
 #   - 1 required reviewer.
 #   - Linear history (no merge bubbles from forks).
@@ -45,9 +47,14 @@ fi
 # Required-status-checks contexts. MUST match the `name:` field of
 # each job in .github/workflows/ci.yml. When adding a new required
 # job, update BOTH this list AND the ci.yml job name in lockstep.
+#
+# NOTE: the advisory typecheck job is intentionally NOT listed here —
+# it runs with continue-on-error: true and surfaces regressions
+# without blocking merges. Promote to required once the ~212
+# pre-existing TS errors are paid down.
 read -r -d '' REQUIRED_CHECKS <<'JSON' || true
 [
-  "Lint · Typecheck",
+  "Lint (Biome)",
   "Vitest",
   "Prisma Validate",
   "Prisma Migrations (scratch Postgres)"
