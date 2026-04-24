@@ -212,6 +212,14 @@ jobs:
         # broken.
         run: pnpm prisma db push --accept-data-loss --skip-generate
 
+      - name: Verify _prisma_migrations is populated (when Track A succeeded)
+        if: steps.migrate_deploy.outcome == 'success'
+        run: |
+          PGPASSWORD=ci psql \
+            -h localhost -p 5432 -U ci -d oneace_ci \
+            -Atc "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL;" \
+            | awk '{ if ($1 < 1) { print "FATAL: no applied migrations"; exit 1 } else { print "applied=" $1 } }'
+
       - name: Report Track A outcome
         if: always()
         run: |
