@@ -202,9 +202,10 @@ describe("GDPR user-delete cascade matrix (audit v1.2 §5.35)", () => {
       const count = Object.values(EXPECTED_USER_RELATIONS).filter((p) => p === "Cascade").length;
       expect(count).toBe(8);
     });
-    it("SetNull count = 18", () => {
+    it("SetNull count = 19", () => {
+      // Bumped 18 → 19 for P0-04's LandedCostAllocation.appliedByUserId.
       const count = Object.values(EXPECTED_USER_RELATIONS).filter((p) => p === "SetNull").length;
-      expect(count).toBe(18);
+      expect(count).toBe(19);
     });
     it("Restrict count = 1", () => {
       const count = Object.values(EXPECTED_USER_RELATIONS).filter((p) => p === "Restrict").length;
@@ -219,8 +220,9 @@ describe("GDPR user-delete cascade matrix (audit v1.2 §5.35)", () => {
       const count = Object.values(EXPECTED_USER_RELATIONS).filter((p) => p === "NoAction").length;
       expect(count).toBe(0);
     });
-    it("total User FK relations = 27", () => {
-      expect(Object.keys(EXPECTED_USER_RELATIONS).length).toBe(27);
+    it("total User FK relations = 28", () => {
+      // Bumped 27 → 28 for P0-04's LandedCostAllocation.appliedByUserId.
+      expect(Object.keys(EXPECTED_USER_RELATIONS).length).toBe(28);
     });
   });
 
