@@ -94,10 +94,13 @@ echo "== Phase 2 — URL sanity scan =="
 URL_LOWER="$(echo "$PROD_URL" | tr '[:upper:]' '[:lower:]')"
 BAD_TERMS=("staging" "stage" "_test" "-test" "_dev" "-dev" "sandbox" "localhost")
 for term in "${BAD_TERMS[@]}"; do
-  if echo "$URL_LOWER" | grep -qF "$term"; then
+  # Use bash built-in substring match (avoids grep arg-parsing issues
+  # when $term begins with '-', e.g. '-test' was being parsed as a
+  # grep flag and crashing Phase 2 silently in v1.10.1).
+  if [[ "$URL_LOWER" == *"$term"* ]]; then
     echo ""
     echo "WARN: PROD URL contains suspicious substring '$term'."
-    echo "      Host/DB name: $(echo "$REDACTED_URL" | sed -E 's#^postgres(?:ql)?://[^@]+@##')"
+    echo "      Host/DB name: $(echo "$REDACTED_URL" | sed -E 's#^postgres(ql)?://[^@]+@##')"
     printf "Really continue (this script will call 'prisma migrate deploy')? Type 'YES PROD' to override: "
     read -r OVERRIDE
     if [ "$OVERRIDE" != "YES PROD" ]; then
