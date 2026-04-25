@@ -56,7 +56,7 @@ export default async function PendingApprovalsPage() {
         <div className="grid gap-4">
           {approvals.map((approval) => (
             <Link key={approval.id} href={`/stock-counts/${approval.count.id}/approval`}>
-              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+              <Card variant="interactive">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>

@@ -72,7 +72,7 @@ export default async function DepartmentsPage() {
         <div className="grid gap-4">
           {departments.map((dept) => (
             <Link key={dept.id} href={`/departments/${dept.id}`}>
-              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+              <Card variant="interactive">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">

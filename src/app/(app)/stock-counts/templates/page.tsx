@@ -61,7 +61,7 @@ export default async function TemplatesPage() {
         <div className="grid gap-4">
           {templates.map((template) => (
             <Link key={template.id} href={`/stock-counts/templates/${template.id}`}>
-              <Card className="hover:bg-muted/50 cursor-pointer transition-colors">
+              <Card variant="interactive">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>

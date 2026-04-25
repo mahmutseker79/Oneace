@@ -68,7 +68,7 @@ export default async function PrivacyPage() {
         </Card>
 
         {/* Delete Account Card */}
-        <Card className="border-destructive">
+        <Card variant="destructive">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-4 w-4" />

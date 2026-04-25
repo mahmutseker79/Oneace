@@ -72,6 +72,48 @@ export const HeaderOnly: Story = {
   ),
 };
 
+/** Sprint 10 PR #3 — variant="interactive" (hover + cursor pointer). */
+export const Interactive: Story = {
+  render: () => (
+    <Card variant="interactive" className="max-w-md">
+      <CardHeader>
+        <CardTitle>Tıklanabilir kart</CardTitle>
+        <CardDescription>
+          Hover'da arka plan değişir, cursor pointer'a döner. Genelde Link wrap içinde.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  ),
+};
+
+/** Sprint 10 PR #3 — variant="warning" (uyarı/dikkat states). */
+export const Warning: Story = {
+  render: () => (
+    <Card variant="warning" className="max-w-md">
+      <CardHeader>
+        <CardTitle>Uyarı kartı</CardTitle>
+        <CardDescription>
+          Stok aktarımı veya transfer onayı bekleyen durumlar için.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  ),
+};
+
+/** Sprint 10 PR #3 — variant="destructive" (yıkıcı / silme states). */
+export const Destructive: Story = {
+  render: () => (
+    <Card variant="destructive" className="max-w-md">
+      <CardHeader>
+        <CardTitle>Tehlikeli alan</CardTitle>
+        <CardDescription>
+          Hesap silme, organizasyon transfer gibi geri alınamaz işlemler için.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  ),
+};
+
 /** Liste içinde Card kullanımı. */
 export const Stacked: Story = {
   render: () => (
