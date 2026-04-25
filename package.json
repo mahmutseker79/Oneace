@@ -111,7 +111,7 @@
     "@storybook/react-vite": "^8",
     "@storybook/test": "^8",
     "@tailwindcss/postcss": "^4.0.0",
-    "@types/node": "^22.10.2",
+    "@types/node": "^25.6.0",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
