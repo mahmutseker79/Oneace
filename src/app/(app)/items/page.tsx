@@ -22,6 +22,7 @@ import { ItemsCacheSync } from "@/components/offline/items-cache-sync";
 import { DeleteButton } from "@/components/shell/delete-button";
 import { WrapperTabs } from "@/components/shell/wrapper-tabs";
 import { INVENTORY_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
+import { pluralWordEn } from "@/lib/i18n/plural";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -488,8 +489,7 @@ export default async function ItemsPage({
         {/* Active search/filter indicator with clear-all */}
         {searchQuery ? (
           <span className="text-xs text-muted-foreground">
-            {displayedItems.length} result
-            {displayedItems.length !== 1 ? "s" : ""} for &ldquo;
+            {displayedItems.length} {pluralWordEn(displayedItems.length, "result")} for &ldquo;
             {searchQuery}&rdquo;
             {" · "}
             <Link href="/items" className="underline hover:text-foreground">
@@ -537,7 +537,7 @@ export default async function ItemsPage({
           <span className="text-xs text-muted-foreground">
             {displayedItems.length < totalItems
               ? `Showing ${displayedItems.length} of ${totalItems.toLocaleString()} items`
-              : `${totalItems.toLocaleString()} item${totalItems !== 1 ? "s" : ""}`}
+              : `${totalItems.toLocaleString()} ${pluralWordEn(totalItems, "item")}`}
           </span>
         ) : null}
 

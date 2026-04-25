@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
+import { pluralizeEn } from "@/lib/i18n/plural";
 import { requireActiveMembership } from "@/lib/session";
 import {
   type VarianceRow,
@@ -197,7 +198,7 @@ export default async function VarianceDetailPage({ params }: PageProps) {
             <Stat
               label="Items tracked"
               value={`${summary.totalItems}`}
-              hint={`across ${warehouses.length} warehouse${warehouses.length === 1 ? "" : "s"}`}
+              hint={`across ${pluralizeEn(warehouses.length, "warehouse")}`}
             />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">

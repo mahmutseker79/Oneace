@@ -20,6 +20,7 @@ import { Archive, Download, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
 
+import { pluralizeEn } from "@/lib/i18n/plural";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -95,7 +96,7 @@ function BulkBar({
     <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
       <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-2.5 shadow-lg">
         <span className="text-sm font-medium">
-          {count} item{count !== 1 ? "s" : ""} selected
+          {pluralizeEn(count, "item")} selected
         </span>
         <div className="h-4 w-px bg-border" />
         <Button

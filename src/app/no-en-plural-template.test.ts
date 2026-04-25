@@ -46,15 +46,18 @@ const EN_PLURAL_PATTERNS: readonly RegExp[] = [
   /!==\s*1\s*\?\s*["']s["']\s*:\s*["']\s*["']/,
 ];
 
-// Allow-list: hâlâ düzeltilmemiş bilinen yerler. Sprint 9+ hedefi:
-// her birini en.ts catalog'a `format(t.x, {count})` patterniyle çekmek.
+// Allow-list: yasal EN plural fork barındıran yerler. Sprint 9 PR #3 ile
+// app/ ağacındaki 6 offender `pluralizeEn`/`pluralWordEn` helper'ına çekildi.
+// Aşağıdakiler bilerek tutuluyor:
+//   - src/lib/i18n/messages/en.ts: EN-only catalog. Plural fork EN olduğu için doğru.
+//   - src/lib/i18n/plural.ts: Pattern'i comment'te tanıtıyor (helper dosyası).
 const ALLOWED_FILES: ReadonlySet<string> = new Set<string>([
-  // Boş — first triage Sprint 8 sonrası yapılacak. Test bulduğu yerleri
-  // listede toplar; Mahmut review eder ve fix sırası belirler.
+  "src/lib/i18n/messages/en.ts",
+  "src/lib/i18n/plural.ts",
 ]);
 
-describe("PR #2 §B-plural — EN plural template guard (informational)", () => {
-  it("logs files using `count === 1 ? '' : 's'` pattern (Sprint 9 fix-up backlog)", () => {
+describe("PR #3 §B-plural — EN plural template guard (Sprint 9: hard fail)", () => {
+  it("no app/library files use inline `count === 1 ? '' : 's'` pattern", () => {
     const offenders: string[] = [];
     for (const file of walk(SRC)) {
       if (file.endsWith("no-en-plural-template.test.ts")) continue;
@@ -66,19 +69,12 @@ describe("PR #2 §B-plural — EN plural template guard (informational)", () => 
       if (hit) offenders.push(rel);
     }
 
-    if (offenders.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log(
-        `[en-plural-guard] ${offenders.length} files use EN plural fork:\n  ` +
-          offenders.join("\n  ") +
-          `\n\nFix in Sprint 9: replace with format(t.x, {count}) using ICU-style ` +
-          `templates in en.ts/tr.ts catalogs.`,
-      );
-    }
-
-    // Soft assertion: report only, do not fail CI yet. Sprint 9'da
-    // her dosya fix edildikçe ALLOWED_FILES küçülür ve sonunda hard
-    // assertion'a dönüştürülür.
-    expect(offenders.length).toBeGreaterThanOrEqual(0); // always-true, log için
+    expect(
+      offenders,
+      `Inline EN plural fork tespit edildi (Sprint 9: hard fail).\n` +
+        `Bunları \`pluralizeEn(count, "item")\` veya \`pluralWordEn(count, "item")\` ` +
+        `helper'larıyla değiştir (src/lib/i18n/plural.ts).\n\n` +
+        `Offenders:\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
   });
 });

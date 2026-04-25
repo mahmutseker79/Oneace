@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { getMessages, getRegion } from "@/lib/i18n";
+import { pluralizeEn } from "@/lib/i18n/plural";
 import { requireActiveMembership } from "@/lib/session";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
@@ -238,7 +239,7 @@ export default async function StockByStatusReportPage() {
                   {formatNumber(summary.totalQty, region.numberLocale)}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {summary.itemCount} item{summary.itemCount !== 1 ? "s" : ""}
+                  {pluralizeEn(summary.itemCount, "item")}
                 </p>
               </CardHeader>
               <CardContent>

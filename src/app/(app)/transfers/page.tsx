@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { WrapperTabs } from "@/components/shell/wrapper-tabs";
+import { pluralizeEn } from "@/lib/i18n/plural";
 import { LOCATIONS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,7 +104,7 @@ export default async function TransfersPage() {
       />
       <PageHeader
         title="Stock Transfers"
-        description={`${transfers.length} transfer${transfers.length !== 1 ? "s" : ""}`}
+        description={pluralizeEn(transfers.length, "transfer")}
         actions={
           canCreate ? (
             <Button asChild>

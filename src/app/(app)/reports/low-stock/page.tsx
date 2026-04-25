@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { format, getMessages } from "@/lib/i18n";
+import { pluralizeEn } from "@/lib/i18n/plural";
 import { requireActiveMembership } from "@/lib/session";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -208,8 +209,7 @@ export default async function LowStockReportPage() {
                     <CardTitle className="text-base">
                       {heading}
                       <span className="ml-2 text-sm font-normal text-muted-foreground">
-                        ({group.items.length} item
-                        {group.items.length !== 1 ? "s" : ""})
+                        ({pluralizeEn(group.items.length, "item")})
                       </span>
                     </CardTitle>
                     {!supplier ? (
