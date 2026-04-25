@@ -17,8 +17,7 @@
 #       Vitest
 #       Prisma Validate
 #       Prisma Migrations (scratch Postgres)
-#   - Typecheck runs as an ADVISORY (non-blocking) job — see the
-#     REQUIRED_CHECKS block below for rationale.
+#       Typecheck
 #   - Status checks must pass on a FRESH commit (strict = true).
 #   - 1 required reviewer.
 #   - Linear history (no merge bubbles from forks).
@@ -48,16 +47,17 @@ fi
 # each job in .github/workflows/ci.yml. When adding a new required
 # job, update BOTH this list AND the ci.yml job name in lockstep.
 #
-# NOTE: the advisory typecheck job is intentionally NOT listed here —
-# it runs with continue-on-error: true and surfaces regressions
-# without blocking merges. Promote to required once the ~212
-# pre-existing TS errors are paid down.
+# NOTE: Typecheck was promoted from advisory → required in v1.12.0
+# (Sprint 6) once the assumed-212 pre-existing TS error count was
+# verified at 0. ci.yml dropped its continue-on-error: true and
+# the "(advisory)" suffix in lockstep.
 read -r -d '' REQUIRED_CHECKS <<'JSON' || true
 [
   "Lint (Biome)",
   "Vitest",
   "Prisma Validate",
-  "Prisma Migrations (scratch Postgres)"
+  "Prisma Migrations (scratch Postgres)",
+  "Typecheck"
 ]
 JSON
 

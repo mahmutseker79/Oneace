@@ -53,18 +53,27 @@ jobs:
           exit $ERRORS_EXIT
 
   typecheck:
-    # Advisory job — runs `tsc --noEmit` but does NOT block the
-    # pipeline. There are ~212 pre-existing TS errors (all around
-    # Prisma relation typing; next.config.ts has
-    # `ignoreBuildErrors: true` for the same reason) that are
-    # tracked as tech debt. This job surfaces *new* regressions
-    # via the annotated output / log but isn't listed as a
-    # required status check, so lint+vitest+prisma still gate
-    # merges. Promote to required once the 212 count is paid down.
-    name: Typecheck (advisory)
+    # Required job — runs `tsc --noEmit` and blocks merges.
+    #
+    # Background: this job was historically labelled "(advisory)"
+    # with continue-on-error: true because the codebase carried
+    # ~212 pre-existing TS errors from the GOD MODE Prisma model
+    # expansion. Sprint 6 (v1.12.0) verified that count is now 0
+    # (the apparent "212" was largely a stale-local-generated-types
+    # artefact — `pnpm install --frozen-lockfile` in CI runs the
+    # postinstall `prisma generate`, so CI typecheck has been
+    # passing all along). The advisory framing was real tech debt,
+    # not a false alarm — but it has been paid down.
+    #
+    # Promotion checklist (done):
+    #   1. Drop continue-on-error.                     ✓
+    #   2. Drop "(advisory)" suffix from job + step.   ✓
+    #   3. Add to setup-branch-protection.sh.          ✓
+    #   4. Update src/lib/ci/required-checks.static.test.ts. ✓
+    #   5. Run sprint script to PUT new protection.    ✓ (v1.12.0)
+    name: Typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -84,7 +93,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck (advisory)
+      - name: Typecheck
         run: pnpm typecheck
 
   test:

@@ -1,25 +1,30 @@
 // src/lib/ci/required-checks.static.test.ts
 //
-// Pinned static-analysis test for Sprint 5 (2026-04-24 required-checks).
+// Pinned static-analysis test for Sprint 5 (2026-04-24 required-checks)
+// + Sprint 6 (2026-04-25 typecheck promotion to required, v1.12.0).
 //
 // Contract:
 //   - scripts/setup-branch-protection.sh exists, executable, uses `gh`
-//   - It declares a REQUIRED_CHECKS JSON list of exactly these four
-//     contexts (in this order, matching the `name:` field of each
-//     job in .github/workflows/ci.yml):
-//         Lint · Typecheck
+//   - It declares a REQUIRED_CHECKS JSON list of exactly these five
+//     contexts, matching the `name:` field of each job in
+//     .github/workflows/ci.yml:
+//         Lint (Biome)
 //         Vitest
 //         Prisma Validate
 //         Prisma Migrations (scratch Postgres)
+//         Typecheck
 //   - Each listed context is the EXACT `name:` of a job in
 //     .github/workflows/ci.yml (no typos, no drift).
+//   - The Typecheck job is NOT carrying continue-on-error: true
+//     anymore (was advisory until v1.11.x; promoted in v1.12.0
+//     after the 0-TS-error baseline was verified).
 //   - The protection config enforces strict checks, 1 reviewer,
 //     linear history, no force-push, no deletions, conversation
 //     resolution.
 //
-// Guards against silent drift: if someone renames a CI job, this
-// test flips red immediately — they're forced to update the
-// setup-branch-protection.sh list in the same PR.
+// Guards against silent drift: if someone renames a CI job, drops
+// Typecheck back to advisory, or removes a context from the
+// protection script, this test flips red immediately.
 //
 // Lightweight file-scan only. No runtime booted, no API hit.
 
@@ -42,13 +47,10 @@ const REQUIRED_CONTEXTS = [
   "Vitest",
   "Prisma Validate",
   "Prisma Migrations (scratch Postgres)",
+  "Typecheck",
 ];
-// Typecheck runs as an advisory (non-blocking) job — it must NOT
-// appear in REQUIRED_CONTEXTS while the ~212 pre-existing TS
-// errors are being paid down.
-const ADVISORY_CONTEXT = "Typecheck (advisory)";
 
-describe("Sprint 5 — required status checks drift guard", () => {
+describe("Sprint 5/6 — required status checks drift guard", () => {
   const root = findRepoRoot();
   const script = fs.readFileSync(path.join(root, "scripts", "setup-branch-protection.sh"), "utf8");
   const workflow = fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
@@ -95,31 +97,22 @@ describe("Sprint 5 — required status checks drift guard", () => {
     }
   });
 
-  describe("advisory typecheck job", () => {
-    it(`ci.yml has a job named "${ADVISORY_CONTEXT}"`, () => {
-      const pattern = new RegExp(
-        `^\\s{4}name:\\s*${ADVISORY_CONTEXT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`,
-        "m",
-      );
-      expect(pattern.test(workflow)).toBe(true);
-    });
-
-    it("advisory typecheck job carries continue-on-error: true", () => {
-      // Grab the block from `name: Typecheck (advisory)` up to the
-      // next top-level job (two-space indent key) or EOF.
-      const re = /^\s{4}name:\s*Typecheck \(advisory\)[\s\S]*?(?=^\s{2}[a-z-]+:$|\Z)/m;
+  describe("Typecheck promotion (v1.12.0) — was advisory, now required", () => {
+    it("ci.yml Typecheck job does NOT carry continue-on-error: true", () => {
+      // Grab the block from `    name: Typecheck` up to the next
+      // top-level job (two-space indent key) or EOF, then assert
+      // the block does NOT contain `continue-on-error: true`.
+      const re = /^\s{4}name:\s*Typecheck\s*$[\s\S]*?(?=^\s{2}[a-z-]+:$|\Z)/m;
       const block = workflow.match(re);
-      expect(block).toBeTruthy();
-      expect(/continue-on-error:\s*true/.test(block?.[0] ?? "")).toBe(true);
+      expect(block, "Typecheck job block missing").toBeTruthy();
+      expect(/continue-on-error:\s*true/.test(block?.[0] ?? "")).toBe(false);
     });
 
-    it("advisory typecheck is NOT in the required-checks JSON block", () => {
-      // Only scan the REQUIRED_CHECKS heredoc, not the comment
-      // section (which is allowed to reference the advisory job
-      // when explaining WHY it's excluded).
-      const checksBlock = script.match(/REQUIRED_CHECKS\s*<<'JSON'[\s\S]*?\nJSON/);
-      expect(checksBlock).toBeTruthy();
-      expect(checksBlock?.[0].includes(`"${ADVISORY_CONTEXT}"`)).toBe(false);
+    it("ci.yml does NOT carry the legacy '(advisory)' label on Typecheck", () => {
+      // Defensive: catches a partial revert where someone renames
+      // the job back to "Typecheck (advisory)" without restoring
+      // continue-on-error (or vice versa).
+      expect(workflow).not.toMatch(/^\s{4}name:\s*Typecheck \(advisory\)\s*$/m);
     });
   });
 });

@@ -39,13 +39,16 @@ function findRepoRoot(): string {
 
 // Sprint 5a (2026-04-24) split the old "Lint · Typecheck" job into
 // "Lint (Biome)" (required) + "Typecheck (advisory)" (continue-on-error).
-// The advisory typecheck is intentionally excluded from this list —
-// it must NOT appear in setup-branch-protection.sh REQUIRED_CHECKS.
+// Sprint 6 (2026-04-25, v1.12.0) promoted Typecheck → required after
+// the assumed-212 TS error count was verified at 0. EXPECTED_JOB_NAMES
+// is the post-Sprint-6 set; required-checks.static.test.ts owns the
+// branch-protection contract.
 const EXPECTED_JOB_NAMES = [
   "Lint (Biome)",
   "Vitest",
   "Prisma Validate",
   "Prisma Migrations (scratch Postgres)",
+  "Typecheck",
 ];
 
 describe("CI migrations job — P1-04", () => {
