@@ -81,37 +81,22 @@ jobs:
 
   lighthouse:
     name: Lighthouse CI (core web vitals)
-    # Re-enabled Perf-LH-2 (v1.14.0). Boot timing was the culprit:
-    # `.lighthouserc.json` now declares `startServerCommand` +
-    # `startServerReadyPattern: "Ready in"` so lhci waits for
-    # Next.js's "✓ Ready in Xms" log line before navigating, and
-    # `numberOfRuns: 1` keeps the run short.
+    # Perf-LH-2 (v1.14.1): Lighthouse measures the live Vercel
+    # deployment instead of a CI-booted next-start. Why:
+    #   - v1.13.0 added Postgres service + db push so middleware had
+    #     a real DB → that fixed the auth-redirect interstitial.
+    #   - v1.14.0 added explicit startServerCommand / ready pattern
+    #     → that fixed the boot timing race.
+    #   - But /login still returned 500 from prod build in CI,
+    #     likely Sentry/PostHog init failing against stub env vars.
+    # The Vercel deployment is the same prod build with real env, so
+    # we point Lighthouse there directly (URLs are baked into
+    # .lighthouserc.json). No Postgres service, no build, no
+    # next-start — just a single curl-grade run against the
+    # deployed app, which is exactly what end users hit.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: ci
-          POSTGRES_PASSWORD: ci
-          POSTGRES_DB: oneace_lhci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
-    env:
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/oneace_lhci
-      DIRECT_URL: postgresql://ci:ci@localhost:5432/oneace_lhci
-      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-placeholder-secret-32-chars-min' }}
-      BETTER_AUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
-      NEXT_TELEMETRY_DISABLED: "1"
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -129,22 +114,11 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
+        # We only need the @lhci/cli devDep — `pnpm install` is
+        # the simplest way to materialize it.
         run: pnpm install --frozen-lockfile
 
-      - name: Apply Prisma schema to scratch DB
-        # Same pattern as e2e.yml — `db push` while MIG-CHAIN-AUDIT
-        # is pending. lhci autorun boots `next start` and the
-        # middleware's auth path needs a live DB to return 200 for
-        # the URLs in .lighthouserc.json.
-        run: pnpm prisma db push --skip-generate --accept-data-loss
-
-      - name: Build
-        run: pnpm build
-
-      - name: Run Lighthouse CI
-        # lhci autorun reads .lighthouserc.json: it boots `next start`,
-        # collects the URLs declared there (3 runs each, desktop
-        # preset), asserts the thresholds, and uploads a report.
+      - name: Run Lighthouse CI against Vercel
         run: pnpm exec lhci autorun --config=./.lighthouserc.json
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

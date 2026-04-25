@@ -2,12 +2,12 @@
   "_comment": "v1.2 P3 §5.43 — Lighthouse CI performance budget. Run via `npx @lhci/cli autorun` once the dep lands. Thresholds are intentionally set slightly looser than Google's 'good' targets so the first CI run has headroom; tighten as the app improves. paired with size-limit (declared in package.json), this is the perf regression tripwire the audit asked for.",
   "ci": {
     "collect": {
-      "_comment": "Only public, auth-free routes. The app shell at `/` is in the (app) route group and the middleware redirects unauthenticated requests to /login — Lighthouse interprets that redirect as a CHROME_INTERSTITIAL_ERROR. /login and /signup live in (auth) and render directly. Perf-LH-2 (v1.14.0) added explicit startServer config because `lhci autorun`'s default boot detection raced ahead of Next.js's startup and Chrome saw a half-loaded page as an interstitial.",
-      "url": ["http://localhost:3000/login", "http://localhost:3000/signup"],
+      "_comment": "Lighthouse points at the live Vercel deployment instead of a CI-booted next-start. v1.14.0 tried local boot with explicit startServer config; that fixed the timing race but a prod-build /login still returned 500 in CI (likely Sentry/PostHog init against stub env). The Vercel deployment is the same code, the same prod build, with real env wired up — and it's already part of the verify.sh deploy gate. So we test it directly. Trade-off: the LH job becomes a measurement against the *previous* main commit (Vercel hasn't deployed the just-pushed commit yet), but for perf-budget regression detection that's still useful. /login and /signup live in (auth) and render without auth; if a real (marketing) landing page lands later, add it here.",
+      "url": [
+        "https://oneace-next-local.vercel.app/login",
+        "https://oneace-next-local.vercel.app/signup"
+      ],
       "numberOfRuns": 1,
-      "startServerCommand": "pnpm start",
-      "startServerReadyPattern": "Ready in",
-      "startServerReadyTimeout": 60000,
       "settings": {
         "preset": "desktop",
         "chromeFlags": "--no-sandbox"
