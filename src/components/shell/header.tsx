@@ -107,7 +107,7 @@ export function Header({
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className="md:hidden"
         aria-label={labels.openMenu}
         onClick={onMenuClick}
       >

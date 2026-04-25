@@ -96,7 +96,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
           showAdmin,
         }}
       />
-      <div className="lg:pl-64">
+      <div className="md:pl-64">
         <InstallBanner />
         <UpdatePrompt
           labels={{
