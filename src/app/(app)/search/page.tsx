@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { format, getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -120,15 +121,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <div className="flex items-start gap-3">
-          <SearchIcon className="text-muted-foreground mt-1 h-5 w-5" />
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t.search.heading}</h1>
-            <p className="text-sm text-muted-foreground">{t.search.subtitle}</p>
-          </div>
-        </div>
-      </div>
+      {/* Sprint 4 PR #1 (UX/UI audit Apr-25) — Migrate inline search
+          header to canonical PageHeader. The leading SearchIcon is
+          dropped; PageHeader's spacing handles the visual rhythm. */}
+      <PageHeader title={t.search.heading} description={t.search.subtitle} />
 
       {!hasQuery ? (
         <Card>
