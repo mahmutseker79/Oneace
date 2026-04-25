@@ -20,6 +20,47 @@
 -- already-present tables with the right shape are a no-op.
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- 0. Bootstrap for objects created out-of-band by early `prisma db push`
+-- ----------------------------------------------------------------------
+-- MIG-CHAIN-AUDIT (v1.13.0, 2026-04-25): the "Integration" table and the
+-- "IntegrationProvider" / "IntegrationStatus" enums were never CREATE'd
+-- by any migration in this directory — they were created via an early
+-- `prisma db push` before the formal migration chain began (ADR-004
+-- cutoff 2026-04-19). PROD has them; a fresh scratch Postgres does not,
+-- so the ALTER TABLE / ADD COLUMN blocks below fail with
+-- `relation "Integration" does not exist`.
+-- This block creates them defensively (IF NOT EXISTS for table; DO/
+-- duplicate_object catch for enums) so the migration is self-sufficient
+-- on a fresh DB and a true no-op on PROD.
+DO $$ BEGIN
+  CREATE TYPE "IntegrationProvider" AS ENUM (
+    'QUICKBOOKS_ONLINE', 'QUICKBOOKS_DESKTOP', 'SHOPIFY', 'WOOCOMMERCE',
+    'XERO', 'AMAZON', 'CUSTOM_WEBHOOK', 'BIGCOMMERCE', 'MAGENTO', 'WIX',
+    'ODOO', 'ZOHO_INVENTORY'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "IntegrationStatus" AS ENUM (
+    'CONNECTED', 'DISCONNECTED', 'ERROR', 'SYNCING'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS "Integration" (
+  "id"             TEXT                  NOT NULL,
+  "organizationId" TEXT                  NOT NULL,
+  "provider"       "IntegrationProvider" NOT NULL,
+  "status"         "IntegrationStatus"   NOT NULL DEFAULT 'DISCONNECTED',
+  "credentials"    JSONB,
+  "settings"       JSONB,
+  "lastSyncAt"     TIMESTAMP(3),
+  "lastError"      TEXT,
+  "createdAt"      TIMESTAMP(3)          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt"      TIMESTAMP(3)          NOT NULL,
+
+  CONSTRAINT "Integration_pkey" PRIMARY KEY ("id")
+);
+
 -- 1. Enum types needed by the Integration expansion ---------------------------
 -- PostgreSQL has no CREATE TYPE IF NOT EXISTS, so each one is wrapped in a
 -- DO block that swallows the duplicate_object exception.

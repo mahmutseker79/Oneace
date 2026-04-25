@@ -72,19 +72,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Apply Prisma schema to scratch DB
-        # `db push` (not `migrate deploy`) because the historical
-        # migration chain has more drift than just E2E-MIG-1
-        # (MigrationSource): v1.12.5 revealed E2E-MIG-2 — Integration
-        # ALTER TABLE without an upstream CREATE TABLE in the chain.
-        # The chain was bootstrapped from `db push` pre-ADR-004 and
-        # several "schema drift fix" migrations assume tables that
-        # were never explicitly created. E2E only needs the final
-        # schema shape, so push it directly.
-        # Backlog: MIG-CHAIN-AUDIT — full audit + bootstrap
-        # injection so `migrate deploy` runs end-to-end on a fresh
-        # Postgres. Until then, this stays on `db push`.
-        run: pnpm prisma db push --skip-generate --accept-data-loss
+      - name: Apply migrations to scratch DB
+        # MIG-CHAIN-AUDIT closed in v1.13.0 — chain now applies
+        # cleanly to a fresh Postgres (E2E-MIG-1 fixed
+        # MigrationSource in 142430; v1.13.0 fixed Integration +
+        # IntegrationProvider/Status in 20260418_drift_fix). Stay
+        # on `migrate deploy` so this exercises the same code path
+        # that runs against production.
+        run: pnpm prisma migrate deploy
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
