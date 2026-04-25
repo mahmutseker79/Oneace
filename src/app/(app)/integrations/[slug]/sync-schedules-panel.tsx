@@ -1,8 +1,10 @@
 "use client";
 
+import { Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -116,9 +118,12 @@ export function SyncSchedulesPanel({ integrationId, schedules }: SyncSchedulesPa
         </CardHeader>
         <CardContent>
           {Object.entries(groupedSchedules).length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">No sync schedules configured.</p>
-            </div>
+            <EmptyState
+              bare
+              icon={Clock}
+              title="No sync schedules configured"
+              description="Schedule periodic syncs to keep this integration's data up to date."
+            />
           ) : (
             <div className="space-y-3">
               {Object.entries(groupedSchedules).map(([key, schedule]) => (

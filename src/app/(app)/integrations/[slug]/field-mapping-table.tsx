@@ -1,8 +1,10 @@
 "use client";
 
+import { ArrowRightLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -114,9 +116,12 @@ export function FieldMappingTable({ integrationId, mappings }: FieldMappingTable
         </CardHeader>
         <CardContent>
           {Object.entries(groupedMappings).length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">No field mappings yet.</p>
-            </div>
+            <EmptyState
+              bare
+              icon={ArrowRightLeft}
+              title="No field mappings yet"
+              description="Map source fields to OneAce attributes for clean data ingestion."
+            />
           ) : (
             <div className="space-y-8">
               {Object.entries(groupedMappings).map(([entityType, entityMappings]) => (

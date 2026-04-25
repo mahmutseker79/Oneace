@@ -38,6 +38,12 @@ export type EmptyStateProps = {
   variant?: EmptyStateVariant;
   actions?: EmptyStateAction[];
   footer?: ReactNode;
+  /**
+   * Sprint 12 PR #1 (UX/UI audit Apr-25 §B-7): when `true`, render WITHOUT
+   * the outer `<Card>` wrapper. Use inside an existing CardContent (e.g.
+   * panel-style empty state inside a settings or integrations card).
+   */
+  bare?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -51,6 +57,7 @@ export function EmptyState({
   variant = "empty",
   actions,
   footer,
+  bare = false,
 }: EmptyStateProps) {
   const iconContainerClass =
     variant === "filtered"
@@ -68,55 +75,73 @@ export function EmptyState({
 
   const hasActions = actions && actions.length > 0;
 
-  return (
-    <Card className="border-dashed">
-      <CardContent className="flex flex-col items-center text-center py-12 px-6 sm:py-16">
-        {/* Icon */}
-        <div
-          className={`flex h-14 w-14 items-center justify-center rounded-2xl ${iconContainerClass} mb-4`}
-        >
-          <Icon className={iconClass} />
+  const inner = (
+    <>
+      {/* Icon */}
+      <div
+        className={`flex h-14 w-14 items-center justify-center rounded-2xl ${iconContainerClass} mb-4`}
+      >
+        <Icon className={iconClass} />
+      </div>
+
+      {/* Title */}
+      <h3 className="text-base font-semibold text-foreground mb-1">{title}</h3>
+
+      {/* Description */}
+      {description && (
+        <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-5">
+          {description}
+        </p>
+      )}
+
+      {/* Actions */}
+      {hasActions && (
+        <div className="flex flex-col sm:flex-row items-center gap-2 mt-1">
+          {actions.map((action, idx) => {
+            const ActionIcon = action.icon;
+            const buttonVariant =
+              action.variant === "ghost"
+                ? "ghost"
+                : action.variant === "secondary"
+                  ? "outline"
+                  : idx === 0
+                    ? "default"
+                    : "outline";
+            const buttonSize =
+              action.variant === "ghost" || (idx > 0 && !action.variant) ? "sm" : "default";
+            return (
+              <Button key={action.href} asChild variant={buttonVariant} size={buttonSize}>
+                <Link href={action.href}>
+                  {ActionIcon ? <ActionIcon className="h-4 w-4" /> : null}
+                  {action.label}
+                </Link>
+              </Button>
+            );
+          })}
         </div>
+      )}
 
-        {/* Title */}
-        <h3 className="text-base font-semibold text-foreground mb-1">{title}</h3>
+      {/* Footer */}
+      {footer && <div className="text-center text-xs text-muted-foreground mt-4">{footer}</div>}
+    </>
+  );
 
-        {/* Description */}
-        {description && (
-          <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-5">
-            {description}
-          </p>
-        )}
+  if (bare) {
+    return (
+      <div
+        data-slot="empty-state"
+        data-bare="true"
+        className="flex flex-col items-center text-center py-8 px-4"
+      >
+        {inner}
+      </div>
+    );
+  }
 
-        {/* Actions */}
-        {hasActions && (
-          <div className="flex flex-col sm:flex-row items-center gap-2 mt-1">
-            {actions.map((action, idx) => {
-              const ActionIcon = action.icon;
-              const buttonVariant =
-                action.variant === "ghost"
-                  ? "ghost"
-                  : action.variant === "secondary"
-                    ? "outline"
-                    : idx === 0
-                      ? "default"
-                      : "outline";
-              const buttonSize =
-                action.variant === "ghost" || (idx > 0 && !action.variant) ? "sm" : "default";
-              return (
-                <Button key={action.href} asChild variant={buttonVariant} size={buttonSize}>
-                  <Link href={action.href}>
-                    {ActionIcon ? <ActionIcon className="h-4 w-4" /> : null}
-                    {action.label}
-                  </Link>
-                </Button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Footer */}
-        {footer && <div className="text-center text-xs text-muted-foreground mt-4">{footer}</div>}
+  return (
+    <Card className="border-dashed" data-slot="empty-state">
+      <CardContent className="flex flex-col items-center text-center py-12 px-6 sm:py-16">
+        {inner}
       </CardContent>
     </Card>
   );

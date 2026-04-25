@@ -1,8 +1,10 @@
 "use client";
 
+import { Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -127,9 +129,12 @@ export function SyncRulesPanel({ integrationId, rules }: SyncRulesPanelProps) {
         </CardHeader>
         <CardContent>
           {sortedRules.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">No sync rules configured.</p>
-            </div>
+            <EmptyState
+              bare
+              icon={Filter}
+              title="No sync rules configured"
+              description="Sync rules filter what gets pushed or pulled per integration."
+            />
           ) : (
             <div className="space-y-3">
               {sortedRules.map((rule) => (

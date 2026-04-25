@@ -1,8 +1,10 @@
 "use client";
 
+import { Webhook } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -118,9 +120,12 @@ export function WebhookEventsPanel({ integrationId, events }: WebhookEventsPanel
         </CardHeader>
         <CardContent>
           {events.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">No webhook events configured.</p>
-            </div>
+            <EmptyState
+              bare
+              icon={Webhook}
+              title="No webhook events configured"
+              description="Subscribe to events to fire webhooks when data changes upstream."
+            />
           ) : (
             <div className="space-y-3">
               {events.map((event) => (
