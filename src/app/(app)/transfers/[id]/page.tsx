@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { Boxes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusTimeline } from "@/components/ui/status-timeline";
 import {
@@ -160,9 +162,12 @@ export default async function TransferDetailPage({ params }: DetailPageProps) {
         </CardHeader>
         <CardContent>
           {transfer.lines.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No lines added yet. Create the transfer first, then add items.
-            </p>
+            <EmptyState
+              bare
+              icon={Boxes}
+              title="No lines added yet"
+              description="Create the transfer first, then add items."
+            />
           ) : (
             <Table>
               <TableHeader>

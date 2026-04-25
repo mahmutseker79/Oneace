@@ -9,6 +9,7 @@ import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Select,
   SelectContent,
@@ -649,9 +650,7 @@ function PreviewStep({
           </TabsList>
           <TabsContent value="ready" className="mt-4">
             {readyRows.length === 0 ? (
-              <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                {labels.empty}
-              </p>
+              <EmptyState icon={CheckCircle2} title={labels.empty} variant="filtered" />
             ) : (
               <div className="overflow-x-auto rounded-md border">
                 <Table>
@@ -697,9 +696,7 @@ function PreviewStep({
           </TabsContent>
           <TabsContent value="rejected" className="mt-4">
             {rejectedRows.length === 0 ? (
-              <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                {labels.empty}
-              </p>
+              <EmptyState icon={AlertTriangle} title={labels.empty} variant="filtered" />
             ) : (
               <div className="overflow-x-auto rounded-md border">
                 <Table>

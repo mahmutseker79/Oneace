@@ -3,7 +3,9 @@ import { requireActiveMembership } from "@/lib/session";
 import { compareStockCounts } from "@/lib/stockcount/compare";
 import type { Metadata } from "next";
 
+import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
@@ -124,7 +126,13 @@ export default async function ComparePage({
           </CardHeader>
           <CardContent>
             {comparisonRows.length === 0 ? (
-              <p className="text-center text-muted-foreground">No items in common</p>
+              <EmptyState
+                bare
+                icon={Search}
+                title="No items in common"
+                description="The two counts don't share any items — choose counts with overlapping coverage."
+                variant="filtered"
+              />
             ) : (
               <div className="overflow-x-auto">
                 <Table>

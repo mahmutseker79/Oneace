@@ -96,7 +96,7 @@ export default async function StockCountsPage({
 
   function renderTable(rows: typeof counts, emptyLabel: string): React.ReactElement {
     if (rows.length === 0) {
-      return <p className="px-6 pb-6 text-sm text-muted-foreground">{emptyLabel}</p>;
+      return <EmptyState bare icon={ClipboardList} title={emptyLabel} />;
     }
 
     const cardView = rows.map((count) => (

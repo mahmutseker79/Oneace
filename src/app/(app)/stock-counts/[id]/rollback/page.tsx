@@ -7,7 +7,9 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 import { canRollback, rollbackDenialReason } from "@/lib/stockcount/machine";
 
+import { Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { RollbackForm } from "./rollback-form";
 
@@ -121,13 +123,12 @@ export default async function RollbackPage({
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  You don&apos;t have permission to rollback counts
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Lock}
+              variant="unavailable"
+              title="You don't have permission to rollback counts"
+              description="Only users with the rollback capability can revert a count."
+            />
           )}
         </div>
 
