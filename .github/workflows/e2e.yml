@@ -73,9 +73,21 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Apply Prisma schema to scratch DB
-        # Without this, the test DB is empty and any query fails
-        # before WebServer reaches a steady state.
-        run: pnpm prisma migrate deploy
+        # Use `db push` (not `migrate deploy`) because there is a
+        # known migration ordering bug in
+        # 20260417142430_migration_job_bootstrap referencing the
+        # MigrationSource enum that is created in the *next*
+        # migration (20260417142431_migration_foundation). Production
+        # masks this — the enum was created out of band and the
+        # migration is already in _prisma_migrations. The
+        # ci.yml `migrations` job currently masks it via
+        # continue-on-error: true. E2E doesn't care about migration
+        # ordering — it only needs the final schema shape — so
+        # `db push` is the right tool here.
+        # Backlog: E2E-MIG-1 — fix the migration ordering bug,
+        # then switch this back to `migrate deploy` and remove the
+        # continue-on-error from the migrations job.
+        run: pnpm prisma db push --skip-generate --accept-data-loss
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
