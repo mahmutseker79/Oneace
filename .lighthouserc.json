@@ -2,8 +2,8 @@
   "_comment": "v1.2 P3 §5.43 — Lighthouse CI performance budget. Run via `npx @lhci/cli autorun` once the dep lands. Thresholds are intentionally set slightly looser than Google's 'good' targets so the first CI run has headroom; tighten as the app improves. paired with size-limit (declared in package.json), this is the perf regression tripwire the audit asked for.",
   "ci": {
     "collect": {
+      "_comment": "Only public, auth-free routes. The app shell at `/` is in the (app) route group and the middleware redirects unauthenticated requests to /login — Lighthouse interprets that redirect as a CHROME_INTERSTITIAL_ERROR. /login and /signup live in (auth) and render directly. When we add a real (marketing) landing page, add it here.",
       "url": [
-        "http://localhost:3000/",
         "http://localhost:3000/login",
         "http://localhost:3000/signup"
       ],
