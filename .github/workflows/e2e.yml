@@ -22,10 +22,35 @@ jobs:
     # Skip on forks (no secrets). Internal PRs and pushes run normally.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
+    # Sprint 6 (v1.12.0): use a scratch Postgres service container
+    # mirroring the `migrations` job in ci.yml. Previously this job
+    # depended on repo-level Secrets (DATABASE_URL / DIRECT_URL /
+    # BETTER_AUTH_SECRET) being populated; when they weren't, the
+    # WebServer's env validation aborted and Playwright timed out
+    # after 60s waiting for localhost:3000. The literal config below
+    # is self-contained — runs even from a fresh fork or before any
+    # secret is configured.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: oneace_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DIRECT_URL: ${{ secrets.DIRECT_URL }}
-      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/oneace_e2e
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/oneace_e2e
+      # env schema requires ≥32 chars; literal placeholder is fine
+      # because no prod auth flow runs against this scratch DB.
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-placeholder-secret-32-chars-min' }}
       BETTER_AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
 
@@ -46,6 +71,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Apply Prisma schema to scratch DB
+        # Without this, the test DB is empty and any query fails
+        # before WebServer reaches a steady state.
+        run: pnpm prisma migrate deploy
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
