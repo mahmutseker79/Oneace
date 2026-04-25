@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,7 +32,12 @@ export default function NewKitPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-3xl font-bold">Create Kit</h1>
+      {/* Sprint 8 PR #3 (UX/UI audit Apr-25) — inline h1 → PageHeader. */}
+      <PageHeader
+        title="Create Kit"
+        description="Bundle parent items together for assembly and sale."
+        backHref="/kits"
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-lg border p-6">
         {error && (

@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
@@ -58,22 +59,13 @@ export default async function PickTaskDetailPage({
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <Button variant="ghost" size="sm" asChild className="-ml-2">
-        <Link href="/picks">
-          <ChevronLeft className="h-4 w-4" />
-          Back to picks
-        </Link>
-      </Button>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Pick #{task.id.slice(0, 8)}</h1>
-          <p className="text-muted-foreground">
-            {task.item?.name ?? task.itemId} · {task.quantity} {task.item?.unit ?? "units"}
-          </p>
-        </div>
-        {statusBadge(task.status)}
-      </div>
+      {/* Sprint 8 PR #3 (UX/UI audit Apr-25) — inline header → PageHeader. */}
+      <PageHeader
+        title={`Pick #${task.id.slice(0, 8)}`}
+        description={`${task.item?.name ?? task.itemId} · ${task.quantity} ${task.item?.unit ?? "units"}`}
+        backHref="/picks"
+        badge={statusBadge(task.status)}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <Card>

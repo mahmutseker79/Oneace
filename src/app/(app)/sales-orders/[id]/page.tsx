@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -72,23 +73,17 @@ export default async function SalesOrderDetailPage({
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <Button variant="ghost" size="sm" asChild className="-ml-2">
-        <Link href="/sales-orders">
-          <ChevronLeft className="h-4 w-4" />
-          Back to sales orders
-        </Link>
-      </Button>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{order.orderNumber}</h1>
-          <p className="text-muted-foreground">
-            {order.customerName || "No customer"}{" "}
-            {order.customerRef && `· Ref: ${order.customerRef}`}
-          </p>
-        </div>
-        {statusBadge(order.status)}
-      </div>
+      {/* Sprint 8 PR #3 (UX/UI audit Apr-25) — inline header → PageHeader. */}
+      <PageHeader
+        title={order.orderNumber}
+        description={
+          order.customerName
+            ? `${order.customerName}${order.customerRef ? ` · Ref: ${order.customerRef}` : ""}`
+            : "No customer"
+        }
+        backHref="/sales-orders"
+        badge={statusBadge(order.status)}
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
