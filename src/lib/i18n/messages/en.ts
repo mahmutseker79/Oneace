@@ -50,6 +50,10 @@ export const en = {
     validationFailed: "Validation failed",
     operationFailed: "Operation failed",
     notFound: "Not found",
+    // Sprint 1 PR #5 (UX/UI audit Apr-25 §B-5): skip-link label moves
+    // out of the layout files so TR + future locales surface the
+    // localized label instead of an English literal.
+    skipToMain: "Skip to main content",
   },
 
   permissions: {

@@ -36,8 +36,10 @@ const TR_SRC = readFileSync(
 // this list = "we now claim TR coverage for it; don't regress."
 // Removing a namespace from this list requires a deliberate decision
 // (probably: en.ts removed the namespace too).
+//
+// Sprint 7'de full coverage'a ulaşıldı: 48/48 namespace.
 const REQUIRED_TR_NAMESPACES = [
-  // Chrome — every page renders these
+  // Chrome — every page renders these (Sprint 2 PR #1)
   "app",
   "common",
   "permissions",
@@ -54,13 +56,47 @@ const REQUIRED_TR_NAMESPACES = [
   "billing",
   "organizations",
   "search",
-  // Onboarding + entry
+  // Onboarding + entry (Sprint 2 PR #2)
   "auth",
   "setup",
-  // Operations (Sprint 2 PR #2 + PR #3)
+  // Operations entry (Sprint 2 PR #3)
   "dashboard",
   "items",
   "scan",
+  // Inventory taxonomy (Sprint 3 PR #1)
+  "warehouses",
+  "categories",
+  // Operations big (Sprint 6 PR #1)
+  "movements",
+  "itemDetail",
+  "stockCounts",
+  "transfers",
+  // Procurement (Sprint 6 PR #2)
+  "suppliers",
+  "purchaseOrders",
+  // Fulfillment (Sprint 6 PR #3)
+  "kits",
+  "picks",
+  "salesOrders",
+  // Settings + admin (Sprint 7 PR #1 + #2)
+  "settings",
+  "security",
+  "privacy",
+  "users",
+  "invitePage",
+  "audit",
+  // Inventory detail (Sprint 7 PR #3)
+  "bins",
+  "labels",
+  "pallets",
+  "locations",
+  "serials",
+  "countZones",
+  "vehicles",
+  "itemsImport",
+  "imageUpload",
+  // Analytics (Sprint 7 PR #4)
+  "reports",
 ] as const;
 
 function extractTopLevelNamespaces(source: string): Set<string> {
@@ -98,13 +134,17 @@ describe("Sprint 2 PR #4 — tr.ts override coverage regression guard", () => {
     //
     // Catch the second mistake by checking that every namespace block
     // contains a matching `...en.<namespace>` somewhere inside.
+    //
+    // Sprint 8 fix: regex'in başına `^` line-anchor eklendi. Pre-fix:
+    // pattern `  ${ns}:` 4-space nested namespace'leri (ör. items.serials,
+    // movements.transfers) yanlışlıkla yakalıyordu — top-level transfers
+    // ve serials bloklarının `...en.<ns>` fallback'i olmasına rağmen
+    // false-positive fail veriyordu. `m` flag + `^` ile sadece 2-space
+    // satır başı (top-level) yakalanıyor.
     const offenders: string[] = [];
     for (const ns of REQUIRED_TR_NAMESPACES) {
-      // Skip `app` — its override pattern is fine but the body is
-      // small enough that the exact `...en.app` line is human
-      // judgement; the test below catches the broader case.
       const blockMatch = TR_SRC.match(
-        new RegExp(`  ${ns}:\\s*\\{([\\s\\S]*?)^  \\},`, "m"),
+        new RegExp(`^  ${ns}:\\s*\\{([\\s\\S]*?)^  \\},`, "m"),
       );
       if (!blockMatch) continue;
       const body = blockMatch[1] ?? "";
@@ -145,8 +185,9 @@ describe("Sprint 2 — TR coverage progress signal (informational)", () => {
       `[tr-coverage] ${overridden.size}/${total} namespaces overridden ` +
         `(${ratio.toFixed(0)}%). Sprint 3 backlog covers the remainder.`,
     );
-    // Soft assertion: at least the 21-namespace baseline established
-    // in Sprint 2 must be present.
-    expect(overridden.size).toBeGreaterThanOrEqual(21);
+    // Hard assertion: full coverage (48/48 namespace = 100%).
+    // Sprint 7 closure achieved tam parite — eksik namespace artık
+    // kabul edilmez.
+    expect(overridden.size).toBeGreaterThanOrEqual(48);
   });
 });
