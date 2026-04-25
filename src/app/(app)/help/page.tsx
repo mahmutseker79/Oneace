@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 
 export const metadata = {
@@ -66,18 +67,11 @@ export default async function HelpPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Help</h1>
-            <Badge variant="secondary">v1.5</Badge>
-          </div>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Documentation, release notes, and support channels — everything you need to get unstuck
-            without leaving the dashboard.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Help"
+        badge={<Badge variant="secondary">v1.5</Badge>}
+        description="Documentation, release notes, and support channels — everything you need to get unstuck without leaving the dashboard."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         {quickLinks.map((link) => (

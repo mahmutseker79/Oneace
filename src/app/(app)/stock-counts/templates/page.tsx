@@ -9,6 +9,7 @@ import { requireActiveMembership } from "@/lib/session";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Templates",
@@ -35,20 +36,20 @@ export default async function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Count Templates</h1>
-          <p className="text-muted-foreground">Reusable count configurations</p>
-        </div>
-        {canCreate && (
-          <Link href="/stock-counts/templates/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Template
-            </Button>
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="Count Templates"
+        description="Reusable count configurations"
+        actions={
+          canCreate ? (
+            <Link href="/stock-counts/templates/new">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Template
+              </Button>
+            </Link>
+          ) : undefined
+        }
+      />
 
       {templates.length === 0 ? (
         <Card>

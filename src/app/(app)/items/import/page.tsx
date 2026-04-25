@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -109,10 +110,7 @@ export default async function ImportItemsPage() {
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-semibold">{t.itemsImport.heading}</h1>
-        <p className="text-muted-foreground">{t.itemsImport.subtitle}</p>
-      </div>
+      <PageHeader title={t.itemsImport.heading} description={t.itemsImport.subtitle} />
 
       <ImportItemsForm labels={labels} />
     </div>

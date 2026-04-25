@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { WrapperTabs } from "@/components/shell/wrapper-tabs";
 import { LOCATIONS_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
@@ -27,20 +28,20 @@ export default async function VehiclesPage() {
         tabs={resolveWrapperTabs(LOCATIONS_TAB_SPECS, t)}
         ariaLabel="Locations sections"
       />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t.vehicles.heading}</h1>
-          <p className="text-muted-foreground text-sm">{t.vehicles.subtitle}</p>
-        </div>
-        {canManage && (
-          <Link
-            href="/vehicles/new"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center rounded-md px-4 py-2 text-sm font-medium"
-          >
-            {t.vehicles.newVehicle}
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title={t.vehicles.heading}
+        description={t.vehicles.subtitle}
+        actions={
+          canManage ? (
+            <Link
+              href="/vehicles/new"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center rounded-md px-4 py-2 text-sm font-medium"
+            >
+              {t.vehicles.newVehicle}
+            </Link>
+          ) : undefined
+        }
+      />
 
       {vehicles.length === 0 ? (
         <div className="border-border bg-card rounded-lg border p-12 text-center">

@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,7 +32,7 @@ export default function NewSalesOrderPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-3xl font-bold">Create Sales Order</h1>
+      <PageHeader title="Create Sales Order" />
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-lg border p-6">
         {error && (
