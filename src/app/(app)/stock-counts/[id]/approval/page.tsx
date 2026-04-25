@@ -1,3 +1,4 @@
+import { FileSearch } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -7,6 +8,7 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { ApprovalForm } from "./approval-form";
 
@@ -65,11 +67,11 @@ export default async function ApprovalPage({
             { label: "Approval" },
           ]}
         />
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">No approval record found</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={FileSearch}
+          title="No approval record found"
+          description="This count hasn't been submitted for approval yet."
+        />
       </div>
     );
   }

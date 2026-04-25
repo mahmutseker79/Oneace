@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { ListChecks, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -9,6 +9,7 @@ import { requireActiveMembership } from "@/lib/session";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
@@ -52,11 +53,16 @@ export default async function TemplatesPage() {
       />
 
       {templates.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">No templates yet</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={ListChecks}
+          title="No templates yet"
+          description="Reusable count configurations let you spin up recurring counts in one click."
+          actions={
+            canCreate
+              ? [{ label: "New Template", href: "/stock-counts/templates/new", icon: Plus }]
+              : undefined
+          }
+        />
       ) : (
         <div className="grid gap-4">
           {templates.map((template) => (

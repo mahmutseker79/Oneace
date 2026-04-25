@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,6 +10,7 @@ import { requireActiveMembership } from "@/lib/session";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import { AssignmentDeleteButton } from "./assignment-delete-button";
 
@@ -75,11 +76,11 @@ export default async function CountAssignmentsPage({
       </div>
 
       {assignments.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">No assignments yet</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Users}
+          title="No assignments yet"
+          description="Assign team members to participate in or approve this count."
+        />
       ) : (
         <div className="grid gap-4">
           {assignments.map((assignment) => (

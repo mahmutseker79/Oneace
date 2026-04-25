@@ -1,3 +1,4 @@
+import { CheckCircle2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -6,6 +7,8 @@ import { requireActiveMembership } from "@/lib/session";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Pending Approvals",
@@ -41,17 +44,14 @@ export default async function PendingApprovalsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Pending Approvals</h1>
-        <p className="text-muted-foreground">Counts awaiting your approval</p>
-      </div>
+      <PageHeader title="Pending Approvals" description="Counts awaiting your approval" />
 
       {approvals.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">No pending approvals</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={CheckCircle2}
+          title="No pending approvals"
+          description="Counts requesting approval will appear here."
+        />
       ) : (
         <div className="grid gap-4">
           {approvals.map((approval) => (
