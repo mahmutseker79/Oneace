@@ -126,7 +126,7 @@ export default async function MigrationDetailPage(props: PageProps) {
       )}
 
       {issues.length > 0 && (
-        <Card className="border-destructive/50">
+        <Card variant="destructive">
           <CardContent className="pt-6 space-y-4">
             <h3 className="font-semibold text-destructive">Hatalar ve Uyarılar</h3>
             <div className="space-y-2">

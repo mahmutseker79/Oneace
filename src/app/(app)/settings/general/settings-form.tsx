@@ -359,7 +359,7 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
 
       {/* Error/Success Messages */}
       {state && !state.ok && (
-        <Card className="border-destructive/20 bg-destructive/5">
+        <Card variant="destructive">
           <CardContent className="pt-6">
             <p className="text-sm text-destructive">{state.error}</p>
             {state.fieldErrors && Object.entries(state.fieldErrors).length > 0 && (

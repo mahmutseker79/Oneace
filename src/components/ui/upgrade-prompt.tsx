@@ -62,7 +62,7 @@ export function UpgradePrompt({
 
   if (variant === "card") {
     return (
-      <Card className="border-warning/60 bg-warning-light">
+      <Card variant="warning">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Lock className="h-4 w-4 text-warning" />

@@ -431,7 +431,7 @@ export default function NewMigrationPage() {
 
   const renderError = () =>
     state.error ? (
-      <Card className="border-destructive/50 bg-destructive/5">
+      <Card variant="destructive">
         <CardContent className="pt-6 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="flex-1">

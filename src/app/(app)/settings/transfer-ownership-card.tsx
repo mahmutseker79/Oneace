@@ -137,7 +137,7 @@ export function TransferOwnershipCard({
   }
 
   return (
-    <Card className="border-warning/50 lg:col-span-2">
+    <Card variant="warning" className="lg:col-span-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-warning">
           <KeyRound className="h-5 w-5" aria-hidden="true" />
