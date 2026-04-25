@@ -1,0 +1,72 @@
+// Sprint 8 PR #1 — EmptyState primitive story.
+//
+// 3 variant: empty (true first-use), filtered (no results),
+// unavailable (feature gated). 29 sayfada kullanılıyor; Sprint 4
+// PR #2 hedefi 50+'a çıkarmak. Bu story canonical kullanımı pin'ler.
+
+import type { Meta, StoryObj } from "@storybook/react";
+import { Lock, Package, Search } from "lucide-react";
+import { EmptyState } from "./empty-state";
+
+const meta: Meta<typeof EmptyState> = {
+  title: "UI/EmptyState",
+  component: EmptyState,
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          "Boş durum kartı. 3 variant: `empty` (henüz hiç veri yok), `filtered` (filtre sonucu boş), `unavailable` (özellik mevcut planda yok).",
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: ["empty", "filtered", "unavailable"],
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof EmptyState>;
+
+export const TrueEmpty: Story = {
+  args: {
+    icon: Package,
+    title: "No items yet",
+    description: "You haven't added any items. Items are the SKUs you buy, stock, and sell.",
+    actions: [
+      { label: "Create your first item", href: "/items/new", icon: Package },
+      { label: "or import a CSV", href: "/items/import", variant: "secondary" },
+    ],
+  },
+};
+
+export const FilteredEmpty: Story = {
+  args: {
+    icon: Search,
+    title: "No items match this filter",
+    description: "Try a different status filter or clear the filter to see all items.",
+    variant: "filtered",
+    actions: [{ label: "Clear filter", href: "/items", variant: "secondary" }],
+  },
+};
+
+export const FeatureUnavailable: Story = {
+  args: {
+    icon: Lock,
+    title: "ABC analysis is a Pro feature",
+    description: "Upgrade to access ABC classification and Pareto analysis.",
+    variant: "unavailable",
+    actions: [{ label: "Upgrade plan", href: "/settings/billing" }],
+  },
+};
+
+export const NoActions: Story = {
+  args: {
+    icon: Package,
+    title: "No movements yet",
+    description: "Receive your first PO to populate the ledger.",
+  },
+};
