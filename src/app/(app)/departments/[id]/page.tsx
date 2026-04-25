@@ -7,6 +7,7 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { DepartmentForm } from "../department-form";
 
 export const metadata: Metadata = {
@@ -55,10 +56,7 @@ export default async function EditDepartmentPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{department.name}</h1>
-        <p className="text-muted-foreground">Manage department settings</p>
-      </div>
+      <PageHeader title={department.name} description="Manage department settings" />
 
       {canEdit ? (
         <div className="max-w-2xl">

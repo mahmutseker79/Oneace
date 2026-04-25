@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { TemplateForm } from "../template-form";
 
 export const metadata: Metadata = {
@@ -39,10 +40,10 @@ export default async function NewTemplatePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">New Count Template</h1>
-        <p className="text-muted-foreground">Create a reusable count configuration</p>
-      </div>
+      <PageHeader
+        title="New Count Template"
+        description="Create a reusable count configuration"
+      />
 
       <div className="max-w-2xl">
         <TemplateForm

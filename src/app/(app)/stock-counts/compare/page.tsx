@@ -4,6 +4,7 @@ import { compareStockCounts } from "@/lib/stockcount/compare";
 import type { Metadata } from "next";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Compare Stock Counts",
@@ -71,10 +72,7 @@ export default async function ComparePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Compare Counts</h1>
-        <p className="text-muted-foreground">Side-by-side analysis of two counts</p>
-      </div>
+      <PageHeader title="Compare Counts" description="Side-by-side analysis of two counts" />
 
       <Card>
         <CardHeader>

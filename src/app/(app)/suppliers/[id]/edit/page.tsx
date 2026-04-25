@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -49,19 +50,20 @@ export default async function EditSupplierPage({ params }: EditSupplierPageProps
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/suppliers">
-            <ChevronLeft className="h-4 w-4" />
-            {t.suppliers.backToList}
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">{t.suppliers.editSupplier}</h1>
-        <p className="text-muted-foreground">
-          {supplier.name}
-          {supplier.code ? <span className="font-mono text-xs"> · {supplier.code}</span> : null}
-        </p>
-      </div>
+      <Button variant="ghost" size="sm" asChild className="-ml-2 self-start">
+        <Link href="/suppliers">
+          <ChevronLeft className="h-4 w-4" />
+          {t.suppliers.backToList}
+        </Link>
+      </Button>
+      <PageHeader
+        title={t.suppliers.editSupplier}
+        description={
+          supplier.code
+            ? `${supplier.name} · ${supplier.code}`
+            : supplier.name
+        }
+      />
 
       <SupplierForm labels={labels} mode="edit" initial={supplier} />
     </div>
