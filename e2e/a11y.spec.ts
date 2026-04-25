@@ -40,6 +40,18 @@ const CRITICAL_PATHS: readonly string[] = [
   "/stock-counts/new",
   "/settings/security",
   "/settings/security/sessions",
+  // Sprint 8 PR #2 — high-traffic paths added after Sprint 6 (TR ops)
+  // genişlemesi. Bu sayfalar TR locale aktifken yüzlerce yeni string
+  // render eder; axe sweep onların a11y regresyonunu da yakalar.
+  "/movements",
+  "/movements/new",
+  "/suppliers",
+  "/suppliers/new",
+  "/scan",
+  "/search?q=test",
+  "/reports",
+  "/reports/low-stock",
+  "/users",
 ];
 
 /**
