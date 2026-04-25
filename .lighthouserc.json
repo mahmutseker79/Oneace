@@ -3,10 +3,7 @@
   "ci": {
     "collect": {
       "_comment": "Only public, auth-free routes. The app shell at `/` is in the (app) route group and the middleware redirects unauthenticated requests to /login — Lighthouse interprets that redirect as a CHROME_INTERSTITIAL_ERROR. /login and /signup live in (auth) and render directly. When we add a real (marketing) landing page, add it here.",
-      "url": [
-        "http://localhost:3000/login",
-        "http://localhost:3000/signup"
-      ],
+      "url": ["http://localhost:3000/login", "http://localhost:3000/signup"],
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",
