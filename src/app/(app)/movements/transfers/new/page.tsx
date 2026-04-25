@@ -199,10 +199,10 @@ export default async function NewTransferPage() {
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-semibold">{t.movements.transfers.heading}</h1>
-        <p className="text-muted-foreground">{t.movements.transfers.subtitle}</p>
-      </div>
+      <PageHeader
+        title={t.movements.transfers.heading}
+        description={t.movements.transfers.subtitle}
+      />
 
       <TransferWizard
         warehouses={warehouses}

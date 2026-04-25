@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { PageHeader } from "@/components/ui/page-header";
+
 import { createVehicleAction, updateVehicleAction } from "./actions";
 
 type Props = {
@@ -57,11 +59,7 @@ export default function VehicleForm({ vehicleId, initialData, labels }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">
-          {isEdit ? labels.editVehicle : labels.newVehicleHeading}
-        </h1>
-      </div>
+      <PageHeader title={isEdit ? labels.editVehicle : labels.newVehicleHeading} />
 
       <form
         onSubmit={handleSubmit}

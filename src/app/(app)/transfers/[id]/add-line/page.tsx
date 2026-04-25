@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -63,18 +64,12 @@ export default async function AddLinePage({ params }: PageProps) {
 
   return (
     <div className="space-y-4">
-      <Link href={`/transfers/${id}`}>
-        <Button variant="ghost" size="sm">
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Transfer
-        </Button>
-      </Link>
-
+      <PageHeader
+        title={`Add Item to ${transfer.transferNumber}`}
+        backHref={`/transfers/${id}`}
+      />
       <Card>
-        <CardHeader>
-          <CardTitle>Add Item to {transfer.transferNumber}</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <AddLineForm transferId={id} items={items} />
         </CardContent>
       </Card>

@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -98,7 +99,7 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <h1 className="text-3xl font-bold">Ship: {order.orderNumber}</h1>
+      <PageHeader title={`Ship: ${order.orderNumber}`} />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -50,21 +51,13 @@ export default async function NewTransferPage() {
 
   return (
     <div className="space-y-4">
-      <Link href="/transfers">
-        <Button variant="ghost" size="sm">
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Transfers
-        </Button>
-      </Link>
-
+      <PageHeader
+        title="New Transfer"
+        description="Create an inter-warehouse transfer. You can add items after creating the transfer."
+        backHref="/transfers"
+      />
       <Card>
-        <CardHeader>
-          <CardTitle>New Transfer</CardTitle>
-          <CardDescription>
-            Create an inter-warehouse transfer. You can add items after creating the transfer.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <CreateTransferForm warehouses={warehouses} />
         </CardContent>
       </Card>
