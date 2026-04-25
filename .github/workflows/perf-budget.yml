@@ -81,17 +81,12 @@ jobs:
 
   lighthouse:
     name: Lighthouse CI (core web vitals)
-    # DISABLED again. v1.13.0 added Postgres service + `db push` and
-    # v1.13.0.2 dropped the `/` URL because middleware redirected
-    # unauthenticated requests to /login. But Lighthouse still hits
-    # CHROME_INTERSTITIAL_ERROR on /login itself — likely a boot
-    # timing issue (lhci hits the URL before `next start` is fully
-    # ready) or a middleware-on-public-routes issue.
-    # Refined backlog — Perf-LH-2: switch to `lhci collect` with
-    # `--startServerCommand "pnpm start"` + `--startServerReadyPattern
-    # "Ready"` + explicit URL list, instead of `lhci autorun`. Or
-    # consider serving a static landing page artifact.
-    if: false && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Re-enabled Perf-LH-2 (v1.14.0). Boot timing was the culprit:
+    # `.lighthouserc.json` now declares `startServerCommand` +
+    # `startServerReadyPattern: "Ready in"` so lhci waits for
+    # Next.js's "✓ Ready in Xms" log line before navigating, and
+    # `numberOfRuns: 1` keeps the run short.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
