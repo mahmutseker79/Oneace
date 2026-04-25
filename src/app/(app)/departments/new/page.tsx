@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { DepartmentForm } from "../department-form";
 
 export const metadata: Metadata = {
@@ -34,10 +35,7 @@ export default async function NewDepartmentPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">New Department</h1>
-        <p className="text-muted-foreground">Create a new department</p>
-      </div>
+      <PageHeader title="New Department" description="Create a new department" />
 
       <div className="max-w-2xl">
         <DepartmentForm members={members} warehouses={warehouses} isNew={true} />

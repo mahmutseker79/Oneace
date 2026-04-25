@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
   SelectContent,
@@ -49,23 +50,11 @@ export default async function LabelDesignerPage({ params, searchParams }: PagePr
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/labels">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Templates
-          </Link>
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-2xl font-semibold">
-          {isEdit ? "Edit Label Template" : "New Label Template"}
-        </h1>
-        <p className="text-muted-foreground">
-          Design your label layout and configure barcode settings
-        </p>
-      </div>
+      <PageHeader
+        title={isEdit ? "Edit Label Template" : "New Label Template"}
+        description="Design your label layout and configure barcode settings"
+        backHref="/labels"
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Configuration Panel */}

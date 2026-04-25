@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -41,18 +42,12 @@ export default async function StatusChangePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        {/* v1.5 step 10 — Inventory primary landing is /items, not /inventory. */}
-        <Link href="/items">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold">Change Stock Status</h1>
-          <p className="text-muted-foreground">Move stock between different status categories</p>
-        </div>
-      </div>
+      {/* v1.5 step 10 — Inventory primary landing is /items, not /inventory. */}
+      <PageHeader
+        title="Change Stock Status"
+        description="Move stock between different status categories"
+        backHref="/items"
+      />
 
       <Card>
         <CardHeader>

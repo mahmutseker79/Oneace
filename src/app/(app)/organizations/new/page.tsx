@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
 
@@ -30,13 +31,11 @@ export default async function CreateOrganizationPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6 py-8">
-      <div className="flex items-start gap-3">
-        <Building2 className="text-muted-foreground mt-1 h-5 w-5" />
-        <div>
-          <h1 className="text-2xl font-semibold">{t.organizations.create.heading}</h1>
-          <p className="text-muted-foreground text-sm">{t.organizations.create.subtitle}</p>
-        </div>
-      </div>
+      <PageHeader
+        title={t.organizations.create.heading}
+        badge={<Building2 className="text-muted-foreground h-5 w-5" />}
+        description={t.organizations.create.subtitle}
+      />
 
       <Card>
         <CardHeader>
