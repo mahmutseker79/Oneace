@@ -46,6 +46,13 @@ DO $$ BEGIN
   );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+DO $$ BEGIN
+  CREATE TYPE "ImportEntity" AS ENUM (
+    'ITEM', 'STOCK_LEVEL', 'SUPPLIER', 'PURCHASE_ORDER',
+    'CATEGORY', 'WAREHOUSE', 'CUSTOMER'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 CREATE TABLE IF NOT EXISTS "Integration" (
   "id"             TEXT                  NOT NULL,
   "organizationId" TEXT                  NOT NULL,
