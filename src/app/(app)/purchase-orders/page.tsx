@@ -122,12 +122,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
     return (
       <div className="space-y-6">
         <AdvancedFeatureBanner labels={t.advancedFeature} plan={poPlan} />
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t.purchaseOrders.heading}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t.purchaseOrders.subtitle}</p>
-        </div>
+        <PageHeader title={t.purchaseOrders.heading} description={t.purchaseOrders.subtitle} />
         <UpgradePrompt
           reason="Purchase orders are not available on the Free plan."
           requiredPlan="PRO"
@@ -143,12 +138,7 @@ export default async function PurchaseOrdersPage({ searchParams }: PurchaseOrder
       <div className="space-y-6">
         <AdvancedFeatureBanner labels={t.advancedFeature} plan={poPlan} />
 
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            {t.purchaseOrders.heading}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t.purchaseOrders.subtitle}</p>
-        </div>
+        <PageHeader title={t.purchaseOrders.heading} description={t.purchaseOrders.subtitle} />
         <EmptyState
           icon={ShoppingCart}
           title={t.purchaseOrders.emptyTitle}

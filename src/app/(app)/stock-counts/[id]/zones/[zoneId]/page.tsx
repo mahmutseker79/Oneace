@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -41,8 +42,7 @@ export default async function EditZonePage({ params }: PageProps) {
   if (!zone) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">{t.common.notFound}</h1>
-        <p className="text-muted-foreground">{t.countZones.errors.notFound}</p>
+        <PageHeader title={t.common.notFound} description={t.countZones.errors.notFound} />
       </div>
     );
   }

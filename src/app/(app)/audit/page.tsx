@@ -32,6 +32,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
   SelectContent,
@@ -224,10 +225,7 @@ export default async function AuditPage({
   return (
     <div className="space-y-6">
       <WrapperTabs tabs={resolveWrapperTabs(SETTINGS_TAB_SPECS, t)} ariaLabel="Settings sections" />
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{t.audit.heading}</h1>
-        <p className="text-muted-foreground">{t.audit.subtitle}</p>
-      </div>
+      <PageHeader title={t.audit.heading} description={t.audit.subtitle} />
 
       <Card>
         <CardHeader>

@@ -28,8 +28,8 @@ export default async function GeneralSettingsPage() {
   if (!settingsResult.ok) {
     return (
       <div className="space-y-4">
-        <h1 className="text-3xl font-bold">General Settings</h1>
-        <Card>
+        <PageHeader title="General Settings" />
+        <Card variant="destructive">
           <CardHeader>
             <CardTitle>Error</CardTitle>
           </CardHeader>

@@ -8,6 +8,7 @@ import { type FormEvent, useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createZoneAction, listZonesAction, updateZoneAction } from "./actions";
@@ -116,21 +117,10 @@ export function ZoneForm({ countId, zoneId, initialData, labels }: ZoneFormProps
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href={`/stock-counts/${countId}/zones`}>
-          <Button variant="ghost" size="sm">
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            {labels.cancelButton}
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold">{labels.heading}</h1>
-      </div>
+      <PageHeader title={labels.heading} backHref={`/stock-counts/${countId}/zones`} />
 
       <Card>
-        <CardHeader>
-          <CardTitle>{labels.heading}</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name Field */}
             <div className="space-y-2">
