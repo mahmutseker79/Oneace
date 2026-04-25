@@ -1,7 +1,7 @@
 # OneAce Project Memory
 
 ## Quick Reference
-- **Version**: v1.13.1-mig-audit-done-lhci-deferred (tag: `v1.13.1-mig-audit-done-lhci-deferred`)
+- **Version**: v1.14.2-lhci-loose-assertions (tag: `v1.14.2-lhci-loose-assertions`)
 - **Branch**: main
 - **Stable**: `stable` branch = last verified state — branch protection active (5 required jobs)
 - **Required Jobs (post-Sprint-6)**: Lint (Biome), Vitest, Prisma Validate, Prisma Migrations (scratch Postgres), Typecheck. No advisory.
@@ -66,11 +66,20 @@ pnpm prisma generate                          # Refresh generated types (idempot
 7. **Migration chain bootstrap drift — RESOLVED v1.13.0.1**: pre-ADR-004 migrations referenced objects (MigrationSource, Integration table, IntegrationProvider/Status/ImportEntity enums) created out-of-band via early `prisma db push`. Fixed by injecting `CREATE TYPE IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS` bootstraps into 142430 (v1.12.4) and 20260418_drift_fix (v1.13.0 + v1.13.0.1). Chain now runs end-to-end on a fresh Postgres. ci.yml Track A and e2e.yml both use `prisma migrate deploy` (no continue-on-error, no `db push` bypass).
 
 ## Backlog (open sprints)
-- **Perf-LH-2** — Lighthouse re-enable, take 2. v1.13.0 added Postgres service + db push, v1.13.0.2 dropped the `/` URL, but LH still hits CHROME_INTERSTITIAL_ERROR on /login (likely lhci-autorun timing — hits the URL before next-start is fully ready). Switch to `lhci collect` with explicit `--startServerCommand "pnpm start"` + `--startServerReadyPattern "Ready"`, or pre-build a static landing artifact and serve via `--staticDistDir`. Then drop `if: false` guard. Job currently disabled in perf-budget.yml; size-limit job still runs and is the active perf gate.
+None at the moment. All open backlog items closed in this session
+(MIG-CHAIN-AUDIT in v1.13.0–v1.13.0.1, Perf-LH-2 in v1.14.2). The
+Lighthouse job now measures the live Vercel deployment instead of a
+CI-booted server — no Postgres service container, no `next start`
+boot, no env stubs. CWV + category gates assert against the
+production build.
 
 ## Version History (Recent)
 | Tag | Description |
 |---|---|
+| v1.14.2-lhci-loose-assertions | LHCI custom assertions (CWV + category), Perf-LH-2 closed |
+| v1.14.1-lhci-vercel | LHCI measures live Vercel deployment (no local boot) |
+| v1.14.0-lhci-explicit-boot | LHCI startServerCommand + ready pattern (didn't fix prod 500) |
+| v1.13.2-final-memory | Memory after MIG-CHAIN-AUDIT close |
 | v1.13.1-mig-audit-done-lhci-deferred | LHCI re-disabled (Perf-LH-2 backlog), MIG-CHAIN-AUDIT confirmed closed |
 | v1.13.0.3-biome-format | LHCI .json Biome formatter compliance |
 | v1.13.0.2-lhci-public-only | Drop `/` URL from LHCI (auth wall) |
