@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -208,32 +208,32 @@ export function PutawayForm({
   }
 
   // ── No bins guard ───────────────────────────────────────────────────────
+  // Sprint 15 PR #1 (UX/UI audit Apr-25 §B-7): inline empty pattern → EmptyState.
 
   if (bins.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center space-y-3">
-          <PackageOpen className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">{labels.noBins}</p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        icon={PackageOpen}
+        title={labels.noBins}
+        variant="unavailable"
+      />
     );
   }
 
   // ── No unbinned stock guard ─────────────────────────────────────────────
+  // Sprint 15 PR #1: inline empty + action button → EmptyState w/ actions.
+  // NOT semantically "empty" — completion state — but EmptyState is the closest
+  // shared primitive. Future EmptyState `completed` variant could re-introduce
+  // success styling; tracked in Sprint 16+ backlog.
 
   const hasAnyUnbinned = items.some((i) => i.unbinnedQty > 0);
   if (!hasAnyUnbinned) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center space-y-3">
-          <CheckCircle2 className="mx-auto h-8 w-8 text-success" />
-          <p className="text-sm text-muted-foreground">{labels.noUnbinnedStock}</p>
-          <Button variant="outline" asChild size="sm">
-            <a href={backHref}>{labels.viewPo}</a>
-          </Button>
-        </CardContent>
-      </Card>
+      <EmptyState
+        icon={CheckCircle2}
+        title={labels.noUnbinnedStock}
+        actions={[{ label: labels.viewPo, href: backHref, variant: "secondary" }]}
+      />
     );
   }
 

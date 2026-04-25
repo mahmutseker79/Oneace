@@ -10,13 +10,14 @@
  * page 404-ing.
  */
 
-import { Clock, Mail, Plus } from "lucide-react";
+import { CalendarClock, Clock, Mail, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -90,19 +91,24 @@ export default async function ScheduledReportsPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {reports.length === 0 ? "No scheduled reports yet" : `All reports (${reports.length})`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {reports.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              When you create a scheduled report it will show up here. Each run emails the rendered
-              report to the recipient list.
-            </p>
-          ) : (
+      {reports.length === 0 ? (
+        // Sprint 15 PR #1 (UX/UI audit Apr-25 §B-7): inline empty pattern → EmptyState.
+        <EmptyState
+          icon={CalendarClock}
+          title="No scheduled reports yet"
+          description="When you create a scheduled report it will show up here. Each run emails the rendered report to the recipient list."
+          actions={
+            hasAccess
+              ? [{ label: "New scheduled report", href: "/reports/scheduled/new", icon: Plus }]
+              : undefined
+          }
+        />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">All reports ({reports.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -152,9 +158,9 @@ export default async function ScheduledReportsPage() {
                 ))}
               </TableBody>
             </Table>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
