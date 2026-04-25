@@ -81,10 +81,19 @@ jobs:
 
   lighthouse:
     name: Lighthouse CI (core web vitals)
-    # LHCI boots the app and runs real Chrome — don't block PRs on this
-    # (flaky on cold runners). Main-branch runs only; the size-limit
-    # job still runs on PRs so regressions get caught at review time.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # DISABLED — `lhci autorun` boots `next start` against a stub
+    # Postgres URL with no DB behind it. Middleware's auth/env path
+    # tries to hit the DB on first request, the next-start process
+    # returns a non-200 page, and Chrome shows an interstitial that
+    # Lighthouse interprets as page-load failure (CHROME_INTERSTITIAL_ERROR).
+    # To re-enable cleanly we need a Postgres service container +
+    # `prisma migrate deploy` step before `lhci autorun`, mirroring
+    # the e2e.yml pattern. Tracked as backlog Perf-LH-1.
+    #
+    # Until then, the size-limit job still gates bundle bloat on
+    # every PR. Lighthouse stays opt-in via manual workflow_dispatch
+    # once we land Perf-LH-1.
+    if: false && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

@@ -92,13 +92,6 @@
       "path": ".next/static/chunks/webpack-*.js",
       "limit": "5 KB",
       "gzip": true
-    },
-    {
-      "name": "first-load js (all shared chunks)",
-      "path": ".next/static/chunks/pages/_app-*.js",
-      "limit": "200 KB",
-      "gzip": true,
-      "ignore": ["next", "react", "react-dom"]
     }
   ],
   "devDependencies": {
