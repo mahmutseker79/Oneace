@@ -14,7 +14,8 @@
       "dist",
       "prisma/migrations",
       ".claude",
-      "src/generated"
+      "src/generated",
+      "scripts/sprints"
     ]
   },
   "formatter": {
