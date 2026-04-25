@@ -28,6 +28,10 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
       className={cn("flex items-center gap-1 text-sm text-muted-foreground", className)}
       aria-label="Breadcrumb"
     >
+      {/* Sprint 1 PR #1 (UX/UI audit Apr-25 §B-2): expose the trailing
+          breadcrumb item as `aria-current="page"`, mark the chevron
+          separators and "..." truncation as `aria-hidden` so screen
+          readers don't read "right pointing chevron" or "three dots". */}
       {displayItems.map((item, index) => {
         if (!item) return null;
         const isLast = index === displayItems.length - 1;
@@ -36,12 +40,19 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
         return (
           <div key={index} className="flex items-center gap-1">
             {index > 0 && !isTruncated && (
-              <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+              <ChevronRight
+                aria-hidden="true"
+                className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground"
+              />
             )}
             {isTruncated ? (
-              <span className="px-1 text-muted-foreground">{item.label}</span>
+              <span aria-hidden="true" className="px-1 text-muted-foreground">
+                {item.label}
+              </span>
             ) : isLast ? (
-              <span className="font-medium text-foreground">{item.label}</span>
+              <span aria-current="page" className="font-medium text-foreground">
+                {item.label}
+              </span>
             ) : item.href ? (
               <Link href={item.href} className="hover:text-foreground transition-colors truncate">
                 {item.label}

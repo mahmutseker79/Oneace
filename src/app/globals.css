@@ -498,9 +498,13 @@
    ============================================================ */
 
 :root {
-  --control-h-sm: 2.25rem; /* 36px */
-  --control-h-md: 2.5rem; /* 40px */
-  --control-h-lg: 2.75rem; /* 44px */
+  /* Sprint 1 PR #2 (UX/UI audit Apr-25 §B-3): control heights bumped
+     so the default touch target hits the 44px iOS HIG / WCAG 2.5.5
+     AAA mark. Lock-step propagates to Button (default size), Input,
+     SelectTrigger, Textarea so the entire form surface meets the bar. */
+  --control-h-sm: 2.25rem; /* 36px — non-touch dense surfaces only */
+  --control-h-md: 2.75rem; /* 44px — default; meets 44px touch target */
+  --control-h-lg: 3rem;    /* 48px — Material Design recommended */
 }
 
 @layer base {

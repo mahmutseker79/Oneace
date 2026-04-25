@@ -74,11 +74,15 @@ export default async function AppLayout({ children }: Readonly<{ children: React
 
   return (
     <div className="min-h-screen">
+      {/* Sprint 1 PR #5 (UX/UI audit Apr-25 §B-5): skip-link label
+          read from i18n catalog so TR (and future locales) replace
+          the English literal. The (app) layout already awaits
+          `getMessages()` so this is a zero-cost call site swap. */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:shadow-lg"
       >
-        Skip to main content
+        {t.common.skipToMain}
       </a>
       <SwRegister />
       <OfflineQueueRunner orgId={queueScope.orgId} userId={queueScope.userId} />

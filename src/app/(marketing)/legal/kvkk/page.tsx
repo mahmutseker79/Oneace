@@ -30,6 +30,9 @@
 // yardımsız okunabilir; fakat hukuki sıkılık bakımından Avukat
 // imzasıyla son halini alacak.
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
+
 export const metadata = {
   title: "KVKK Aydınlatma Metni — OneAce",
   description:
@@ -41,10 +44,19 @@ export default function KvkkPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16 text-base leading-relaxed">
-      <div className="mb-8 rounded-md border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-900">
-        <strong>Taslak.</strong> Bu metin canlı bir hukuki belge değildir. Avukat incelemesi ve
-        şirket tüzel kişilik bilgileri eklenmeden paid launch yapılmayacaktır.
-      </div>
+      {/* Sprint 1 PR #6 (UX/UI audit Apr-25 §B-7): swap raw Tailwind
+          yellow palette (`bg-yellow-50 border-yellow-300 text-yellow-900`)
+          for the canonical `<Alert variant="warning">` primitive so
+          the draft banner inherits the design-system warning tokens
+          and adapts correctly across light/dark themes. */}
+      <Alert variant="warning" className="mb-8">
+        <AlertTriangle aria-hidden="true" />
+        <AlertTitle>Taslak.</AlertTitle>
+        <AlertDescription>
+          Bu metin canlı bir hukuki belge değildir. Avukat incelemesi ve şirket tüzel kişilik
+          bilgileri eklenmeden paid launch yapılmayacaktır.
+        </AlertDescription>
+      </Alert>
 
       <h1 className="text-3xl font-bold tracking-tight">KVKK Aydınlatma Metni</h1>
       <p className="mt-2 text-sm text-muted-foreground">Son güncelleme: {LAST_UPDATED}</p>

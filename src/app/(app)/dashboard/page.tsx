@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartCard } from "@/components/ui/chart-card";
 import { KpiCard } from "@/components/ui/kpi-card";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
   TableBody,
@@ -366,51 +367,51 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl text-gradient-primary">
-            {greeting}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            <span className="text-foreground font-medium">{membership.organization.name}</span>
-            {" · "}
-            {t.dashboard.orgSubtitle}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/scan">
-              <ScanLine className="h-4 w-4" />
-              {t.dashboard.actions.scan}
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/stock-counts/new">
-              <ClipboardCheck className="h-4 w-4" />
-              {t.dashboard.actions.startCount}
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/items/new">
-              <Plus className="h-4 w-4" />
-              {t.dashboard.actions.newItem}
-            </Link>
-          </Button>
-          {canUsePOs ? (
-            <Button asChild>
-              <Link href="/purchase-orders/new">
-                <ShoppingCart className="h-4 w-4" />
-                {t.dashboard.actions.newPurchaseOrder}
+      {/* Sprint 1 PR #7 (UX/UI audit Apr-25 §B-6): migrate the inline
+          dashboard header to the canonical PageHeader primitive. The
+          gradient title accent is preserved via the new
+          `titleClassName` prop so the visual identity does not
+          regress. Actions stay identical. */}
+      <PageHeader
+        title={greeting}
+        titleClassName="text-gradient-primary"
+        description={`${membership.organization.name} · ${t.dashboard.orgSubtitle}`}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/scan">
+                <ScanLine className="h-4 w-4" />
+                {t.dashboard.actions.scan}
               </Link>
             </Button>
-          ) : (
-            <Button disabled title="Purchase orders are available on the Pro plan">
-              <Lock className="h-4 w-4" />
-              {t.dashboard.actions.newPurchaseOrder}
+            <Button variant="outline" asChild>
+              <Link href="/stock-counts/new">
+                <ClipboardCheck className="h-4 w-4" />
+                {t.dashboard.actions.startCount}
+              </Link>
             </Button>
-          )}
-        </div>
-      </div>
+            <Button variant="outline" asChild>
+              <Link href="/items/new">
+                <Plus className="h-4 w-4" />
+                {t.dashboard.actions.newItem}
+              </Link>
+            </Button>
+            {canUsePOs ? (
+              <Button asChild>
+                <Link href="/purchase-orders/new">
+                  <ShoppingCart className="h-4 w-4" />
+                  {t.dashboard.actions.newPurchaseOrder}
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled title="Purchase orders are available on the Pro plan">
+                <Lock className="h-4 w-4" />
+                {t.dashboard.actions.newPurchaseOrder}
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {/* KPI cards — premium design with KpiCard component */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { shipSalesOrderAction } from "../../actions";
@@ -80,7 +81,19 @@ export default function ShipSalesOrderPage({ params }: { params: { id: string } 
   }
 
   if (!order) {
-    return <div>Loading...</div>;
+    // Sprint 1 PR #4 §B-4: replace raw `<div>Loading...</div>` with
+    // canonical Skeleton primitive so the fallback matches the rest
+    // of the app's loading visuals (and is locale-agnostic).
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <Skeleton className="h-9 w-72" />
+        <Skeleton className="h-64 w-full" />
+        <div className="flex gap-2">
+          <Skeleton className="h-11 w-32" />
+          <Skeleton className="h-11 w-24" />
+        </div>
+      </div>
+    );
   }
 
   return (

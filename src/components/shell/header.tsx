@@ -163,8 +163,13 @@ export function Header({
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex items-center gap-2 rounded-full p-1 hover:bg-accent"
+          // Sprint 1 PR #2 §B-3: avatar trigger meets 44px touch target.
+          // The visual avatar stays h-8 w-8 (32px) but the click area
+          // is enforced via `min-h-11 min-w-11` so the tap reach is
+          // safe on phones.
+          className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full p-1 hover:bg-accent"
           title={labels.signOut}
+          aria-label={labels.signOut}
         >
           <Avatar className="h-8 w-8">
             <AvatarFallback>{initials}</AvatarFallback>

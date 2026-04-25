@@ -94,7 +94,17 @@ export function VarianceTrendClient({ labels }: VarianceTrendClientProps) {
     );
   }
 
-  if (!t) return <div>Loading...</div>;
+  // Sprint 1 PR #4 §B-4: skeleton fallback (was raw `<div>Loading...</div>`)
+  // so the message-loading state visually matches the data-loading branch
+  // above and stays locale-agnostic.
+  if (!t) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   const canViewReport = hasPlanCapability(plan, "reports");
 

@@ -75,8 +75,14 @@ export function MobileNav({
         key={item.id}
         href={href}
         onClick={() => onOpenChange(false)}
+        // Sprint 1 PR #1 (UX/UI audit Apr-25 §B-2): mirror the sidebar's
+        // `aria-current="page"` so screen-reader users on phones get the
+        // same "current page" cue as desktop users.
+        aria-current={isActive ? "page" : undefined}
         className={cn(
-          "flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition-colors duration-150",
+          // Sprint 1 PR #2 §B-3: 44px touch target on mobile drawer
+          // items. `py-3 + min-h-11` ≈ 48px tap area.
+          "flex min-h-11 items-center gap-3 rounded-md border-l-2 px-3 py-3 text-sm font-medium transition-colors duration-150",
           isActive
             ? "border-l-primary bg-accent text-accent-foreground"
             : "border-l-transparent text-foreground hover:bg-accent/60",

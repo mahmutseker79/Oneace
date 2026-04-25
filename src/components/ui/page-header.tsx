@@ -17,6 +17,14 @@ interface PageHeaderProps {
   backHref?: string;
   /** Optional badge/status to show next to the title */
   badge?: React.ReactNode;
+  /**
+   * Sprint 1 PR #7 (UX/UI audit Apr-25 §B-6): optional class names
+   * applied to the `<h1>` element so callers that need a brand-only
+   * accent (e.g. dashboard's `text-gradient-primary`) can migrate to
+   * the canonical primitive without losing their visual identity.
+   * Keep usage rare — generic title styling lives in this primitive.
+   */
+  titleClassName?: string;
 }
 
 export function PageHeader({
@@ -27,6 +35,7 @@ export function PageHeader({
   className,
   backHref,
   badge,
+  titleClassName,
 }: PageHeaderProps) {
   return (
     <div className={cn("mb-6 space-y-3", className)}>
@@ -48,7 +57,14 @@ export function PageHeader({
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+              <h1
+                className={cn(
+                  "text-xl font-semibold tracking-tight sm:text-2xl",
+                  titleClassName,
+                )}
+              >
+                {title}
+              </h1>
               {badge}
             </div>
             {description && (

@@ -26,18 +26,20 @@ function read(relative: string): string {
 // Escape parens because the path contains route-group segments.
 const APP_LAYOUT = read("src/app/(app)/layout.tsx");
 const MARKETING_LAYOUT = read("src/app/(marketing)/layout.tsx");
+const EN_CATALOG = read("src/lib/i18n/messages/en.ts");
+const TR_CATALOG = read("src/lib/i18n/messages/tr.ts");
 
 describe("P2-3 §5.25 — a11y skip link in (app) layout", () => {
   it('has an anchor with href="#main-content"', () => {
     expect(APP_LAYOUT).toMatch(/href=["']#main-content["']/);
   });
 
-  it("renders 'Skip to main content' as the link label", () => {
-    // The label is the visible text keyboard users see on first
-    // Tab. Wording doesn't need to be exact (we could localize it
-    // later) but the current contract is an English string — pin
-    // the phrase so a random copy edit doesn't drop the semantics.
-    expect(APP_LAYOUT).toMatch(/Skip to main content/);
+  // Sprint 1 PR #5 §B-5: the visible label now flows from the i18n
+  // catalog instead of being hardcoded English. We pin the catalog
+  // call site so a future edit can't accidentally inline the string
+  // again, and pin the catalog values so EN + TR both stay covered.
+  it("renders the skip-link label via t.common.skipToMain (i18n)", () => {
+    expect(APP_LAYOUT).toMatch(/\{t\.common\.skipToMain\}/);
   });
 
   it("hides the link visually until focused (sr-only + focus:not-sr-only)", () => {
@@ -60,8 +62,16 @@ describe("P2-3 §5.25 — a11y skip link in (marketing) layout", () => {
     expect(MARKETING_LAYOUT).toMatch(/href=["']#main-content["']/);
   });
 
-  it("renders 'Skip to main content' as the link label", () => {
-    expect(MARKETING_LAYOUT).toMatch(/Skip to main content/);
+  it("renders the skip-link label via t.common.skipToMain (i18n)", () => {
+    expect(MARKETING_LAYOUT).toMatch(/\{t\.common\.skipToMain\}/);
+  });
+
+  it("awaits getMessages() so the locale resolves at render time", () => {
+    // Sprint 1 PR #5 §B-5: the marketing layout was a sync function
+    // pre-PR. It is now async + awaits getMessages(); regressing
+    // would leave `t` undefined and crash render.
+    expect(MARKETING_LAYOUT).toMatch(/getMessages/);
+    expect(MARKETING_LAYOUT).toMatch(/async function MarketingLayout/);
   });
 
   it("hides the link visually until focused (sr-only + focus:not-sr-only)", () => {
@@ -71,6 +81,16 @@ describe("P2-3 §5.25 — a11y skip link in (marketing) layout", () => {
 
   it('has a <main id="main-content"> target', () => {
     expect(MARKETING_LAYOUT).toMatch(/<main\s+[^>]*id=["']main-content["']/);
+  });
+});
+
+describe("PR #5 §B-5 — i18n catalog carries the skipToMain key in EN + TR", () => {
+  it("en.ts defines skipToMain in the common namespace", () => {
+    expect(EN_CATALOG).toMatch(/skipToMain:\s*"Skip to main content"/);
+  });
+
+  it("tr.ts defines skipToMain in the common namespace", () => {
+    expect(TR_CATALOG).toMatch(/skipToMain:\s*"Ana içeriğe geç"/);
   });
 });
 

@@ -76,8 +76,16 @@ export function Sidebar({ labels }: { labels: SidebarLabels }) {
       <Link
         key={item.id}
         href={href}
+        // Sprint 1 PR #1 (UX/UI audit Apr-25 §B-2): expose the active route
+        // as `aria-current="page"` so screen readers announce "current
+        // page" alongside the visual border-left active state. Inactive
+        // items must NOT carry the attribute (omit, do not set "false").
+        aria-current={isActive ? "page" : undefined}
         className={cn(
-          "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
+          // Sprint 1 PR #2 §B-3: nav items meet the 44px touch-target
+          // floor on phones. `py-3` ≈ 48px tap area while staying
+          // visually tight on desktop.
+          "group flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all duration-150",
           isActive
             ? "bg-primary/10 text-primary border-l-2 border-l-primary -ml-[2px] pl-[14px]"
             : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
