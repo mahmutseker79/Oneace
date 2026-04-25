@@ -70,3 +70,21 @@ export const NoActions: Story = {
     description: "Receive your first PO to populate the ledger.",
   },
 };
+
+/** Sprint 12 PR #1 — `bare` mode (panel-içi, outer Card atlanır). */
+export const Bare: Story = {
+  args: {
+    icon: Package,
+    title: "No components added yet",
+    description: "Add items to this kit using the button above.",
+    bare: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Panel-içi (existing CardContent içinde) empty state için. Outer `<Card border-dashed>` atlanır, sadece inner içerik render edilir. `data-bare=\"true\"` attribute emit edilir.",
+      },
+    },
+  },
+};
