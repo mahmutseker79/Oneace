@@ -66,12 +66,10 @@ describe("sprint-4b PROD migrate — Phase 2 sanity gate", () => {
     const src = fs.readFileSync(SCRIPT_PATH, "utf8");
     // Look for the fixed pattern: [[ "$URL_LOWER" == *"$term"* ]]
     // (whitespace tolerant, but quote-style strict).
-    expect(src).toMatch(
-      /\[\[\s*"\$URL_LOWER"\s*==\s*\*"\$term"\*\s*\]\]/,
-    );
+    expect(src).toMatch(/\[\[\s*"\$URL_LOWER"\s*==\s*\*"\$term"\*\s*\]\]/);
   });
 
-  it("does NOT regress to the legacy buggy `grep -qF \"$term\"` form", () => {
+  it('does NOT regress to the legacy buggy `grep -qF "$term"` form', () => {
     const src = fs.readFileSync(SCRIPT_PATH, "utf8");
     // Specifically the un-`--`-guarded form. If someone reintroduces
     // grep here, they MUST use `grep -qF -- "$term"` (argument
@@ -87,7 +85,7 @@ describe("sprint-4b PROD migrate — Phase 2 sanity gate", () => {
     // line declaration so this regex is enough.
     const badMatch = src.match(/BAD_TERMS=\(([^)]+)\)/);
     expect(badMatch, "BAD_TERMS array literal missing").not.toBeNull();
-    const literal = badMatch![1];
+    const literal = badMatch?.[1] ?? "";
     for (const term of [
       "staging",
       "stage",
