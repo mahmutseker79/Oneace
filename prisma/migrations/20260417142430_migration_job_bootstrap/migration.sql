@@ -25,6 +25,29 @@
 -- (prod skipped this bootstrap conceptually).
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- 0. MigrationSource enum (defensive bootstrap — also created by 142431) ------
+-- E2E-MIG-1 fix (v1.12.4, 2026-04-25): on a fresh scratch Postgres
+-- this migration runs BEFORE 20260417142431_migration_foundation,
+-- and the MigrationJob CREATE TABLE below references the
+-- MigrationSource enum. Mirror the IF NOT EXISTS guard from 142431
+-- so this migration is self-sufficient. PROD-safe because
+-- `prisma migrate deploy` keys off `_prisma_migrations.migration_name`,
+-- not the SQL body — the migration is already marked applied and
+-- this block never re-runs there. Members match the 142431
+-- definition exactly; 142431 then no-ops on its own DO $$ block
+-- and proceeds with the additive `ALTER TYPE ADD VALUE
+-- 'SOS_INVENTORY' IF NOT EXISTS`.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'MigrationSource') THEN
+    CREATE TYPE "MigrationSource" AS ENUM (
+      'SORTLY', 'INFLOW', 'ODOO', 'ZOHO_INVENTORY', 'FISHBOWL', 'CIN7',
+      'KATANA', 'LIGHTSPEED', 'QUICKBOOKS_COMMERCE', 'DEAR_SYSTEMS',
+      'GENERIC_CSV'
+    );
+  END IF;
+END $$;
+
 -- 1. MigrationStatus enum ------------------------------------------------------
 DO $$
 BEGIN

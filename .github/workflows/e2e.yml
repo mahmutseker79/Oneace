@@ -72,22 +72,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Apply Prisma schema to scratch DB
-        # Use `db push` (not `migrate deploy`) because there is a
-        # known migration ordering bug in
-        # 20260417142430_migration_job_bootstrap referencing the
-        # MigrationSource enum that is created in the *next*
-        # migration (20260417142431_migration_foundation). Production
-        # masks this — the enum was created out of band and the
-        # migration is already in _prisma_migrations. The
-        # ci.yml `migrations` job currently masks it via
-        # continue-on-error: true. E2E doesn't care about migration
-        # ordering — it only needs the final schema shape — so
-        # `db push` is the right tool here.
-        # Backlog: E2E-MIG-1 — fix the migration ordering bug,
-        # then switch this back to `migrate deploy` and remove the
-        # continue-on-error from the migrations job.
-        run: pnpm prisma db push --skip-generate --accept-data-loss
+      - name: Apply migrations to scratch DB
+        # E2E-MIG-1 fix landed in v1.12.4:
+        # 20260417142430_migration_job_bootstrap was patched to
+        # bootstrap the MigrationSource enum defensively, so the
+        # full chain now applies cleanly to a fresh Postgres. Stay
+        # on `migrate deploy` (not `db push`) so we exercise the
+        # same code path that runs against production — drift in
+        # migration order or content is caught here rather than at
+        # release time.
+        run: pnpm prisma migrate deploy
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
