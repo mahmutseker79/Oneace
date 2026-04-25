@@ -1,7 +1,7 @@
 # OneAce Project Memory
 
 ## Quick Reference
-- **Version**: v1.12.2-e2e-db-push (tag: `v1.12.2-e2e-db-push`)
+- **Version**: v1.13.1-mig-audit-done-lhci-deferred (tag: `v1.13.1-mig-audit-done-lhci-deferred`)
 - **Branch**: main
 - **Stable**: `stable` branch = last verified state — branch protection active (5 required jobs)
 - **Required Jobs (post-Sprint-6)**: Lint (Biome), Vitest, Prisma Validate, Prisma Migrations (scratch Postgres), Typecheck. No advisory.
@@ -63,15 +63,24 @@ pnpm prisma generate                          # Refresh generated types (idempot
 4. **Recharts in server components**: Must be lazy-loaded.
 5. **Bash `grep -qF "$term"` arg-parse trap**: When `$term` begins with `-`, grep treats it as a flag and crashes silently. Use `[[ "$str" == *"$term"* ]]` (bash built-in) or `grep -qF -- "$term"` (argument separator). Pinned by `src/lib/ops/sprint-4b-sanity.static.test.ts`.
 6. **Stale local Prisma generated types**: After a session checkout, run `pnpm prisma generate` before typecheck; otherwise `pnpm typecheck` may report dozens of phantom TS2339 errors. CI is fine because `postinstall` re-runs generate.
-7. **Migration chain has bootstrap drift** (E2E-MIG-1 fixed v1.12.4, MIG-CHAIN-AUDIT pending): the historical chain predates ADR-004 (2026-04-19), so several pre-cutoff migrations rely on tables/enums created out-of-band via early `prisma db push`. v1.12.4 fixed `MigrationSource` (E2E-MIG-1: `20260417142430` referenced an enum created in 142431). v1.12.5 push then revealed E2E-MIG-2: `20260418000000_integration_schema_drift_fix` ALTER TABLE on `Integration` without an upstream CREATE TABLE in the chain. Probably more. Until a full audit lands, ci.yml `migrations` job's Track A (`migrate deploy`) carries `continue-on-error: true` and Track B (`db push`) is the hard gate. E2E uses `db push` for the same reason.
+7. **Migration chain bootstrap drift — RESOLVED v1.13.0.1**: pre-ADR-004 migrations referenced objects (MigrationSource, Integration table, IntegrationProvider/Status/ImportEntity enums) created out-of-band via early `prisma db push`. Fixed by injecting `CREATE TYPE IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS` bootstraps into 142430 (v1.12.4) and 20260418_drift_fix (v1.13.0 + v1.13.0.1). Chain now runs end-to-end on a fresh Postgres. ci.yml Track A and e2e.yml both use `prisma migrate deploy` (no continue-on-error, no `db push` bypass).
 
 ## Backlog (open sprints)
-- **MIG-CHAIN-AUDIT** — full migration chain audit. Walk every pre-ADR-004 migration, identify ALTER TABLEs / DO blocks that reference tables or enums never created in the chain, inject CREATE TABLE IF NOT EXISTS / CREATE TYPE IF NOT EXISTS bootstraps. End state: `prisma migrate deploy` runs end-to-end on a fresh Postgres, both ci.yml Track A and e2e.yml can drop their bypasses. v1.12.4 already shows the pattern.
-- **Perf-LH-1** — Lighthouse re-enable. lhci autorun was disabled in v1.12.5 because it boots `next start` against a stub Postgres URL with no DB behind it; the middleware's auth path returns a non-200 page and Chrome shows an interstitial that LH interprets as page-load failure. Fix: copy the Postgres service container + env stubs from e2e.yml into the lighthouse job, run `prisma db push` before `lhci autorun`. Then drop `if: false` guard.
+- **Perf-LH-2** — Lighthouse re-enable, take 2. v1.13.0 added Postgres service + db push, v1.13.0.2 dropped the `/` URL, but LH still hits CHROME_INTERSTITIAL_ERROR on /login (likely lhci-autorun timing — hits the URL before next-start is fully ready). Switch to `lhci collect` with explicit `--startServerCommand "pnpm start"` + `--startServerReadyPattern "Ready"`, or pre-build a static landing artifact and serve via `--staticDistDir`. Then drop `if: false` guard. Job currently disabled in perf-budget.yml; size-limit job still runs and is the active perf gate.
 
 ## Version History (Recent)
 | Tag | Description |
 |---|---|
+| v1.13.1-mig-audit-done-lhci-deferred | LHCI re-disabled (Perf-LH-2 backlog), MIG-CHAIN-AUDIT confirmed closed |
+| v1.13.0.3-biome-format | LHCI .json Biome formatter compliance |
+| v1.13.0.2-lhci-public-only | Drop `/` URL from LHCI (auth wall) |
+| v1.13.0.1-import-entity | ImportEntity enum bootstrap (MIG-CHAIN-AUDIT iter 2) |
+| v1.13.0-mig-chain-and-lhci | Integration table + IntegrationProvider/Status bootstrap; LHCI re-enable attempt |
+| v1.12.7-memory-mig-chain | Memory: MIG-CHAIN-AUDIT + Perf-LH-1 backlog |
+| v1.12.6-mig-chain-partial | Track A bypass restored after E2E-MIG-2 discovered |
+| v1.12.5-perf-budget-fix | size-limit dead entry, lighthouse first-disable |
+| v1.12.4-e2e-mig-1 | MigrationSource bootstrap in 142430 (E2E-MIG-1 partial) |
+| v1.12.3-final-memory | Memory: 5 required jobs, E2E self-contained |
 | v1.12.2-e2e-db-push | E2E uses `db push` to bypass migration ordering bug |
 | v1.12.1-e2e-scratch-postgres | E2E scratch Postgres + literal env (no Secrets dep) |
 | v1.12.0-typecheck-required | Sprint 6: Typecheck advisory → required (5 required jobs) |
