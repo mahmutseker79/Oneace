@@ -114,6 +114,21 @@ export const Destructive: Story = {
   ),
 };
 
+/** Sprint 12 PR #3 — variant="info" (bilgi / notice states, mavi tonlu). */
+export const Info: Story = {
+  render: () => (
+    <Card variant="info" className="max-w-md">
+      <CardHeader>
+        <CardTitle>Yeni özellik mevcut</CardTitle>
+        <CardDescription>
+          Tedarikçi onay akışı şimdi otomatik onay gönderebilir. Ayarlar &gt;
+          Tedarikçiler altından açabilirsin.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  ),
+};
+
 /** Liste içinde Card kullanımı. */
 export const Stacked: Story = {
   render: () => (

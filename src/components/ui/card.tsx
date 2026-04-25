@@ -18,6 +18,10 @@ const CARD_VARIANTS = {
   interactive: "hover:bg-muted/50 cursor-pointer transition-colors",
   warning: "border-warning/50 bg-warning-light",
   destructive: "border-destructive/50 bg-destructive/5",
+  // Sprint 12 PR #3: 5. variant — bilgi/notice (mavi tonlu, info token).
+  // OneAce'ta 14 farklı yer "info" benzeri patterns kullanıyor (alert,
+  // banner, getting-started). Bu variant onları normalize eder.
+  info: "border-info/50 bg-info-light",
 } as const;
 
 export type CardVariant = keyof typeof CARD_VARIANTS;
