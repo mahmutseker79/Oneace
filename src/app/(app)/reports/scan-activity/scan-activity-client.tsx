@@ -15,6 +15,7 @@ import React, { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { ReportSummaryCard } from "@/components/ui/report-summary-card";
 import {
@@ -127,14 +128,11 @@ export function ScanActivityClient() {
       )}
 
       {entries.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No scans recorded yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Start scanning items in the Scan section to see activity here.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={ScanLine}
+          title="No scans recorded yet"
+          description="Start scanning items in the Scan section to see activity here."
+        />
       ) : (
         <>
           <Card>

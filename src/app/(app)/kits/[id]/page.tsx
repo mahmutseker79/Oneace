@@ -7,6 +7,7 @@ import { DeleteButton } from "@/components/shell/delete-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -195,15 +196,12 @@ export default async function KitDetailPage({
         </CardHeader>
         <CardContent>
           {componentCount === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Package className="h-10 w-10 text-muted-foreground/50 mb-3" />
-              <p className="text-sm text-muted-foreground">No components added yet.</p>
-              {canEdit && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Add items to this kit using the button above.
-                </p>
-              )}
-            </div>
+            <EmptyState
+              bare
+              icon={Package}
+              title="No components added yet"
+              description={canEdit ? "Add items to this kit using the button above." : undefined}
+            />
           ) : (
             <div className="overflow-x-auto">
               <Table>

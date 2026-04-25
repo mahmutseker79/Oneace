@@ -8,6 +8,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { IntegrationProvider } from "@/generated/prisma";
@@ -412,15 +413,11 @@ export default async function IntegrationDetailPage({
 
       {/* Empty state for no history when connected */}
       {isConnected && syncLogs.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <RefreshCw className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">No sync history yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Click &quot;Sync Now&quot; to start your first synchronization.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={RefreshCw}
+          title="No sync history yet"
+          description="Click &ldquo;Sync Now&rdquo; to start your first synchronization."
+        />
       )}
     </div>
   );
