@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 
 import { AssignmentDeleteButton } from "./assignment-delete-button";
 
@@ -54,26 +55,26 @@ export default async function CountAssignmentsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link
-            href={`/stock-counts/${params.id}`}
-            className="text-muted-foreground hover:underline"
-          >
-            {count.name}
-          </Link>
-          <h1 className="text-3xl font-bold">Assignments</h1>
-          <p className="text-muted-foreground">Manage counters for this count</p>
-        </div>
-        {canCreate && (
-          <Link href={`/stock-counts/${params.id}/assignments/new`}>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Assign Counter
-            </Button>
-          </Link>
-        )}
-      </div>
+      <Link
+        href={`/stock-counts/${params.id}`}
+        className="text-muted-foreground hover:underline self-start text-sm"
+      >
+        {count.name}
+      </Link>
+      <PageHeader
+        title="Assignments"
+        description="Manage counters for this count"
+        actions={
+          canCreate ? (
+            <Link href={`/stock-counts/${params.id}/assignments/new`}>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Assign Counter
+              </Button>
+            </Link>
+          ) : undefined
+        }
+      />
 
       {assignments.length === 0 ? (
         <EmptyState

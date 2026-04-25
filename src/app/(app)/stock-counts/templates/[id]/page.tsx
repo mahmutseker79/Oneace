@@ -7,6 +7,7 @@ import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { TemplateForm } from "../template-form";
 
 export const metadata: Metadata = {
@@ -56,10 +57,7 @@ export default async function EditTemplatePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{template.name}</h1>
-        <p className="text-muted-foreground">Edit count template</p>
-      </div>
+      <PageHeader title={template.name} description="Edit count template" />
 
       {canEdit ? (
         <div className="max-w-2xl">

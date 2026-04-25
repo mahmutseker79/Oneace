@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { getMessages } from "@/lib/i18n";
 import { requireActiveMembership } from "@/lib/session";
@@ -55,15 +56,13 @@ export default async function PutawayPage({ params }: PageProps) {
   if (!hasAnyReceived) {
     return (
       <div className="max-w-2xl space-y-6">
-        <div className="space-y-1">
-          <Button variant="ghost" size="sm" asChild className="-ml-2">
-            <Link href={`/purchase-orders/${id}`}>
-              <ChevronLeft className="h-4 w-4" />
-              {t.purchaseOrders.detail.backToList}
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-semibold">{t.purchaseOrders.putaway.heading}</h1>
-        </div>
+        <Button variant="ghost" size="sm" asChild className="-ml-2 self-start">
+          <Link href={`/purchase-orders/${id}`}>
+            <ChevronLeft className="h-4 w-4" />
+            {t.purchaseOrders.detail.backToList}
+          </Link>
+        </Button>
+        <PageHeader title={t.purchaseOrders.putaway.heading} />
         <Card>
           <CardHeader>
             <CardTitle>{t.purchaseOrders.putaway.nothingReceivedTitle}</CardTitle>
@@ -140,19 +139,19 @@ export default async function PutawayPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href={`/purchase-orders/${id}`}>
-            <ChevronLeft className="h-4 w-4" />
-            {t.purchaseOrders.detail.backToList}
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">{t.purchaseOrders.putaway.heading}</h1>
-        <p className="text-sm text-muted-foreground">{t.purchaseOrders.putaway.subtitle}</p>
-        <p className="font-mono text-xs text-muted-foreground">
-          {po.poNumber} · {po.supplier.name} → {po.warehouse.name}
-        </p>
-      </div>
+      <Button variant="ghost" size="sm" asChild className="-ml-2 self-start">
+        <Link href={`/purchase-orders/${id}`}>
+          <ChevronLeft className="h-4 w-4" />
+          {t.purchaseOrders.detail.backToList}
+        </Link>
+      </Button>
+      <PageHeader
+        title={t.purchaseOrders.putaway.heading}
+        description={t.purchaseOrders.putaway.subtitle}
+      />
+      <p className="font-mono text-xs text-muted-foreground">
+        {po.poNumber} · {po.supplier.name} → {po.warehouse.name}
+      </p>
 
       <PutawayForm
         warehouseId={warehouseId}

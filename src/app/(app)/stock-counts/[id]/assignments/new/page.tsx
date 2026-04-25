@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { requireActiveMembership } from "@/lib/session";
 
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { AssignmentForm } from "../assignment-form";
 
 export const metadata: Metadata = {
@@ -54,16 +55,13 @@ export default async function NewAssignmentPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          href={`/stock-counts/${params.id}/assignments`}
-          className="text-muted-foreground hover:underline"
-        >
-          Assignments for {count.name}
-        </Link>
-        <h1 className="text-3xl font-bold">Assign Counter</h1>
-        <p className="text-muted-foreground">Assign a user to this count</p>
-      </div>
+      <Link
+        href={`/stock-counts/${params.id}/assignments`}
+        className="text-muted-foreground hover:underline self-start text-sm"
+      >
+        Assignments for {count.name}
+      </Link>
+      <PageHeader title="Assign Counter" description="Assign a user to this count" />
 
       <div className="max-w-2xl">
         <AssignmentForm
