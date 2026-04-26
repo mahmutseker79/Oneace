@@ -87,7 +87,7 @@ export function UpgradePrompt({
 
   // variant === "banner"
   return (
-    <Alert className="border-warning/60 bg-warning-light">
+    <Alert variant="warning">
       <Lock className="h-4 w-4 text-warning" />
       <AlertDescription className="flex items-center justify-between gap-4">
         <span className="text-sm">
