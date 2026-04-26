@@ -256,12 +256,12 @@ export function DepartmentVarianceClient({ labels }: DepartmentVarianceClientPro
                     </TableCell>
                     <TableCell className="text-center">
                       {dept.status === "good" && (
-                        <Badge variant="outline" className="bg-success-light">
+                        <Badge variant="success">
                           Good
                         </Badge>
                       )}
                       {dept.status === "warning" && (
-                        <Badge variant="secondary" className="bg-warning-light">
+                        <Badge variant="warning">
                           Warning
                         </Badge>
                       )}

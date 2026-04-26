@@ -366,21 +366,21 @@ export function ABCAnalysisClient({ labels }: ABCAnalysisClientProps) {
           <div className="space-y-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-destructive-light text-destructive">A</Badge>
+                <Badge variant="destructive">A</Badge>
                 <span className="font-medium">{labels.classALabel}</span>
               </div>
               <p className="text-sm text-muted-foreground ml-6">{labels.classARecommendation}</p>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-warning-light text-warning">B</Badge>
+                <Badge variant="warning">B</Badge>
                 <span className="font-medium">{labels.classBLabel}</span>
               </div>
               <p className="text-sm text-muted-foreground ml-6">{labels.classBRecommendation}</p>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-success-light text-success">C</Badge>
+                <Badge variant="success">C</Badge>
                 <span className="font-medium">{labels.classCLabel}</span>
               </div>
               <p className="text-sm text-muted-foreground ml-6">{labels.classCRecommendation}</p>

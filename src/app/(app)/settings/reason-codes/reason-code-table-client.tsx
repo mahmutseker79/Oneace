@@ -125,7 +125,7 @@ export function ReasonCodeTableClient({ reasonCodes, categoryLabels }: ReasonCod
                             </TableCell>
                             <TableCell>
                               {code.isActive ? (
-                                <Badge variant="outline" className="bg-success-light">
+                                <Badge variant="success">
                                   Active
                                 </Badge>
                               ) : (

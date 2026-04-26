@@ -350,7 +350,7 @@ export function CountComparisonClient({ labels }: CountComparisonClientProps) {
                         </TableCell>
                         <TableCell>
                           {item.variance === 0 ? (
-                            <Badge variant="outline" className="bg-success-light">
+                            <Badge variant="success">
                               Match
                             </Badge>
                           ) : (
