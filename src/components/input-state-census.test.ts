@@ -51,6 +51,10 @@ const ANTI_PATTERN_REGEX =
   /<Input\b[^>]*className=["'][^"']*(border-(?:red|yellow|green|blue)-|bg-(?:red|yellow|green|blue)-|border-destructive(?!\/|-)|border-success(?!\/|-)|border-warning(?!\/|-))[^"']*["']/;
 
 const STATE_REGEX = /<Input\b[^>]*\bstate=["'](\w+)["']/g;
+// Sprint 30 — ternary `state={cond ? "success" : "default"}` ifadelerini de
+// say (auth password forms gibi conditional state activation pattern'i).
+// Shape: <Input ... state={... "X" ...} />. Multi-line tolerant.
+const STATE_TERNARY_REGEX = /<Input\b[\s\S]*?\bstate=\{[\s\S]*?["'](\w+)["'][\s\S]*?\}/g;
 const SIZE_REGEX = /<Input\b[^>]*\bsize=["'](\w+)["']/g;
 const INVALID_REGEX = /<Input\b[^>]*\binvalid(?:=\{(?:true|[^}]+)\})?(?:\s|\/?>)/g;
 const ANY_INPUT_REGEX = /<Input\b/g;
@@ -89,6 +93,20 @@ describe("§D-1 Input state + size census + anti-pattern hard-fail (Sprint 22)",
       STATE_REGEX.lastIndex = 0;
       while ((m = STATE_REGEX.exec(content)) !== null) {
         stateCounts.set(m[1], (stateCounts.get(m[1]) ?? 0) + 1);
+      }
+      // Sprint 30 — ternary expression aktivasyonlarını da say.
+      STATE_TERNARY_REGEX.lastIndex = 0;
+      while ((m = STATE_TERNARY_REGEX.exec(content)) !== null) {
+        // m[1] sadece ilk yakaladığı state literal'i — ternary'de genelde 2 var
+        // ("success" / "default") ama biz aktif state'i öğrenmek istiyoruz, bu
+        // yüzden tüm literal'leri ayıkla. (\w+) yerine global scan:
+        const inner = m[0].match(/["'](\w+)["']/g) || [];
+        for (const lit of inner) {
+          const v = lit.replace(/['"]/g, "");
+          if (v === "default" || v === "error" || v === "success") {
+            stateCounts.set(v, (stateCounts.get(v) ?? 0) + 1);
+          }
+        }
       }
       SIZE_REGEX.lastIndex = 0;
       while ((m = SIZE_REGEX.exec(content)) !== null) {
