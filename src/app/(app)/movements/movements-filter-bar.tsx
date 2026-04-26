@@ -146,6 +146,7 @@ export function MovementsFilterBar({
           <Input
             id="movements-filter-q"
             type="search"
+            size="sm"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={labels.itemPlaceholder}
