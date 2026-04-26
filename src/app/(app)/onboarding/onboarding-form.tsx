@@ -362,11 +362,19 @@ function Step3({
         <Button type="button" variant="outline" className="flex-1" onClick={onFinish}>
           Skip for now
         </Button>
-        <Button type="submit" className="flex-1" disabled={isPending}>
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {emails.trim() ? "Send invites" : "Finish setup"}
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        {emails.trim() ? (
+          <Button type="submit" className="flex-1" disabled={isPending}>
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Send invites
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button type="submit" variant="success" className="flex-1" disabled={isPending}>
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Finish setup
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </form>
   );
