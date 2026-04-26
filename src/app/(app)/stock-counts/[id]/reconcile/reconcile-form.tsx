@@ -85,14 +85,12 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
     const body =
       posted !== null && posted > 0 ? labels.successBody(posted) : labels.successBodyNone;
     return (
-      <output className="block space-y-4 rounded-md border border-success/40 bg-success/10 p-6">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
-          <div className="space-y-1">
-            <p className="font-semibold">{labels.successTitle}</p>
-            <p className="text-sm text-muted-foreground">{body}</p>
-          </div>
-        </div>
+      <div className="space-y-4">
+        <Alert variant="success">
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertTitle>{labels.successTitle}</AlertTitle>
+          <AlertDescription>{body}</AlertDescription>
+        </Alert>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" asChild>
             <Link href={`/stock-counts/${countId}`}>{labels.viewCount}</Link>
@@ -101,14 +99,14 @@ export function ReconcileForm({ countId, labels }: ReconcileFormProps) {
             <Link href="/stock-counts">{labels.viewAll}</Link>
           </Button>
         </div>
-      </output>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* P7.3 — Pre-completion trust messaging */}
-      <Alert className="border-info/50 bg-info/10">
+      <Alert variant="info">
         <Info className="h-4 w-4" />
         <AlertTitle className="text-sm">{labels.consequenceTitle}</AlertTitle>
         <AlertDescription className="text-xs">{labels.consequenceBody}</AlertDescription>
