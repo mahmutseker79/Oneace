@@ -107,13 +107,19 @@ export function ResetPasswordForm({ token }: { token: string }) {
           required
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          // Sprint 30 — Input.state.success: confirm becomes success only when
-          // both fields are valid AND match. Mismatch stays default (not error)
-          // until submit attempt — error copy belongs in {error} below.
+          // Sprint 30 — Input.state.success activation.
+          // Sprint 32 — live-validation error: kullanıcı yeterli uzunlukta
+          // yazdıktan sonra mismatch varsa anında error feedback. Default
+          // length < MIN iken kalır (henüz yazılıyor).
+          //   - length < MIN  → default (yazılıyor, geri bildirim yok)
+          //   - length >= MIN + match     → success
+          //   - length >= MIN + mismatch  → error (LIVE-VALIDATION)
           state={
-            confirm.length >= MIN_PASSWORD_LENGTH && confirm === password
-              ? "success"
-              : "default"
+            confirm.length < MIN_PASSWORD_LENGTH
+              ? "default"
+              : confirm === password
+                ? "success"
+                : "error"
           }
         />
       </div>
