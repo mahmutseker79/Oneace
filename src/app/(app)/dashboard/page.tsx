@@ -626,7 +626,12 @@ export default async function DashboardPage() {
           <CardContent className="p-0">
             {topLowStock.length === 0 ? (
               // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
-              <EmptyState icon={CheckCircle2} title={t.dashboard.lowStockCard.empty} bare />
+              <EmptyState
+                icon={CheckCircle2}
+                title={t.dashboard.lowStockCard.empty}
+                variant="completed"
+                bare
+              />
             ) : (
               <Table>
                 <TableHeader>

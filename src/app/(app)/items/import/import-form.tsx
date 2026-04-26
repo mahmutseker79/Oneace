@@ -650,7 +650,7 @@ function PreviewStep({
           </TabsList>
           <TabsContent value="ready" className="mt-4">
             {readyRows.length === 0 ? (
-              <EmptyState icon={CheckCircle2} title={labels.empty} variant="filtered" />
+              <EmptyState icon={CheckCircle2} title={labels.empty} variant="completed" />
             ) : (
               <div className="overflow-x-auto rounded-md border">
                 <Table>

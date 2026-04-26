@@ -161,6 +161,7 @@ export default async function LowStockReportPage() {
           icon={CheckCircle2}
           title={t.reports.lowStock.emptyTitle}
           description={t.reports.lowStock.emptyBody}
+          variant="completed"
         />
       ) : (
         <>

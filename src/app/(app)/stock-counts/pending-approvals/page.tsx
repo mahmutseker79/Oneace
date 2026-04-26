@@ -51,6 +51,7 @@ export default async function PendingApprovalsPage() {
           icon={CheckCircle2}
           title="No pending approvals"
           description="Counts requesting approval will appear here."
+          variant="completed"
         />
       ) : (
         <div className="grid gap-4">
