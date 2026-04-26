@@ -13,7 +13,7 @@
  * the count is IN_PROGRESS or COMPLETED.
  */
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sigma } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,6 +21,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -330,7 +331,8 @@ function VarianceTable({
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
+          // Sprint 16 PR #2 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+          <EmptyState icon={Sigma} title={emptyLabel} bare />
         ) : (
           <Table>
             <TableHeader>

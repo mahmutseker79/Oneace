@@ -1,8 +1,10 @@
+import { Sigma } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -181,9 +183,8 @@ export default async function StockCountReconcilePage({ params }: PageProps) {
         </CardHeader>
         <CardContent className="p-0">
           {varianceRows.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">
-              {t.stockCounts.detail.itemsTableEmpty}
-            </p>
+            // Sprint 16 PR #2 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={Sigma} title={t.stockCounts.detail.itemsTableEmpty} bare />
           ) : (
             <Table>
               <TableHeader>

@@ -15,7 +15,9 @@
 // merge edildiğinde CI blok eder; doğru çözüm `<EmptyState />` kullanmak.
 //
 // Ayrıca informational soft-fail: ternary `X.length === 0 ? <p ... muted ...`
-// pattern'i (Sprint 16+ pack 6/7 backlog). Hard-fail değil, ≤20 threshold.
+// pattern'i. Sprint 15: 17 sayfa, threshold ≤20. Sprint 16 PR #2 (pack 6) 5
+// sayfa migrate etti; current 12, threshold ≤13. Sprint 17+ pack 7 hedefi:
+// kalan 12 → 0, sonra Pattern C hard-fail promote (threshold=0).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -81,16 +83,16 @@ describe("§B-7 hard-fail guard — no inline empty pattern in src/app", () => {
     ).toEqual([]);
   });
 
-  it("Pattern C — informational ternary length===0 (soft-fail ≤20, Sprint 16+ backlog)", () => {
+  it("Pattern C — informational ternary length===0 (soft-fail ≤13, Sprint 17+ pack 7 backlog)", () => {
     const offenders = findOffenders(TERNARY_LEN_ZERO);
     if (offenders.length > 0) {
       // eslint-disable-next-line no-console
       console.log(
-        `[empty-state-ternary-audit] ${offenders.length} files use ternary length===0 inline empty (Sprint 16+ pack 6/7 backlog):\n  ` +
+        `[empty-state-ternary-audit] ${offenders.length} files use ternary length===0 inline empty (Sprint 17+ pack 7 backlog):\n  ` +
           offenders.join("\n  "),
       );
     }
-    // Soft-fail: report only. Sprint 16+ pack hedefi: bu sayıyı 0'a indirmek.
-    expect(offenders.length).toBeLessThanOrEqual(20);
+    // Soft-fail: report only. Sprint 16 PR #2 (pack 6) 17→12. Sprint 17+ pack 7 hedefi: 0.
+    expect(offenders.length).toBeLessThanOrEqual(13);
   });
 });

@@ -1,7 +1,9 @@
+import { History } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { EmptyState } from "@/components/ui/empty-state";
 import { getMessages } from "@/lib/i18n";
 import { hasCapability } from "@/lib/permissions";
 import { requireActiveMembership } from "@/lib/session";
@@ -72,7 +74,8 @@ export default async function VehicleDetailPage({
       <div className="border-border bg-card rounded-lg border p-6">
         <h2 className="text-lg font-semibold">{t.vehicles.historyHeading}</h2>
         {vehicle.history.length === 0 ? (
-          <p className="text-muted-foreground mt-2 text-sm">{t.vehicles.historyEmpty}</p>
+          // Sprint 16 PR #2 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+          <EmptyState icon={History} title={t.vehicles.historyEmpty} bare />
         ) : (
           <div className="mt-4 space-y-3">
             {vehicle.history.map((h) => (

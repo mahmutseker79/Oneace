@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -253,7 +254,8 @@ export function NewCountForm({ labels, items, warehouses }: NewCountFormProps) {
         </div>
         <div className="max-h-96 overflow-y-auto rounded-md border">
           {filtered.length === 0 ? (
-            <p className="p-6 text-center text-sm text-muted-foreground">{labels.itemsEmpty}</p>
+            // Sprint 16 PR #2 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare, filtered).
+            <EmptyState icon={Search} title={labels.itemsEmpty} variant="filtered" bare />
           ) : (
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/60 backdrop-blur">

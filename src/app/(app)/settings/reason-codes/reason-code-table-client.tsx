@@ -1,11 +1,12 @@
 "use client";
 
-import { Edit2, Plus } from "lucide-react";
+import { Edit2, MessageSquare, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -90,13 +91,12 @@ export function ReasonCodeTableClient({ reasonCodes, categoryLabels }: ReasonCod
           return (
             <TabsContent key={category} value={category} className="space-y-4">
               {codes.length === 0 ? (
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No reason codes in this category
-                    </p>
-                  </CardContent>
-                </Card>
+                // Sprint 16 PR #2 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState.
+                <EmptyState
+                  icon={MessageSquare}
+                  title="No reason codes in this category"
+                  description="Reason codes appear here as soon as you add one to this category."
+                />
               ) : (
                 <Card>
                   <CardHeader>
