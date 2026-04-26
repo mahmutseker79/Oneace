@@ -1,9 +1,10 @@
-import { ChevronRight, Package, Search as SearchIcon, Truck, Warehouse } from "lucide-react";
+import { Building2, ChevronRight, Package, Search as SearchIcon, Truck, Warehouse } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { format, getMessages } from "@/lib/i18n";
@@ -166,7 +167,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </CardHeader>
             <CardContent className="space-y-0 p-0">
               {items.length === 0 ? (
-                <p className="text-muted-foreground px-6 pb-6 text-sm">{t.search.sectionEmpty}</p>
+                // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare, filtered).
+                <EmptyState icon={Package} title={t.search.sectionEmpty} variant="filtered" bare />
               ) : (
                 <ul className="divide-y">
                   {items.map((item) => {
@@ -231,7 +233,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </CardHeader>
             <CardContent className="space-y-0 p-0">
               {suppliers.length === 0 ? (
-                <p className="text-muted-foreground px-6 pb-6 text-sm">{t.search.sectionEmpty}</p>
+                // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare, filtered).
+                <EmptyState icon={Building2} title={t.search.sectionEmpty} variant="filtered" bare />
               ) : (
                 <ul className="divide-y">
                   {suppliers.map((s) => (
@@ -280,7 +283,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </CardHeader>
             <CardContent className="space-y-0 p-0">
               {warehouses.length === 0 ? (
-                <p className="text-muted-foreground px-6 pb-6 text-sm">{t.search.sectionEmpty}</p>
+                // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare, filtered).
+                <EmptyState icon={Warehouse} title={t.search.sectionEmpty} variant="filtered" bare />
               ) : (
                 <ul className="divide-y">
                   {warehouses.map((w) => (

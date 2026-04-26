@@ -1,6 +1,7 @@
 import { CopyButton } from "@/components/ui/copy-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { Pencil, Plus } from "lucide-react";
+import { ArrowLeftRight, Boxes, Pencil, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -239,7 +240,8 @@ export default async function ItemDetailPage({ params, searchParams }: PageProps
         </CardHeader>
         <CardContent className="p-0">
           {item.stockLevels.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">{t.itemDetail.stockEmpty}</p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={Boxes} title={t.itemDetail.stockEmpty} bare />
           ) : (
             <Table>
               <TableHeader>
@@ -306,7 +308,8 @@ export default async function ItemDetailPage({ params, searchParams }: PageProps
         </CardHeader>
         <CardContent className="p-0">
           {movements.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">{t.movements.recentEmpty}</p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={ArrowLeftRight} title={t.movements.recentEmpty} bare />
           ) : (
             <Table>
               <TableHeader>

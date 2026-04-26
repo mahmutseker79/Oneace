@@ -1,4 +1,4 @@
-import { ClipboardCheck, Info } from "lucide-react";
+import { Camera, ClipboardCheck, ClipboardList, Info } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,6 +7,7 @@ import { StockCountCacheSync } from "@/components/offline/stock-count-cache-sync
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusTimeline } from "@/components/ui/status-timeline";
 import {
@@ -456,9 +457,8 @@ export default async function StockCountDetailPage({ params, searchParams }: Pag
         </CardHeader>
         <CardContent className="p-0">
           {count.snapshots.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">
-              {t.stockCounts.detail.itemsTableEmpty}
-            </p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={Camera} title={t.stockCounts.detail.itemsTableEmpty} bare />
           ) : (
             <div className="overflow-x-auto">
               <Table className="min-w-[640px]">
@@ -559,9 +559,8 @@ export default async function StockCountDetailPage({ params, searchParams }: Pag
         </CardHeader>
         <CardContent className="p-0">
           {visibleEntries.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">
-              {t.stockCounts.detail.entriesEmpty}
-            </p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={ClipboardList} title={t.stockCounts.detail.entriesEmpty} bare />
           ) : (
             <Table>
               <TableHeader>

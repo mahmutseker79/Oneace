@@ -4,11 +4,12 @@
 // search. With 100+ items a plain Select requires too much scrolling.
 // Warehouse selectors keep the standard Select (typically ≤10 options).
 
-import { Check, ChevronsUpDown, CloudOff, Loader2 } from "lucide-react";
+import { Check, ChevronsUpDown, CloudOff, Loader2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -94,7 +95,8 @@ function ItemCombobox({
         </div>
         <div className="max-h-56 overflow-y-auto py-1">
           {filtered.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">No items found.</p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare, filtered).
+            <EmptyState icon={Search} title="No items found." variant="filtered" bare />
           ) : (
             filtered.map((item) => (
               <button

@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   ArrowLeftRight,
   CheckCircle2,
@@ -19,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartCard } from "@/components/ui/chart-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -623,9 +625,8 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="p-0">
             {topLowStock.length === 0 ? (
-              <p className="text-muted-foreground px-6 pb-6 text-sm">
-                {t.dashboard.lowStockCard.empty}
-              </p>
+              // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+              <EmptyState icon={CheckCircle2} title={t.dashboard.lowStockCard.empty} bare />
             ) : (
               <Table>
                 <TableHeader>
@@ -680,9 +681,8 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="p-0">
             {data.recentMovements.length === 0 ? (
-              <p className="text-muted-foreground px-6 pb-6 text-sm">
-                {t.dashboard.recentActivityCard.empty}
-              </p>
+              // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+              <EmptyState icon={Activity} title={t.dashboard.recentActivityCard.empty} bare />
             ) : (
               <Table>
                 <TableHeader>

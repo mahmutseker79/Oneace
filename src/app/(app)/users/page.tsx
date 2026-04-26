@@ -1,8 +1,10 @@
+import { MailX, Users } from "lucide-react";
 import type { Metadata } from "next";
 
 import { WrapperTabs } from "@/components/shell/wrapper-tabs";
 import { TEAM_TAB_SPECS, resolveWrapperTabs } from "@/components/shell/wrapper-tabs-config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -160,7 +162,8 @@ export default async function UsersPage() {
           </CardHeader>
           <CardContent className="p-0">
             {pendingInvitations.length === 0 ? (
-              <p className="px-6 py-4 text-sm text-muted-foreground">{t.users.invitations.empty}</p>
+              // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+              <EmptyState icon={MailX} title={t.users.invitations.empty} bare />
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -261,9 +264,10 @@ export default async function UsersPage() {
 
           {/* Phase 7B: Mobile card view */}
           {sorted.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-muted-foreground md:hidden">
-              {t.users.table.empty}
-            </p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare, mobile-only).
+            <div className="md:hidden">
+              <EmptyState icon={Users} title={t.users.table.empty} bare />
+            </div>
           ) : (
             <div className="space-y-2 md:hidden">
               {sorted.map((m) => (

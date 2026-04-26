@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { ListPlus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -8,6 +8,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -397,7 +398,8 @@ export function PurchaseOrderForm({
           </Button>
         </div>
         {lines.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{labels.fields.linesEmpty}</p>
+          // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+          <EmptyState icon={ListPlus} title={labels.fields.linesEmpty} bare />
         ) : (
           <div className="space-y-3">
             {lines.map((line) => {

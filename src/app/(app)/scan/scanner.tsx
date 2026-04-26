@@ -1,12 +1,15 @@
 "use client";
 
+
 import {
   AlertTriangle,
   ArrowLeftRight,
+  Boxes,
   Camera,
   CameraOff,
   Check,
   Clock,
+  History,
   Loader2,
   Maximize,
   Minimize,
@@ -26,6 +29,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 // Audit v1.2 §5.33 — scanner fires BARCODE_SCANNED on every successful
@@ -680,7 +684,8 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
                     {labels.resultLevelsHeading}
                   </p>
                   {result.item.levels.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{labels.resultNoLevels}</p>
+                    // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+                    <EmptyState icon={Boxes} title={labels.resultNoLevels} bare />
                   ) : (
                     <ul className="divide-y divide-border rounded-md border border-border">
                       {result.item.levels.map((lvl) => (
@@ -769,7 +774,8 @@ export function Scanner({ labels, initialQuery }: ScannerProps) {
               </CardHeader>
               <CardContent>
                 {history.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{labels.noHistory}</p>
+                  // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+                  <EmptyState icon={History} title={labels.noHistory} bare />
                 ) : (
                   <ul className="divide-y divide-border max-h-64 overflow-y-auto -mx-1">
                     {history.slice(0, 20).map((entry) => (

@@ -1,4 +1,4 @@
-import { Barcode, Grid3X3, Pencil } from "lucide-react";
+import { ArrowLeftRight, Barcode, Boxes, Grid3X3, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -175,9 +176,8 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
         </CardHeader>
         <CardContent className="p-0">
           {stockLevels.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">
-              {t.warehouses.detail.stockEmpty}
-            </p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={Boxes} title={t.warehouses.detail.stockEmpty} bare />
           ) : (
             <Table>
               <TableHeader>
@@ -229,9 +229,8 @@ export default async function WarehouseDetailPage({ params }: PageProps) {
         </CardHeader>
         <CardContent className="p-0">
           {movements.length === 0 ? (
-            <p className="px-6 pb-6 text-sm text-muted-foreground">
-              {t.warehouses.detail.movementsEmpty}
-            </p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={ArrowLeftRight} title={t.warehouses.detail.movementsEmpty} bare />
           ) : (
             <Table>
               <TableHeader>

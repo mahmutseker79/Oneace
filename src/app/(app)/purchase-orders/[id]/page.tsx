@@ -41,7 +41,7 @@
 // All four queries are parallelised via `Promise.all` so the
 // added sections don't add serial latency to the render.
 
-import { Package } from "lucide-react";
+import { ClipboardList, Package } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -49,6 +49,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -598,7 +599,8 @@ export default async function PurchaseOrderDetailPage({ params }: DetailPageProp
         </CardHeader>
         <CardContent>
           {scopedAudit.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t.purchaseOrders.detail.auditEmpty}</p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={ClipboardList} title={t.purchaseOrders.detail.auditEmpty} bare />
           ) : (
             <ul className="space-y-2 text-sm">
               {scopedAudit.map((row) => {

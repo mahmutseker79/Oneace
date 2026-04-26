@@ -1,4 +1,4 @@
-import { CalendarClock, ChevronRight, ExternalLink, Pencil, Plus } from "lucide-react";
+import { CalendarClock, ChevronRight, ExternalLink, Pencil, Plus, TrendingUp } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Table,
@@ -553,9 +554,8 @@ export default async function SupplierDetailPage({ params }: DetailPageProps) {
             </CardHeader>
             <CardContent>
               {topItems.length === 0 ? (
-                <p className="text-muted-foreground text-sm italic">
-                  {t.suppliers.detail.topItemsEmpty}
-                </p>
+                // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+                <EmptyState icon={TrendingUp} title={t.suppliers.detail.topItemsEmpty} bare />
               ) : (
                 <Table>
                   <TableHeader>

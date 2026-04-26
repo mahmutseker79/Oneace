@@ -16,6 +16,7 @@
 import { createMigrationJobAction } from "@/app/(app)/migrations/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import type { MigrationSource } from "@/generated/prisma";
@@ -31,8 +32,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Factory,
+  FileSearch,
   FileSpreadsheet,
   HardDrive,
+  Link2,
   Loader2,
   Package,
   Receipt,
@@ -822,7 +825,8 @@ function MappingStep({
           <h3 className="font-semibold text-sm mb-3">Algılanan Dosyalar</h3>
           <div className="space-y-2">
             {detections.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Hiçbir dosya tanınamadı.</p>
+              // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+              <EmptyState icon={FileSearch} title="Hiçbir dosya tanınamadı." bare />
             ) : (
               detections.map((d) => (
                 <div
@@ -849,7 +853,8 @@ function MappingStep({
             </span>
           </h3>
           {mappings.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Otomatik mapping bulunamadı.</p>
+            // Sprint 17 PR #1 (UX/UI audit Apr-25 §B-7): inline ternary empty → EmptyState (bare).
+            <EmptyState icon={Link2} title="Otomatik mapping bulunamadı." bare />
           ) : (
             <div className="space-y-1 max-h-80 overflow-y-auto pr-2">
               {mappings.map((m, i) => (
