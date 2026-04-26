@@ -222,9 +222,8 @@ export function PutawayForm({
 
   // ── No unbinned stock guard ─────────────────────────────────────────────
   // Sprint 15 PR #1: inline empty + action button → EmptyState w/ actions.
-  // NOT semantically "empty" — completion state — but EmptyState is the closest
-  // shared primitive. Future EmptyState `completed` variant could re-introduce
-  // success styling; tracked in Sprint 16+ backlog.
+  // Sprint 16 PR #1: variant="completed" geri yüklendi — text-success styling
+  // restored (Sprint 15'te `empty` variant ile primary'ye düşmüştü).
 
   const hasAnyUnbinned = items.some((i) => i.unbinnedQty > 0);
   if (!hasAnyUnbinned) {
@@ -232,6 +231,7 @@ export function PutawayForm({
       <EmptyState
         icon={CheckCircle2}
         title={labels.noUnbinnedStock}
+        variant="completed"
         actions={[{ label: labels.viewPo, href: backHref, variant: "secondary" }]}
       />
     );

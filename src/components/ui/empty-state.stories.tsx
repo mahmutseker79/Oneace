@@ -1,11 +1,11 @@
 // Sprint 8 PR #1 — EmptyState primitive story.
 //
-// 3 variant: empty (true first-use), filtered (no results),
-// unavailable (feature gated). 29 sayfada kullanılıyor; Sprint 4
-// PR #2 hedefi 50+'a çıkarmak. Bu story canonical kullanımı pin'ler.
+// 4 variant: empty (true first-use), filtered (no results),
+// unavailable (feature gated), completed (Sprint 16 — task done success).
+// 46+ sayfada kullanılıyor (Sprint 15 closure). Bu story canonical kullanımı pin'ler.
 
 import type { Meta, StoryObj } from "@storybook/react";
-import { Lock, Package, Search } from "lucide-react";
+import { CheckCircle2, Lock, Package, Search } from "lucide-react";
 import { EmptyState } from "./empty-state";
 
 const meta: Meta<typeof EmptyState> = {
@@ -23,7 +23,7 @@ const meta: Meta<typeof EmptyState> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["empty", "filtered", "unavailable"],
+      options: ["empty", "filtered", "unavailable", "completed"],
     },
   },
 };
@@ -68,6 +68,25 @@ export const NoActions: Story = {
     icon: Package,
     title: "No movements yet",
     description: "Receive your first PO to populate the ledger.",
+  },
+};
+
+/** Sprint 16 PR #1 — `completed` variant (post-action success state). */
+export const Completed: Story = {
+  args: {
+    icon: CheckCircle2,
+    title: "All stock binned",
+    description: "Every received unit has been assigned to a bin. Nothing left to put away.",
+    variant: "completed",
+    actions: [{ label: "View purchase order", href: "/purchase-orders/po-1", variant: "secondary" }],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Task tamamlanma / başarı durumu. `bg-success/10 ring-success/20 + text-success` ile yeşil ton. `empty` (ilk-kullanım boşluğu) varyantından semantik olarak farklı — bu pozitif tamamlanma sinyali.",
+      },
+    },
   },
 };
 

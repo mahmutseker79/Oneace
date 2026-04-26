@@ -29,7 +29,17 @@ export type EmptyStateAction = {
   variant?: "primary" | "secondary" | "ghost";
 };
 
-export type EmptyStateVariant = "empty" | "filtered" | "unavailable";
+/**
+ * Sprint 16 PR #1 (UX/UI audit Apr-25 §B-7): `completed` variant
+ *
+ *   "completed" — Task done / nothing left to do (post-action success state).
+ *                 Success ring + green icon. Differs from "empty" (which is
+ *                 first-use) by signaling positive completion vs. emptiness.
+ *
+ * Sprint 15 PR #1'de putaway noUnbinnedStock surface'i `empty` variant ile
+ * migrate edilmişti — text-success kaybı vardı. Bu variant onu restore eder.
+ */
+export type EmptyStateVariant = "empty" | "filtered" | "unavailable" | "completed";
 
 export type EmptyStateProps = {
   icon: LucideIcon;
@@ -64,14 +74,18 @@ export function EmptyState({
       ? "bg-muted/60 ring-1 ring-border/30"
       : variant === "unavailable"
         ? "bg-warning-light ring-1 ring-warning/20"
-        : "bg-primary/8 ring-1 ring-primary/10";
+        : variant === "completed"
+          ? "bg-success/10 ring-1 ring-success/20"
+          : "bg-primary/8 ring-1 ring-primary/10";
 
   const iconClass =
     variant === "unavailable"
       ? "h-6 w-6 text-warning"
       : variant === "filtered"
         ? "h-6 w-6 text-muted-foreground"
-        : "h-6 w-6 text-primary";
+        : variant === "completed"
+          ? "h-6 w-6 text-success"
+          : "h-6 w-6 text-primary";
 
   const hasActions = actions && actions.length > 0;
 
