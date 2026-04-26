@@ -1,23 +1,23 @@
-// Permanent guard — Sprint 15 PR #2 (UX/UI audit Apr-25 §B-7).
+// Permanent guard — Sprint 15 PR #2 (UX/UI audit Apr-25 §B-7), Sprint 17 PR #2 closure.
 //
 // Sprint 14 PR #3 informational soft-fail audit'i (threshold ≤10) bu sprint
-// hard-fail moda alındı. İki pattern flavor var:
+// hard-fail moda alındı. ÜÇ pattern flavor — hepsi threshold = 0 HARD FAIL:
 //
 //   A) Literal "No " text:
 //        <CardContent ... py-N ... ><p ... text-muted-foreground>No data...
-//      Sprint 11/12/13/14 tarafından sıfırlandı.
+//      Sprint 11/12/13/14 tarafından sıfırlandı (=0 since Sprint 15).
 //
 //   B) i18n `{labels.no/empty/nothing...}` expression:
 //        <CardContent ... py-N text-center ... ><p ... text-muted-foreground>{labels.noBins}
-//      Sprint 15 PR #1 (pack 5) tarafından sıfırlandı.
+//      Sprint 15 PR #1 (pack 5) tarafından sıfırlandı (=0 since Sprint 15).
 //
-// Her ikisi için de threshold = 0 (HARD FAIL). Yeni inline empty pattern
-// merge edildiğinde CI blok eder; doğru çözüm `<EmptyState />` kullanmak.
+//   C) Ternary `X.length === 0 ?` + muted-foreground p:
+//        {items.length === 0 ? (<p className="... text-muted-foreground">empty</p>) : ...}
+//      Sprint 16 PR #2 (pack 6) 17→12, Sprint 17 PR #1 (pack 7) 12→0.
+//      Sprint 17 PR #2 (bu commit) hard-fail promote (threshold=0).
 //
-// Ayrıca informational soft-fail: ternary `X.length === 0 ? <p ... muted ...`
-// pattern'i. Sprint 15: 17 sayfa, threshold ≤20. Sprint 16 PR #2 (pack 6) 5
-// sayfa migrate etti; current 12, threshold ≤13. Sprint 17+ pack 7 hedefi:
-// kalan 12 → 0, sonra Pattern C hard-fail promote (threshold=0).
+// Üçü de hard-fail. Yeni inline empty pattern merge edildiğinde CI blok eder;
+// doğru çözüm `<EmptyState />` kullanmak (gerekirse `bare` prop ile).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -47,7 +47,7 @@ const LITERAL_NO_INLINE_EMPTY =
 const I18N_INLINE_EMPTY =
   /<CardContent[^>]*py-\d+[^>]*text-center[^>]*>[\s\S]{0,400}<p[^>]*text-muted-foreground[^>]*>\s*\{labels\.(?:no|empty|nothing)/i;
 
-// --- Pattern C (informational, soft-fail): ternary length===0 + muted p ---
+// --- Pattern C (HARD FAIL since Sprint 17 PR #2): ternary length===0 + muted p ---
 const TERNARY_LEN_ZERO =
   /\w+\.length\s*===?\s*0\s*\?[\s\S]{0,150}<p[^>]*text-muted-foreground/;
 
@@ -83,16 +83,13 @@ describe("§B-7 hard-fail guard — no inline empty pattern in src/app", () => {
     ).toEqual([]);
   });
 
-  it("Pattern C — informational ternary length===0 (soft-fail ≤13, Sprint 17+ pack 7 backlog)", () => {
+  it("Pattern C — ternary length===0 inline empty: threshold = 0 (HARD FAIL since Sprint 17)", () => {
     const offenders = findOffenders(TERNARY_LEN_ZERO);
-    if (offenders.length > 0) {
-      // eslint-disable-next-line no-console
-      console.log(
-        `[empty-state-ternary-audit] ${offenders.length} files use ternary length===0 inline empty (Sprint 17+ pack 7 backlog):\n  ` +
-          offenders.join("\n  "),
-      );
-    }
-    // Soft-fail: report only. Sprint 16 PR #2 (pack 6) 17→12. Sprint 17+ pack 7 hedefi: 0.
-    expect(offenders.length).toBeLessThanOrEqual(13);
+    expect(
+      offenders,
+      offenders.length === 0
+        ? ""
+        : `Ternary inline empty pattern. Migrate to <EmptyState bare/>:\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
   });
 });
