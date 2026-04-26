@@ -164,6 +164,7 @@ export function MovementsFilterBar({
           <Input
             id="movements-filter-from"
             type="date"
+            size="sm"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
             max={to || undefined}
@@ -177,6 +178,7 @@ export function MovementsFilterBar({
           <Input
             id="movements-filter-to"
             type="date"
+            size="sm"
             value={to}
             onChange={(e) => setTo(e.target.value)}
             min={from || undefined}
@@ -188,7 +190,7 @@ export function MovementsFilterBar({
             {labels.typeLabel}
           </Label>
           <Select value={typeValue} onValueChange={setTypeValue}>
-            <SelectTrigger id="movements-filter-type">
+            <SelectTrigger id="movements-filter-type" size="sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -207,7 +209,7 @@ export function MovementsFilterBar({
             {labels.warehouseLabel}
           </Label>
           <Select value={warehouseValue} onValueChange={setWarehouseValue}>
-            <SelectTrigger id="movements-filter-warehouse">
+            <SelectTrigger id="movements-filter-warehouse" size="sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

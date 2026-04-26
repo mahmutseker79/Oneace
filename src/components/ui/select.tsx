@@ -1,10 +1,31 @@
 "use client";
 
 import * as SelectPrimitive from "@radix-ui/react-select";
+import { type VariantProps, cva } from "class-variance-authority";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
+
+// Sprint 27 — Select size variant (Sprint 26 follow-up, filter-bar height
+// mismatch resolution). Lock-step with Input.size and Button.size via the
+// shared --control-h-* tokens — Input + SelectTrigger + Button hep aynı row'da
+// yan yana hizalı kalsın diye.
+const selectTriggerVariants = cva(
+  "flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-transparent ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+  {
+    variants: {
+      size: {
+        sm: "h-[var(--control-h-sm)] px-2.5 py-1.5 text-sm",
+        default: "h-[var(--control-h-md)] px-3 py-2 text-sm",
+        lg: "h-[var(--control-h-lg)] px-4 py-2.5 text-base",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  },
+);
 
 function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
@@ -18,18 +39,15 @@ function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.V
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
-function SelectTrigger({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
+interface SelectTriggerProps
+  extends Omit<React.ComponentProps<typeof SelectPrimitive.Trigger>, "size">,
+    VariantProps<typeof selectTriggerVariants> {}
+
+function SelectTrigger({ className, size, children, ...props }: SelectTriggerProps) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
-      className={cn(
-        "flex h-[var(--control-h-md)] w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-        className,
-      )}
+      className={cn(selectTriggerVariants({ size }), className)}
       {...props}
     >
       {children}

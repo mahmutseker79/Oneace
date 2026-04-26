@@ -124,7 +124,7 @@ export function PurchaseOrdersFilterBar({
             {labels.statusLabel}
           </Label>
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger id="po-filter-status">
+            <SelectTrigger id="po-filter-status" size="sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -143,7 +143,7 @@ export function PurchaseOrdersFilterBar({
             {labels.supplierLabel}
           </Label>
           <Select value={supplier} onValueChange={setSupplier}>
-            <SelectTrigger id="po-filter-supplier">
+            <SelectTrigger id="po-filter-supplier" size="sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
