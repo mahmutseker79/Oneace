@@ -7,7 +7,7 @@
 // state-bazlı primitive'ler (varsa) buraya eklenir.
 //
 // Input primitive cva tabanlı:
-//   - size: sm / default / lg (3 size)
+//   - size: sm / default (2 size — Sprint 28'de `lg` retire edildi, 0 kullanım)
 //   - state: default / error / success (3 state)
 //   - invalid?: boolean (state="error" alias + aria-invalid auto-set)
 //
@@ -18,11 +18,11 @@
 //
 //   2) State census informational: state= prop kullanım sayısı (default/error/success).
 //
-//   3) Size census informational: size= prop kullanım sayısı (sm/default/lg).
+//   3) Size census informational: size= prop kullanım sayısı (sm/default).
 //
 //   4) `invalid` prop kullanım sayısı (state="error" alias).
 //
-//   5) Variant union güncel: input.tsx cva çağrısında 3 size + 3 state korunur.
+//   5) Variant union güncel: input.tsx cva çağrısında 2 size + 3 state korunur.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -110,13 +110,13 @@ describe("§D-1 Input state + size census + anti-pattern hard-fail (Sprint 22)",
     expect(totalInputs).toBeGreaterThan(0);
   });
 
-  it("cva union güncel: 3 size + 3 state values", () => {
+  it("cva union güncel: 2 size + 3 state values (Sprint 28: lg retired)", () => {
     const inputSrc = readFileSync(resolve(REPO_ROOT, "src/components/ui/input.tsx"), "utf8");
     expect(inputSrc).toMatch(/cva\(/);
-    // size variants
+    // size variants — Sprint 28 retired lg (0 usage)
     expect(inputSrc).toMatch(/sm:\s*"/);
     expect(inputSrc).toMatch(/default:\s*"/);
-    expect(inputSrc).toMatch(/lg:\s*"/);
+    expect(inputSrc).not.toMatch(/lg:\s*"h-\[var\(--control-h-lg\)\]/);
     // state variants
     expect(inputSrc).toMatch(/error:\s*"/);
     expect(inputSrc).toMatch(/success:\s*"/);

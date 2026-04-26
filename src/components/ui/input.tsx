@@ -10,7 +10,6 @@ const inputVariants = cva(
       size: {
         sm: "h-[var(--control-h-sm)] px-2.5 py-1.5 text-sm",
         default: "h-[var(--control-h-md)] px-3 py-2 text-sm",
-        lg: "h-[var(--control-h-lg)] px-4 py-2.5 text-base",
       },
       state: {
         default: "border-input focus-visible:ring-ring",

@@ -6,6 +6,7 @@
 //   1) movements + purchase-orders filter-bar'larda date Input + Select satırları
 //      sm'e migrate edilemiyordu çünkü Select primitive hardcoded h-md kullanıyordu
 //      → Sprint 27 PR #1: Select primitive cva refactor (size: sm/default/lg)
+//        (Sprint 28: `lg` retired — 0 kullanım, primitive cva temizliği. Union: sm/default.)
 //
 //   2) Migration yapılınca Select.sm + Input.sm + Button.sm aynı row'da yan yana
 //      hizalı olur (--control-h-sm token lock-step).
@@ -21,7 +22,7 @@
 //     - po-filter-supplier SelectTrigger → size="sm"
 //
 // Pinned guard:
-//   - Select primitive cva size variant union (3 size)
+//   - Select primitive cva size variant union (Sprint 28 sonrası 2 size: sm + default)
 //   - 6 surface'in her biri için id + size="sm" kombinasyonu
 //   - Cumulative: <SelectTrigger size="sm"> >= 4, <Input size="sm"> >= 4
 //     (Sprint 26: Input.sm 2 search + Sprint 27: 2 date = 4)
@@ -89,16 +90,16 @@ const SURFACES: Surface[] = [
 ];
 
 describe("Sprint 27 — Filter-bar full sm migration + Select primitive size variant", () => {
-  it("Select primitive cva has size variant union (sm + default + lg)", () => {
+  it("Select primitive cva has size variant union (sm + default; Sprint 28: lg retired)", () => {
     const selectSrc = readFileSync(resolve(REPO_ROOT, "src/components/ui/select.tsx"), "utf8");
     expect(selectSrc).toMatch(/cva\(/);
     expect(selectSrc).toMatch(/selectTriggerVariants/);
     expect(selectSrc).toMatch(/sm:\s*"/);
     expect(selectSrc).toMatch(/default:\s*"/);
-    expect(selectSrc).toMatch(/lg:\s*"/);
     expect(selectSrc).toMatch(/--control-h-sm/);
     expect(selectSrc).toMatch(/--control-h-md/);
-    expect(selectSrc).toMatch(/--control-h-lg/);
+    // Sprint 28: lg retired → cva'da artık --control-h-lg yok (CSS token Button.lg için kalır)
+    expect(selectSrc).not.toMatch(/lg:\s*"h-\[var\(--control-h-lg\)\]/);
   });
 
   for (const surface of SURFACES) {
