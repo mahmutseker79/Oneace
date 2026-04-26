@@ -110,13 +110,13 @@ describe("§D-1 Input state + size census + anti-pattern hard-fail (Sprint 22)",
     expect(totalInputs).toBeGreaterThan(0);
   });
 
-  it("cva union güncel: 3 size + 3 state values", () => {
+  it("cva union güncel: 2 size + 3 state values (Sprint 28: lg retired)", () => {
     const inputSrc = readFileSync(resolve(REPO_ROOT, "src/components/ui/input.tsx"), "utf8");
     expect(inputSrc).toMatch(/cva\(/);
-    // size variants
+    // size variants — Sprint 28 retired lg (0 usage)
     expect(inputSrc).toMatch(/sm:\s*"/);
     expect(inputSrc).toMatch(/default:\s*"/);
-    expect(inputSrc).toMatch(/lg:\s*"/);
+    expect(inputSrc).not.toMatch(/lg:\s*"h-\[var\(--control-h-lg\)\]/);
     // state variants
     expect(inputSrc).toMatch(/error:\s*"/);
     expect(inputSrc).toMatch(/success:\s*"/);

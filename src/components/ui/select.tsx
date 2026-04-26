@@ -8,9 +8,13 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 // Sprint 27 — Select size variant (Sprint 26 follow-up, filter-bar height
-// mismatch resolution). Lock-step with Input.size and Button.size via the
-// shared --control-h-* tokens — Input + SelectTrigger + Button hep aynı row'da
-// yan yana hizalı kalsın diye.
+// mismatch resolution). Lock-step with Input.size via the shared --control-h-*
+// tokens — Input + SelectTrigger hep aynı row'da yan yana hizalı kalsın diye.
+//
+// Sprint 28 — `lg` retired (0 kullanım, primitive cva temizliği). Union: sm /
+// default. Hero/landing surface'leri Button.lg kullanıyor; Input + Select
+// scope'unda lg ihtiyacı yok. Geri çıkarmak istersen `--control-h-lg` token'ı
+// hâlâ globals.css'te (Button kullanıyor).
 const selectTriggerVariants = cva(
   "flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-transparent ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
   {
@@ -18,7 +22,6 @@ const selectTriggerVariants = cva(
       size: {
         sm: "h-[var(--control-h-sm)] px-2.5 py-1.5 text-sm",
         default: "h-[var(--control-h-md)] px-3 py-2 text-sm",
-        lg: "h-[var(--control-h-lg)] px-4 py-2.5 text-base",
       },
     },
     defaultVariants: {

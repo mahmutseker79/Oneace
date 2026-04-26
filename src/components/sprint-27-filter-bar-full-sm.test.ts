@@ -89,16 +89,16 @@ const SURFACES: Surface[] = [
 ];
 
 describe("Sprint 27 — Filter-bar full sm migration + Select primitive size variant", () => {
-  it("Select primitive cva has size variant union (sm + default + lg)", () => {
+  it("Select primitive cva has size variant union (sm + default; Sprint 28: lg retired)", () => {
     const selectSrc = readFileSync(resolve(REPO_ROOT, "src/components/ui/select.tsx"), "utf8");
     expect(selectSrc).toMatch(/cva\(/);
     expect(selectSrc).toMatch(/selectTriggerVariants/);
     expect(selectSrc).toMatch(/sm:\s*"/);
     expect(selectSrc).toMatch(/default:\s*"/);
-    expect(selectSrc).toMatch(/lg:\s*"/);
     expect(selectSrc).toMatch(/--control-h-sm/);
     expect(selectSrc).toMatch(/--control-h-md/);
-    expect(selectSrc).toMatch(/--control-h-lg/);
+    // Sprint 28: lg retired → cva'da artık var(--control-h-lg) yok (CSS token Button.lg için kalır)
+    expect(selectSrc).not.toMatch(/lg:\s*"h-\[var\(--control-h-lg\)\]/);
   });
 
   for (const surface of SURFACES) {
