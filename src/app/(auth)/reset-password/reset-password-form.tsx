@@ -89,6 +89,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          // Sprint 30 — Input.state.success activation: visual confirmation when
+          // the new password meets the length policy. Synchronous client check;
+          // server still authoritative on actual reset.
+          state={password.length >= MIN_PASSWORD_LENGTH ? "success" : "default"}
         />
       </div>
 
@@ -103,6 +107,14 @@ export function ResetPasswordForm({ token }: { token: string }) {
           required
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
+          // Sprint 30 — Input.state.success: confirm becomes success only when
+          // both fields are valid AND match. Mismatch stays default (not error)
+          // until submit attempt — error copy belongs in {error} below.
+          state={
+            confirm.length >= MIN_PASSWORD_LENGTH && confirm === password
+              ? "success"
+              : "default"
+          }
         />
       </div>
 

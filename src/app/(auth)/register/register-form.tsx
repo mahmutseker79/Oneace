@@ -251,6 +251,11 @@ export function RegisterForm({ labels }: RegisterFormProps) {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          // Sprint 30 — Input.state.success activation: visual confirmation
+          // when the new password meets the 8-char minimum. Lock-step with
+          // reset-password-form. Server still authoritative on the actual
+          // create-account call.
+          state={password.length >= 8 ? "success" : "default"}
         />
         <p className="text-xs text-muted-foreground">At least 8 characters</p>
       </div>
