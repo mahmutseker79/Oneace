@@ -60,8 +60,20 @@ tested: `checkout.success`, `invite.accepted`, `export.generated`,
 phone / token keys from leaving the process (§5.30 remediation).
 
 **i18n.** `src/lib/i18n/SUPPORTED_LOCALES` is the source of truth.
-Today it is a scaffold with `en` only (§5.23 was honest about this —
-do NOT claim multi-locale support until the message catalogs land).
+Today it ships **`en` + `tr`** with namespace-level parity (48/48
+since Sprint 7 closure) and ~95% leaf-string coverage. The fallback
+chain is cookie → org default (Sprint 19) → `Accept-Language` →
+`DEFAULT_LOCALE`. The TR region (TRY / Europe-Istanbul) is registered
+in `SUPPORTED_REGIONS`. Sprint 33 opened the **TR coverage segment**
+— kickoff brief in `docs/sprints/SPRINT-33-KICKOFF-BRIEF-2026-04-27.md`.
+Per-key parity (`src/lib/i18n/tr-key-parity.test.ts`), the
+`INTENTIONAL_EN` stub-policy marker (`messages/_markers.ts`), and the
+Playwright TR smoke fixture (`e2e/tr-smoke.spec.ts` +
+`fixtures/tr-auth.ts`) are scaffolded; hardcoded survivor sweep (L3)
+and email/server transactional copy (L4) land in Sprint 34+. The
+honest-scaffold guard from §5.23 still holds: a new locale requires a
+real `messages/<code>.ts` AND a `SUPPORTED_LOCALES` entry in the same
+change — `locale-parity.test.ts` enforces it.
 
 **Testing harness.** Static-analysis-first. Most pinned tests read the
 source with `fs`/regex rather than spinning up JSDOM or Prisma. See
