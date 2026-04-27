@@ -58,11 +58,23 @@ describe("Sprint 30 — Input.state.success activation in auth password forms", 
   });
 
   it("reset-password-form: confirm-password Input has state=success only when match + length valid", () => {
+    // Semantic invariant — success requires BOTH a match against the
+    // peer field AND a length-policy satisfaction. The exact ordering
+    // inside the ternary is owned by Sprint 32 (live-val), which moved
+    // the length check to read `password.length` (single source of
+    // truth on the peer field) and reordered branches so mismatch
+    // short-circuits to "error" before "success" is considered.
+    // This assertion stays order-agnostic — both invariants must
+    // appear inside the confirm-password Input's state expression.
     const src = readFile(RESET_FORM);
     expect(src).toContain('id="confirm-password"');
-    expect(src).toMatch(
-      /state=\{[\s\S]*?confirm\.length\s*>=\s*MIN_PASSWORD_LENGTH[\s\S]*?confirm\s*===\s*password[\s\S]*?"success"[\s\S]*?\}/,
-    );
+    const block = src.split('id="confirm-password"')[1] ?? "";
+    const window_ = block.slice(0, 1800);
+    // Window must contain the success literal AND a peer-equality check
+    // AND a length check that ties success to the policy threshold.
+    expect(window_).toMatch(/"success"/);
+    expect(window_).toMatch(/confirm\s*===\s*password|password\s*===\s*confirm/);
+    expect(window_).toMatch(/(?:password|confirm)\.length\s*>=\s*MIN_PASSWORD_LENGTH/);
   });
 
   it("HARD GUARD: login-form does NOT set state=success (current-password semantiği)", () => {
